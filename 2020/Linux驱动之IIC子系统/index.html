@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1. IIC协议 1.1 写操作 流程如下：  主芯片要发出一个start信号。 然后发出一个设备地址(用来确定是往哪一个芯片写数据)，方向(读&#x2F;写，0表示写，1表示读)。 从设备回应(用来确定这个设备是否存在)，然后就可以传输数据。 主设备发送一个字节数据给从设备，并等待回应。 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成)，然后再传输下一个数据。 数据发送完之后，主芯片就会发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之IIC子系统">
+<meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BIIC%E5%AD%90%E7%B3%BB%E7%BB%9F/index.html">
+<meta property="og:site_name" content="量子范式">
+<meta property="og:description" content="1. IIC协议 1.1 写操作 流程如下：  主芯片要发出一个start信号。 然后发出一个设备地址(用来确定是往哪一个芯片写数据)，方向(读&#x2F;写，0表示写，1表示读)。 从设备回应(用来确定这个设备是否存在)，然后就可以传输数据。 主设备发送一个字节数据给从设备，并等待回应。 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成)，然后再传输下一个数据。 数据发送完之后，主芯片就会发">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/007_i2c_write.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/008_i2c_read.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/009_i2c_signal.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/010_i2c_signal_internal.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/011_true_value_table.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/017_i2c_and_smbus.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/018_repeated_start.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/019_smbus_quick_command.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/020_smbus_receive_byte.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/021_smbus_send_byte.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/022_smbus_read_byte.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/023_smbus_read_word.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/024_smbus_write_byte.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/025_smbus_write_word.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/026_smbus_block_read.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/027_smbus_block_write.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/033_i2c_block_read.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/034_i2c_block_write.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/028_smbus_block_write_block_read_process_call.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/029_smbus_pec_example.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/001_i2c_hardware_block.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/IIC_Struct.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/IIC_RegisterAdapt.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/IIC_RegisterDriver.png">
+<meta property="article:published_time" content="2020-08-29T08:27:44.000Z">
+<meta property="article:modified_time" content="2022-03-20T12:06:35.783Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="IIC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/iic/007_i2c_write.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BIIC%E5%AD%90%E7%B3%BB%E7%BB%9F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动之IIC子系统 | 量子范式</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">量子范式</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BIIC%E5%AD%90%E7%B3%BB%E7%BB%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之IIC子系统
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-08-29 16:27:44" itemprop="dateCreated datePublished" datetime="2020-08-29T16:27:44+08:00">2020-08-29</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BIIC%E5%AD%90%E7%B3%BB%E7%BB%9F/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之IIC子系统/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="iic协议">1. IIC协议</h2>
+<h3 id="写操作">1.1 写操作</h3>
+<p>流程如下：</p>
+<ul>
+<li>主芯片要发出一个start信号。</li>
+<li>然后发出一个设备地址(用来确定是往哪一个芯片写数据)，方向(读/写，0表示写，1表示读)。</li>
+<li>从设备回应(用来确定这个设备是否存在)，然后就可以传输数据。</li>
+<li>主设备发送一个字节数据给从设备，并等待回应。</li>
+<li>每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成)，然后再传输下一个数据。</li>
+<li>数据发送完之后，主芯片就会发送一个停止信号。</li>
+</ul>
+<p>下图：白色背景表示"主→从"，灰色背景表示"从→主" <img src="/picture/linux_driver/iic/007_i2c_write.png" /></p>
+<span id="more"></span>
+<h3 id="读操作">1.2 读操作</h3>
+<p>流程如下：</p>
+<ul>
+<li>主芯片要发出一个start信号。</li>
+<li>然后发出一个设备地址(用来确定是往哪一个芯片写数据)，方向(读/写，0表示写，1表示读)。</li>
+<li>从设备回应(用来确定这个设备是否存在)，然后就可以传输数据。</li>
+<li>从设备发送一个字节数据给主设备，并等待回应。</li>
+<li>每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成)，然后再传输下一个数据。</li>
+<li>数据发送完之后，主芯片就会发送一个停止信号。</li>
+</ul>
+<p>下图：白色背景表示"主→从"，灰色背景表示"从→主" <img src="/picture/linux_driver/iic/008_i2c_read.png" /></p>
+<h3 id="i2c信号">1.3 I2C信号</h3>
+<p>I2C协议中数据传输的单位是字节，也就是8位。但是要用到9个时钟：前面8个时钟用来传输8数据，第9个时钟用来传输回应信号。传输时，先传输最高位(MSB)。</p>
+<ul>
+<li>开始信号（S）：SCL为高电平时，SDA山高电平向低电平跳变，开始传送数据。</li>
+<li>结束信号（P）：SCL为高电平时，SDA由低电平向高电平跳变，结束传送数据。</li>
+<li>响应信号(ACK)：接收器在接收到8位数据后，在第9个时钟周期，拉低SDA</li>
+<li>SDA上传输的数据必须在SCL为高电平期间保持稳定，SDA上的数据只能在SCL为低电平期间变化</li>
+</ul>
+<p>I2C协议信号如下： <img src="/picture/linux_driver/iic/009_i2c_signal.png" /></p>
+<h3 id="硬件实现">1.4 硬件实现</h3>
+<p>scl和sda管脚都采用开漏输出的驱动方式，需要外接上拉电阻来输出高电平。 <img src="/picture/linux_driver/iic/010_i2c_signal_internal.png" /></p>
+<p>真值表如下： <img src="/picture/linux_driver/iic/011_true_value_table.png" /></p>
+<p>从真值表和电路图我们可以知道：</p>
+<ul>
+<li>当某一个芯片不想影响SDA线时，那就不驱动这个三极管</li>
+<li>想让SDA输出高电平，双方都不驱动三极管(SDA通过上拉电阻变为高电平)</li>
+<li>想让SDA输出低电平，就驱动三极管</li>
+</ul>
+<h2 id="smbus协议">2. SMBus协议</h2>
+<h3 id="概述">2.1 概述</h3>
+<p>SMBus是基于I2C协议的，SMBus要求更严格，SMBus是I2C协议的子集，如下图： <img src="/picture/linux_driver/iic/017_i2c_and_smbus.png" /></p>
+<p>SMBus与I2C的区别如下：</p>
+<ul>
+<li><p>VDD的极限值不一样</p>
+<ul>
+<li>I2C协议：范围很广，甚至讨论了高达12V的情况</li>
+<li>SMBus：1.8V~5V</li>
+</ul></li>
+<li><p>最小时钟频率、最大的<code>Clock Stretching</code></p>
+<ul>
+<li>Clock Stretching含义：某个设备需要更多时间进行内部的处理时，它可以把SCL拉低占住I2C总线</li>
+<li>I2C协议：时钟频率最小值无限制，Clock Stretching时长也没有限制</li>
+<li>SMBus：时钟频率最小值是10KHz，Clock Stretching的最大时间值也有限制</li>
+</ul></li>
+<li><p>地址回应(Address Acknowledge)</p>
+<ul>
+<li>一个I2C设备接收到它的设备地址后，是否必须发出回应信号？</li>
+<li>I2C协议：没有强制要求必须发出回应信号</li>
+<li>SMBus：强制要求必须发出回应信号，这样对方才知道该设备的状态：busy，failed，或是被移除了</li>
+</ul></li>
+<li><p>SMBus协议明确了数据的传输格式</p>
+<ul>
+<li>I2C协议：它只定义了怎么传输数据，但是并没有定义数据的格式，这完全由设备来定义</li>
+<li>SMBus：定义了几种数据格式(后面分析)</li>
+</ul></li>
+<li><p>REPEATED START Condition(重复发出S信号)</p>
+<ul>
+<li>比如读EEPROM时，涉及2个操作：
+<ul>
+<li>把存储地址发给设备</li>
+<li>读数据</li>
+</ul></li>
+<li>在写、读之间，可以不发出P信号，而是直接发出S信号：这个S信号就是<code>REPEATED START</code></li>
+<li>如下图所示 <img src="/picture/linux_driver/iic/018_repeated_start.png" /></li>
+</ul></li>
+<li><p>SMBus Low Power Version</p>
+<ul>
+<li>SMBus也有低功耗的版本</li>
+</ul></li>
+</ul>
+<h3 id="smbus协议分析">2.2 SMBus协议分析</h3>
+<h4 id="symbols符号">2.2.1 symbols(符号)</h4>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">S     (1 bit) : Start bit(开始位)</span><br><span class="line">Sr    (1 bit) : 重复的开始位</span><br><span class="line">P     (1 bit) : Stop bit(停止位)</span><br><span class="line"><span class="meta">R/W#</span><span class="bash">  (1 bit) : Read/Write bit. Rd equals 1, Wr equals 0.(读写位)</span></span><br><span class="line">A, N  (1 bit) : Accept and reverse accept bit.(回应位)</span><br><span class="line">Address(7 bits): I2C 7 bit address. Note that this can be expanded as usual to</span><br><span class="line">                get a 10 bit I2C address.</span><br><span class="line">                (地址位，7位地址)</span><br><span class="line">Command Code  (8 bits): Command byte, a data byte which often selects a register on</span><br><span class="line">                the device.</span><br><span class="line">                (命令字节，一般用来选择芯片内部的寄存器)</span><br><span class="line">Data Byte (8 bits): A plain data byte. Sometimes, I write DataLow, DataHigh</span><br><span class="line">                for 16 bit data.</span><br><span class="line">                (数据字节，8位；如果是16位数据的话，用2个字节来表示：DataLow、DataHigh)</span><br><span class="line">Count (8 bits): A data byte containing the length of a block operation.</span><br><span class="line">        (在block操作总，表示数据长度)</span><br><span class="line">[..]:           Data sent by I2C device, as opposed to data sent by the host</span><br><span class="line">                adapter.</span><br><span class="line">                (中括号表示I2C设备发送的数据，没有中括号表示host adapter发送的数据)</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-quick-command">2.2.2 SMBus Quick Command</h4>
+<p><img src="/picture/linux_driver/iic/019_smbus_quick_command.png" /></p>
+<p>只是用来发送一位数据：R/W#本意是用来表示读或写，但是在SMBus里可以用来表示其他含义。比如某些开关设备，可以根据这一位来决定是打开还是关闭。 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_QUICK</span><br></pre></td></tr></table></figure></p>
+<h4 id="smbus-receive-byte">2.2.3 SMBus Receive Byte</h4>
+<p><img src="/picture/linux_driver/iic/020_smbus_receive_byte.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_read_byte()。</p>
+<p>读取一个字节，Host adapter接收到一个字节后不需要发出回应信号(上图中N表示不回应)。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_READ_BYTE</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-send-byte">2.2.4 SMBus Send Byte</h4>
+<p><img src="/picture/linux_driver/iic/021_smbus_send_byte.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_write_byte()。 发送一个字节。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_WRITE_BYTE</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-read-byte">2.2.5 SMBus Read Byte</h4>
+<p><img src="/picture/linux_driver/iic/022_smbus_read_byte.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_read_byte_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再读取一个字节的数据。 上面介绍的<code>SMBus Receive Byte</code>是不发送Comand，直接读取数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_READ_BYTE_DATA</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-read-word">2.2.6 SMBus Read Word</h4>
+<p><img src="/picture/linux_driver/iic/023_smbus_read_word.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_read_word_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再读取2个字节的数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_READ_WORD_DATA</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-write-byte">2.2.7 SMBus Write Byte</h4>
+<p><img src="/picture/linux_driver/iic/024_smbus_write_byte.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_write_byte_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再发出1个字节的数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_WRITE_BYTE_DATA</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-write-word">2.2.8 SMBus Write Word</h4>
+<p><img src="/picture/linux_driver/iic/025_smbus_write_word.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_write_word_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再发出1个字节的数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_WRITE_WORD_DATA</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-block-read">2.2.9 SMBus Block Read</h4>
+<p><img src="/picture/linux_driver/iic/026_smbus_block_read.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_read_block_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再发起度操作：</p>
+<ul>
+<li>先读到一个字节(Block Count)，表示后续要读的字节数</li>
+<li>然后读取全部数据</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_READ_BLOCK_DATA</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-block-write">2.2.10 SMBus Block Write</h4>
+<p><img src="/picture/linux_driver/iic/027_smbus_block_write.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_write_block_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再发出1个字节的<code>Byte Conut</code>(表示后续要发出的数据字节数)，最后发出全部数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_WRITE_BLOCK_DATA</span><br></pre></td></tr></table></figure>
+<h4 id="i2c-block-read">2.2.11 I2C Block Read</h4>
+<p>在一般的I2C协议中，也可以连续读出多个字节。 它跟<code>SMBus Block Read</code>的差别在于设备发出的第1个数据不是长度N，如下图所示： <img src="/picture/linux_driver/iic/033_i2c_block_read.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_read_i2c_block_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再发出1个字节的<code>Byte Conut</code>(表示后续要发出的数据字节数)，最后发出全部数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_READ_I2C_BLOCK</span><br></pre></td></tr></table></figure>
+<h4 id="i2c-block-write">2.2.12 I2C Block Write</h4>
+<p>在一般的I2C协议中，也可以连续发出多个字节。 它跟<code>SMBus Block Write</code>的差别在于发出的第1个数据不是长度N，如下图所示： <img src="/picture/linux_driver/iic/034_i2c_block_write.png" /></p>
+<p>I2C-tools中的函数：i2c_smbus_write_i2c_block_data()。</p>
+<p>先发出<code>Command Code</code>(它一般表示芯片内部的寄存器地址)，再发出1个字节的<code>Byte Conut</code>(表示后续要发出的数据字节数)，最后发出全部数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_WRITE_I2C_BLOCK</span><br></pre></td></tr></table></figure>
+<h4 id="smbus-block-write---block-read-process-call">2.2.13 SMBus Block Write - Block Read Process Call</h4>
+<p><img src="/picture/linux_driver/iic/028_smbus_block_write_block_read_process_call.png" /> 先写一块数据，再读一块数据。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Functionality flag: I2C_FUNC_SMBUS_BLOCK_PROC_CALL</span><br></pre></td></tr></table></figure>
+<h4 id="packet-error-checking-pec">2.14 Packet Error Checking (PEC)</h4>
+<p>PEC是一种错误校验码，如果使用PEC，那么在P信号之前，数据发送方要发送一个字节的PEC码(它是CRC-8码)。</p>
+<p>以<code>SMBus Send Byte</code>为例，下图中，一个未使用PEC，另一个使用PEC： <img src="/picture/linux_driver/iic/029_smbus_pec_example.png" /></p>
+<h2 id="数据结构">3. 数据结构</h2>
+<p>soc中的iic控制器与挂载在iic总线上的设备的拓扑图如下： <img src="/picture/linux_driver/iic/001_i2c_hardware_block.png" /></p>
+<h3 id="bus_type">3.1 bus_type</h3>
+<p>iic也是一个总线设备，linux启动阶段会创建一个iic总线i2c_bus_type，该总线用于管理i2c_client设备和i2c_driver驱动。这里不必多说，该结构跟linux驱动之设备模型里的总线相同，这里实现了它自己的match和probe函数，这些后面再说。</p>
+<h3 id="i2c_adapter">3.2 i2c_adapter</h3>
+<p>每个soc内部都有自己的iic控制器，一般会有多个iic控制器，i2c_adapter结构体就是用于描述iic控制器的就是iic controler，结构体里的nr用于表述该控制器是第几个控制器例如iic-0，iic-1等这里面有一个最总要的结构就是i2c_algorithm，该结构是具体controler的实际iic传输实现，对于不同的平台iic的内部设计一般是不同的，那么通过该结构来提供统一的接口给其他模块调用，而具体的差异由具体的平台实现自己的i2c_algorithm。该部分驱动一般由soc厂商编写。</p>
+<h3 id="i2c_client">3.4 i2c_client</h3>
+<p>iic下会挂载一个或多个设备，每个设备的信息由i2c_client结构体描述，例如设备地址等信息。该结构体还有一个指针指向i2c_adapter，表示该设备挂载在哪个iic controler下以便在iic通信的时候通过i2c_adapter提供的i2c_algorithm提供的接口完成实际的数据传输。</p>
+<h3 id="i2c_driver">3.5 i2c_driver</h3>
+<p>iic下挂载的设备例如tp、温湿度传感器等设备的驱动由该数据结构来描述，这个是我们实际编写驱动中最常用的，通过iic驱动具体的挂载在iic总线上的设备。i2c_driver跟i2c_client匹配成功后，就调用i2c_driver.probe函数。</p>
+<h3 id="i2c_msg">3.6 i2c_msg</h3>
+<p>有了iic设备和iic驱动了，iic是通信总线，那就是要用来传输消息的，还有一个描述具体消息的结构体就是i2c_msg，该结构体描述了消息方向，传输地址，消息长度以及消息本身内容。</p>
+<p>下面将这些数据结构之间的关系通过一张图来展示，如下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjOTQ2Mzc2ODkyMWZhMjUwMWMx">原图<i class="fa fa-external-link-alt"></i></span><br />
+<img src="/picture/linux_driver/iic/IIC_Struct.png" /></p>
+<p>可以看到我们的iic驱动也是使用之前描述的设备驱动模型，bus下挂载链条结构一个挂载设备一个挂载驱动通过总线提供的match函数进行匹配实现device找到device_driver或则device_driver找到要驱动的device然后，在match成功后通过总线的probe函数调用到驱动的probe函数，实际驱动开发人员只需要填充i2c_driver结构体并将其注册到总线就可以了。区别在于iic总线是一个具体实实在在的总线，soc内部有iic控制器，通过i2c_adapter描述提供统一的借口，i2c_driver通过i2c_adapter提供的iic传输函数来操作i2c_client设备，这就是iic总线驱动的整体框架了。</p>
+<h2 id="流程分析">4. 流程分析</h2>
+<p>i2c_register_adapter函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjYjY2Mzc2ODkyMWZhMjUwMWUz">原图<i class="fa fa-external-link-alt"></i></span><br />
+<img src="/picture/linux_driver/iic/IIC_RegisterAdapt.png" /></p>
+<p>这里面有一个函数i2c_detect需要注意，该函数会遍历总线下的每一个i2c_driver并调用i2c_driver的detect函数，具体的i2c_driver的detect函数由具体的驱动实现。</p>
+<p>i2c_register_driver函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjZDM2Mzc2ODkyMWZhMjUwMjA0">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/iic/IIC_RegisterDriver.png" /></p>
+<p>i2c_driver同adapt的注册有一些相同的流程，其中detect函数就是其中之一，注册i2c_driver的时候也会遍历bus下的i2c_driver并调用相应的detect函数。</p>
+<h4 id="参考文献">参考文献：</h4>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9jb21t">http://www.wowotech.net/sort/comm<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vbGtubGZ5L3AvMzI2NTEwOC5odG1s">https://www.cnblogs.com/lknlfy/p/3265108.html<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY3h5YmIuY29tL2FydGljbGUvcm9ja3JvY2t3dS83NDM1ODE3">https://www.cxybb.com/article/rockrockwu/7435817<i class="fa fa-external-link-alt"></i></span><br />
+《Linux设备驱动开发》</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BIIC%E5%AD%90%E7%B3%BB%E7%BB%9F/" title="Linux驱动之IIC子系统">http://carlyleliu.github.io/2020/Linux驱动之IIC子系统/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/IIC/" rel="tag"><i class="fa fa-tag"></i> IIC</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BPWM/" rel="prev" title="Linux驱动之PWM">
+      <i class="fa fa-chevron-left"></i> Linux驱动之PWM
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E8%AE%BE%E5%A4%87%E6%A0%91/" rel="next" title="Linux驱动之设备树">
+      Linux驱动之设备树 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#iic%E5%8D%8F%E8%AE%AE"><span class="nav-text">1. IIC协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C"><span class="nav-text">1.1 写操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%BB%E6%93%8D%E4%BD%9C"><span class="nav-text">1.2 读操作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#i2c%E4%BF%A1%E5%8F%B7"><span class="nav-text">1.3 I2C信号</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0"><span class="nav-text">1.4 硬件实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#smbus%E5%8D%8F%E8%AE%AE"><span class="nav-text">2. SMBus协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">2.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#smbus%E5%8D%8F%E8%AE%AE%E5%88%86%E6%9E%90"><span class="nav-text">2.2 SMBus协议分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#symbols%E7%AC%A6%E5%8F%B7"><span class="nav-text">2.2.1 symbols(符号)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-quick-command"><span class="nav-text">2.2.2 SMBus Quick Command</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-receive-byte"><span class="nav-text">2.2.3 SMBus Receive Byte</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-send-byte"><span class="nav-text">2.2.4 SMBus Send Byte</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-read-byte"><span class="nav-text">2.2.5 SMBus Read Byte</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-read-word"><span class="nav-text">2.2.6 SMBus Read Word</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-write-byte"><span class="nav-text">2.2.7 SMBus Write Byte</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-write-word"><span class="nav-text">2.2.8 SMBus Write Word</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-block-read"><span class="nav-text">2.2.9 SMBus Block Read</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-block-write"><span class="nav-text">2.2.10 SMBus Block Write</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#i2c-block-read"><span class="nav-text">2.2.11 I2C Block Read</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#i2c-block-write"><span class="nav-text">2.2.12 I2C Block Write</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#smbus-block-write---block-read-process-call"><span class="nav-text">2.2.13 SMBus Block Write - Block Read Process Call</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#packet-error-checking-pec"><span class="nav-text">2.14 Packet Error Checking (PEC)</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">3. 数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#bus_type"><span class="nav-text">3.1 bus_type</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#i2c_adapter"><span class="nav-text">3.2 i2c_adapter</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#i2c_client"><span class="nav-text">3.4 i2c_client</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#i2c_driver"><span class="nav-text">3.5 i2c_driver</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#i2c_msg"><span class="nav-text">3.6 i2c_msg</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90"><span class="nav-text">4. 流程分析</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献：</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">980k</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BIIC%E5%AD%90%E7%B3%BB%E7%BB%9F/";
+    this.page.identifier = "2020/Linux驱动之IIC子系统/";
+    this.page.title = "Linux驱动之IIC子系统";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

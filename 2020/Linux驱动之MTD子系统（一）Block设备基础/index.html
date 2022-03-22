@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1. blk_mq介绍 1.1 Background 从内核开发之初，磁硬盘一直是事实上的标准。 Block IO 子系统旨在为那些在进行随机访问时具有高阻塞的设备实现最佳性能，而机械运动部件是瓶颈，比存储堆栈上的任何层慢得多。这种优化技术的一个例子涉及根据硬盘磁头的当前位置对读&#x2F;写请求进行排序。 然而，随着固态驱动器和非易失性存储器的发展，没有机械部件，也没有随机访问阻塞，能够执行高并行访问，堆">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之MTD子系统（一）Block设备基础">
+<meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:site_name" content="量子范式">
+<meta property="og:description" content="1. blk_mq介绍 1.1 Background 从内核开发之初，磁硬盘一直是事实上的标准。 Block IO 子系统旨在为那些在进行随机访问时具有高阻塞的设备实现最佳性能，而机械运动部件是瓶颈，比存储堆栈上的任何层慢得多。这种优化技术的一个例子涉及根据硬盘磁头的当前位置对读&#x2F;写请求进行排序。 然而，随着固态驱动器和非易失性存储器的发展，没有机械部件，也没有随机访问阻塞，能够执行高并行访问，堆">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/mtd/bio_api.png">
+<meta property="article:published_time" content="2020-10-06T09:15:40.000Z">
+<meta property="article:modified_time" content="2022-03-20T12:07:08.564Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="block">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/mtd/bio_api.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动之MTD子系统（一）Block设备基础 | 量子范式</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">量子范式</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之MTD子系统（一）Block设备基础
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-06 17:15:40" itemprop="dateCreated datePublished" datetime="2020-10-06T17:15:40+08:00">2020-10-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之MTD子系统（一）Block设备基础/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>16 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="blk_mq介绍">1. blk_mq介绍</h2>
+<h3 id="background">1.1 Background</h3>
+<p>从内核开发之初，磁硬盘一直是事实上的标准。 Block IO 子系统旨在为那些在进行随机访问时具有高阻塞的设备实现最佳性能，而机械运动部件是瓶颈，比存储堆栈上的任何层慢得多。这种优化技术的一个例子涉及根据硬盘磁头的当前位置对读/写请求进行排序。</p>
+<p>然而，随着固态驱动器和非易失性存储器的发展，没有机械部件，也没有随机访问阻塞，能够执行高并行访问，堆栈的瓶颈已经从存储设备转移到了操作系统。为了利用这些设备设计中的并行性，引入了多队列机制。</p>
+<p>前一种设计有一个单独的队列来存储带有单个 Block IO 请求。由于缓存中的脏数据和多个处理器的单一锁的瓶颈，这在 SMP 系统中不能很好地扩展。当不同的进程（或同一进程，移动到不同的 CPU）想要执行Block IO 时，这种设置也会遇到拥塞。取而代之的是blk-mq API 会生成多个队列，这些队列具有 CPU 本地的各个入口点，从而无需锁定。</p>
+<h3 id="operation">1.2 Operation</h3>
+<p>当用户空间对Block设备执行 IO（例如读取或写入文件）时，blk-mq 会采取行动：它将存储和管理对Block设备的 IO 请求。</p>
+<p>blk-mq 有两组队列：软件暂存队列和硬件调度队列。当请求到达Block层时，它会尝试尽可能最短的路径：直接将其发送到硬件队列。但是，有两种情况它可能不会这样做：如果在该层附加了 IO 调度程序，或者如果我们想尝试合并请求。在这两种情况下，请求都会被发送到软件队列。</p>
+<p>然后，在软件队列处理完请求后，它们将被放置在硬件队列中，第二阶段队列是硬件可以直接访问以处理这些请求。但是，如果硬件没有足够的资源来接受更多的请求，blk-mq 会将请求放置在一个临时队列中，以便将来在硬件有能力时发送。</p>
+<span id="more"></span>
+<h3 id="software-staging-queues">1.3 Software staging queues</h3>
+<p>block IO 子系统将请求添加到软件暂存队列（由 struct blk_mq_ctx 表示）中，以防它们没有直接发送到驱动程序。一个请求是一个或多个 BIO。他们通过数据结构struct bio到达Block层。然后Block层会从中构建一个新的结构，这个结构请求将用于与设备驱动程序进行通信。每个队列都有自己的锁，队列的数量由每个 CPU 或每个node定义。</p>
+<p>分段队列可用于合并相邻扇区的请求。例如，对扇区 3-6、6-7、7-9 的请求可以成为对 3-9 的一个请求。即使与顺序访问相比，对 SSD 和 NVM 的随机访问具有相同的响应时间，顺序访问的分组请求也会减少单个请求的数量。这种合并请求的技术称为Plugging。</p>
+<p>除此之外，可以通过 IO 调度程序重新排序请求以确保系统资源的公平性（例如，确保没有应用程序遭受饥饿）和/或提高 IO 性能。</p>
+<h3 id="io-schedulers">1.4 IO Schedulers</h3>
+<p>Block层实现了多个调度程序，每个调度程序都遵循启发式方法来提高 IO 性能。它们是“可插拔的”（如即插即用），因为它们可以在运行时使用 sysfs 进行选择。你可以在 <span class="exturl" data-url="aHR0cHM6Ly93d3cua2VybmVsLm9yZy9kb2MvaHRtbC9sYXRlc3QvYmxvY2svaW5kZXguaHRtbA==">https://www.kernel.org/doc/html/latest/block/index.html<i class="fa fa-external-link-alt"></i></span>`_ 阅读更多关于 Linux 的 IO 调度器。调度只发生在同一个队列中的请求之间，所以不能合并来自不同队列的请求，否则会出现缓存垃圾，并且需要为每个队列都有一个锁。在调度之后，请求有资格被发送到硬件。要选择的可能调度程序之一是 NONE 调度程序，这是最直接的一种。它只会将请求放置在进程正在运行的任何软件队列上，而无需任何重新排序。当设备开始处理硬件队列中的请求（即运行硬件队列）时，映射到该硬件队列的软件队列将根据它们的映射顺序排空。</p>
+<h3 id="hardware-dispatch-queues">1.5 Hardware dispatch queues</h3>
+<p>硬件队列（由struct blk_mq_hw_ctx表示）是设备驱动用来映射设备提交队列（或设备DMA环形缓冲区）的结构，是底层设备驱动取得所有权之前的Block层提交代码的最后一步请求。为了运行这个队列，Block 层从相关的软件队列中删除请求并尝试分派到硬件。</p>
+<p>如果无法将请求直接发送到硬件，它们将被添加到请求的链表 (<code>hctx-&gt;dispatch</code>) 中。然后，下一次Block 层运行队列时，它将首先发送位于“调度”列表中的请求，以确保对那些准备好首先发送的请求进行公平调度。硬件队列的数量取决于硬件及其设备驱动支持的硬件上下文的数量，但不会超过系统的核心数量。在这个阶段没有重新排序，每个软件队列都有一组硬件队列来发送请求。</p>
+<blockquote>
+<p>Block层和设备协议都不能保证请求的完成顺序。 这必须由更高层处理，例如文件系统。</p>
+</blockquote>
+<h3 id="tag-based-completion">1.6 Tag-based completion</h3>
+<p>为了指示哪个请求已经完成，每个请求都由一个整数标识，范围从 0 到调度队列大小。 此标记由Block层生成，稍后由设备驱动程序重用，无需创建冗余标识符。 当一个请求在驱动程序中完成时，标签被发送回Block层以通知它完成。 这消除了进行线性搜索以找出已完成的 IO 的需要。</p>
+<h2 id="bio">2.bio</h2>
+<h3 id="scope-for-tuning-the-generic-logic-to-satisfy-various-requirements">2.1 Scope for tuning the generic logic to satisfy various requirements</h3>
+<p>Block 层设计支持自适应抽象来处理常见处理，并能够根据设备的性质和调用者的要求将逻辑调整到适当的程度。 重写的目标之一是提高可调性程度并使更高级别的代码能够最大程度地利用底层设备/驱动程序功能以获得更好的 I/O 性能。 鉴于不断改进的硬件功能和旨在利用这些功能的应用程序/中间件软件，这尤其重要。</p>
+<h4 id="tuning-based-on-low-level-device-driver-capabilities">2.1.1 Tuning based on low level device / driver capabilities</h4>
+<p>具有大型内置缓存、智能 I/O 调度优化、内存 DMA 支持等的复杂设备可能会发现一些通用处理开销，而对于功能较弱的设备，通用功能对于性能或正确性原因至关重要。应该在通用 Block 层使用设备的某些功能或参数的知识，以代表驱动程序做出正确的决定。</p>
+<p>这是如何实现的？</p>
+<p>在每个队列级别进行调优：</p>
+<h5 id="per-queue-limitsvalues-exported-to-the-generic-layer-by-the-driver">Per-queue limits/values exported to the generic layer by the driver</h5>
+<p>通用 i/o 调度程序逻辑使用的各种参数在每个队列级别设置（例如最大请求大小、分散-聚集列表中的最大段数、逻辑块大小）</p>
+<p>以前作为由主要/次要索引的全局数组可用的一些参数现在直接与队列相关联。其中一些将来可能会进入块设备结构。一些特性已被合并到队列标志字段中，而不是单独的字段。有 blk_queue_xxx 函数来设置参数，而不是直接更新字段。</p>
+<p>一些新的队列属性设置：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_bounce_limit(q, u64 dma_address)</span><br></pre></td></tr></table></figure>
+<p>启用到 high-memory page的 I/O，dma_address 是限制。没有 high-memory 默认值。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_max_sectors(q, max_sectors)</span><br></pre></td></tr></table></figure>
+<p>设置两个限制请求大小的变量。</p>
+<ul>
+<li>请求队列的 max_sectors，这是一个以 512 字节扇区为单位的软大小，可以由核心内核动态改变。</li>
+<li>请求队列的 max_hw_sectors，这是一个硬限制，反映了驱动程序可以以 512 字节扇区为单位处理的最大请求大小。</li>
+</ul>
+<p>max_sectors 和 max_hw_sectors 的默认值都是255. max_sectors 的上限为 1024。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_max_phys_segments(q, max_segments)</span><br></pre></td></tr></table></figure>
+<p>您可以在请求中处理的最大物理段数。 128 默认</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_max_hw_segments(q, max_segments)</span><br></pre></td></tr></table></figure>
+<p>硬件可以在请求中处理的最大 dma 段。 128 默认值（主机适配器限制，在 dma 重新映射后）。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_max_segment_size(q, max_seg_size)</span><br></pre></td></tr></table></figure>
+<p>集群段的最大大小，默认为 64kB。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_logical_block_size（q，logical_block_size）</span><br></pre></td></tr></table></figure>
+<p>硬件可以操作的最小扇区大小，默认为 512 字节。</p>
+<p>新队列标志：</p>
+<ul>
+<li>QUEUE_FLAG_CLUSTER</li>
+<li>QUEUE_FLAG_QUEUED</li>
+</ul>
+<h5 id="high-mem-io-capabilities-are-now-considered-the-default">High-mem i/o capabilities are now considered the default</h5>
+<p>通用bounce 缓冲区逻辑，假设驱动程序无法直接处理它，Block 层默认将 high-memory 缓冲区上的 i/o 请求复制/输出到low-memory缓冲区在 2.5 中更改。弹跳逻辑现在仅适用于设备无法处理 i/o 的内存范围。驱动程序可以通过为设备的请求队列设置队列bounce 限制 (blk_queue_bounce_limit()) 来指定这一点。这避免了设备能够处理 high-memory i/o 时拷入/拷出的低效率。</p>
+<p>为了在设备能够支持的情况下启用 high-memory i/o，现在已修改 pci dma 映射routine 和相关数据结构以完成直接 page -&gt; bus 转换，而无需虚拟地址映射（不像较早的virtual address -&gt; bus translation转换）。所以这对于 high-memory page（没有相应的内核虚拟地址空间映射）和low-memorypage都是一致的。</p>
+<blockquote>
+<p>注意：请参阅 Documentation/core-api/dma-api-howto.rst 以讨论 PCI high-memory DMA 方面和分散收集列表的映射，以及对 64 位 PCI 的支持。</p>
+</blockquote>
+<p>仅当 I/O 需要在超出设备支持的物理内存地址的page上发生的情况下才需要特殊处理。在这些情况下，代表受支持内存范围中的缓冲区的bounce bio 用于根据操作类型根据需要使用 copyin/copyout 执行 i/o。例如，在读取操作的情况下，读取的数据必须在 i/o 完成时复制到原始缓冲区，因此设置回调routine 来执行此操作，而对于写入操作，则在发出操作之前从原始缓冲区复制数据到bounce缓冲区。由于原始缓冲区可能位于未映射到内核虚拟地址中的 high-memory 区域，因此执行复制可能需要 kmap 操作，并且在完成路径中可能需要特别小心，因为它可能不在 irq 上下文中。分配bounce缓冲区时还需要特别小心（通过 GFP 标志），以避免某些 high-memory 死锁的可能性。</p>
+<p>也有可能会从 high-memory 区域分配一个bounce buffer，该区域没有映射到内核虚拟地址，但在设备可以直接使用的范围内；因此在复制操作期间可能需要对跳出page进行映射。</p>
+<p>在某些情况下，即使不需要 bounce 缓冲区，也可能需要对来自high-memory的page进行映射。例如，设备可能需要中止 DMA 操作并恢复到 PIO 以进行传输，在这种情况下，需要page的虚拟映射。对于 SCSI，在无法信任low level 驱动程序正确处理单个 sg 条目的某些情况下，也会执行此操作。driver应在适当的情况下根据需要执行 kmaps。如果需要，驱动程序还可以单独使用 blk_queue_bounce() routine 将 highmem i/o bounce到特定请求的 low-memory 。</p>
+<h5 id="the-io-scheduler-algorithm-itself-can-be-replacedset-as-appropriate">The i/o scheduler algorithm itself can be replaced/set as appropriate</h5>
+<p>在前面讲到，可以为特定队列Plugging全新的 i/o 调度程序或从（复制）现有的通用调度程序中选择并替换/覆盖其中的某些部分。 3.1 重写提供了改进的 i/o 调度程序模块化。 有更多的可插拔回调，例如用于初始化、添加请求、提取请求，这使得在通用循环之外抽象特定的 I/O 调度算法方面和细节成为可能。 它还可以对块驱动程序完全隐藏 i/o 调度程序的实现细节。</p>
+<p>将使用 I/O 调度程序包装器而不是直接访问队列。 有关详细信息，请参阅第 I/O 调度程序。</p>
+<h4 id="tuning-based-on-high-level-code-capabilities">2.1.2 Tuning Based on High level code capabilities</h4>
+<h5 id="application-capabilities-for-raw-io">Application capabilities for raw i/o</h5>
+<p>这来自一些高性能数据库/中间件要求，其中应用程序更喜欢根据对访问模式和 I/O 特性的理解做出自己的 I/O 调度决策</p>
+<h5 id="high-performance-filesystems-or-other-higher-level-kernel-codes-capabilities">High performance filesystems or other higher level kernel code's capabilities</h5>
+<p>文件系统等内核组件也可以采用自己的 I/O 调度决策来优化性能。 日志文件系统可能需要对 I/O 排序进行一些控制。</p>
+<p>通用Block 层对此有什么样的支持？</p>
+<p>bio 结构中的标志和 rw 字段可用于从上面进行一些调整，例如指示 i/o 只是预读请求或优先级设置（当前未使用）。 就用户应用程序而言，他们需要一种额外的机制，通过开放标志或 ioctls，或其他一些上层机制来传达此类设置以阻止。</p>
+<ul>
+<li><p>Request Priority/Latency</p>
+<p>Arjan 提出的请求优先级方案允许更高级别对 i/o 请求与队列中其他未决请求的优先级进行一些广泛的控制（高/中/低）。 例如，它允许读取按需引入可执行page的优先级高于未在队列中老化太多的待处理写入请求。 潜在地，这个优先级甚至可以以某种方式暴露给应用程序，提供更高级别的可调性。 基于时间的老化避免了较低优先级请求的饥饿。 bio 结构中 bi_opf 标志字段中的某些位旨在用于此优先级信息。</p></li>
+</ul>
+<h4 id="direct-access-to-low-level-devicedriver-capabilities-bypass-mode">2.1.3 Direct Access to Low level Device/Driver Capabilities (Bypass mode)</h4>
+<p>在某些情况下，high-level code需要直接访问low level 设备功能，或者需要能够绕过某些中间 I/O 层向设备发出命令。例如，这些可能是通过 ioctl 接口发出的特殊控制命令，或者可能是强调驱动器在某些类型的健康测试中的能力的原始读/写命令。无需通过上层即可在多个级别拥有直接接口，这使得从媒体开始逐层执行自下而上的 I/O 路径验证成为可能。</p>
+<p>对于此类 ioctl 或诊断接口通常会使用的特制请求，可以绕过正常的 I/O 提交接口，例如 submit_bio，并且可以使用电梯 add_request routine 直接将此类请求Plugging队列或最好是 blk_do_rq routine 可用于将请求放入队列并等待完成。或者，有时调用者可能只是使用请求作为参数调用较low level 别的驱动程序特定接口。</p>
+<p>如果请求是传递与命令相关的特殊信息的一种方式，则此类信息与 request-&gt;special 字段相关联（而不是误用 request-&gt;buffer 字段，该字段用于请求数据缓冲区的虚拟映射）。</p>
+<p>为了传递请求数据，如果底层驱动程序解释 bio 段或使用Block 层 end<em>request</em> 函数来完成 i/o，调用者必须建立一个 bio 描述符来表示相关的内存缓冲区。或者，可以直接使用 request-&gt;buffer 字段来指定缓冲区的虚拟地址，如果驱动程序期望以这种方式传递的缓冲区地址并忽略所涉及的请求类型的 bio 条目。在后一种情况下，驱动程序将修改和管理 request-&gt;buffer、request-&gt;sector 和 request-&gt;nr_sectors 或 request-&gt;current_nr_sectors 字段本身，而不是使用Block 层 end_request 或 end_that_request_first 完成接口。 （请参阅 2.3 或 Documentation/block/request.rst 以获取对请求结构字段的简要说明）</p>
+<pre><code>[TBD：即使在这种情况下，end_that_request_last 也应该可用； 也许可以实现一个 end_that_direct_request_first routine ，使这些驱动程序更容易处理直接请求； 同样对于需要 bios 的驱动程序，可以提供帮助函数来设置与数据缓冲区对应的 bio]</code></pre>
+<p>&lt;JENS：我不明白上面的内容，为什么 end_that_request_first() 不可用？ 或者 _last 。 我一定是遗漏了什么&gt;</p>
+<p>&lt;SUP：我在这里的意思是，如果请求没有 bio，则 end_that_request_first 不会修改 nr_sectors 或 current_nr_sectors，因此不能用于在部分传输完成时推进请求状态设置。 驱动程序必须直接手动修改这些字段。这是因为 end_that_request_first 只遍历 bio 列表，如果没有与请求关联的内容，则始终返回 0。在这种情况下，_last 工作正常，这不是问题，因为我 之前提到&gt;</p>
+<h5 id="pre-built-commands">Pre-built Commands</h5>
+<p>可以使用预先构建的自定义命令创建请求以直接发送到设备。请求结构中的 cmd 块有填充命令字节的空间。 （即 rq-&gt;cmd 现在大小为 16 字节，用于命令预构建，请求的类型现在通过 rq-&gt;flags 而不是通过 rq-&gt;cmd 指示）。</p>
+<p>在这种情况下，可以设置请求结构标志来指示请求的类型（REQ_PC：传递给驱动程序的直接数据包命令，REQ_BLOCK_PC：通过 blk_do_rq 发出的数据包命令，REQ_SPECIAL：特殊请求）。</p>
+<p>它可以帮助提前为请求预先构建设备命令。驱动程序现在可以指定请求准备函数 (q-&gt;prep_rq_fn)，Block 层将调用该函数为给定请求预构建设备命令，或为请求执行其他准备处理。该routine 由 elv_next_request() 调用，即通常在服务请求之前调用。 （对于启用了 RQF_DONTPREP 的请求，不会调用准备函数）</p>
+<blockquote>
+<p>预构建甚至可以提前完成，即在将请求放入队列之前，而不是在驱动程序中即时构建命令，同时为请求队列提供服务，因为它可能会影响中断上下文中的延迟或一般响应。 添加早期预构建的一种方法是在我们未能合并请求时执行此操作。 现在在请求标志中设置 REQ_NOMERGE 以在将来跳过此标志，这意味着在我们将其提供给设备之前它不会更改。 所以可以在那里调用 pre-builder 钩子。</p>
+</blockquote>
+<h3 id="flexible-and-generic-but-minimalist-io-structuredescriptor">2.2 Flexible and generic but minimalist i/o structure/descriptor</h3>
+<h4 id="reason-for-a-new-structure-and-requirements-addressed">2.2.1 Reason for a new structure and requirements addressed</h4>
+<p>在 2.5 之前，buffer head被用作通用Block 层的 i/o 单元，low level 请求结构与连续 i/o 请求的buffer head链相关联。 当底层设备能够一次性处理 i/o 时,这导致在处理大型 i/o 请求和 readv/writev 样式操作时效率低下，因为它迫使此类请求在传递到通用Block 层之前被分解成小块，仅由 i /o 调度程序。 此外，将buffer head用作并非源自缓冲区缓存的 i/os 的 i/o 结构，不必要地增加了为每个此类块生成的描述符的权重。</p>
+<p>以下是在 2.5 中重新设计块 i/o 数据结构时考虑的一些目标和期望。</p>
+<ol type="1">
+<li>应该适合作为 raw 和 buffered i/o 的描述符 - 避免与直接/page i/o 路径无关的缓存相关字段，或可能与raw i/o 无关的文件系统块大小对齐限制.</li>
+<li>能够表示high-memory buffers（在内核地址空间中没有虚拟地址映射）。</li>
+<li>能够表示大型 i/os，而无需不必要地将它们分解（即在一次拍摄中大于 PAGE_SIZE 块）</li>
+<li>同时，能够保留来自不同来源的 i/o 或需要单独完成的 i/o 单元的独立身份（例如出于延迟原因）</li>
+<li>能够表示涉及多个物理内存段（包括非page对齐的page片段，如通过 readv/writev 指定的）的 i/o，而不会不必要地将其分解，前提是底层设备能够处理它。</li>
+<li>最好应该基于一个内存描述符结构，该结构可以在不同类型的子系统或层之间传递，甚至可能是网络，在此过程中没有重复或额外的数据/描述符字段副本</li>
+<li>当结构通过分层驱动程序（lvm、md、evms）时，能够以最小的开销处理拆分/合并的可能性。</li>
+</ol>
+<p>解决方案是为Block 层定义一个新的结构（bio），而不是直接使用buffer head结构（bh），其想法是避免一些相关的包袱和限制。 bio结构统一用于block层的所有i/o； 它构成了缓冲 i/o 的 bh 结构的一部分，在raw/direct i/o 的情况下，kiobuf 被映射到 bio 结构。</p>
+<h4 id="the-bio-struct">2.2.2 The bio struct</h4>
+<p>bio 结构使用指向 &lt;page, offset, len&gt; 元组数组的向量表示来描述 i/o 缓冲区，并具有描述 i/o 参数和状态的各种其他字段，这些字段需要维护以执行 i /o。</p>
+<p>请注意，这种表示意味着 bio 根本没有虚拟地址映射（与buffer head不同）。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bio_vec</span> &#123;</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">page</span>     *<span class="title">bv_page</span>;</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">short</span>  bv_len;</span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">short</span>  bv_offset;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * main unit of I/O for the block layer and lower layers (ie drivers)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bio</span> &#123;</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">bio</span>          *<span class="title">bi_next</span>;</span>    <span class="comment">/* request queue link */</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">block_device</span> *<span class="title">bi_bdev</span>;</span>	<span class="comment">/* target device */</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>       bi_flags;    <span class="comment">/* status, command, etc */</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>       bi_opf;       <span class="comment">/* low bits: r/w, high: priority */</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">int</span>	bi_vcnt;     <span class="comment">/* how may bio_vec&#x27;s */</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">bvec_iter</span>	<span class="title">bi_iter</span>;</span>	<span class="comment">/* current index into bio_vec array */</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">int</span>	bi_size;     <span class="comment">/* total size in bytes */</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">short</span>	bi_hw_segments; <span class="comment">/* segments after DMA remapping */</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">int</span>	bi_max;	     <span class="comment">/* max bio_vecs we can hold</span></span><br><span class="line"><span class="comment">                                      used as index into pool */</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">bio_vec</span>   *<span class="title">bi_io_vec</span>;</span>  <span class="comment">/* the actual vec list */</span></span><br><span class="line">     <span class="keyword">bio_end_io_t</span>	*bi_end_io;  <span class="comment">/* bi_end_io (bio) */</span></span><br><span class="line">     <span class="keyword">atomic_t</span>		bi_cnt;	     <span class="comment">/* pin count: free when it hits zero */</span></span><br><span class="line">     <span class="keyword">void</span>             *bi_private;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>可以使用由 &lt;page, offset, len&gt; 片段数组组成的 bio_vec 列表一次性发送大型 i/os（类似于片段在零拷贝网络代码中的表示方式）。</li>
+<li>跨多个设备拆分 i/o 请求（如 lvm 或 raid 的情况）是通过克隆 bio（其中克隆指向相同的 bi_io_vec 数组，但索引和大小相应修改）来实现的。</li>
+<li>一个 bios 链表像以前一样用于不相关的合并 [#]_ - 这避免了重新分配并使独立完成更容易处理。</li>
+<li>遍历 req 列表的代码可以使用 rq_for_each_segment 找到 bio 的所有段。这处理了一个请求有多个 bios 的事实，每个 bios 可以有多个段。</li>
+<li>无法一次性处理大型 bio 的驱动程序可以使用 bi_ite 字段来迭代要处理的下一个 bio_vec 条目。 （例如，对于 IDE，1MB bio_vec 需要以最大 128kB 的块处理）[TBD：最好还应该有 bi_voffset 和 bi_vlen 以避免修改 bi_offset 和 len 字段]</li>
+</ul>
+<p>bi_end_io() i/o 回调在整个 bio 的 i/o 完成时被调用。</p>
+<p>在lower level，驱动程序从合并的 bios 构建一个分散收集列表。分散收集列表采用 &lt;page, offset, len&gt; 条目数组的形式，并在适当的时候填充了它们相应的 dma 地址映射。作为一种优化，连续的物理page可以被单个条目覆盖，其中 <page> 指的是第一页，而 <len> 覆盖page范围（这种方式最多可以覆盖 16 个连续page）。有一个帮助程序 (blk_rq_map_sg)，驱动程序可以使用它来构建 sg 列表。</p>
+<blockquote>
+<p>注意：现在只有一个page的 bios 用户是 ll_rw_kio，这意味着只有原始 I/O 使用它（直接 I/O 现在可能无法工作）。然而，目的是使page等的集群成为可能。 SGI 的 pagebuf 抽象层也使用multi-page bios，但目前未包含在库存开发内核中。 Andrew Morton 正在进行的multi-page生物写出和预读补丁也是如此。</p>
+</blockquote>
+<h4 id="changes-in-the-request-structure">2.2.3 Changes in the Request Structure</h4>
+<p>request 结构是传递给 low level 驱动程序的结构。 Block 层 make_request 函数建立一个request结构，将其放入队列并调用驱动程序 request_fn。 驱动程序使用Block 层辅助routine elv_next_request 将下一个请求从队列中拉出。 控制或诊断功能可能会绕过Block 并直接调用传入特殊构造的 request 结构的 low level 驱动程序入口点。</p>
+<p>下面只列出了一些相关的字段（主要是那些改变或可能在此处的一些讨论中被引用的字段），不一定按照它们在结构中出现的顺序（参见 include/linux/blkdev.h） 参考文档 /block/request.rst 有关所有请求结构字段的详细信息以及有关应该使用或修改这些字段的层的快速参考： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">request</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">queuelist</span>;</span>  <span class="comment">/* Not meant to be directly accessed by</span></span><br><span class="line"><span class="comment">					the driver.</span></span><br><span class="line"><span class="comment">					Used by q-&gt;elv_next_request_fn</span></span><br><span class="line"><span class="comment">					rq-&gt;queue is gone</span></span><br><span class="line"><span class="comment">					*/</span></span><br><span class="line">  .</span><br><span class="line">  .</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">char</span> cmd[<span class="number">16</span>]; <span class="comment">/* prebuilt command data block */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> flags;   <span class="comment">/* also includes earlier rq-&gt;cmd settings */</span></span><br><span class="line">  .</span><br><span class="line">  .</span><br><span class="line">  <span class="keyword">sector_t</span> sector; <span class="comment">/* this field is now of type sector_t instead of int</span></span><br><span class="line"><span class="comment">			    preparation for 64 bit sectors */</span></span><br><span class="line">  .</span><br><span class="line">  .</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of scatter-gather DMA addr+len pairs after</span></span><br><span class="line"><span class="comment">	 * physical address coalescing is performed.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">short</span> nr_phys_segments;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Number of scatter-gather addr+len pairs after</span></span><br><span class="line"><span class="comment">	 * physical and DMA remapping hardware coalescing is performed.</span></span><br><span class="line"><span class="comment">	 * This is the number of scatter-gather entries the driver</span></span><br><span class="line"><span class="comment">	 * will actually have to deal with after DMA mapping is done.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">short</span> nr_hw_segments;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Various sector counts */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> nr_sectors;  <span class="comment">/* no. of sectors left: driver modifiable */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> hard_nr_sectors;  <span class="comment">/* block internal copy of above */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> current_nr_sectors; <span class="comment">/* no. of sectors left in the</span></span><br><span class="line"><span class="comment">					   current segment:driver modifiable */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> hard_cur_sectors; <span class="comment">/* block internal copy of the above */</span></span><br><span class="line">  .</span><br><span class="line">  .</span><br><span class="line">  <span class="keyword">int</span> tag;	<span class="comment">/* command tag associated with request */</span></span><br><span class="line">  <span class="keyword">void</span> *special;  <span class="comment">/* same as before */</span></span><br><span class="line">  <span class="keyword">char</span> *buffer;   <span class="comment">/* valid only for low memory buffers up to</span></span><br><span class="line"><span class="comment">			 current_nr_sectors */</span></span><br><span class="line">  .</span><br><span class="line">  .</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">bio</span> *<span class="title">bio</span>, *<span class="title">biotail</span>;</span>  <span class="comment">/* bio list instead of bh */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">request_list</span> *<span class="title">rl</span>;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>请参阅 req_ops 和 req_flag_bits 定义以获取对各种可用标志的解释。某些位由 Block 层或 I/O 调度程序使用。</p>
+<p>nr_sectors 值是指整个请求中剩余要传输的扇区总数（无变化）。 hard_xxx 值的目的是让 Block 在每次将请求移交给驱动程序时记住这些计数。这些值在 end_that_request_first 上由 Block 更新，即每次驱动程序完成传输的一部分并调用 Block end*request helpers 来标记它。驱动程序不应修改这些值。Block 层设置 nr_sectors 和 current_nr_sectors 字段（基于相应的 hard_xxx 值和传输的字节数）并在每次调用 end_that_request_first 的传输时更新它。它对缓冲区、bio、bio-&gt;bi_iter 字段也是如此。</p>
+<p>在buffer驻留在 low-memory 中的情况下，缓冲区字段只是 I/O 缓冲区当前段的虚拟地址映射。对于 high memory i/o，此字段无效，驱动程序不得使用。</p>
+<p>设置自己的request结构并将它们传递给驱动程序的代码需要注意与驱动程序使用的 Block 层helpers函数的互操作。</p>
+<h3 id="using-bios">2.3 Using bios</h3>
+<h4 id="setupteardown">2.3.1 Setup/Teardown</h4>
+<p>有用于管理分配、引用计数和释放 bios（bio_alloc、bio_get、bio_put）的 routines。</p>
+<p>这利用了 Ingo Molnar 的内存池实现，它使 bio 等子系统能够维护自己的预留内存池，以保证在极端 VM 负载期间无死锁分配。例如，VM 子系统利用 Block 层来写出脏页以释放内存空间，这种情况需要谨慎处理。在无法通过正常方式进行分配的情况下，分配逻辑从预先分配的应急储备中提取。如果池是空的并且可以等待，那么它将触发有助于释放内存或补充池（没有死锁）并等待池中的可用性的操作。如果它在 IRQ 上下文中，则无法执行此操作，则在池为空时分配可能会失败。一般来说，mempool 总是首先尝试执行分配而不必等待，即使这意味着挖掘池，只要它不低于内存的 50% 。</p>
+<p>在空闲时，内存被释放到池中或直接释放，这取决于池中当前的可用性。 mempool 接口让子系统指定用于正常分配和释放的 routines。在 bio 的情况下，这些routines使用标准的 slab 分配器。</p>
+<p>bio_alloc 的调用者应该采取某些步骤来避免死锁，例如避免在已经持有从池中获得的内存时尝试从池中分配更多内存。</p>
+<p>从池中分配的内存应该在有限的时间内释放回来（在 bio 的情况下，这将是在 i/o 完成之后）。这确保如果池的一部分已用完，则某些工作（在本例中为 i/o）必须已经在进行中，并且当它结束时内存将可用。如果从同一代码路径中的多个池进行分配，则分配的顺序或层次结构需要一致，就像处理多个锁一样。</p>
+<p>bio_alloc routines 还需要为 non-clone bio 分配 bio_vec_list (bvec_alloc())。为不同大小的 biovec 设置了 6 个池，因此 bio_alloc(gfp_mask, nr_iovecs) 将从这些块中分配给定大小的 vec_list。</p>
+<p>bio_get() routines 可用于在 i/o 提交之前保存对 bio 的额外引用，如果 bio 字段可能在 i/o 发出后被访问（因为 bio 可能会在 i/o 发布后被释放） /o 完成同时发生）。</p>
+<p>该bio_clone_fast() routines 可用于复制 bio，其中克隆与原始 bio 共享 bio_vec_list（即，两者都指向相同的 bio_vec_list）。这通常用于在 lvm 或 md 中拆分 i/o 请求。</p>
+<h4 id="generic-bio-helper-routines">2.3.2 Generic bio helper Routines</h4>
+<h5 id="traversing-segments-and-completion-units-in-a-request">Traversing segments and completion units in a request</h5>
+<p>宏 rq_for_each_segment() 应该用于遍历请求列表中的 bios（驱动程序应避免直接尝试自己做）。使用这些helpers还应该可以更轻松地应对将来的块更改。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">req_iterator</span> <span class="title">iter</span>;</span></span><br><span class="line">rq_for_each_segment(bio_vec, rq, iter)</span><br><span class="line">        <span class="comment">/* bio_vec is now current segment */</span></span><br></pre></td></tr></table></figure> I/O 完成回调是按per-bio而不是按per-segment进行的，因此在完成时遍历per-bio链的驱动程序需要牢记这一点。不区分段和完成单元的驱动程序需要重新组织以支持 multi-segment bios。</p>
+<h5 id="setting-up-dma-scatterlists">Setting up DMA scatterlists</h5>
+<p>blk_rq_map_sg() helper routine 将用于根据请求设置分散收集列表，因此驱动程序无需自行完成。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nr_segments = blk_rq_map_sg(q, rq, scatterlist);</span><br></pre></td></tr></table></figure> helper routine提供了一个抽象级别，这使得在不破坏驱动程序的情况下更容易修改请求到散点表转换的内部结构。blk_rq_map_sg routine 负责一些事情，例如折叠物理上连续的段（如果设置了 QUEUE_FLAG_CLUSTER）和正确的段记帐以避免超出 I/O 硬件可以处理的限制，基于各种队列属性。</p>
+<ul>
+<li>防止集群段跨越 4GB 内存边界</li>
+<li>避免构建超过驱动程序可以处理的物理内存段数 (phys_segments) 和底层硬件可以同时处理的数量的段，考虑到 DMA 重新映射 (hw_segments)（即 IOMMU 感知限制）。</li>
+</ul>
+<p>low level驱动程序可以用来设置段限制的Routines：</p>
+<p>blk_queue_max_hw_segments() ：设置请求中最大硬件数据段数的上限（即主机适配器一次可以实际传递给设备的最大地址/长度对数）</p>
+<p>blk_queue_max_phys_segments() ：设置请求中物理数据段的最大数量上限（即驱动程序可以处理的最大分散列表）</p>
+<h5 id="io-completion">I/O completion</h5>
+<p>现有的通用 block 层helper routines end_request、end_that_request_first 和 end_that_request_last 可以像以前一样用于完成 i/o（并进行设置，以便可以踢出其余的 i/o 或下一个请求）。随着multi-page bio 支持的引入，end_that_request_first 需要一个额外的参数来指示已完成的扇区数。</p>
+<h4 id="io-submission">2.3.3 I/O Submission</h4>
+<p>该routine submit_bio()用于提交单个 io。更高级别的 i/o routine 使用这个：</p>
+<ul>
+<li><p>Buffered i/o:<br />
+routine submit_bh() 调用submit_bio()对应于 bh 的 bio，如果需要则分配 bio。ll_rw_block()像以前一样使用 submit_bh()。</p></li>
+<li><p>Kiobuf i/o (for raw/direct i/o):<br />
+ll_rw_kio() routine 将 kiobuf 分解为页面大小的块，并将数组映射到一个或多个multi-page bios，发出submit_bio()以在其中的每一个上执行 i/o。</p>
+<p>kiobuf 结构中嵌入的 bh 数组已被删除，并且没有为 kiobuf 进行 bios 的预分配。[目的也是删除 blocks 数组，但它目前在那里混杂着直接 i/o。] 因此 kiobuf 分配已切换回使用 kmalloc 而不是 vmalloc。</p>
+<p>待办事项/观察：</p>
+<p>假定单个 kiobuf 结构对应于连续范围的数据，因此 brw_kiovec() 为 kiovec 中的每个 kiobuf 调用 ll_rw_kio。所以现在它不适用于非连续块上的直接 i/o。这是要解决的。最终的方向是用 kvec 替换 kiobuf。</p>
+<p>Badari Pulavarty 有一个补丁可以使用 bio 和 kvec 正确实现直接 I/O。</p></li>
+<li><p>Page i/o:<br />
+待办事项/讨论中：</p>
+<p>Andrew Morton 的multi-page bio 补丁试图从页缓存发出multi-page写入（和读取），通过直接构建大型 bios 提交完全绕过buffer heads的使用。这项工作仍在进行中。</p>
+<p>Christoph Hellwig 有一些代码将 bios 用于 page-io（而不是 bh）。这尚未包含在bio中。Christoph 还致力于将虚拟/真实范围表示为实体的设计，并修改一些地址空间操作接口以利用这种抽象而不是 buffer_heads。（这有点类似于 SGI XFS pagebuf 抽象，但旨在尽可能轻量级）。</p></li>
+<li><p>Direct access i/o:<br />
+不包含 bios 的直接访问请求将以不同的方式提交，如前面第 1.3 节所述。</p>
+<p>在旁边：</p>
+<p>Kvec 输入/输出：</p>
+<p>Ben LaHaise 的 aio 代码使用稍微不同的结构而不是 kiobufs，称为 kvec_cb。它包含一个 &lt;page, offset, len&gt; 元组数组，以及一个回调函数和数据指针。当传递给 brw_kvec_async() 时，它被嵌入到 brw_cb 结构中。</p>
+<p>现在应该可以将这些 kvec 直接映射到bio。就像克隆时一样，在这种情况下，我们将 bi_io_vec 数组指针设置为指向 kvecs 中的 veclet 数组，而不是 PRE_BUILT bio_vecs。</p>
+<p>TBD：为了让这个工作，现在处理多页 bios 的方式需要一些改变。从上层代码传入的这种向量中元组的值在其请求处理过程中不应被 block 层修改，因为在 i/o 完成后这将使上层难以继续使用向量描述符（kvec ) 。取而代之的是，所有这些瞬态状态都应该保留在 request 结构中，并以某种方式传递给 endio 完成例程。</p></li>
+</ul>
+<h3 id="the-io-scheduler">2.4 The I/O scheduler</h3>
+<p>I/O 调度器，又名电梯，在通用调度队列和特定 I/O 调度程序两层中实现。除非另有说明，电梯用于将部件和 I/O 调度器都指代特定的 I/O 调度器。</p>
+<p>块层在block/*.c 中实现通用调度队列。通用调度队列负责重新排队、处理非 fs 请求和所有其他微妙之处。</p>
+<p>特定的 I/O 调度器负责对正常的文件系统请求进行排序。他们还可以选择延迟某些请求以提高吞吐量或出于任何目的。如复数形式所示，有多个 I/O 调度程序。它们可以构建为模块，但至少应该在内核中构建一个。每个队列可以选择不同的队列，也可以动态更改为另一个队列。</p>
+<p>对 i/o 调度程序的块层调用遵循约定 elv_xxx()。这会在电梯开关 (block/elevator.c) 中调用电梯_xxx_fn。哦，xxx 和 xxx 可能不完全匹配，但请发挥您的想象力。如果电梯没有实现某种功能，开关就不会做任何事情或做一些最小的家务工作。</p>
+<h4 id="io-scheduler-api">2.4.1 I/O scheduler API</h4>
+<p>The functions an elevator may implement are: (* are mandatory) <img src="/picture/linux_driver/mtd/bio_api.png" /></p>
+<h4 id="request-flows-seen-by-io-schedulers">2.4.2 Request flows seen by I/O schedulers</h4>
+<p>I/O 调度程序看到的所有请求都严格遵循以下三个流程之一。</p>
+<figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="title">set_req_fn</span> -&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="title">i</span>.   add_req_fn -&gt;</span> (<span class="function"><span class="title">merged_fn</span> -&gt;</span>)* -&gt; <span class="function"><span class="title">dispatch_fn</span> -&gt;</span> <span class="function"><span class="title">activate_req_fn</span> -&gt;</span></span><br><span class="line">     (<span class="function"><span class="title">deactivate_req_fn</span> -&gt;</span> <span class="function"><span class="title">activate_req_fn</span> -&gt;</span>)* -&gt; completed_req_fn</span><br><span class="line"><span class="function"><span class="title">ii</span>.  add_req_fn -&gt;</span> (<span class="function"><span class="title">merged_fn</span> -&gt;</span>)* -&gt; merge_req_fn</span><br><span class="line">iii. [none]</span><br><span class="line"></span><br><span class="line">-&gt; put_req_fn</span><br></pre></td></tr></table></figure>
+<h4 id="io-scheduler-implementation">2.4.3 I/O scheduler implementation</h4>
+<p>通用 i/o 调度程序算法尝试排序/合并/批处理请求以获得最佳磁盘扫描和请求服务性能（基于通用原则和设备功能），优化用于：</p>
+<p>1、提高吞吐量 2、改善延迟 3、更好地利用硬件和 CPU 时间</p>
+<p>Characteristics:</p>
+<ul>
+<li><p>二叉树<br />
+AS和deadline i/o调度器使用红黑二叉树进行磁盘位置排序和搜索，使用fifo链表进行基于时间的搜索。这提供了良好的可扩展性和良好的信息可用性。请求几乎总是按磁盘排序顺序发送的，因此按排序顺序保存下一个请求的缓存以防止二叉树查找。 然而，这种安排不是通用的块层特性，因此电梯可以随意实现队列。</p></li>
+<li><p>Merge hash<br />
+AS 和截止日期使用由请求的最后一个扇区索引的哈希表。这使得合并代码能够快速查找“反向合并”候选对象，即使在一个磁盘上同时执行多个 I/O 流时也是如此。 由于大多数 I/O 模式的性质，“前合并”，即在现有请求前面合并的新请求，远不如“后合并”常见。前合并由 AS 中的二叉树和截止日期调度程序处理。</p></li>
+<li><p>Plugging the queue to batch requests in anticipation of opportunities for merge/sort optimizations<br />
+Plugging是当前 i/o 调度算法采用的一种方法，以便它在队列中收集足够的请求，以便能够利用电梯中的排序/合并逻辑。如果请求进来时队列是空的，那么它会Plugging请求队列（有点像塞住容器的浴缸以积聚液体）直到它填满更多请求，然后才开始为请求提供服务要求。这提供了在将请求传递给设备之前合并/排序请求的机会。当队列被unplugging（以再次打开流）时，有多种情况，要么是通过计划任务，要么是按需。例如wait_on_buffer 设置通过sync_buffer() 运行blk_run_address_space(mapping) 的unplugging。或者调用者可以通过 blk_unplug(bdev) 明确地做到这一点。</p></li>
+</ul>
+<p>Aside:<br />
+这是一个有争议的领域，因为目前尚不清楚堵塞是否总是正确的做法。设备通常有自己的队列，允许在软件中建立一个大队列，而让设备空闲一段时间可能并不总是有意义的。诀窍是处理何时插入和何时打开之间的良好平衡。此外，现在我们有一个多页 bios 正在排队，我们可能不需要等待合并来自碎片的大请求。</p>
+<h4 id="io-contexts">2.4.4 I/O contexts</h4>
+<p>I/O 上下文提供动态分配的每个进程数据区域。它们可用于 I/O 调度程序和块层（可用于 IO 统计，例如优先级）。请参阅block/ll_rw_blk.c 中的*io_context和 as-iosched.c 以获取在 i/o 调度程序中的使用示例。</p>
+<h3 id="scalability-related-changes">2.5 Scalability related changes</h3>
+<h4 id="granular-locking-io_request_lock-replaced-by-a-per-queue-lock">2.5.1 Granular Locking: io_request_lock replaced by a per-queue lock</h4>
+<p>从 2.5 开始，全局 io_request_lock 已被删除，以避免它引起的可扩展性瓶颈，并已被更细粒度的锁定所取代。request队列结构有一个指向要用于该队列的锁的指针。因此，现在可以按队列进行锁定，并在必要时提供跨队列共享锁的规定（例如，scsi 层将队列锁指针设置为相应的适配器锁，这会导致每个主机的锁定粒度）。锁定语义是相同的，即锁定仍然由块层施加，在 request_fn 执行之前获取锁定，这意味着许多旧驱动程序仍然应该是 SMP 安全的。如果需要，驱动程序可以自行删除队列锁。需要相应修改显式使用 io_request_lock 进行序列化的驱动程序。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">DEFINE_SPINLOCK</span><span class="params">(my_driver_lock)</span></span>;</span><br></pre></td></tr></table></figure> 并将该锁的地址传递给 blk_init_queue()。</p>
+<h4 id="bit-sector-numbers-sector_t-prepares-for-64-bit-support">2.5.2 64 bit sector numbers (sector_t prepares for 64 bit support)</h4>
+<p>bio 结构中使用的扇区号已更改为sector_t，可以将其定义为 64 位以准备支持 64 位扇区。</p>
+<h3 id="other-changesimplications">2.6 Other Changes/Implications</h3>
+<p>在 2.5 中，一些与 gendisk/partition 相关的代码已被重新​​组织。现在通用块层提前执行分区重新映射，从而为驱动程序提供相对于整个设备的扇区号，而不是为了获得真正的扇区号而必须考虑分区号。例程 blk_partition_remap() 甚至在调用队列特定 -&gt;submit_bio 之前由 submit_bio_noacct 调用，因此 i/o 调度程序也可以对整个磁盘扇区号进行操作。这通常不需要更改块驱动程序，它只是永远不会调用自己的分区扇区偏移计算，因为发送的所有 bios 都从设备的开头开始偏移。</p>
+<h2 id="switching-scheduler">3. Switching Scheduler</h2>
+<p>每个 io 队列都有一组与之关联的 io 调度程序可调参数。这些可调参数控制 io 调度程序的工作方式。您可以在以下位置找到这些条目： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/sys/block/&lt;device&gt;/queue/iosched</span><br></pre></td></tr></table></figure></p>
+<p>假设您在 /sys 上安装了 sysfs。如果你没有挂载 sysfs，你可以输入： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># mount none /sys -t sysfs</span></span><br></pre></td></tr></table></figure></p>
+<p>可以动态更改给定块设备的 IO 调度程序以选择 mq-deadline、none、bfq 或 kyber 调度程序之一 - 这可以提高该设备的吞吐量。</p>
+<p>要设置特定的调度程序，只需执行以下操作： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> SCHEDNAME &gt; /sys/block/DEV/queue/scheduler</span><br></pre></td></tr></table></figure></p>
+<p>其中 SCHEDNAME 是定义的 IO 调度程序的名称，而 DEV 是设备名称（hda、hdb、sga 或任何您碰巧拥有的名称）。</p>
+<p>只需执行“cat /sys/block/DEV/queue/scheduler”即可找到已定义调度程序的列表 - 将显示有效名称列表，括号中为当前选择的调度程序： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cat /sys/block/sda/queue/scheduler</span></span><br><span class="line">[mq-deadline] kyber bfq none</span><br><span class="line"><span class="comment"># echo none &gt;/sys/block/sda/queue/scheduler</span></span><br><span class="line"><span class="comment"># cat /sys/block/sda/queue/scheduler</span></span><br><span class="line">[none] mq-deadline kyber bfq</span><br></pre></td></tr></table></figure></p>
+<h2 id="write-back-cache-control">4. write back cache control</h2>
+<h3 id="introduction">4.1 Introduction</h3>
+<p>许多存储设备，尤其是在消费市场中，都带有易失性回写缓存。这意味着设备在数据实际到达非易失性存储器之前向操作系统发出 I/O 完成信号。这种行为显然会加快各种工作负载的速度，但这意味着操作系统在执行数据完整性操作（如 fsync、sync 或 unmount）时需要将数据强制输出到非易失性存储。</p>
+<p>Linux 块层提供了两种简单的机制，让文件系统控制存储设备的缓存行为。这些机制是强制缓存刷新和请求的强制单元访问 (FUA) 标志。</p>
+<h3 id="explicit-cache-flushes">4.2 Explicit cache flushes</h3>
+<p>REQ_PREFLUSH 标志可以被 OR ed 到从文件系统提交的 bio 的 r/w 标志中，并确保在实际 I/O 操作开始之前已刷新存储设备的易失性缓存。这明确地保证了先前完成的写入请求在标记 bio 开始之前位于非易失性存储上。此外，REQ_PREFLUSH 标志可以设置在一个空的 bio 结构上，这只会导致没有任何依赖 I/O 的显式缓存刷新。建议使用blkdev_issue_flush()helper 进行纯缓存刷新。</p>
+<h3 id="forced-unit-access">4.3 Forced Unit Access</h3>
+<p>REQ_FUA 标志可以 OR ed 到从文件系统提交的 bio 的 r/w 标志中，并确保仅在数据提交到非易失性存储后才发出此请求的 I/O 完成信号。</p>
+<h3 id="implementation-details-for-filesystems">4.4 Implementation details for filesystems</h3>
+<p>文件系统可以简单地设置 REQ_PREFLUSH 和 REQ_FUA 位，而不必担心底层设备是否需要任何显式缓存刷新以及如何实现强制单元访问。REQ_PREFLUSH 和 REQ_FUA 标志都可以在单个 bio 上设置。</p>
+<h3 id="implementation-details-for-bio-based-block-drivers">4.5 Implementation details for bio based block drivers</h3>
+<p>这些驱动程序将始终看到 REQ_PREFLUSH 和 REQ_FUA 位，因为它们位于 submit_bio 接口正下方。对于重新映射驱动程序，需要将 REQ_FUA 位传递到底层设备，并且需要为具有 REQ_PREFLUSH 位设置的 bios 实现全局刷新。对于没有易失性缓存的真实设备驱动程序，可以简单地忽略非空 bios 上的 REQ_PREFLUSH 和 REQ_FUA 位，无需任何工作即可成功完成没有数据的 REQ_PREFLUSH 请求。具有易失性缓存的设备的驱动程序需要自己实现对这些标志的支持，而无需块层的任何帮助。</p>
+<h3 id="implementation-details-for-request_fn-based-block-drivers">4.6 Implementation details for request_fn based block drivers</h3>
+<p>对于不支持易失性写缓存的设备，不需要驱动程序支持，块层在进入驱动程序之前完成空的 REQ_PREFLUSH 请求，并从具有有效负载的请求中去除 REQ_PREFLUSH 和 REQ_FUA 位。对于具有易失性写入缓存的设备，驱动程序需要通过执行以下操作来告诉块层它支持刷新缓存： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_write_cache(sdkp-&gt;disk-&gt;<span class="built_in">queue</span>, <span class="literal">true</span>, <span class="literal">false</span>);</span><br></pre></td></tr></table></figure> 并在其 prep_fn/request_fn 中处理空的 REQ_OP_FLUSH 请求。请注意，带有有效负载的 REQ_PREFLUSH 请求会自动转换为空 REQ_OP_FLUSH 请求序列，然后是块层的实际写入。对于也支持 FUA 位的设备，需要使用以下命令告诉块层通过 REQ_FUA 位： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">blk_queue_write_cache(sdkp-&gt;disk-&gt;<span class="built_in">queue</span>, <span class="literal">true</span>, <span class="literal">true</span>);</span><br></pre></td></tr></table></figure> 并且驱动程序必须处理在 prep_fn/request_fn 中设置了 REQ_FUA 位的写请求。如果本机不支持 FUA 位，则块层在实际写入后将其转换为空的 REQ_OP_FLUSH 请求。</p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cDovL2tlcm5lbC5kay9ibGstbXEucGRm">Linux Block IO: Introducing Multi-queue SSD Access on Multi-core Systems<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTm9vcF9zY2hlZHVsZXI=">NOOP scheduler<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly93d3cua2VybmVsLm9yZy9kb2MvaHRtbC9sYXRlc3QvYmxvY2svbnVsbF9ibGsuaHRtbA==">Null block device driver<i class="fa fa-external-link-alt"></i></span><br />
+《linux内核文档》</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/" title="Linux驱动之MTD子系统（一）Block设备基础">http://carlyleliu.github.io/2020/Linux驱动之MTD子系统（一）Block设备基础/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/block/" rel="tag"><i class="fa fa-tag"></i> block</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/" rel="prev" title="Linux驱动之MTD子系统（二）实现分析">
+      <i class="fa fa-chevron-left"></i> Linux驱动之MTD子系统（二）实现分析
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRTC/" rel="next" title="Linux驱动之RTC">
+      Linux驱动之RTC <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#blk_mq%E4%BB%8B%E7%BB%8D"><span class="nav-text">1. blk_mq介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#background"><span class="nav-text">1.1 Background</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#operation"><span class="nav-text">1.2 Operation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#software-staging-queues"><span class="nav-text">1.3 Software staging queues</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#io-schedulers"><span class="nav-text">1.4 IO Schedulers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#hardware-dispatch-queues"><span class="nav-text">1.5 Hardware dispatch queues</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tag-based-completion"><span class="nav-text">1.6 Tag-based completion</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bio"><span class="nav-text">2.bio</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#scope-for-tuning-the-generic-logic-to-satisfy-various-requirements"><span class="nav-text">2.1 Scope for tuning the generic logic to satisfy various requirements</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#tuning-based-on-low-level-device-driver-capabilities"><span class="nav-text">2.1.1 Tuning based on low level device &#x2F; driver capabilities</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#per-queue-limitsvalues-exported-to-the-generic-layer-by-the-driver"><span class="nav-text">Per-queue limits&#x2F;values exported to the generic layer by the driver</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#high-mem-io-capabilities-are-now-considered-the-default"><span class="nav-text">High-mem i&#x2F;o capabilities are now considered the default</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#the-io-scheduler-algorithm-itself-can-be-replacedset-as-appropriate"><span class="nav-text">The i&#x2F;o scheduler algorithm itself can be replaced&#x2F;set as appropriate</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tuning-based-on-high-level-code-capabilities"><span class="nav-text">2.1.2 Tuning Based on High level code capabilities</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#application-capabilities-for-raw-io"><span class="nav-text">Application capabilities for raw i&#x2F;o</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#high-performance-filesystems-or-other-higher-level-kernel-codes-capabilities"><span class="nav-text">High performance filesystems or other higher level kernel code&#39;s capabilities</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#direct-access-to-low-level-devicedriver-capabilities-bypass-mode"><span class="nav-text">2.1.3 Direct Access to Low level Device&#x2F;Driver Capabilities (Bypass mode)</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#pre-built-commands"><span class="nav-text">Pre-built Commands</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flexible-and-generic-but-minimalist-io-structuredescriptor"><span class="nav-text">2.2 Flexible and generic but minimalist i&#x2F;o structure&#x2F;descriptor</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#reason-for-a-new-structure-and-requirements-addressed"><span class="nav-text">2.2.1 Reason for a new structure and requirements addressed</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#the-bio-struct"><span class="nav-text">2.2.2 The bio struct</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#changes-in-the-request-structure"><span class="nav-text">2.2.3 Changes in the Request Structure</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#using-bios"><span class="nav-text">2.3 Using bios</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#setupteardown"><span class="nav-text">2.3.1 Setup&#x2F;Teardown</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#generic-bio-helper-routines"><span class="nav-text">2.3.2 Generic bio helper Routines</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#traversing-segments-and-completion-units-in-a-request"><span class="nav-text">Traversing segments and completion units in a request</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#setting-up-dma-scatterlists"><span class="nav-text">Setting up DMA scatterlists</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#io-completion"><span class="nav-text">I&#x2F;O completion</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#io-submission"><span class="nav-text">2.3.3 I&#x2F;O Submission</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#the-io-scheduler"><span class="nav-text">2.4 The I&#x2F;O scheduler</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#io-scheduler-api"><span class="nav-text">2.4.1 I&#x2F;O scheduler API</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#request-flows-seen-by-io-schedulers"><span class="nav-text">2.4.2 Request flows seen by I&#x2F;O schedulers</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#io-scheduler-implementation"><span class="nav-text">2.4.3 I&#x2F;O scheduler implementation</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#io-contexts"><span class="nav-text">2.4.4 I&#x2F;O contexts</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#scalability-related-changes"><span class="nav-text">2.5 Scalability related changes</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#granular-locking-io_request_lock-replaced-by-a-per-queue-lock"><span class="nav-text">2.5.1 Granular Locking: io_request_lock replaced by a per-queue lock</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#bit-sector-numbers-sector_t-prepares-for-64-bit-support"><span class="nav-text">2.5.2 64 bit sector numbers (sector_t prepares for 64 bit support)</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#other-changesimplications"><span class="nav-text">2.6 Other Changes&#x2F;Implications</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#switching-scheduler"><span class="nav-text">3. Switching Scheduler</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#write-back-cache-control"><span class="nav-text">4. write back cache control</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#introduction"><span class="nav-text">4.1 Introduction</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#explicit-cache-flushes"><span class="nav-text">4.2 Explicit cache flushes</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#forced-unit-access"><span class="nav-text">4.3 Forced Unit Access</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#implementation-details-for-filesystems"><span class="nav-text">4.4 Implementation details for filesystems</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#implementation-details-for-bio-based-block-drivers"><span class="nav-text">4.5 Implementation details for bio based block drivers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#implementation-details-for-request_fn-based-block-drivers"><span class="nav-text">4.6 Implementation details for request_fn based block drivers</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">980k</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/";
+    this.page.identifier = "2020/Linux驱动之MTD子系统（一）Block设备基础/";
+    this.page.title = "Linux驱动之MTD子系统（一）Block设备基础";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

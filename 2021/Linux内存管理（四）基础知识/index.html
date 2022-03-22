@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1. 从硬件角度看内存管理 1.1 内存管理的“远古时代” 在操作系统还没有出现之前，程序存放在纸带上，计算机读取一张纸带就运行一条指令这种从外部存储介质上直接运行指令的方法效率很低。后来出现了内存存储器，也就是说程序要运行，首先要加载，然后执行，这就是所谓的“存储的程序”这一概念开启了操作系快速发展的通道，直至后来出现了分页机制。在这个演变的历史过程中，出现了不少内存管理机制。 在分页机制出现之">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内存管理（四）基础知识">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/index.html">
+<meta property="og:site_name" content="量子范式">
+<meta property="og:description" content="1. 从硬件角度看内存管理 1.1 内存管理的“远古时代” 在操作系统还没有出现之前，程序存放在纸带上，计算机读取一张纸带就运行一条指令这种从外部存储介质上直接运行指令的方法效率很低。后来出现了内存存储器，也就是说程序要运行，首先要加载，然后执行，这就是所谓的“存储的程序”这一概念开启了操作系快速发展的通道，直至后来出现了分页机制。在这个演变的历史过程中，出现了不少内存管理机制。 在分页机制出现之">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/Dynamic_partition.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/ELF.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/test_process.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mem_space.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/UMA.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/NUMA.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mem_struct.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mem_map.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/framebuffer.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/node.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vir_kernel.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vir_liner.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/order.png">
+<meta property="article:published_time" content="2021-11-14T08:05:15.000Z">
+<meta property="article:modified_time" content="2022-03-20T13:18:30.719Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="Memory">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/Dynamic_partition.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux内存管理（四）基础知识 | 量子范式</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">量子范式</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux内存管理（四）基础知识
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-11-14 16:05:15" itemprop="dateCreated datePublished" datetime="2021-11-14T16:05:15+08:00">2021-11-14</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Kernel/" itemprop="url" rel="index"><span itemprop="name">Linux Kernel</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux内存管理（四）基础知识/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>16 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="从硬件角度看内存管理">1. 从硬件角度看内存管理</h2>
+<h3 id="内存管理的远古时代">1.1 内存管理的“远古时代”</h3>
+<p>在操作系统还没有出现之前，程序存放在纸带上，计算机读取一张纸带就运行一条指令这种从外部存储介质上直接运行指令的方法效率很低。后来出现了内存存储器，也就是说程序要运行，首先要加载，然后执行，这就是所谓的“存储的程序”这一概念开启了操作系快速发展的通道，直至后来出现了分页机制。在这个演变的历史过程中，出现了不少内存管理机制。 在分页机制出现之前，操作系统有很多不同的内存管理机制，如动态分区法。假设现在有一块32MB大小的内存，一开始操作系统使用了最小的一块-4MB大小剩余的内存要留给4个进程使用，如图（a）所示。进程A使用了操作系统往上的10MB内存，进程B使用了进程A往上的6MB内存，进程C使用了进程B往上的8MB内存。剩余的4MB内存不足以装载进程D，如图（b）所示，因为进程D需要5MB内存，这个内存末尾就成了第一个空洞（内存碎片）。假设某个时刻，操作系统需要运行进程D，因为系统中没有足够的内存，所以需要选择一个进程来换出，为进程D腾出足够的空间。假设操作系统选择进程B来换出，这样进程D就装载到了原来进程B的地址空间里，于是产生了第二个空洞，如图（c）所示。假设操作系统某个时刻需要运行进程B，也需要选择一个进程来换出，假设进程A被换出，那么操作系统中又产生了第三个空洞，如图（d）所示。 <img src="/picture/linux/kernel/mem/Dynamic_partition.png" /></p>
+<p>这种动态分区法在开始时是很好的，但是随着时间的推移会出现很多内存空洞，内存的利用率随之下降，这些内存空洞便是我们常说的内存碎片。为了解决碎片化的问题，操作系统需要动态地移动进程，使得进程占用的空间是连续的，并且所有的空闲空间也是连续的。整个进程的迁移是一个非常耗时的过程。 总之，动态分区法依然存在以下问题。</p>
+<ul>
+<li>进程地址空间保护问题。所有的进程都可以访问全部的物理内存，所以恶意的程序可以修改其他程序的内存数据，这使进程一直处于危险的状态下。即使操作系统中所有的进程都不是恶意进程，但是进程A依然可能不小心修改了进程B的数据，从而导致进程B崩溃。这明显违背了“进程地址空间需要保护”的原则，即地址空间要相对独立。因此每个进程的地址空间都应该受到保护，以免被其他进程有意或者无意地修改。</li>
+<li>内存使用效率低。如果即将运行的进程所需要的内存空间不足，就需要选择一个进程以进行整体换出，这种机制导致大量的数据需要换出和换入，效率非常低下。</li>
+<li>程序运行地址重定位问题。从上图中看到，进程在每次换出、换入时使用的地址都是不固定的，这给程序的编写带来一定的麻烦，因为访问数据和指令跳转时的目标地址通常是固定的，这就需要重定位技术。</li>
+</ul>
+<p>由此可见，上述3个重大问题需要一个全新的解决方案，单纯靠基于操作系统的软件层面的方案是不足以解决这些问题的，必须要基于处理器层面来解决，因此产生了分段机制和分页机制。</p>
+<span id="more"></span>
+<h3 id="分段机制">1.2 分段机制</h3>
+<p>人们最早想到的一种解决方案是分段（segmentation）机制，其基本思想是把程序所需的内存空间的虚拟地址映射到某个物理地址空间中。 分段机制可以解决地址空间保护问题，进程A和进程B会被映射到不同的物理地址空间中，它们在物理地址空间是不会有重叠的。因为进程看到的是虚拟地址空间，不关心它实际映射到了哪个物理地址。如果一个进程访问了没有映射的虚拟地址空间，或者访问了不属于该进程的虚拟地址空间，那么CPU会捕捉这个越界访问，并且拒绝该次访问。同时CPU会发送一个异常给操作系统，由操作系统处理这些异常，这就是我们常说的缺页异常。另外，对于进程来说它不再需要关心物理地址的布局，它访问的地址是虚拟地址，只需要按照原来的地址编写程序和访问地址，这样程序就可以无缝地迁移到不同的操作系统中了。 分段机制解决问题的思路可以总结为增加一个虚拟内存（virtual memory）。进程运行时看到的地址是虚拟地址，因此需要通过CPU提供的地址映射方法，把虚拟地址转换成实际的物理地址。这样多个进程同时运行时，就可以保证每个进程的虚拟内存空间是相互隔离的，操作系统只需要维护虚拟地址到物理地址的映射关系即可。</p>
+<p>另外，分段机制把进程分成若干段，每个段的大小是不固定的。如果一个进程可以分成代码段、数据段栈段与堆段等。分段机制有点类似于动态分区法，这些段的物理地址可以不连续这样可以解决内存碎片问题，但是会产生外部碎片。程序员需要为每个进程的各个段合理分物理地址空间，否则容易发生问题。 分段机制是一个比较明显的改进，但是它的内存使用效率依然比较低。分段机制对虚拟内存到物理内存的映射依然以进程为单位。也就是说，当物理内存不足时，通常做法是把这个进程的所有段都换出到磁盘，因此会导致大量的磁盘访问，从而影响系统性能。站在进程的角来看，把整个进程进行换出/换入的方法还很麻烦。进程在运行时，根据局部性原理，只有一部分数据是一直在使用的，若把那些不常用的数据交换出磁盘，就可以节省很多系统带宽，而那些常用的数据驻留在物理内存中，因此可以得到比较好的性能。于是，人们在分段机制的实之后又发明了新的机制，这就是分页（paging）机制。</p>
+<h3 id="分页机制">1.3 分页机制</h3>
+<p>刚才提到分段机制的地址映射的粒度太大，以整个进程地址空间为单位的分配方式导致内存利用率不高。分页机制把这个分配机制的单位继续细分成固定大小的页面（page），进程的虚拟地址空间也按照页面来分割，这样常用的数据和代码就可以以页面为单位驻留在内存中。而那些不常用的页面可以交换到磁盘中，从而节省物理内存，这比分段机制要高效很多。进程以页面为单位的虚拟内存通过CPU的硬件单元映射到物理内存中，物理内存也以页面为单位来管理，这些物理内存称为物理页面（physical page）或者页帧（page frame）。进程的虚拟地址空间中的页面称为虚拟页面（virtualpage）。操作系统为了管理这些页帧需要按照物理地址给每个页帧编号，这个编号称为页帧号（Page Frame Number，PFN）。 现在常用的操作系统中默认支持的页面大小是4KB，但是CPU通常可以支持多种大小的页面，如4KB、16KB以及64KB的页面。另外，现在的计算机系统内存已经变得很大，特别是服务器上使用以TB为单位的内存，所以使用4KB的内存页面会产生很多性能上的缺陷。主要的缺点是内存管理成本变得很高，操作系统需要管理这些物理内存的页帧，因此每个页帧都需要一个数据结构来描述，这个数据结构至少要几十字节。现代的处理器都支持大页面，如Intel的至强处理器支持以2MB和1GB为单位的大页面，以提高应用程序效率。 分页机制的实现离不开硬件的支持，在CPU内部有一个专门的硬件单元来负责这个虚拟面到物理页面的转换，它就是一个称为MMU的硬件单元。ARM处理器的MMU包括TLB页表遍历单元两个部件。</p>
+<h2 id="从软件角度看内存管理">2 从软件角度看内存管理</h2>
+<p>若从Linux系统使用者的角度看内存管理，常用的命令是free。若从Linux应用程序开发人员的角度看内存管理，常用的分配函数是malloc()和mman()函数（分配大虚拟内存块通常使用mmap()函数）。另外，可以从内存分布的角度来看内存管理，也可以从进程的角度来看内存管理。若站在Linux内核的角度来看内存管理，看到的内容就丰富得多。</p>
+<h3 id="从linux系统使用者的角度看内存管理">2.1 从Linux系统使用者的角度看内存管理</h3>
+<p>free命令是Linux系统使用者常用的命令，它可以显示当前系统已使用的内存和空闲的内存，包括物理内存、交换内存和内核缓存区内存等信息。 下面是在Linux系统中使用free -m命令看到的内存使用情况。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ free -m</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:          31998         818        3798           4       27380       30716</span><br><span class="line">Swap:         90111           0       90111</span><br></pre></td></tr></table></figure>
+<p>可以看到，这台计算机上一共有31998MB物理内存。</p>
+<ul>
+<li>total：计算机中总的内存。这里有两种内存，一种是“Mem”，指的是物理内存；另一种是“Swap”，指的是交换分区。</li>
+<li>used：程序使用的内存大小。</li>
+<li>free：未分配的物理内存大小。</li>
+<li>shared：共享内存大小，主要用于进程间通信。</li>
+<li>buff/cache，buff指的是缓冲器，用于缓存输出到块设备的数据，而cache指的是高速缓存，用于缓存打开的文件，以提高访问文件的速度。</li>
+<li>available.这是free命令新加的一个选项。当内存短缺时，系统可以回收buff和cache。那么available = free + buff + cache对不对呢？其实在现在的Linux内核中，这个公不完全正确，因为并不是所有的buff和cache都可以回收，如共享内存段、tmpfs ramfs等都属于不可回收的。所以这个公式应该变成available = free + buff + cache - 不可回收部分。</li>
+</ul>
+<h3 id="从linux应用程序开发人员的角度看内存管理">2.2 从Linux应用程序开发人员的角度看内存管理</h3>
+<p>相信学习过C语言的读者都不会对malloc()函数感到陌生。malloc()函数是Linux应用程序开发中常用的虚拟内存分配函数。在C标准库里，常用的内存管理编程函数如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">malloc</span><span class="params">(<span class="keyword">size_t</span> size)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">free</span> <span class="params">(<span class="keyword">void</span> *ptr)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mmap</span> <span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> length, <span class="keyword">int</span> prot, <span class="keyword">int</span> flags,</span></span></span><br><span class="line"><span class="params"><span class="function">                <span class="keyword">int</span> fd, <span class="keyword">off_t</span> offset)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>在实际编写Linux应用程序时，除了需要了解这些函数的实际含义和用法，还需要了解这些接口函数内部实现的基本原理。例如，malloc()函数分配出来的是进程地址空间里的虚拟内存可是它什么时候分配物理内存呢？如果使用malloc()函数分配100字节的缓冲区，那么内核中究竟会给它分配多大的物理内存呢？如下代码片段的func1()和func2()函数的分配行为会有些不一样？</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">func1</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *p = <span class="built_in">malloc</span>(<span class="number">100</span>);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">func2</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *p = <span class="built_in">malloc</span>(<span class="number">100</span>);</span><br><span class="line">    <span class="built_in">memset</span>(p, <span class="number">0x55</span>, <span class="number">100</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们可以结合上述问题进一步思考内存管理。</p>
+<h3 id="从内存分布的角度看内存管理">2.3 从内存分布的角度看内存管理</h3>
+<p>要了解一个系统的内存管理，首先要了解这个系统的内存是如何分布的。就好比我们去一个陌生的景区，首先看到的是这个景区的地图，里面会列出景区都有哪些景点。对于Linux操作系统来说，绘制出对应的内存分布图有助于对内存管理的理解。</p>
+<h3 id="从进程的角度看内存管理">2.4 从进程的角度看内存管理</h3>
+<p>操作系统是为进程服务的，从进程的角度看内存管理是一个不错的方式。在Linux系统中，应用程序常用的可执行文件格式是可执行与可链接格式（Executable Linkable Format，ELF），它是一种对象文件的格式，用于定义不同类型的对象文件中都放了什么东西，以及以什么格式存放这些东西。ELF结构如下图所示。ELF最开始的部分是ELF文件头（ELFHeader），它包含了描述整个文件的基本属性，如ELF文件版本、目标计算机型号、程序入口地址等信息。ELF文件头后面是程序的各个段，包括代码段、数据段、未初始化数据段等。后面是段头表，用于描述ELF文件中包含的所有段的信息，如每个段的名字、段的长度、在文件中的偏移量、读写权限以及段的其他属性等，后面紧跟着是字符串表和符号表等。 <img src="/picture/linux/kernel/mem/ELF.png" /></p>
+<p>下面介绍常见的几个段，这些段与内核映像中的段也是基本类似的。</p>
+<ul>
+<li>代码段：存放程序源代码编译后的机器指令。</li>
+<li>数据段：存放已初始化的全局变量和已初始化的局部静态变量。</li>
+<li>未初始化数据段：存放未初始化的全局变量以及未初始化的局部静态变量。下面编写一个简单的C程序。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE (100*1024)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> * buf = <span class="built_in">malloc</span>(SIZE);</span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0x58</span>, SIZE);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;malloc buffer 0x%p\n&quot;</span>, buf); </span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        sleep(<span class="number">100</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个C程序很简单，首先通过malloc()函数来分配100KB的内存，然后通过memset()函写入这块内存，最后用while循环是为了不让这个程序退出。我们通过如下命令来把它编成ELF文件。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ aarch64-linux-gnu-gcc-static test.c -o test.elf</span><br></pre></td></tr></table></figure>
+<p>可以使用objdump或者readelf工具来查看ELF文件包含哪些段。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ aarch64-linux-gnu-readelf -S test.elf</span><br><span class="line">There are 29 section headers, starting at offset 0x92548:</span><br><span class="line"></span><br><span class="line">Section Headers:</span><br><span class="line">  [Nr] Name              Type             Address           Offset</span><br><span class="line">       Size              EntSize          Flags  Link  Info  Align</span><br><span class="line">  [ 0]                   NULL             0000000000000000  00000000</span><br><span class="line">       0000000000000000  0000000000000000           0     0     0</span><br><span class="line">  [ 1] .note.gnu.build-i NOTE             0000000000400190  00000190</span><br><span class="line">       0000000000000024  0000000000000000   A       0     0     4</span><br><span class="line">  [ 2] .note.ABI-tag     NOTE             00000000004001b4  000001b4</span><br><span class="line">       0000000000000020  0000000000000000   A       0     0     4</span><br><span class="line">  [ 3] .rela.plt         RELA             00000000004001d8  000001d8</span><br><span class="line">       00000000000000a8  0000000000000018  AI       0    21     8</span><br><span class="line">  [ 4] .init             PROGBITS         0000000000400280  00000280</span><br><span class="line">       0000000000000014  0000000000000000  AX       0     0     4</span><br><span class="line">  [ 5] .plt              PROGBITS         00000000004002a0  000002a0</span><br><span class="line">       0000000000000070  0000000000000000  AX       0     0     16</span><br><span class="line">  [ 6] .text             PROGBITS         0000000000400340  00000340</span><br><span class="line">       00000000000516ac  0000000000000000  AX       0     0     64</span><br><span class="line">  [ 7] __libc_freeres_fn PROGBITS         00000000004519f0  000519f0</span><br><span class="line">       0000000000000b44  0000000000000000  AX       0     0     8</span><br><span class="line">  [ 8] .fini             PROGBITS         0000000000452534  00052534</span><br><span class="line">       0000000000000010  0000000000000000  AX       0     0     4</span><br><span class="line">  [ 9] .rodata           PROGBITS         0000000000452550  00052550</span><br><span class="line">       000000000001be28  0000000000000000   A       0     0     16</span><br><span class="line">  [10] __libc_subfreeres PROGBITS         000000000046e378  0006e378</span><br><span class="line">       0000000000000048  0000000000000000   A       0     0     8</span><br><span class="line">  [11] __libc_IO_vtables PROGBITS         000000000046e3c0  0006e3c0</span><br><span class="line">       00000000000005e8  0000000000000000   A       0     0     8</span><br><span class="line">  [12] __libc_atexit     PROGBITS         000000000046e9a8  0006e9a8</span><br><span class="line">       0000000000000008  0000000000000000   A       0     0     8</span><br><span class="line">  [13] .eh_frame         PROGBITS         000000000046e9b0  0006e9b0</span><br><span class="line">       000000000000a158  0000000000000000   A       0     0     8</span><br><span class="line">  [14] .gcc_except_table PROGBITS         0000000000478b08  00078b08</span><br><span class="line">       000000000000009e  0000000000000000   A       0     0     1</span><br><span class="line">  [15] .tdata            PROGBITS         0000000000489978  00079978</span><br><span class="line">       0000000000000020  0000000000000000 WAT       0     0     8</span><br><span class="line">  [16] .tbss             NOBITS           0000000000489998  00079998</span><br><span class="line">       0000000000000040  0000000000000000 WAT       0     0     8</span><br><span class="line">  [17] .init_array       INIT_ARRAY       0000000000489998  00079998</span><br><span class="line">       0000000000000008  0000000000000008  WA       0     0     8</span><br><span class="line">  [18] .fini_array       FINI_ARRAY       00000000004899a0  000799a0</span><br><span class="line">       0000000000000010  0000000000000008  WA       0     0     8</span><br><span class="line">  [19] .data.rel.ro      PROGBITS         00000000004899b0  000799b0</span><br><span class="line">       0000000000000594  0000000000000000  WA       0     0     8</span><br><span class="line">  [20] .got              PROGBITS         0000000000489f48  00079f48</span><br><span class="line">       00000000000000a0  0000000000000008  WA       0     0     8</span><br><span class="line">  [21] .got.plt          PROGBITS         0000000000489fe8  00079fe8</span><br><span class="line">       0000000000000050  0000000000000008  WA       0     0     8</span><br><span class="line">  [22] .data             PROGBITS         000000000048a038  0007a038</span><br><span class="line">       0000000000001950  0000000000000000  WA       0     0     8</span><br><span class="line">  [23] .bss              NOBITS           000000000048b988  0007b988</span><br><span class="line">       00000000000015d0  0000000000000000  WA       0     0     8</span><br><span class="line">  [24] __libc_freeres_pt NOBITS           000000000048cf58  0007b988</span><br><span class="line">       0000000000000028  0000000000000000  WA       0     0     8</span><br><span class="line">  [25] .comment          PROGBITS         0000000000000000  0007b988</span><br><span class="line">       000000000000002a  0000000000000001  MS       0     0     1</span><br><span class="line">  [26] .symtab           SYMTAB           0000000000000000  0007b9b8</span><br><span class="line">       0000000000010110  0000000000000018          27   1726     8</span><br><span class="line">  [27] .strtab           STRTAB           0000000000000000  0008bac8</span><br><span class="line">       0000000000006954  0000000000000000           0     0     1</span><br><span class="line">  [28] .shstrtab         STRTAB           0000000000000000  0009241c</span><br><span class="line">       0000000000000128  0000000000000000           0     0     1</span><br></pre></td></tr></table></figure>
+<p>可以看到刚才编译的test.elf文件一共有28个段，除了常见的代码段、数据段之外，还有一些其他的段，这些段在进程加载时起辅助作用，暂时先不用关注它们。程序在编译、链接时会尽量把相同权限属性的段分配在同一个空间里，如把可读、可执行的段放在一起，包括代码段、init段等；把可读、可写的段放在一起，包括数据段和未初始化数据段等。ELF把这些属性相似并且链接在一起的段叫作分段（segment），进程在加载时是按照这些分段来映射可执行文件的。描述这些分段的结构叫作程序头（program header），它描述了ELF文件是m何映射到进程地址空间的，这是我们比较关心的。我们可以通过readelf -l命今来查看这些程序头。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ aarch64-linux-gnu-readelf -l test.elf</span><br><span class="line"></span><br><span class="line">Elf file <span class="built_in">type</span> is EXEC (Executable file)</span><br><span class="line">Entry point 0x400558</span><br><span class="line">There are 6 program headers, starting at offset 64</span><br><span class="line"></span><br><span class="line">Program Headers:</span><br><span class="line">  Type           Offset             VirtAddr           PhysAddr</span><br><span class="line">                 FileSiz            MemSiz              Flags  Align</span><br><span class="line">  LOAD           0x0000000000000000 0x0000000000400000 0x0000000000400000</span><br><span class="line">                 0x0000000000078ba6 0x0000000000078ba6  R E    0x10000</span><br><span class="line">  LOAD           0x0000000000079978 0x0000000000489978 0x0000000000489978</span><br><span class="line">                 0x0000000000002010 0x0000000000003608  RW     0x10000</span><br><span class="line">  NOTE           0x0000000000000190 0x0000000000400190 0x0000000000400190</span><br><span class="line">                 0x0000000000000044 0x0000000000000044  R      0x4</span><br><span class="line">  TLS            0x0000000000079978 0x0000000000489978 0x0000000000489978</span><br><span class="line">                 0x0000000000000020 0x0000000000000060  R      0x8</span><br><span class="line">  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000</span><br><span class="line">                 0x0000000000000000 0x0000000000000000  RW     0x10</span><br><span class="line">  GNU_RELRO      0x0000000000079978 0x0000000000489978 0x0000000000489978</span><br><span class="line">                 0x0000000000000688 0x0000000000000688  R      0x1</span><br><span class="line"></span><br><span class="line"> Section to Segment mapping:</span><br><span class="line">  Segment Sections...</span><br><span class="line">   00     .note.gnu.build-id .note.ABI-tag .rela.plt .init .plt .text __libc_freeres_fn .fini .rodata __libc_subfreeres __libc_IO_vtables __libc_atexit .eh_frame .gcc_except_table</span><br><span class="line">   01     .tdata .init_array .fini_array .data.rel.ro .got .got.plt .data .bss __libc_freeres_ptrs</span><br><span class="line">   02     .note.gnu.build-id .note.ABI-tag</span><br><span class="line">   03     .tdata .tbss</span><br><span class="line">   04</span><br><span class="line">   05     .tdata .init_array .fini_array .data.rel.ro .got</span><br></pre></td></tr></table></figure>
+<p>从上面可以看到之前的28个段被分成了6个分段，我们只关注其中两个LOAD类型的分段。因为在加载时需要映射它，其他的分段在加载时起辅助作用。先看第一个LOAD类型的分段，它是具有只读和可执行的权限，包含.init段、代码段、只读数据段等常见的段，它映射的虚拟地址是0x400000，长度是0x78ba6。第二个LOAD类型的分段具有可读和可写的权限，包含数据段和未初始化数据段等常见的段，它映射的虚拟地址是0x489978，长度是0x3608 上面从静态的角度来看进程的内存管理，我们还可以从动态的角度来看。Linux操作系统提供了“proc”文件系统来窥探Linux内核的执行情况，每个进程执行之后，在/proc/pid/maps节点会列出当前进程的地址映射情况。</p>
+<figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cat /proc/721/maps</span></span><br><span class="line"><span class="attribute">00400000</span>-<span class="number">0046000</span> r-xp <span class="number">00000000</span> <span class="number">00</span>:<span class="number">26</span> <span class="number">52559883</span>   test.elf</span><br><span class="line"><span class="attribute">0047e000</span>-<span class="number">00481000</span> rw-p <span class="number">0006</span>e<span class="number">000</span> <span class="number">00</span>:<span class="number">26</span> <span class="number">52559883</span>  test.elf</span><br><span class="line"><span class="attribute">272dd000</span>-<span class="number">272</span>ff<span class="number">000</span> rw-p <span class="number">00000000</span> <span class="number">00</span>:<span class="number">00</span> <span class="number">0</span>        <span class="meta"> [heap]</span></span><br><span class="line"><span class="attribute">ffffa97ea000</span>-ffffa<span class="number">97</span>eb<span class="number">000</span> r--p <span class="number">00000000</span> <span class="number">00</span>:<span class="number">00</span> <span class="number">0</span><span class="meta"> [vvar]</span></span><br><span class="line"><span class="attribute">ffffa97eb000</span>-ffffa<span class="number">97</span>ec<span class="number">000</span> r-xp <span class="number">00000000</span> <span class="number">00</span>:<span class="number">00</span> <span class="number">0</span><span class="meta"> [vdso]</span></span><br><span class="line"><span class="attribute">ffffcb6c6000</span>-ffffcb<span class="number">6</span>e<span class="number">7000</span> rw-p <span class="number">00000000</span> <span class="number">00</span>:<span class="number">00</span> <span class="number">0</span><span class="meta"> [stack]</span></span><br></pre></td></tr></table></figure>
+<p>第1行显示了地址0x400000~0x46f000，这段进程地址空间的属性是只读和可执行的，由此我们知道它是代码段，也就是之前看到的代码段的程序头。 第2行显示了地址0x47e000~0x48100，这段进程地址空间的属性是可读和可写的，也就是我们之前看到的数据段的程序头。 第3行显示了地址0x272dd00~0x272ff000，这段进程地址空间叫作堆（heap）空间，也就是通常使用malloc()分配的内存，大小是140KB。test进程主要使用malloc()分配100KB的内存，这里看到Linux内核会分配比100KB稍微大一点的内存空间。 第4行显示了名为vvar的特殊映射。 第5行显示了名为vdso的特殊映射，VDSO指Virtual Dynamic Shared Object，用于解决内核和libc之间的版本问题。 第6行显示了test进程的栈（stack）空间。 对于这里的进程地址空间，在Linux内核中使用一个叫作VMA的术语来描述它，它是vm_area_struct数据结构的简称。 另外，/proc/pid/smaps节点会提供更多地址映射的细节. <img src="/picture/linux/kernel/mem/test_process.png" /></p>
+<h3 id="从linux内核的角度看内存管理">2.5 从Linux内核的角度看内存管理</h3>
+<p>内存管理是一个很复杂的系统，涉及的内容很多。如果用分层来描述，内存空间可以分成3个层次，分别是用户空间层、内核空间层和硬件层，如下图所示。 <img src="/picture/linux/kernel/mem/mem_space.png" /></p>
+<p>用户空间层可以理解为Linux内核内存管理为用户空间暴露的系统调用（如brk、mmap等系统调用）接口。通常libc库会封装成常见的C函数，如malloc()和mmap()等。 内核空间层包含的模块相当丰富。用户空间层和内核空间层的接口是系统调用，因此内核空间层首先需要处理与这些内存管理相关的系统调用，如sys_brk、sys_mmap、 sys_madvise等。接下来就包括VMA管理、缺页中断、匿名页面、页面高速缓存、页面回收、RMAP、slab分配器、页表管理等模块了。 最下面的是硬件层，包括处理器的MMU、TLB和高速缓存部件，以及板载的物理内存，如LPDDR或者DDR。</p>
+<h2 id="物理内存管理之预备知识">3. 物理内存管理之预备知识</h2>
+<p>从硬件角度来看内存，随机存储器（Random Access Memory，RAM）是与CPU直接交数据的内部存储器。现在大部分计算机使用双倍速率同步同态随机存储器（Dual Data RxSDRAM、DDR）的存储设备，DDR包括DDR3L、DDR4L、LPDDR3/4等。DDR的初始化一般在BIOS或BootLoader中完成，BIOS或BootLoader把DDR的大小传递给Linux内核，因此从Linux内核的角度来看，DDR其实就是一段物理内存空间。</p>
+<h3 id="内存架构之uma和numa">3.1 内存架构之UMA和NUMA</h3>
+<p>在现在广泛应用的计算机系统中，以内存为研究对象可以分成两种架构，一种是统一内存访问（Uniform Memory Access，UMA）架构，另外一种是非统一内存访问（Non-Uniform MemoryAccess，NUMA）架构。</p>
+<ul>
+<li><p>UMA架构：内存有统一的结构并且可以统一寻址。目前大部分嵌入式系统、手机操作系统以及台式机操作系统等采用UMA架构。如下图所示，该系统使用UMA架构，有4个CPU，它们都有L1高速缓存，其中CPU0和CPU1组成一个簇（Cluster0），它们共享一个L2高速缓存。另外，CPU2和CPU3组成另外一个簇（Cluster1），它们共另外一个L2高速缓存。4个CPU都共享同一个L3的高速缓存。最重要的一点，它们可以通过系统总线来访问物理内存DDR。 <img src="/picture/linux/kernel/mem/UMA.png" /></p></li>
+<li><p>NUMA架构：系统中有多个内存节点和多个CPU簇，CPU访问本地内存节点的速度最快，访问远端的内存节点的速度要慢一点。如下图所示，该系统使用NUMA架构有两个内存节点，其中CPU0和CPU1组成一个节点（Node0）），它们可以通过系统线访问本地DDR物理内存，同理，CPU2和CPU3组成另外一个节点（Node1），它也可以通过系统总线访问本地的DDR物理内存。如果两个节点通过超路径互连（Ultra Path Interconnect，UPI）总线连接，那么CPUO可以通过这个内部总线访问远端的内存节点的物理内存，但是访问速度比访问本地物理内存慢很多。 <img src="/picture/linux/kernel/mem/NUMA.png" /></p></li>
+</ul>
+<h3 id="基本概念">3.2 基本概念</h3>
+<p>在大部分Linux操作系统中，内存设备的初始化一般在BIOS或BootLoader 中完成，然后把DDR存储设备的大小传递给Linux内核，因此从Linux内核的角度来看，DDR存储设备其实就是一段物理内存空间。在Linux内核中，和内存硬件物理特性相关的一些数据结构主要集中在本MMU（如页表、高速缓存/TLB操作等）中。因此大部分的Linux内核中关于内存管理的相关数据结构是软件层面的概念，如mm、VMA、内存管理区（zone）、页面、pg_data等.Linux内核内存管理中的数据结构错综复杂，如下图所示。 <img src="/picture/linux/kernel/mem/mem_struct.png" /></p>
+<p>和物理内存管理相关的数据结构有内存节点（pglist data）、内存管理区、物理页面（page）、mem_map[]数组、页表项（PTE）、页帧号（PFN）、物理地址（paddress）。</p>
+<p>其中，pglist data数据结构用来描述一个内存节点的所有资源。在UMA架构中，只有一个内存节点，即系统有一个全局的变量contig_page_data来描述这个内存节点。在NUMA架构中，整个系统的内存由一个pglist_data*的指针数组node_data[]来管理，在系统初始化枚举BIOS固件（ACPI）来完成。</p>
+<p>Linux内核用内存管理区来划分物理内存是有以下历史原因的。</p>
+<ul>
+<li><p>由于地址数据线位宽的限制，32位处理器通常最多支持4GB的物理内存，当然如果打开了LPAE特性，可以支持更大的物理内存。在4Gb的地址空间中，通常内核空间只有1GB大小，因此对于大小为4GB的物理内存是无法进行--线性映射的。Linux内核的做法是把物理内存分成两部分，其中一部分是线性映射的。如果用一个内存管理区来描述它，那就是ZONE_NORMAL。剩余的部分叫从高端内存（high memory）同样使用一个内存管理区来描述它，称为ZONE_HIGHMEM。</p></li>
+<li><p>内存管理区的分布和架构相关，如在x86架构中，ISA设备只能访问物理内存的前 16MB，所以在x86架构中会有一个名为ZONE_DMA的管理区域。在x86_64架构中，由于有足够大的内核空间可以线性映射物理内存，因此就不需要ZONE_HIGHMEM这个管理区域了。</p></li>
+</ul>
+<p>在Linux操作系统中常见的内存管理区可以分为以下几种。</p>
+<ul>
+<li>ZONE_DMA：用于ISA设备的DMA操作，范围是0~16MB，只适用于Intel x86架构，ARM架构没有这个内存管理区。</li>
+<li>Z0NE_DMA32：用于最低4GB的内存访问的设备，如只支持32位的DMA设备。</li>
+<li>ZONE_NORMAL：4GB以后的物理内存，用于线性映射物理内存。若系统内存小于4GB，则没有这个内存管理区。</li>
+<li>ZONE_HIGHMEM：用于管理高端内存，这些高端内存是不能线性映射到内核地址空间的。注意，在64位Linux操作系统中没有这个内存管理区。</li>
+</ul>
+<p>处理器按照数据位宽寻址，也就是字，但是处理器在处理物理内存时不是按照字来分配的，因为现在的处理器都采用分页机制来管理内存。在处理器内部有一个叫作MMU的硬件单元，它会处理虚拟内存到物理内存的映射关系，也就是做页表的翻译工作。站在处理器的角度来看管理物理内存的最小单位是页面。Linux内核中使用一个page数据结构来描述一个物理页面。一个物理页面的大小通常是4KB，但是有的架构的处理器可以支持大于4KB的页面，如支持8KB、16KB或者64KB的页面。目前Linux内核默认使用4KB的页面。 Linux内核为每个物理页面都分配了一个page数据结构，采用mem_map[]数组来存放这些page数据结构，并且它们和物理页面是一对一的映射关系，如下图所示 <img src="/picture/linux/kernel/mem/mem_map.png" /></p>
+<p>要理解内存管理，自然要理解处理器是如何进行内存管理的，这涉及架构的知识，如页表、MMU、TLB、高速缓存、一级页表、二级页表、页表项、页表项每个位的含义等内容。页表项在Linux内核中采用pte_t数据结构来定义，实际上就是u64类型变量，但是它隐含的内容远远多于一个u64类型变量。 和虚拟内存管理相关的数据结构有VMA、mm_struct、vaddr.</p>
+<p>每个node由一个或多个zone组成（我们可能经常在各种对虚拟内存和物理内存的描述中迷失，但以后你见到zone，就知道指的是物理内存），每个zone又由若干page frames组成（一般page frame都是指物理页面）。 <img src="/picture/linux/kernel/mem/framebuffer.jpg" /></p>
+<h4 id="page-frame">3.2.1 Page Frame</h4>
+<p>虽然内存访问的最小单位是byte或者word，但MMU是以page为单位来查找页表的，page也就成了Linux中内存管理的重要单位。包括换出（swap out）、回收（relcaim）、映射等操作，都是以page为粒度的。</p>
+<p>因此，描述page frame的struct page自然成为了内核中一个使用频率极高，非常重要的结构体，来看下它是怎样构成的（为了讲解需要，并非最新内核代码）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">page</span> &#123;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> flags;</span><br><span class="line">    <span class="keyword">atomic_t</span> count;  </span><br><span class="line">    <span class="keyword">atomic_t</span> _mapcount; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">lru</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">address_space</span> *<span class="title">mapping</span>;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> index;         </span><br><span class="line">    ...  </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+<ul>
+<li>flags表示page frame的状态或者属性，包括和内存回收相关的PG_active, PG_dirty, PG_writeback, PG_reserved, PG_locked, PG_highmem等。其实flags是身兼多职的，它还有其他用途，这将在下文中介绍到。</li>
+<li>count表示引用计数。当count值为0时，该page frame可被free掉；如果不为0，说明该page正在被某个进程或者内核使用，调用page_count()可获得count值。</li>
+<li>_mapcount表示该page frame被映射的个数，也就是多少个page table entry中含有这个page frame的PFN。</li>
+<li>lru是"least recently used"的缩写，根据page frame的活跃程度（使用频率），一个可回收的page frame要么挂在active_list双向链表上，要么挂在inactive_list双向链表上，以作为页面回收的选择依据，lru中包含的就是指向所在链表中前后节点的指针。</li>
+<li>如果一个page是属于某个文件的（也就是在page cache中），则mapping指向文件inode对应的address_space（这个结构体虽然叫address_space，但并不是进程地址空间里的那个address space），index表示该page在文件内的offset（以page size为单位）。</li>
+</ul>
+<p>有了文件的inode和index，当这个page的内容需要和外部disk/flash上对应的部分同步时，才可以找到具体的文件位置。如果一个page是anonymous的，则mapping指向表示swap cache的swapper_space，此时index就是swapper_space内的offset。</p>
+<p>事实上，现在最新Linux版本的struct page实现中大量用到了union，也就是同一个元素在不同的场景下有不同的意义。这是因为每个page frame都需要一个struct page来描述，一个page frame占4KB，一个struct page占32字节，那所有的struct page需要消耗的内存占了整个系统内存的32/4096，不到1%的样子，说小也小，但一个拥有4GB物理内存的系统，光这一项的开销最大就可达30多MB。</p>
+<p>如果能在struct page里省下4个字节，那就能省下4多MB的内存空间，所以这个结构体的设计必须非常考究，不能因为多一种场景的需要就在struct page中增加一个元素，而是应该尽量采取复用的方式。</p>
+<p>需要注意的是，struct page描述和管理的是这4KB的物理内存，它并不关注这段内存中的数据变化。</p>
+<h4 id="zone">3.2.2 Zone</h4>
+<p>因为硬件的限制，内核不能对所有的page frames采用同样的处理方法，因此它将属性相同的page frames归到一个zone中。对zone的划分与硬件相关，对不同的处理器架构是可能不一样的。</p>
+<p>比如在i386中，一些使用DMA的设备只能访问0 ~ 16MB的物理空间，因此将0 ~ 16MB划分为了ZONE_DMA。ZONE_HIGHMEM则是适用于要访问的物理地址空间大于虚拟地址空间，不能建立直接映射的场景。除开这两个特殊的zone，物理内存中剩余的部分就是ZONE_NORMAL了。</p>
+<p>ZONE_HIGHMEM也可能没有。比如在64位的x64中，因为内核虚拟地址空间足够大，不再需要ZONE_HIGH映射，但为了区分使用32位地址的DMA应用和使用64位地址的DMA应用，64位系统中设置了ZONE_DMA32和ZONE_DMA。</p>
+<p>所以，同样的ZONE_DMA，对于32位系统和64位系统表达的意义是不同的，ZONE_DMA32则只对64位系统有意义，对32位系统就等同于ZONE_DMA，没有单独存在的意义。</p>
+<p>此外，还有防止内存碎片化的ZONE_MOVABLE和支持设备热插拔的ZONE_DEVICE。可通过“cat /proc/zoneinfo |grep Node”命令查看系统中包含的zones的种类。</p>
+<p>Zone虽然是用于管理物理内存的，但zone与zone之间并没有任何的物理分割，它只是Linux为了便于管理进行的一种逻辑意义上的划分。Zone在Linux中用struct zone表示（以下为了讲解需要，调整了结构体中元素的顺序）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zone</span> &#123;</span></span><br><span class="line">     <span class="keyword">spinlock_t</span>         lock;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      spanned_pages;</span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      present_pages; </span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      nr_reserved_highatomic;    </span><br><span class="line">     <span class="keyword">atomic_long_t</span>      managed_pages;</span><br><span class="line"></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">free_area</span>   <span class="title">free_area</span>[<span class="title">MAX_ORDER</span>];</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      _watermark[NR_WMARK];</span><br><span class="line">     <span class="keyword">long</span>               lowmem_reserve[MAX_NR_ZONES];</span><br><span class="line">     <span class="keyword">atomic_long_t</span>      vm_stat[NR_VM_ZONE_STAT_ITEMS];</span><br><span class="line"></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      zone_start_pfn;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> *<span class="title">zone_pgdat</span>;</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">page</span>        *<span class="title">zone_mem_map</span>;</span></span><br><span class="line">     ...    </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+<ul>
+<li>lock是用来防止并行访问struct zone的spin lock，它只能保护struct zone这个结构体哈，可不能保护整个zone里的所有pages。</li>
+<li>spanned_pages是这个zone含有的总的page frames数目。在某些体系结构（比如Sparc）中，zone中可能存在没有物理页面的"holes"，spanned_pages减去这些holes里的absent pages就是present_pages。</li>
+<li>nr_reserved_highatomic是为某些场景预留的内存，managed_pages是由buddy内存分配系统管理的page frames数目，其实也就是present_pages减去reserved pages。</li>
+<li>free_area由free list空闲链表构成，表示zone中还有多少空余可供分配的page frames。_watermark有min(mininum), low, high三种，可作为启动内存回收的判断标准（详情请参考这篇文章）。</li>
+<li>lowmem_reserve是给更高位的zones预留的内存（更详细的介绍请参考这篇文章）。vm_stat作为zone的内存使用情况的统计信息，是“/proc/zoneinfo”的数据来源。</li>
+<li>zone_start_pfn是zone的起始物理页面号，zone_start_pfn+spanned_pages就是该zone的结束物理页面号。zone_pgdat是指向这个zone所属的node的。zone_mem_map指向由struct page构成的mem_map数组。</li>
+</ul>
+<p>因为内核对zone的访问是很频繁的，为了更好的利用硬件cache来提高访问速度，struct zone中还有一些填充位，用于帮助结构体元素的cache line对齐。这和struct page对内存精打细算的使用形成了鲜明的对比，因为zone的种类很有限，一个系统中一共也不会有多少个zones，struct zone这个结构体的体积大点也没有什么关系。</p>
+<h4 id="node">3.2.3 Node</h4>
+<p>介绍完了page和zone，沿着自底向上的顺序，最后就是表示node的结构体pglist_data了。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> &#123;</span></span><br><span class="line">     <span class="keyword">int</span> nr_zones;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">zone</span> <span class="title">node_zones</span>[<span class="title">MAX_NR_ZONES</span>];</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">zonelist</span> <span class="title">node_zonelists</span>[<span class="title">MAX_ZONELIST</span>];</span></span><br><span class="line"></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span> node_size;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">node_mem_map</span>;</span></span><br><span class="line"></span><br><span class="line">     <span class="keyword">int</span> node_id;</span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span> node_start_paddr;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> *<span class="title">node_next</span>;</span></span><br><span class="line"></span><br><span class="line">     <span class="keyword">spinlock_t</span> lru_lock;</span><br><span class="line">     ...</span><br><span class="line">&#125; <span class="keyword">pg_data_t</span>; </span><br></pre></td></tr></table></figure>
+<ul>
+<li>nr_zones表示这个node含有多少个zones，node_zones[]则是一个包含各个zone结构体的数组。</li>
+<li>node_zonelists[]包含了2个zonelist，一个是由本node的zones组成，另一个是由从本node分配不到内存时可选的备用zones组成，相当于是选择了一个退路，所以叫fallback。</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span> &#123;</span></span><br><span class="line">  ZONELIST_FALLBACK,	<span class="comment">/* zonelist with fallback */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_NUMA</span></span><br><span class="line">  ZONELIST_NOFALLBACK,	<span class="comment">/* zonelist without fallback (__GFP_THISNODE) */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  MAX_ZONELISTS</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>如果能从指定的目标node获得内存，则为NUMA hit；只能从备选node中获取，则为NUMA miss，可通过"/sys/devices/system/node/node*/numastat"查看。</p>
+<ul>
+<li>node_size是指这个node含有多少个page frames，node_mem_map指向node中所有struct page构成的mem_map数组。</li>
+<li>node_id是这个node的逻辑ID，也就是在NUMA系统中的编号。现在Linux中的内存分配函数区分不同的node，靠的就是这个node_id，类似于文件描述符fd。</li>
+<li>node_start_paddr（在2.6内核中被换成了node_start_pfn）是该node的起始物理地址。node_next指向由多个node构成的NUMA单向链表pgdat_list中的下一个节点。如果是UMA系统，只有一个node，则node_start_pfn为0，node_next为NULL。</li>
+</ul>
+<p>你看，表示node的结构体pglist_data通过"node_zones"包含了它的下一级，也就是表示zone的结构体zone_struct，zone_struct又通过"zone_pgdat"指向包含它的node。zone_struct中"zone_mem_map"指向它的下一级，也就是表示page frame的struct page，按理struct page中也应该有一个元素是指向包含它的zone，可是好像没看到对不对？</p>
+<p>并不是在那个省略号里，而是……就在struct page的"flags"里，它用flags的高8位存储了它所属的zone和node。这是通过page flags找到page所属的node的方法：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">page_to_nid</span><span class="params">(<span class="keyword">const</span> struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">p</span> =</span> (struct page *)page;</span><br><span class="line">  <span class="keyword">return</span> (PF_POISONED_CHECK(p)-&gt;flags &gt;&gt; NODES_PGSHIFT) &amp; NODES_MASK;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这是通过page flags找到page所属的zone的：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">enum</span> zone_type <span class="title">page_zonenum</span><span class="params">(<span class="keyword">const</span> struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> (page-&gt;flags &gt;&gt; ZONES_PGSHIFT) &amp; ZONES_MASK;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> struct zone *<span class="title">page_zone</span><span class="params">(<span class="keyword">const</span> struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;NODE_DATA(page_to_nid(page))-&gt;node_zones[page_zonenum(page)];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>事实上，page flags完整的组织是这样的： <img src="/picture/linux/kernel/mem/node.png" /></p>
+<p>只有低位的bits才是上文提到的那些表示page frame属性和状态的标志位。在32位系统中，只有32个bits的flags的资源已经非常紧张了。然而，为了避免在struct page中单独开辟内存空间引发反对的声浪，ZONE, NODE和SECTION这三个家伙还硬挤进了flags里，占去flags那么多宝贵的bits，以至于现在要再添加一个标志位都变得极其困难。</p>
+<p>对，就是加小小的一个bit，也会在Linux社区遭到一众的抵制，可以说是“锱铢必较”。这里俨然已经成为了kernel王国中地价最贵的地方，就像纽约的曼哈顿一样，真正的寸土寸金。</p>
+<p>其实挤进来的这三个家伙也不容易，寄人篱下，一共只分到了8个bits，能表达的zone, node和section的数目也是着实有限的。好在如果是64位系统的话，flags可以是64个bits，所以如果有的特性一定要新加标志位的话，那就请移步64位的世界吧，32位的世界实在是没法满足您了。</p>
+<h3 id="内存大小">3.3 内存大小</h3>
+<p>在ARM64 Linux中，各种设备的相关属性描述可以采用DTS方式或者BIOS方式来呈现，设备树源（Device Tree Source，DTS）最早是由PowerPC等架构使用的扁平化设备树（FltteDevice Tee，FDT）转变过来的，ARM Linux社区自2011年开始全面支持DTS，并且删除了大量的冗余代码。 在ARM32的VExpress平台中，内存定义在vexpress-v2p-ca9.dts文件中。该DTS文件定义了内存的起始地址为0x000000，大小为0x4000000，即1GB大小内存空间。</p>
+<figure class="highlight stata"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;<span class="keyword">arch</span>/arm/<span class="keyword">boot</span>/dts/vexpress-v2p-ca9.dts&gt;</span><br><span class="line"><span class="keyword">memory</span>@60000000&#123;</span><br><span class="line">    device <span class="keyword">type</span> = <span class="string">&quot;memory&quot;</span>;</span><br><span class="line">    <span class="keyword">reg</span> = &lt;0x60000000 0x40000000&gt;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>内核在启动过程中会解析这些数据获得内存地址和大小。</p>
+<h3 id="物理内存映射">3.4 物理内存映射</h3>
+<p>在内核使用内存前，需要初始化内核的页表，初始化页表主要由paging_init()函数实现。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/mm/mmu.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> __init <span class="title">paging_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">pgd_t</span> *pgdp = pgd_set_fixmap(__pa_symbol(swapper_pg_dir)); </span><br><span class="line">    </span><br><span class="line">    map_kernel(pgdp);</span><br><span class="line">    map_mem(pgdp);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>paging_init()函数主要做两次映射：一次是map_kernel()，映射内核映像到内核空间的虚拟地址；另外一次是map_mem()，做物理内存的线性映射。它们都建立物理内存到内核空间虚拟地址的线性映射，但是映射的地址不一样。</p>
+<ol type="1">
+<li>map_kernel()函数 该函数对内核映像的各个段分别进行映射，映射到内核空间的虚拟地址为vmalloc区域。vmalloc区域的范围从0xFFFF 0000 1000000到0xFFFF 7DFF BFFF0000这里分别映射如下段。</li>
+</ol>
+<ul>
+<li>代码段：从_text到_etexto</li>
+<li>只读数据段：从__start_rodata到__inittext_begin.</li>
+<li>初始化代码段：从__inittext_begin到__inittext_end.</li>
+<li>初始化数据段：从__initdata_begin到__initdata_end.</li>
+<li>数据段：从_data到_end。</li>
+</ul>
+<p>映射关系如下图所示。 <img src="/picture/linux/kernel/mem/vir_kernel.png" /></p>
+<ol start="2" type="1">
+<li>map_mem()函数 这里会映射三段物理内存到线性映射区。线性映射区的范围从0xFFFF 8000 0000 0000到0x FFFF FFFF FFFF FFFF，大小为128TB，如下所示： <img src="/picture/linux/kernel/mem/vir_liner.png" /></li>
+</ol>
+<ul>
+<li>映射第一段物理内存：从0x4000 0000到0x4008 0000。</li>
+<li>映射第二段物理内存：从内核映像结束（_end）到物理内存结束。</li>
+<li>映射第三段物理内存：从内核映像开始（_start）到内核映像结束（_end）。</li>
+</ul>
+<p>为什么要把第三段物理内存单独拿出来映射呢？这三段物理内存都会映射到不可执行（non-executable）的属性，但是后续代码里会把第三段映射的属性设置成只读，这是在smp_cpus_done()-&gt;mark_linear_text_alias_ro()函数中设置的，防止后续的其他内核模块不经意地修改了代码，如CPU休眠（Hibermate）机制。另外，第一段和第二段映射启用了连续页表项属性（PTE_CONT），单独把第三段映射拎出来可以避免连续页表项特性影响第三段的映射。</p>
+<h3 id="zone初始化">3.5 zone初始化</h3>
+<p>对页表的初始化完成之后，内核就可以对内存讲行管理了，但是内核并不是统一对待这些页面，而是采用内存管理区（本书中简称zone）的方式求管理。zone数据结构的定义如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mmzone.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zone</span> &#123;</span></span><br><span class="line">  <span class="comment">/* zone watermarks, access with *_wmark_pages(zone) macros */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> _watermark[NR_WMARK];</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> watermark_boost;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> nr_reserved_highatomic;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">long</span> lowmem_reserve[MAX_NR_ZONES];</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_NUMA</span></span><br><span class="line">  <span class="keyword">int</span> node;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span>	*<span class="title">zone_pgdat</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">per_cpu_pages</span>	__<span class="title">percpu</span> *<span class="title">per_cpu_pageset</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">per_cpu_zonestat</span>	__<span class="title">percpu</span> *<span class="title">per_cpu_zonestats</span>;</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * the high and batch values are copied to individual pagesets for</span></span><br><span class="line"><span class="comment">	 * faster access</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">int</span> pageset_high;</span><br><span class="line">  <span class="keyword">int</span> pageset_batch;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CONFIG_SPARSEMEM</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Flags for a pageblock_nr_pages block. See pageblock-flags.h.</span></span><br><span class="line"><span class="comment">	 * In SPARSEMEM, this map is stored in struct mem_section</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		*pageblock_flags;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* CONFIG_SPARSEMEM */</span></span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* zone_start_pfn == zone_start_paddr &gt;&gt; PAGE_SHIFT */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		zone_start_pfn;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">atomic_long_t</span>		managed_pages;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		spanned_pages;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		present_pages;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(CONFIG_MEMORY_HOTPLUG)</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		present_early_pages;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_CMA</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		cma_pages;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span>		*name;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MEMORY_HOTPLUG</span></span><br><span class="line">  <span class="comment">/* see spanned/present_pages for more description */</span></span><br><span class="line">  <span class="keyword">seqlock_t</span>		span_seqlock;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> initialized;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Write-intensive fields used from the page allocator */</span></span><br><span class="line">  ZONE_PADDING(_pad1_)</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* free areas of different sizes */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">free_area</span>	<span class="title">free_area</span>[<span class="title">MAX_ORDER</span>];</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* zone flags, see below */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Primarily protects free_area */</span></span><br><span class="line">  <span class="keyword">spinlock_t</span>		lock;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Write-intensive fields used by compaction and vmstats. */</span></span><br><span class="line">  ZONE_PADDING(_pad2_)</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * When free pages are below this point, additional steps are taken</span></span><br><span class="line"><span class="comment">	 * when reading the number of free pages to avoid per-cpu counter</span></span><br><span class="line"><span class="comment">	 * drift allowing watermarks to be breached</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> percpu_drift_mark;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined CONFIG_COMPACTION || defined CONFIG_CMA</span></span><br><span class="line">  <span class="comment">/* pfn where compaction free scanner should start */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_cached_free_pfn;</span><br><span class="line">  <span class="comment">/* pfn where compaction migration scanner should start */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_cached_migrate_pfn[ASYNC_AND_SYNC];</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_init_migrate_pfn;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_init_free_pfn;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_COMPACTION</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * On compaction failure, 1&lt;&lt;compact_defer_shift compactions</span></span><br><span class="line"><span class="comment">	 * are skipped before trying again. The number attempted since</span></span><br><span class="line"><span class="comment">	 * last failure is tracked with compact_considered.</span></span><br><span class="line"><span class="comment">	 * compact_order_failed is the minimum compaction failed order.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		compact_considered;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		compact_defer_shift;</span><br><span class="line">  <span class="keyword">int</span>			compact_order_failed;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined CONFIG_COMPACTION || defined CONFIG_CMA</span></span><br><span class="line">  <span class="comment">/* Set to true when the PG_migrate_skip bits should be cleared */</span></span><br><span class="line">  <span class="keyword">bool</span>			compact_blockskip_flush;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">bool</span>			contiguous;</span><br><span class="line"></span><br><span class="line">  ZONE_PADDING(_pad3_)</span><br><span class="line">  <span class="comment">/* Zone statistics */</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span>		vm_stat[NR_VM_ZONE_STAT_ITEMS];</span><br><span class="line">  <span class="keyword">atomic_long_t</span>		vm_numa_event[NR_VM_NUMA_EVENT_ITEMS];</span><br><span class="line">&#125; ____cacheline_internodealigned_in_smp;</span><br></pre></td></tr></table></figure>
+<p>zone经常会被访问到，因此这个数据结构要求以L1高速缓存对齐。另外，这里的ZONE_PADDING()让zone-&gt;lock和zone-&gt;lru_lock这两个很热门的锁可以分布在不同的高速缓存行中。一个内存节点最多有几个zone，因此zone数据结构不需要像page一样关注数据结构的大小，ZONE_PADDING()可以为了性能而浪费空间。在内存管理开发过程中，内核开发者逐步发现有一些自旋锁会竞争得非常厉害，很难获取。在稍微早期的Linux内核（如Linux4.0）中，zone-&gt;lock和zone-&gt;lru_lock这两个锁有时需要同时获取，因此保证它们使用不同的高速缓存行是内核常用的一种优化技巧。然而，在Linux5.0内核中，zone-&gt;lru_lock已经转移到内存节点的pglist_data数据结构中。关于部分数据成员的解释如下。</p>
+<ul>
+<li>watermark：每个zone在系统启动时会计算出3个水位，分别是最低警戒水位（WMARKMIN）、低水位（WMARK_LOW）和高水位（WMARK_HIGH），这在页面分配器和kswapd页面回收中会用到。</li>
+<li>lowmem_reserve：防止页面分配器过度使用低端zone的内存。</li>
+<li>zone_pgdat：指向内存节点。</li>
+<li>pageset：用于维护每个CPU上的一系列页面，以减少自旋锁的争用。</li>
+<li>zone_start_pfn：zone的起始页帧号。</li>
+<li>managed_pages：zone中被伙伴系统管理的页面数量。</li>
+<li>spanned_pages：zone包含的页面数量。</li>
+<li>resent_pages：zone里实际管理的页面数量。对于一此架构来说，其值和spanned_page 的值相等。</li>
+<li>free_area：伙伴系统的核心数据结构，管理空闲页块（page block）链表的数组。</li>
+<li>lock：并行访问时用于保护zone的自旋锁。</li>
+<li>lru_lock：并行访问时用于保护zone中LRU链表的自旋锁。在Linux5.0内核中，该成员已转移到pglist data中。</li>
+<li>lruvec： LRU链表集合。</li>
+<li>vm_stat：zone计数值。在Linux5.0内核中，该成员已转移到pglist_data中。</li>
+</ul>
+<p>通常情况下，内核的zone分为ZONE_DMA、ZONE_DMA32、ZONE_NORMAL和ZONE_HIGHMEM。 zone类型定义在include/linux/mmzone.h文件中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mmzone.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">zone_type</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DMA</span></span><br><span class="line">  ZONE_DMA,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DMA32</span></span><br><span class="line">  ZONE_DMA32,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  ZONE_NORMAL,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_HIGHMEM</span></span><br><span class="line">  ZONE_HIGHMEM,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  ZONE_MOVABLE,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DEVICE</span></span><br><span class="line">  ZONE_DEVICE,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  __MAX_NR_ZONES</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>在QEMU虚拟机中，只配置了CONFIG_ZONE_DMA32，没有配置CONFIG_ZONE_DMA、 CONFIG_HIGHMEM 以及CONFIG_ZONE_DEVICE，所以只有ZONE_NORMAL和CONFIG_ZONE_DMA32这两个zone。</p>
+<p>ZONE_DMA32的大小定义在zone_sizes_init()函数中，通常不会超过4GB。计算ZONE_DMA32的函数定义在max_zone_dma_phvs()函数中</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/mm/init.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> __init <span class="title">zone_sizes_init</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> min, <span class="keyword">unsigned</span> <span class="keyword">long</span> max)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> max_zone_pfns[MAX_NR_ZONES]  = &#123;<span class="number">0</span>&#125;;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> __maybe_unused acpi_zone_dma_bits;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> __maybe_unused dt_zone_dma_bits;</span><br><span class="line">  <span class="keyword">phys_addr_t</span> __maybe_unused dma32_phys_limit = max_zone_phys(<span class="number">32</span>);</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DMA</span></span><br><span class="line">  acpi_zone_dma_bits = fls64(acpi_iort_dma_get_max_cpu_address());</span><br><span class="line">  dt_zone_dma_bits = fls64(of_dma_get_max_cpu_address(<span class="literal">NULL</span>));</span><br><span class="line">  zone_dma_bits = min3(<span class="number">32U</span>, dt_zone_dma_bits, acpi_zone_dma_bits);</span><br><span class="line">  arm64_dma_phys_limit = max_zone_phys(zone_dma_bits);</span><br><span class="line">  max_zone_pfns[ZONE_DMA] = PFN_DOWN(arm64_dma_phys_limit);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DMA32</span></span><br><span class="line">  max_zone_pfns[ZONE_DMA32] = PFN_DOWN(dma32_phys_limit);</span><br><span class="line">  <span class="keyword">if</span> (!arm64_dma_phys_limit)</span><br><span class="line">    arm64_dma_phys_limit = dma32_phys_limit;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="keyword">if</span> (!arm64_dma_phys_limit)</span><br><span class="line">    arm64_dma_phys_limit = PHYS_MASK + <span class="number">1</span>;</span><br><span class="line">  max_zone_pfns[ZONE_NORMAL] = max;</span><br><span class="line"></span><br><span class="line">  free_area_init(max_zone_pfns);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在QEMU虚拟机启动内核日志中也能看到zone的相关信息。</p>
+<figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[<span class="number">0.000000</span>]  Zone ranges:</span><br><span class="line">[<span class="number">0.000000</span>]  DMA32   [mem <span class="number">0</span>x00000<span class="number">00040000000</span>-<span class="number">0</span>x000000007fffffff]</span><br><span class="line">[<span class="number">0.000000</span>]  Normal empty</span><br></pre></td></tr></table></figure>
+<p>zone的初始化函数在free_area_init_core()中，该函数实现在mm/page_alloc.c文件中。该函数在内核日志中有如下记录。 <figure class="highlight angelscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">[0.000000]</span>  On node o totalpages: <span class="number">262144</span></span><br><span class="line"><span class="string">[0.000000]</span>  DMA32 zone:<span class="number">4096</span> pages used <span class="keyword">for</span> memmac</span><br><span class="line"><span class="string">[0.000000]</span>  DMA32 zone: <span class="number">0</span> pages reserved</span><br><span class="line"><span class="string">[0.000000]</span>  DMA32 zone: <span class="number">262144</span> pages, LIFO batch:<span class="number">63</span></span><br></pre></td></tr></table></figure></p>
+<p>在QEMU虚拟机中，我们只有一个内存节点，物理页面总数量是262144，每个页面大小是4KB，因此总物理内存是1GB。 另外，分配了4096个页面用于memmap，系统中还有一个非常重要的全局变量mem_map，它是一个page数组，可以实现快速地把虚拟地址映射到物理地址，这里指内核空间的线性映射。mem_map的大小在calc_memmap_size()函数中计算，计算方法很简单。首先计算这个zone中一共有多少个页面（spanned_pages），然后计算每一个页面占用的page数据结构的大小。 有些架构会在Z0NE_DMA32中预留一些用于DMA传输的内存，详见set_dma_reserve()函数。 最后一行日志记录是在zone_pcp_init()函数中输出的，LIFO batch用于每个CPU变量分配系统（Per CPU Subsystem）。</p>
+<h3 id="空间划分">3.6 空间划分</h3>
+<p>在32位Linux系统中，一共能使用的虚拟地址空间是4GB，用户空间和内核空间的划分通常按照3：1来划分，也可以按照2：2来划分。</p>
+<p>内核中通常会使用PAGE_OFFSET宏来计算内核线性映射中虚拟地址和物理地址的转换。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/memory.h&gt;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> VA_BITS			(CONFIG_ARM64_VA_BITS)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _PAGE_OFFSET(va)	(-(UL(1) &lt;&lt; (va)))</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PAGE_OFFSET		(_PAGE_OFFSET(VA_BITS))</span></span><br></pre></td></tr></table></figure>
+<p>PAGF_OFFSFT 宏的计算方式和CONFIG_ARM64_VA_BITS宏的设置方式有关。假议 CONFIG_ARM64_VA_BITS设置为48，那么PAGE_OFFSET的值为0xFF 0000000000.内核中计算线性映射的物理地址和虚拟地址的转换关系时，线性映射的物理地址等于vad减去PAGE_OFFSET再加上PHYS_OFFSET（在QEMU虚拟机中该值为0x400000）。内核有两个常用的宏，分别是__pa()和__va()。 phys_to_virt()用于根据物理地址计算线性映射的虚拟地址，只需要和PAGE_OFFSET宏做“或”操作即可。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> phys_to_virt(x) ((unsigned long) ((x) - PHYS_OFFSET) | PAGE_OFFSET)</span></span><br></pre></td></tr></table></figure>
+<p>_virt_to_phys_nodebug()宏用于根据线性映射的虚拟地址计算物理地址。有一个特殊情况需要考虑，那就是vmalloc区域。在ARM64的Linux内核中，内核空间的虚拟地址分成了两部分，一部分是线性映射区域，另外一部分是vmalloc区域，特别是内核映像会映射到vmalloc区域。 is_lm_address()宏用于判断虚拟地址是否为线性映射的虚拟地址。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/memory.h&gt;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __is_lm_address(addr)	(((u64)(addr) - PAGE_OFFSET) &lt; (PAGE_END - PAGE_OFFSET))</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __lm_to_phys(addr)	(((addr) - PAGE_OFFSET) + PHYS_OFFSET)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __kimg_to_phys(addr)	((addr) - kimage_voffset)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __virt_to_phys_nodebug(x) (&#123;					\</span></span><br><span class="line"><span class="meta">	phys_addr_t __x = (phys_addr_t)(__tag_reset(x));		\</span></span><br><span class="line"><span class="meta">	__is_lm_address(__x) ? __lm_to_phys(__x) : __kimg_to_phys(__x);	\</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __pa_symbol_nodebug(x)	__kimg_to_phys((phys_addr_t)(x))</span></span><br></pre></td></tr></table></figure>
+<h3 id="物理内存初始化">3.6 物理内存初始化</h3>
+<p>在内核启动时，内核知道DDR物理内存的大小并且计算出高端内存的起始地址和内核空间的内存布局后，物理内存页面就要添加到伙伴系统中，那么物理内存页面如何添加到伙伴系统中呢？伙伴系统（buddy system）是操作系统中常用的一种动态存储管理方法，在用户提出申请时分配一个大小合适的内存块给用户，并在用户释放内存块时回收。在伙伴系统中，内存块的大小是2的order次幂个页面。Linux内核中order的最大值用MAX_ORDER来表示，通常是11，也就是把所有的空闲页面分组成11个内存块链表，每个内存块链表分别包括1，2，4，8，16，32，.，1024个连续的页面。1024个页面对应着4MB大小的连续物理内存。 物理内存在Linux内核中分出几个zone来管理空闲页块。zone根据内核的配置来划分，在QEMU虚拟机中，zone分为ZONE_DMA32和ZONE_NORMAL 伙伴系统的空闲页块的管理如下图所示，zone数据结构中有一个free_area数据结构，数据结构的大小是MAX_ORDER。free_area数据结构中句含了MIGRATE_TYPES个链表，这相当于zone中根据order的大小有0到（MAXORDER-1）个free_area，每个free_area根据MIGRATE_TYPES类型有几个相应的链表。 <img src="/picture/linux/kernel/mem/order.png" /></p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82ODQ2NTk1Mg==">https://zhuanlan.zhihu.com/p/68465952<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82ODQ3MzQyOA==">https://zhuanlan.zhihu.com/p/68473428<i class="fa fa-external-link-alt"></i></span><br />
+《奔跑吧Linux内核》</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" title="Linux内存管理（四）基础知识">http://carlyleliu.github.io/2021/Linux内存管理（四）基础知识/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Memory/" rel="tag"><i class="fa fa-tag"></i> Memory</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%BA%94%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8/" rel="prev" title="Linux内存管理（五）页面分配器">
+      <i class="fa fa-chevron-left"></i> Linux内存管理（五）页面分配器
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89ARM64%E5%9C%A8linux%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0/" rel="next" title="Linux内存管理（三）ARM64在linux中的实现">
+      Linux内存管理（三）ARM64在linux中的实现 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E7%A1%AC%E4%BB%B6%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">1. 从硬件角度看内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E7%9A%84%E8%BF%9C%E5%8F%A4%E6%97%B6%E4%BB%A3"><span class="nav-text">1.1 内存管理的“远古时代”</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%AE%B5%E6%9C%BA%E5%88%B6"><span class="nav-text">1.2 分段机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%A1%B5%E6%9C%BA%E5%88%B6"><span class="nav-text">1.3 分页机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E8%BD%AF%E4%BB%B6%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">2 从软件角度看内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8Elinux%E7%B3%BB%E7%BB%9F%E4%BD%BF%E7%94%A8%E8%80%85%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">2.1 从Linux系统使用者的角度看内存管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8Elinux%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E5%BC%80%E5%8F%91%E4%BA%BA%E5%91%98%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">2.2 从Linux应用程序开发人员的角度看内存管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E5%86%85%E5%AD%98%E5%88%86%E5%B8%83%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">2.3 从内存分布的角度看内存管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8E%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">2.4 从进程的角度看内存管理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%8Elinux%E5%86%85%E6%A0%B8%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">2.5 从Linux内核的角度看内存管理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B9%8B%E9%A2%84%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="nav-text">3. 物理内存管理之预备知识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%9E%B6%E6%9E%84%E4%B9%8Buma%E5%92%8Cnuma"><span class="nav-text">3.1 内存架构之UMA和NUMA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">3.2 基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#page-frame"><span class="nav-text">3.2.1 Page Frame</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zone"><span class="nav-text">3.2.2 Zone</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#node"><span class="nav-text">3.2.3 Node</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%A4%A7%E5%B0%8F"><span class="nav-text">3.3 内存大小</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84"><span class="nav-text">3.4 物理内存映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#zone%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-text">3.5 zone初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A9%BA%E9%97%B4%E5%88%92%E5%88%86"><span class="nav-text">3.6 空间划分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-text">3.6 物理内存初始化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">980k</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/";
+    this.page.identifier = "2021/Linux内存管理（四）基础知识/";
+    this.page.title = "Linux内存管理（四）基础知识";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

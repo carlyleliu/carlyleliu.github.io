@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1. VFS ...后续补充 2. seq_file 2.1. 概述 seq_file只是在普通的文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口。seq_file一般只提供只读接口，在使用seq_file操作时，主要靠下述四个操作来完成内核自定义缓冲区的遍历的输出操作，其中pos作为遍历的iterator，在seq_read函数中被多次使用，用以定位当前从内核自定义">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之文件系统">
+<meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/index.html">
+<meta property="og:site_name" content="量子范式">
+<meta property="og:description" content="1. VFS ...后续补充 2. seq_file 2.1. 概述 seq_file只是在普通的文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口。seq_file一般只提供只读接口，在使用seq_file操作时，主要靠下述四个操作来完成内核自定义缓冲区的遍历的输出操作，其中pos作为遍历的iterator，在seq_read函数中被多次使用，用以定位当前从内核自定义">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/FileSystem/KernFS.png">
+<meta property="article:published_time" content="2020-08-08T04:25:58.000Z">
+<meta property="article:modified_time" content="2022-03-20T12:05:56.035Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="SysFS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/FileSystem/KernFS.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动之文件系统 | 量子范式</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">量子范式</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之文件系统
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-08-08 12:25:58" itemprop="dateCreated datePublished" datetime="2020-08-08T12:25:58+08:00">2020-08-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之文件系统/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.5k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="vfs">1. VFS</h2>
+<p>...后续补充</p>
+<h2 id="seq_file">2. seq_file</h2>
+<h3 id="概述">2.1. 概述</h3>
+<p>seq_file只是在普通的文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口。seq_file一般只提供只读接口，在使用seq_file操作时，主要靠下述四个操作来完成内核自定义缓冲区的遍历的输出操作，其中pos作为遍历的iterator，在seq_read函数中被多次使用，用以定位当前从内核自定义链表中读取的当前位置，当多次读取时，pos非常重要，且pos总是遵循从0,1,2...end+1遍历的次序，其即必须作为遍历内核自定义链表的下标，也可以作为返回内容的标识。但是我在使用中仅仅将其作为返回内容的标示，并没有将其作为遍历链表的下标，从而导致返回数据量大时造成莫名奇妙的错误，注意：start返回的void*如果非0，被show输出后，在作为参数传递给next函数，next可以对其修改，也可以忽略；当next或者start返回NULL时，在seq_open中控制路径到达seq_end。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">seq_operations</span> &#123;</span></span><br><span class="line">  <span class="keyword">void</span> * (*start) (struct seq_file *m, <span class="keyword">loff_t</span> *pos);</span><br><span class="line">  <span class="keyword">void</span> (*stop) (struct seq_file *m, <span class="keyword">void</span> *v);</span><br><span class="line">  <span class="keyword">void</span> * (*next) (struct seq_file *m, <span class="keyword">void</span> *v, <span class="keyword">loff_t</span> *pos);</span><br><span class="line">  <span class="keyword">int</span> (*show) (struct seq_file *m, <span class="keyword">void</span> *v);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<span id="more"></span>
+<h3 id="核心功能">2.2 核心功能</h3>
+<p>2.6内核包含一组函数（由 Alexander Viro 实现），旨在使虚拟文件创建者更容易正确使用。 seq_file接口可通过 &lt;linux/seq_file.h&gt; 获得。 seq_file包含三个方面：</p>
+<ul>
+<li>一个迭代器接口，它允许虚拟文件实现单步执行它所代表的对象。</li>
+<li>一些用于格式化输出对象的实用函数，而无需担心输出缓冲区之类的事情。</li>
+<li>一组固定的file_operations，它们实现了对虚拟文件的大多数操作。</li>
+</ul>
+<h3 id="接口">2.3 接口</h3>
+<p>实现文件在fs/seq_file.c和include/linux/seq_file.h中。</p>
+<h4 id="formatted-output">2.3.1 Formatted output</h4>
+<p>seq_file代码管理迭代器创建输出用户缓冲区中的数据。 但是要使其工作，必须将该输出传递给seq_file代码。 已经定义了一些实用函数，使这项任务变得容易。 大多数代码将简单地使用seq_printf()，它的工作原理非常像printk()，但它需要seq_file指针作为参数。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">seq_putc(struct seq_file *m, <span class="keyword">char</span> c);</span><br><span class="line">seq_puts(struct seq_file *m, <span class="keyword">const</span> <span class="keyword">char</span> *s);</span><br><span class="line">seq_escape(struct seq_file *m, <span class="keyword">const</span> <span class="keyword">char</span> *s, <span class="keyword">const</span> <span class="keyword">char</span> *esc);</span><br></pre></td></tr></table></figure> 前两个函数输出一个字符和一个字符串，就像人们期望的那样。 seq_escape()与seq_puts()类似，除了s中字符串esc中的任何字符将在输出中以八进制形式表示。</p>
+<h4 id="file_operations">2.3.2 file_operations</h4>
+<p>到目前为止，我们有一组很好的函数可以在seq_file系统中产生输出，但是我们还没有将它们变成用户可以看到的文件。 在内核中创建文件当然需要创建一组file_operations来实现对该文件的操作。 seq_file接口提供了一组完成大部分工作的固定操作。 然而虚拟文件作者仍然必须实现open()方法来连接所有内容。 open函数通常是一行，如示例模块中所示： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">ct_open</span><span class="params">(struct inode *inode, struct file *file)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> seq_open(file, &amp;ct_seq_ops);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure> 这里比较关键的是seq_file结构是挂载在file结构体的private_data指针下。 在这里，对seq_open()的调用采用我们之前创建的seq_operations结构，并设置为遍历虚拟文件。</p>
+<p>成功打开后，seq_open()将struct seq_file指针存储在file-&gt;private_data里。 如果您的应用程序可以将同一个迭代器用于多个文件，则可以在seq_file结构的私有字段中存储任意指针； 然后可以通过迭代器函数检索该值。</p>
+<p>seq_open()还有一个包装函数称为seq_open_private()。 它kmallocs一个零填充的内存块并将指向它的指针存储在seq_file结构的私有字段中，成功时返回0。块大小在函数的第三个参数中指定，例如： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">ct_open</span><span class="params">(struct inode *inode, struct file *file)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> seq_open_private(file, &amp;ct_seq_ops,</span><br><span class="line">        <span class="keyword">sizeof</span>(struct mystruct));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure> 还有一个变体函数__seq_open_private() ，它在功能上是相同的，只是如果成功，它会返回指向分配的内存块的指针，允许进一步初始化，例如： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">ct_open</span><span class="params">(struct inode *inode, struct file *file)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">mystruct</span> *<span class="title">p</span> =</span></span><br><span class="line">    __seq_open_private(file, &amp;ct_seq_ops, <span class="keyword">sizeof</span>(*p));</span><br><span class="line">  <span class="keyword">if</span> (!p)</span><br><span class="line">    <span class="keyword">return</span> -ENOMEM;</span><br><span class="line">  p-&gt;foo = bar; <span class="comment">/* initialize my stuff */</span></span><br><span class="line">    ...</span><br><span class="line">  p-&gt;baz = <span class="literal">true</span>;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure> 相应的关闭可用函数seq_release_private()，它释放在相应打开中分配的内存。 其他感兴趣的操作read()、llseek()和release()都是由seq_file代码本身实现的。 因此虚拟文件的file_operations结构将如下所示： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">ct_file_ops</span> =</span> &#123;</span><br><span class="line">        .owner   = THIS_MODULE,</span><br><span class="line">        .open    = ct_open,</span><br><span class="line">        .read    = seq_read,</span><br><span class="line">        .llseek  = seq_lseek,</span><br><span class="line">        .release = seq_release</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> 还有一个seq_release_private()在释放结构之前将seq_file私有字段的内容传递给kfree()。 最后一步是创建/proc文件本身。 在示例代码中，这是在初始化代码中以通常的方式完成的： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">ct_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">proc_dir_entry</span> *<span class="title">entry</span>;</span></span><br><span class="line">    proc_create(<span class="string">&quot;sequence&quot;</span>, <span class="number">0</span>, <span class="literal">NULL</span>, &amp;ct_file_ops);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line">module_init(ct_init);</span><br></pre></td></tr></table></figure></p>
+<h4 id="seq_list">2.3.3 seq_list</h4>
+<p>如果您的文件将遍历链表，您可能会发现这些函数很有用： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct list_head *<span class="title">seq_list_start</span><span class="params">(struct list_head *head,</span></span></span><br><span class="line"><span class="params"><span class="function">       		 		<span class="keyword">loff_t</span> pos)</span></span>;</span><br><span class="line"><span class="function">struct list_head *<span class="title">seq_list_start_head</span><span class="params">(struct list_head *head,</span></span></span><br><span class="line"><span class="params"><span class="function">		 		    <span class="keyword">loff_t</span> pos)</span></span>;</span><br><span class="line"><span class="function">struct list_head *<span class="title">seq_list_next</span><span class="params">(<span class="keyword">void</span> *v, struct list_head *head,</span></span></span><br><span class="line"><span class="params"><span class="function">				    <span class="keyword">loff_t</span> *ppos)</span></span>;</span><br></pre></td></tr></table></figure> 这些helper会将pos解释为列表中的一个位置并相应地进行迭代。 您的start()和next()函数只需要使用指向适当list_head结构的指针调用seq_list_* helper。</p>
+<h3 id="总结">2.4 总结</h3>
+<p>seq_file是为proc文件系统设计的，但不只是proc，在需要创建一个由一系列数据顺序组合而成的虚拟文件或一个较大的虚拟文件时，推荐使用seq_file接口。这正是符合bin_attribute的场景。用户空间通过open、read等函数操作文件时通过系统的VFS调用到内核层，其中file结构体的private指针指向seq_file结构体，然后调用该结构体里的op指针指向的相应函数。</p>
+<h2 id="kernfs">3. kernfs</h2>
+<h3 id="概述-1">3.1 概述</h3>
+<p>在Linux内核中，kernfs提供内核子系统内部伪文件系统所需的功能，源于拆分sysfs使用的部分内部逻辑，它通过将有关硬件设备和相关设备驱动程序的信息从内核的设备模型导出到用户空间，提供一组虚拟文件，从而实现独立且可重用的功能。 其他内核子系统可以更容易，更一致地实现自己的伪文件系统。</p>
+<h3 id="数据结构">3.2 数据结构</h3>
+<p>先整体看下数据结构，如下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQyOTllMGIzNGQ3YzdkYjU1MjU1">原图<i class="fa fa-external-link-alt"></i></span><br />
+<img src="/picture/linux_driver/FileSystem/KernFS.png" /></p>
+<p>该图展示了各个数据结构之间的关系以及实现方式，kernfs是fs抽象出来公共的属性操作，sysfs基本就是调用该结构的方法来实现，同时kobject的目录和属性文件在用户空间的文件组织也是通过该数据结构实现的。</p>
+<h3 id="实现">3.3 实现</h3>
+<p>所有文件系统的实现都是通过file_operations结构体实现具体的操作的，kernfs也是，它同样实现了file_operations结构体相关操作，如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">kernfs_file_fops</span> =</span> &#123;</span><br><span class="line">  .read		= kernfs_fop_read,</span><br><span class="line">  .write		= kernfs_fop_write,</span><br><span class="line">  .llseek		= generic_file_llseek,</span><br><span class="line">  .mmap		= kernfs_fop_mmap,</span><br><span class="line">  .open		= kernfs_fop_open,</span><br><span class="line">  .release	= kernfs_fop_release,</span><br><span class="line">  .poll		= kernfs_fop_poll,</span><br><span class="line">  .fsync		= noop_fsync,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> 这个可以关注下open成员的实现函数kernfs_fop_open，</p>
+<ul>
+<li><p>((struct seq_file *)file-&gt;private_data)-&gt;private = of<br />
+可以看到kernfs_open_file结构体是挂在seq_file结构体的private指针下的，现在可以梳理下这三者之间的关系，file结构体的private_data指向seq_file，seq_file的private指向kernfs_open_file，这样他们就都联系起来的，当然这里是分析特定文件系统下的实现，在其他情况下可以指向其他数据结构。</p></li>
+<li><p>seq_open(file, &amp;kernfs_seq_ops)<br />
+kernfs的实现就使用了上面介绍的seq_file结构，kernfs实现了seq_file的file_operations结构成员，如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">seq_operations</span> <span class="title">kernfs_seq_ops</span> =</span> &#123;</span><br><span class="line">  .start = kernfs_seq_start,</span><br><span class="line">  .next = kernfs_seq_next,</span><br><span class="line">  .stop = kernfs_seq_stop,</span><br><span class="line">  .show = kernfs_seq_show,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> 然后通过调用seq_open将该数据结构连入seq_file结构体的op成员中。</p></li>
+</ul>
+<h2 id="sysfs">4. sysfs</h2>
+<h3 id="概述-2">4.1 概述</h3>
+<p>sysfs是非持久性虚拟文件系统，它提供系统的全局视图，并通过它们的kobiect 显示内核对象的层次结构（拓扑）。每个kobiect显示为目录和目录中的文件，目录代表相关kobject导出的内核变量。这些文件称为属性，可以读取或写入。如果任何已注册的kobiect在sysfs中创建目录，则目录的创建位置取决于kobiec的父项（它也是kobiect）。这些目录自然创建为kobject父项的子目录。这向用户空间出显示了内部对象的层次结构。sysfs中的顶级目录表示对象层次结构的共同祖先，即对象所属的子系统。</p>
+<p>对系统上的每个块设备，block都包含一个目录，目录下包含设备上分区的子目录。bus包含系统上注册的总线。dev以原始方式（无层次结构）包含已注册的设备节点，每个节点都是/sys/devices目录中真实设备的符号链接。devices给出系统内设备的拓扑结构视图。firmware显示系统相关的低层子系统树，如ACPI、EFI、OF （DT）。fs列出系统上实际使用的文件系统。kernel保存内核配置选项和状态信息。module是加载的模块列表。</p>
+<pre><code>kernel_kobj：对应于/sys/kernel。
+power_kobj：对应于/sys/power。
+firmware_kobi ：对应于/sys/firmware，导出在drivers/baselirmware.c源文件中。
+hvpervisor_kobj：对应于/sys/hypervisor，导出在drivers/base hypervisor.c中。
+fs_kobj：对应于/sys/fs，导出在fs/namespace.c文件中。</code></pre>
+<p>然而，class/、dev/、devices/是在启动期间由内核源代码内drivers_base/core.c中的devices_init函数创建的，block/在block/genhd.c中创建，bus/ 在drivers/base/bus.c中被创建为kset.</p>
+<p>kobject目录被添加到sysfs（使用kobject_add）时，其添加位置取决于kobject的父项。如果其父指针已设置，则它将被添加为父目录内的子目录。如果父指针为NULL，则将其添加为kset-&gt;kobj内的子目录。如果其父和kset字段都未设置，它将映射到sysfs内的根目录（/sys）。</p>
+<h3 id="挂载sysfs">4.2 挂载sysfs</h3>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t sysfs sysfs /sys </span><br></pre></td></tr></table></figure>
+<h3 id="属性文件使用">4.3 属性文件使用</h3>
+<h4 id="属性文件定义">4.3.1 属性文件定义</h4>
+<p>裸属性不包含读取或写入属性值的方法。 鼓励子系统定义自己的属性结构和包装函数，以便为特定对象类型添加和删除属性。 例如驱动模型定义struct device_attribute如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">device_attribute</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">attribute</span>	<span class="title">attr</span>;</span></span><br><span class="line">  <span class="keyword">ssize_t</span> (*show)(struct device *dev, struct device_attribute *attr,</span><br><span class="line">      <span class="keyword">char</span> *buf);</span><br><span class="line">  <span class="keyword">ssize_t</span> (*store)(struct device *dev, struct device_attribute *attr,</span><br><span class="line">       <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>它还定义了用于定义设备属性的helper程序： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEVICE_ATTR(_name, _mode, _show, _store) \</span></span><br><span class="line"><span class="meta">    struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)</span></span><br></pre></td></tr></table></figure> 例如做如下声明： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">DEVICE_ATTR</span><span class="params">(foo, S_IWUSR | S_IRUGO, show_foo, store_foo)</span></span>;</span><br></pre></td></tr></table></figure> 相当于定义： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">device_attribute</span> <span class="title">dev_attr_foo</span> =</span> &#123;</span><br><span class="line">  .attr = &#123;</span><br><span class="line">    .name = <span class="string">&quot;foo&quot;</span>,</span><br><span class="line">    .mode = S_IWUSR | S_IRUGO,</span><br><span class="line">  &#125;,</span><br><span class="line">  .show = show_foo,</span><br><span class="line">  .store = store_foo,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<h4 id="子系统定义回调">4.3.2 子系统定义回调</h4>
+<p>当子系统定义新的属性类型时，它必须实现一组sysfs操作，以将读取和写入调用转发到属性所有者的show和store 方法。读取或写入文件时，sysfs会调用该类型的适当方法。 然后该方法将通用struct kobject和struct attribute指针转换为适当的指针类型，并调用关联的方法。</p>
+<p>阐明： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> to_dev(obj) container_of(obj, struct device, kobj)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> to_dev_attr(_attr) container_of(_attr, struct device_attribute, attr)</span></span><br></pre></td></tr></table></figure> <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">dev_attr_show</span><span class="params">(struct kobject *kobj, struct attribute *attr,</span></span></span><br><span class="line"><span class="params"><span class="function">                             <span class="keyword">char</span> *buf)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">device_attribute</span> *<span class="title">dev_attr</span> =</span> to_dev_attr(attr);</span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">dev</span> =</span> to_dev(kobj);</span><br><span class="line">        <span class="keyword">ssize_t</span> ret = -EIO;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (dev_attr-&gt;show)</span><br><span class="line">                ret = dev_attr-&gt;show(dev, dev_attr, buf);</span><br><span class="line">        <span class="keyword">if</span> (ret &gt;= (<span class="keyword">ssize_t</span>)PAGE_SIZE) &#123;</span><br><span class="line">                print_symbol(<span class="string">&quot;dev_attr_show: %s returned bad count\n&quot;</span>,</span><br><span class="line">                                (<span class="keyword">unsigned</span> <span class="keyword">long</span>)dev_attr-&gt;show);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure> 这里通过to_dev_attr宏定义（container_of方法）通过kobject结构体找到子系统或自定义的数据结构指针，这里以device_attribute为例，该数据结构要实现自己的show和store方法。得到device_attribute数据地址后调用该数据的show/store方法。</p>
+<blockquote>
+<p>可以看到kobject实际上实现了一套机制，该机制帮组用户方便的创建文件和删除文件并提供访问文件的方法，而它本身并未实现具体的操作。</p>
+</blockquote>
+<p>一个简单的例子，来看看具体的使用方法： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">show_name</span><span class="params">(struct device *dev, struct device_attribute *attr,</span></span></span><br><span class="line"><span class="params"><span class="function">                         <span class="keyword">char</span> *buf)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> scnprintf(buf, PAGE_SIZE, <span class="string">&quot;%s\n&quot;</span>, dev-&gt;name);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">store_name</span><span class="params">(struct device *dev, struct device_attribute *attr,</span></span></span><br><span class="line"><span class="params"><span class="function">                          <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="built_in">snprintf</span>(dev-&gt;name, <span class="keyword">sizeof</span>(dev-&gt;name), <span class="string">&quot;%.*s&quot;</span>,</span><br><span class="line">                 (<span class="keyword">int</span>)min(count, <span class="keyword">sizeof</span>(dev-&gt;name) - <span class="number">1</span>), buf);</span><br><span class="line">  <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">DEVICE_ATTR</span><span class="params">(name, S_IRUGO, show_name, store_name)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<h4 id="参考文献">参考文献</h4>
+<ol type="1">
+<li>《linux内核文档》<br />
+</li>
+<li><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9kZXZpY2VfbW9kZWw=">窝窝科技相-设备驱动模型<i class="fa fa-external-link-alt"></i></span><br />
+</li>
+<li><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2NoZW55aW5nMTI2L2FydGljbGUvZGV0YWlscy83ODA3OTk0Mg==">https://blog.csdn.net/chenying126/article/details/78079942<i class="fa fa-external-link-alt"></i></span><br />
+</li>
+<li>《linux设备驱动开发》</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/" title="Linux驱动之文件系统">http://carlyleliu.github.io/2020/Linux驱动之文件系统/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/SysFS/" rel="tag"><i class="fa fa-tag"></i> SysFS</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E8%AE%BE%E5%A4%87%E6%A0%91/" rel="prev" title="Linux驱动之设备树">
+      <i class="fa fa-chevron-left"></i> Linux驱动之设备树
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/" rel="next" title="Linux驱动之设备驱动模型">
+      Linux驱动之设备驱动模型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#vfs"><span class="nav-text">1. VFS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#seq_file"><span class="nav-text">2. seq_file</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">2.1. 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD"><span class="nav-text">2.2 核心功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3"><span class="nav-text">2.3 接口</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#formatted-output"><span class="nav-text">2.3.1 Formatted output</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#file_operations"><span class="nav-text">2.3.2 file_operations</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#seq_list"><span class="nav-text">2.3.3 seq_list</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">2.4 总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kernfs"><span class="nav-text">3. kernfs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-text">3.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">3.2 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">3.3 实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sysfs"><span class="nav-text">4. sysfs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-2"><span class="nav-text">4.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%82%E8%BD%BDsysfs"><span class="nav-text">4.2 挂载sysfs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E6%96%87%E4%BB%B6%E4%BD%BF%E7%94%A8"><span class="nav-text">4.3 属性文件使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E6%96%87%E4%BB%B6%E5%AE%9A%E4%B9%89"><span class="nav-text">4.3.1 属性文件定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9A%E4%B9%89%E5%9B%9E%E8%B0%83"><span class="nav-text">4.3.2 子系统定义回调</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">980k</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/";
+    this.page.identifier = "2020/Linux驱动之文件系统/";
+    this.page.title = "Linux驱动之文件系统";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

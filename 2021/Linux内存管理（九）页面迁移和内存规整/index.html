@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="声明本文转载自知乎Linux内存管理：页面迁移和Linux内存管理 (16)内存规整内存相关文章  1. 页面迁移 1.1 概述 页面迁移(migrate)是内存管理中很多功能实现的基础，比方说内存规整、NUMA balance、内存热插拔、CMA、HugeTLB、内存气球等等，本文主要讲一下页面迁移的主要流程和应用。 1.2 页面迁移的API migrate_pages( ) 这是页面迁移在内">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内存管理（九）页面迁移和内存规整">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/index.html">
+<meta property="og:site_name" content="量子范式">
+<meta property="og:description" content="声明本文转载自知乎Linux内存管理：页面迁移和Linux内存管理 (16)内存规整内存相关文章  1. 页面迁移 1.1 概述 页面迁移(migrate)是内存管理中很多功能实现的基础，比方说内存规整、NUMA balance、内存热插拔、CMA、HugeTLB、内存气球等等，本文主要讲一下页面迁移的主要流程和应用。 1.2 页面迁移的API migrate_pages( ) 这是页面迁移在内">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate1.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate2.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate3.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate4.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate5.jpg">
+<meta property="article:published_time" content="2021-12-01T05:57:14.000Z">
+<meta property="article:modified_time" content="2022-01-20T16:00:52.627Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="page memory">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate1.jpg">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux内存管理（九）页面迁移和内存规整 | 量子范式</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">量子范式</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux内存管理（九）页面迁移和内存规整
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-01 13:57:14" itemprop="dateCreated datePublished" datetime="2021-12-01T13:57:14+08:00">2021-12-01</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Kernel/" itemprop="url" rel="index"><span itemprop="name">Linux Kernel</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux内存管理（九）页面迁移和内存规整/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.7k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <blockquote>
+<p>声明本文转载自知乎<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yNzAzNjY4Mjc=">Linux内存管理：页面迁移<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmJzbWF4LmNvbS9BL1pPSlByUWdvZHYv">Linux内存管理 (16)内存规整<i class="fa fa-external-link-alt"></i></span>内存相关文章</p>
+</blockquote>
+<h2 id="页面迁移">1. 页面迁移</h2>
+<h3 id="概述">1.1 概述</h3>
+<p>页面迁移(migrate)是内存管理中很多功能实现的基础，比方说内存规整、NUMA balance、内存热插拔、CMA、HugeTLB、内存气球等等，本文主要讲一下页面迁移的主要流程和应用。</p>
+<h3 id="页面迁移的api">1.2 页面迁移的API</h3>
+<p>migrate_pages( ) 这是页面迁移在内核态的主要接口，内核中涉及到页面迁移的功能大都会调到它。当然，在用户空间也存在着内存迁移相关的系统调用，最终也会调到它。这里我们通过migrate_pages( )的几个形参展开全文。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* </span></span><br><span class="line"><span class="comment"> * migrate_pages - migrate the pages specified in a list, to the free pages</span></span><br><span class="line"><span class="comment"> *                 supplied as the target for the page migration</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @from:               The list of pages to be migrated.</span></span><br><span class="line"><span class="comment"> * @get_new_page:       The function used to allocate free pages to be used</span></span><br><span class="line"><span class="comment"> *                      as the target of the page migration.</span></span><br><span class="line"><span class="comment"> * @put_new_page:       The function used to free target pages if migration</span></span><br><span class="line"><span class="comment"> *                      fails, or NULL if no special handling is necessary.</span></span><br><span class="line"><span class="comment"> * @private:            Private data to be passed on to get_new_page()</span></span><br><span class="line"><span class="comment"> * @mode:               The migration mode that specifies the constraints for</span></span><br><span class="line"><span class="comment"> *                      page migration, if any.</span></span><br><span class="line"><span class="comment"> * @reason:             The reason for page migration.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">migrate_pages</span><span class="params">(struct list_head *from, <span class="keyword">new_page_t</span> get_new_page,</span></span></span><br><span class="line"><span class="params"><span class="function">                <span class="keyword">free_page_t</span> put_new_page, <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">private</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                <span class="keyword">enum</span> migrate_mode mode, <span class="keyword">int</span> reason)</span></span></span><br></pre></td></tr></table></figure>
+<p>形参含义根据上面的注释很好理解，我们单独说下mode和reason，他们分别表示迁移模式和迁移原因。</p>
+<h3 id="迁移模式">1.3 迁移模式</h3>
+<p>迁移模式主要会影响迁移过程中对一些行为的过滤：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MIGRATE_ASYNC        <span class="comment">//异步迁移，过程中不会发生阻塞，</span></span><br><span class="line">MIGRATE_SYNC_LIGHT   <span class="comment">//轻度同步迁移，允许大部分的阻塞操作，唯独不允许脏页的回写操作</span></span><br><span class="line">MIGRATE_SYNC         <span class="comment">//同步迁移，迁移过程会发生阻塞，若需要迁移的某个page正在writeback或被locked会等待它完成</span></span><br><span class="line">MIGRATE_SYNC_NO_COPY <span class="comment">//同步迁移，但不等待页面的拷贝过程。页面的拷贝通过回调migratepage()，过程可能会涉及DMA</span></span><br></pre></td></tr></table></figure>
+<p>举例：内存规整(compact)中会调用migrate_pages()，同时也会设置迁移模式(位于compact_control-&gt;mode)。若是sysfs主动触发的内存规整会用MIGRATE_SYNC模式；若是kcompactd触发的规整会用MIGRATE_SYNC_LIGHT模式；若是内存分配slowpath中触发的会根据compact prior去设置用MIGRATE_ASYNC或MIGRATE_SYNC_LIGHT模式。</p>
+<span id="more"></span>
+<h3 id="迁移原因">1.4 迁移原因</h3>
+<p>迁移原因主要使用来记录是什么功能触发了迁移的行为，毕竟页面迁移对系统本身是个不小的overhead，所以知道迁移的原因很有必。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">MR_COMPACTION      <span class="comment">//内存规整导致的迁移</span></span><br><span class="line">MR_MEMORY_FAILURE  <span class="comment">//当内存出现硬件问题(ECC校验失败等)时触发的页面迁移。 参考memory-failure.c</span></span><br><span class="line">MR_MEMORY_HOTPLUG  <span class="comment">//内存热插拔导致的迁移</span></span><br><span class="line">MR_SYSCALL         <span class="comment">//应用层主动调用migrate_pages()或move_pages()触发的迁移。</span></span><br><span class="line">MR_MEMPOLICY_MBIND <span class="comment">//调用mbind系统调用设置memory policy时触发的迁移</span></span><br><span class="line">MR_NUMA_MISPLACED  <span class="comment">//numa balance触发的页面迁移(node之间)</span></span><br><span class="line">MR_CONTIG_RANGE    <span class="comment">//调用alloc_contig_range()为CMA或HugeTLB分配连续内存时触发的迁移(和compact相关)。</span></span><br></pre></td></tr></table></figure>
+<p>延伸：对上面MR_SYSCALL迁移原因中提到的两个API(位于libnuma库)的简单介绍。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">migrate_pages()  <span class="comment">//和kernel中接口同名，别搞混了</span></span><br><span class="line">含义：把某pid进程的所有页面从源numa node迁移到目标numa nodes组中，对应系统调用sys_migrate_pages()         </span><br><span class="line">move_pages()  </span><br><span class="line">含义：把进程到部分页面迁移目标numa node中，对应系统调用sys_move_pages()</span><br></pre></td></tr></table></figure>
+<h3 id="migrate_pages介绍">1.5 migrate_pages()介绍</h3>
+<p>通过上面对迁移原因的介绍，我们知道了页面迁移的原因各种各样，这里我们通过内存规整(memory compact)这样一个实际的例子展开介绍，下图主要体现了内存规整和页面迁移的关系： <img src="/picture/linux/kernel/mem/migrate1.jpg" /></p>
+<p>通过上图，我们看出页面迁移在内存规整中举足轻重的地位。下面则是内存规整调用migrate_pages()的函数关系：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">compact_zone           <span class="comment">//内存规整</span></span><br><span class="line">  -&gt;migrate_pages      <span class="comment">//页面迁移的入口函数						</span></span><br><span class="line">    -&gt;unmap_and_move   <span class="comment">//页面迁移的核心实现 </span></span><br></pre></td></tr></table></figure>
+<p>现在切入重点，页面迁移(migrate)过程做了那些事情：</p>
+<h3 id="迁移前的准备">1.5 迁移前的准备</h3>
+<ol type="1">
+<li><p>获取old page的页面锁PG_locked (异步模式拿不到锁就直接跳过此页面)</p></li>
+<li><p>若是正在writeback的页面，则根据迁移模式判断是否等待页面wirteback（MIGRATE_SYNC_LIGHT和MIGRATE_ASYNC不等待）</p></li>
+<li><p>获取new page的页面锁PG_locked (new page正常情况下不会获取失败)</p></li>
+</ol>
+<p><img src="/picture/linux/kernel/mem/migrate2.jpg" /></p>
+<h3 id="解除old-page的页表映射">1.6 解除old page的页表映射</h3>
+<p>调用try_to_unmap()，通过反向映射机制解除old page所有相关的PTEs <img src="/picture/linux/kernel/mem/migrate3.jpg" /></p>
+<h3 id="设置new-page的页面内容元数据及映射关系">1.7 设置new page的页面内容、元数据及映射关系</h3>
+<p>调用move_to_new_page拷贝old page的内容和struct page元数据到new page，并通过反向映射机制建立new page的映射关系。 <img src="/picture/linux/kernel/mem/migrate4.jpg" /></p>
+<h3 id="页面迁移的收尾工作">1.6 页面迁移的收尾工作</h3>
+<ol type="1">
+<li><p>迁移完成释放新旧页面的PG_locked。</p></li>
+<li><p>设置迁移原因。</p></li>
+<li><p>调用put_page释放old page引用计数(_refcount减1)</p></li>
+</ol>
+<p><img src="/picture/linux/kernel/mem/migrate5.jpg" /></p>
+<p>补充：说到最后忽然想起来缺了点什么.....什么样的页面才支持迁移呢？</p>
+<ol type="1">
+<li><p>lru上的page，因为上面挂的是user spcace用的pages，都是从buddy分配器migrate type为movable或reclaim的pageblock上分来的。</p></li>
+<li><p>no-lru但是movable的页面。no-lru的页面通常是为kernel space分配的page，这种页面通常是unmovable的，但是下面这个commit使得驱动中用到的页面也可以支持迁移。但是在驱动实现的过程中需要置位page-&gt;mapping中的second bit，并且实现page-&gt;mapping-&gt;a_ops中的相关方法。(详细介绍看下面的这个commit，重点关注PageMovable()的实现)</p></li>
+</ol>
+<h2 id="内存规整">2. 内存规整</h2>
+<p>内存碎片的产生：伙伴系统以页为单位进行管理，经过大量申请释放，造成大量离散且不连续的页面。这时就产生了很多碎片。 内存规整也即内存碎片整理，内存碎片也是以页面为单位的。实现基础是内存页面按照可移动性进行分组。内存规整的实现基础是页面迁移。 Linux内核以pageblock为单位来管理页的迁移属性。 为什么需要内存规整？ 有些情况下，物理设备需要大段连续物理内存。虽然此时空闲内存足够，但是哟与无法找到连续的物理内存，仍然造成内存分配失败。</p>
+<h3 id="内存规整的触发">2.1 内存规整的触发</h3>
+<p>下面是内存页面分配，以及分配失败之后采取的措施，以便促成分配成功。 可以看出采取的措施，越来越重。首先采用kswapd来进行页面回收，然后尝试页面规整、直接页面回收，最后是OOM杀死进程来获取更多内存空间</p>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">alloc_pages</span><span class="comment">-------------------------------------页面分配的入口</span></span><br><span class="line">  -&gt;__alloc_pages_nodemask</span><br><span class="line">    -&gt;get_page_from_freelist<span class="comment">--------------------直接从zonelist的空闲列表中分配页面</span></span><br><span class="line">    -&gt;__alloc_pages_slowpath<span class="comment">--------------------在初次尝试分配失败后，进入slowpath路径分配页面</span></span><br><span class="line">      -&gt;wake_all_kswapds<span class="comment">------------------------唤醒kswapd内核线程进行页面回收</span></span><br><span class="line">      -&gt;get_page_from_freelist<span class="comment">------------------kswapd页面回收后再次进行页面分配</span></span><br><span class="line">      -&gt;__alloc_pages_direct_compact<span class="comment">------------进行页面规整，然后进行页面分配</span></span><br><span class="line">      -&gt;__alloc_pages_direct_reclaim<span class="comment">------------直接页面回收，然后进行页面分配</span></span><br><span class="line">      -&gt;__alloc_pages_may_oom<span class="comment">-------------------尝试触发OOM</span></span><br></pre></td></tr></table></figure>
+<p>另一条路径是在kswapd的balance_pgdat中会判断是否需要进行内存规整。</p>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">kswapd</span></span><br><span class="line">  -&gt;balance_pgdat<span class="comment">-------------------------------遍历内存节点的zone，判断是否处于平衡状态即WMARK_HIGH。</span></span><br><span class="line">    -&gt;compact_pgdat<span class="comment">-----------------------------针对整个内存节点进行内存规整</span></span><br></pre></td></tr></table></figure>
+<p>其中compact_pddat-&gt;__compact_pgdat-&gt;compact_zone，最终的实现和__alloc_pages_direct_compact调用compact_zone一样。</p>
+<h4 id="内存规整相关节点">2.1.1 内存规整相关节点</h4>
+<p>内存规整相关有两个节点，compact_memory用于触发内存规整；extfrag_threshold影响内核决策是采用内存规整还是直接回收来满足大内存分配。</p>
+<p>节点入口代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">ctl_table</span> <span class="title">vm_table</span>[] =</span> &#123;</span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_COMPACTION</span></span><br><span class="line">    &#123;</span><br><span class="line">        .procname    = <span class="string">&quot;compact_memory&quot;</span>,</span><br><span class="line">        .data        = &amp;sysctl_compact_memory,</span><br><span class="line">        .maxlen        = <span class="keyword">sizeof</span>(<span class="keyword">int</span>),</span><br><span class="line">        .mode        = ,</span><br><span class="line">        .proc_handler    = sysctl_compaction_handler,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        .procname    = <span class="string">&quot;extfrag_threshold&quot;</span>,</span><br><span class="line">        .data        = &amp;sysctl_extfrag_threshold,</span><br><span class="line">        .maxlen        = <span class="keyword">sizeof</span>(<span class="keyword">int</span>),</span><br><span class="line">        .mode        = ,</span><br><span class="line">        .proc_handler    = sysctl_extfrag_handler,</span><br><span class="line">        .extra1        = &amp;min_extfrag_threshold,</span><br><span class="line">        .extra2        = &amp;max_extfrag_threshold,</span><br><span class="line">    &#125;,</span><br><span class="line"> </span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* CONFIG_COMPACTION */</span></span></span><br><span class="line">...</span><br><span class="line">    &#123; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>/proc/sys/vm/compact_memory<br />
+打开compaction Tracepoint：echo 1 &gt; /sys/kernel/debug/tracing/events/compaction/enable 触发内存规整：sysctl -w vm.compact_memory=1 查看Tracepoint：cat /sys/kernel/debug/tracing/trace</p></li>
+<li><p>/proc/sys/vm/extfrag_threshold<br />
+在compact_zone中调用函数compaction_suitable-&gt;__compaction_suitable进行判断是否进行内存规整。 和extfrag_threshold相关部分如下，如果当前fragindex不超过sysctl_extfrag_threshold，则不会继续进行内存规整。 所以这个参数越小越倾向于进行内存规整，越大越不容易进行内存规整。</p>
+<p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> __compaction_suitable(struct zone *zone, <span class="keyword">int</span> order,</span><br><span class="line">                    <span class="keyword">int</span> alloc_flags, <span class="keyword">int</span> classzone_idx)</span><br><span class="line">&#123;</span><br><span class="line">...</span><br><span class="line">    fragindex = fragmentation_index(zone, order);</span><br><span class="line">    <span class="keyword">if</span> (fragindex &gt;= <span class="number">0</span> &amp;&amp; fragindex &lt;= sysctl_extfrag_threshold)</span><br><span class="line">        <span class="keyword">return</span> COMPACT_NOT_SUITABLE_ZONE;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> COMPACT_CONTINUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>设置extfrag_threshold：sysctl -w vm.extfrag_threshold=500</p></li>
+<li><p>其它Debug信息<br />
+/sys/kernel/debug/extfrag/extfrag_index /sys/kernel/debug/extfrag/unusable_index</p></li>
+</ul>
+<h3 id="内存规整实现">2.2 内存规整实现</h3>
+<p>在进入细节前，先看看内存规整函数框架。</p>
+<figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">__alloc_pages_direct_compact</span></span><br><span class="line">  -&gt;try_to_compact_pages<span class="comment">-----------------直接内存规整来满足高阶分配需求</span></span><br><span class="line">    -&gt;compact_zone_order<span class="comment">-----------------遍历zonelist对每个zone进行规整</span></span><br><span class="line">      -&gt;compact_zone<span class="comment">---------------------对zone进行规整</span></span><br><span class="line">        -&gt;compaction_suitable<span class="comment">------------检查是否继续规整，COMPACT_PARTIAL/COMPACT_SKIPPED都跳过。</span></span><br><span class="line">        -&gt;compact_finished<span class="comment">---------------在while中判断是否可以停止内存规整</span></span><br><span class="line">        -&gt;isolate_migratepages<span class="comment">-----------查找可以迁移页面</span></span><br><span class="line">        -&gt;migrate_pages<span class="comment">------------------进行页面迁移操作</span></span><br><span class="line">      -&gt;get_free_page_from_freelist<span class="comment">------在规整完成后进行页面分配操作</span></span><br></pre></td></tr></table></figure>
+<p>__alloc_pages_direct_compact首先执行规整操作，然后进行页面分配。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *</span></span><br><span class="line"><span class="class">__<span class="title">alloc_pages_direct_compact</span>(<span class="title">gfp_t</span> <span class="title">gfp_mask</span>, <span class="title">unsigned</span> <span class="title">int</span> <span class="title">order</span>,</span></span><br><span class="line"><span class="class">        <span class="title">int</span> <span class="title">alloc_flags</span>, <span class="title">const</span> <span class="keyword">struct</span> <span class="title">alloc_context</span> *<span class="title">ac</span>,</span></span><br><span class="line"><span class="class">        <span class="title">enum</span> <span class="title">migrate_mode</span> <span class="title">mode</span>, <span class="title">int</span> *<span class="title">contended_compaction</span>,</span></span><br><span class="line"><span class="class">        <span class="title">bool</span> *<span class="title">deferred_compaction</span>)</span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> compact_result;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">page</span>;</span></span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (!order)-----------------------------------------------------------------order为<span class="number">0</span>情况，不用进行内存规整。</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line"> </span><br><span class="line">    current-&gt;flags |= PF_MEMALLOC;</span><br><span class="line">    compact_result =try_to_compact_pages(gfp_mask, order, alloc_flags, ac,-----进行内存规整，当前进程会置PF_MEMALLOC，避免进程迁移时发生死锁。</span><br><span class="line">                        mode, contended_compaction);</span><br><span class="line">    current-&gt;flags &amp;= ~PF_MEMALLOC;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">switch</span> (compact_result) &#123;</span><br><span class="line">    <span class="keyword">case</span> COMPACT_DEFERRED:</span><br><span class="line">        *deferred_compaction = <span class="literal">true</span>;</span><br><span class="line">        <span class="comment">/* fall-through */</span></span><br><span class="line">    <span class="keyword">case</span> COMPACT_SKIPPED:</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">default</span>:</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">...</span><br><span class="line">    page = get_page_from_freelist(gfp_mask, order,-----------------------------进行内存分配</span><br><span class="line">                    alloc_flags &amp; ~ALLOC_NO_WATERMARKS, ac);</span><br><span class="line">...</span><br><span class="line">    count_vm_event(COMPACTFAIL);</span><br><span class="line"> </span><br><span class="line">    cond_resched();</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>try_to_compact_pages执行内存规整，以pageblock为单位，选择pageblock中可迁移页面。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">try_to_compact_pages</span><span class="params">(<span class="keyword">gfp_t</span> gfp_mask, <span class="keyword">unsigned</span> <span class="keyword">int</span> order,</span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="keyword">int</span> alloc_flags, <span class="keyword">const</span> struct alloc_context *ac,</span></span></span><br><span class="line"><span class="params"><span class="function">            <span class="keyword">enum</span> migrate_mode mode, <span class="keyword">int</span> *contended)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> may_enter_fs = gfp_mask &amp; __GFP_FS;</span><br><span class="line">    <span class="keyword">int</span> may_perform_io = gfp_mask &amp; __GFP_IO;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zoneref</span> *<span class="title">z</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">zone</span> *<span class="title">zone</span>;</span></span><br><span class="line">    <span class="keyword">int</span> rc = COMPACT_DEFERRED;</span><br><span class="line">    <span class="keyword">int</span> all_zones_contended = COMPACT_CONTENDED_LOCK; <span class="comment">/* init for &amp;= op */</span></span><br><span class="line"> </span><br><span class="line">    *contended = COMPACT_CONTENDED_NONE;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/* Check if the GFP flags allow compaction */</span></span><br><span class="line">    <span class="keyword">if</span> (!order || !may_enter_fs || !may_perform_io)</span><br><span class="line">        <span class="keyword">return</span> COMPACT_SKIPPED;</span><br><span class="line"> </span><br><span class="line">    trace_mm_compaction_try_to_compact_pages(order, gfp_mask, mode);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/* Compact each zone in the list */</span></span><br><span class="line">    for_each_zone_zonelist_nodemask(zone, z, ac-&gt;zonelist, ac-&gt;high_zoneidx,-----------根据掩码遍历特定zone</span><br><span class="line">                                ac-&gt;nodemask) &#123;</span><br><span class="line">        <span class="keyword">int</span> status;</span><br><span class="line">        <span class="keyword">int</span> zone_contended;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">if</span> (compaction_deferred(zone, order))</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"> </span><br><span class="line">        status =compact_zone_order(zone, order, gfp_mask, mode,-----------------------针对特定zone进行规整</span><br><span class="line">                &amp;zone_contended, alloc_flags,</span><br><span class="line">                ac-&gt;classzone_idx);</span><br><span class="line">        rc = max(status, rc);</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * It takes at least one zone that wasn&#x27;t lock contended</span></span><br><span class="line"><span class="comment">         * to clear all_zones_contended.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        all_zones_contended &amp;= zone_contended;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/* If a normal allocation would succeed, stop compacting */</span></span><br><span class="line">        <span class="keyword">if</span> (zone_watermark_ok(zone, order, low_wmark_pages(zone),</span><br><span class="line">                    ac-&gt;classzone_idx, alloc_flags)) &#123;--------------------------------当前zoen水位是否高于WMARK_LOW，如果是则退出当前循环。</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * We think the allocation will succeed in this zone,</span></span><br><span class="line"><span class="comment">             * but it is not certain, hence the false. The caller</span></span><br><span class="line"><span class="comment">             * will repeat this with true if allocation indeed</span></span><br><span class="line"><span class="comment">             * succeeds in this zone.</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            compaction_defer_reset(zone, order, <span class="literal">false</span>);</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * It is possible that async compaction aborted due to</span></span><br><span class="line"><span class="comment">             * need_resched() and the watermarks were ok thanks to</span></span><br><span class="line"><span class="comment">             * somebody else freeing memory. The allocation can</span></span><br><span class="line"><span class="comment">             * however still fail so we better signal the</span></span><br><span class="line"><span class="comment">             * need_resched() contention anyway (this will not</span></span><br><span class="line"><span class="comment">             * prevent the allocation attempt).</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">if</span> (zone_contended == COMPACT_CONTENDED_SCHED)</span><br><span class="line">                *contended = COMPACT_CONTENDED_SCHED;</span><br><span class="line"> </span><br><span class="line">            <span class="keyword">goto</span> break_loop;</span><br><span class="line">        &#125;</span><br><span class="line">...</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">break_loop:</span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * We might not have tried all the zones, so  be conservative</span></span><br><span class="line"><span class="comment">         * and assume they are not all lock contended.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        all_zones_contended = ;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * If at least one zone wasn&#x27;t deferred or skipped, we report if all</span></span><br><span class="line"><span class="comment">     * zones that were tried were lock contended.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (rc &gt; COMPACT_SKIPPED &amp;&amp; all_zones_contended)</span><br><span class="line">        *contended = COMPACT_CONTENDED_LOCK;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> rc;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>compact_zone_order调用compact_zone，最主要的就是将参数填入struct compact_control结构体，然后和zone一起作为参数传递给compact_zone。</p>
+<p>struct compact_control数据结构记录了被迁移的页面，以及规整过程中迁移到的页面列表。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">compact_zone_order</span><span class="params">(struct zone *zone, <span class="keyword">int</span> order,</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="keyword">gfp_t</span> gfp_mask, <span class="keyword">enum</span> migrate_mode mode, <span class="keyword">int</span> *contended,</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="keyword">int</span> alloc_flags, <span class="keyword">int</span> classzone_idx)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> ret;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">compact_control</span> <span class="title">cc</span> =</span> &#123;</span><br><span class="line">        .nr_freepages = ,</span><br><span class="line">        .nr_migratepages = ,</span><br><span class="line">        .order = order,------------------------------------------需要规整的页面阶数</span><br><span class="line">        .gfp_mask = gfp_mask,------------------------------------页面规整的页面掩码</span><br><span class="line">        .zone = zone,</span><br><span class="line">        .mode = mode,--------------------------------------------页面规整模式-同步、异步</span><br><span class="line">        .alloc_flags = alloc_flags,</span><br><span class="line">        .classzone_idx = classzone_idx,</span><br><span class="line">    &#125;;</span><br><span class="line">    INIT_LIST_HEAD(&amp;cc.freepages);-------------------------------初始化迁移目的地的链表</span><br><span class="line">    INIT_LIST_HEAD(&amp;cc.migratepages);----------------------------初始化将要迁移页面链表</span><br><span class="line"> </span><br><span class="line">    ret = compact_zone(zone, &amp;cc);</span><br><span class="line"> </span><br><span class="line">    VM_BUG_ON(!list_empty(&amp;cc.freepages));</span><br><span class="line">    VM_BUG_ON(!list_empty(&amp;cc.migratepages));</span><br><span class="line"> </span><br><span class="line">    *contended = cc.contended;</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">compact_zone</span><span class="params">(struct zone *zone, struct compact_control *cc)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ret;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> start_pfn = zone-&gt;zone_start_pfn;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> end_pfn = zone_end_pfn(zone);</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">int</span> migratetype = gfpflags_to_migratetype(cc-&gt;gfp_mask);</span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">bool</span> sync = cc-&gt;mode != MIGRATE_ASYNC;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> last_migrated_pfn = ;</span><br><span class="line"> </span><br><span class="line">    ret = compaction_suitable(zone, cc-&gt;order, cc-&gt;alloc_flags,</span><br><span class="line">                            cc-&gt;classzone_idx);-------------------------------根据当前zone水位来判断是否需要进行内存规整，COMPACT_CONTINUE表示可以做内存规整。</span><br><span class="line">    <span class="keyword">switch</span> (ret) &#123;</span><br><span class="line">    <span class="keyword">case</span> COMPACT_PARTIAL:</span><br><span class="line">    <span class="keyword">case</span> COMPACT_SKIPPED:</span><br><span class="line">        <span class="comment">/* Compaction is likely to fail */</span></span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    <span class="keyword">case</span> COMPACT_CONTINUE:</span><br><span class="line">        <span class="comment">/* Fall through to compaction */</span></span><br><span class="line">        ;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Clear pageblock skip if there were failures recently and compaction</span></span><br><span class="line"><span class="comment">     * is about to be retried after being deferred. kswapd does not do</span></span><br><span class="line"><span class="comment">     * this reset as it&#x27;ll reset the cached information when going to sleep.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (compaction_restarting(zone, cc-&gt;order) &amp;&amp; !current_is_kswapd())</span><br><span class="line">        __reset_isolation_suitable(zone);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Setup to move all movable pages to the end of the zone. Used cached</span></span><br><span class="line"><span class="comment">     * information on where the scanners should start but check that it</span></span><br><span class="line"><span class="comment">     * is initialised by ensuring the values are within zone boundaries.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    cc-&gt;migrate_pfn = zone-&gt;compact_cached_migrate_pfn[sync];-----------------表示从zone的开始页面开始扫描和查找哪些页面可以被迁移。</span><br><span class="line">    cc-&gt;free_pfn = zone-&gt;compact_cached_free_pfn;-----------------------------从zone末端开始扫描和查找哪些空闲的页面可以用作迁移页面的目的地。</span><br><span class="line">    <span class="keyword">if</span> (cc-&gt;free_pfn &lt; start_pfn || cc-&gt;free_pfn &gt; end_pfn) &#123;-----------------下面对free_pfn和migrate_pfn进行范围限制。</span><br><span class="line">        cc-&gt;free_pfn = end_pfn &amp; ~(pageblock_nr_pages-);</span><br><span class="line">        zone-&gt;compact_cached_free_pfn = cc-&gt;free_pfn;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (cc-&gt;migrate_pfn &lt; start_pfn || cc-&gt;migrate_pfn &gt; end_pfn) &#123;</span><br><span class="line">        cc-&gt;migrate_pfn = start_pfn;</span><br><span class="line">        zone-&gt;compact_cached_migrate_pfn[] = cc-&gt;migrate_pfn;</span><br><span class="line">        zone-&gt;compact_cached_migrate_pfn[] = cc-&gt;migrate_pfn;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    trace_mm_compaction_begin(start_pfn, cc-&gt;migrate_pfn,</span><br><span class="line">                cc-&gt;free_pfn, end_pfn, sync);</span><br><span class="line"> </span><br><span class="line">    migrate_prep_local();</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">while</span> ((ret = compact_finished(zone, cc, migratetype)) ==</span><br><span class="line">                        COMPACT_CONTINUE) &#123;-----------------------------------<span class="keyword">while</span>中从zone开头扫描查找合适的迁移页面，然后尝试迁移到zone末端空闲页面中，直到zone处于低水位WMARK_LOW之上。</span><br><span class="line">        <span class="keyword">int</span> err;</span><br><span class="line">        <span class="keyword">unsigned</span> <span class="keyword">long</span> isolate_start_pfn = cc-&gt;migrate_pfn;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">switch</span> (isolate_migratepages(zone, cc)) &#123;-----------------------------用于扫描和查找合适迁移的页，从zone头部开始找起，查找步长以pageblock_nr_pages为单位。</span><br><span class="line">        <span class="keyword">case</span> ISOLATE_ABORT:</span><br><span class="line">            ret = COMPACT_PARTIAL;</span><br><span class="line">            putback_movable_pages(&amp;cc-&gt;migratepages);</span><br><span class="line">            cc-&gt;nr_migratepages = ;</span><br><span class="line">            <span class="keyword">goto</span> out;</span><br><span class="line">        <span class="keyword">case</span> ISOLATE_NONE:</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * We haven&#x27;t isolated and migrated anything, but</span></span><br><span class="line"><span class="comment">             * there might still be unflushed migrations from</span></span><br><span class="line"><span class="comment">             * previous cc-&gt;order aligned block.</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">goto</span> check_drain;</span><br><span class="line">        <span class="keyword">case</span> ISOLATE_SUCCESS:</span><br><span class="line">            ;</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">        err = migrate_pages(&amp;cc-&gt;migratepages, compaction_alloc,--------------migrate_pages是页面迁移核心函数，从cc-&gt;migratepages中摘取页，然后尝试去迁移。</span><br><span class="line">                compaction_free, (<span class="keyword">unsigned</span> <span class="keyword">long</span>)cc, cc-&gt;mode,</span><br><span class="line">                MR_COMPACTION);</span><br><span class="line"> </span><br><span class="line">        trace_mm_compaction_migratepages(cc-&gt;nr_migratepages, err,</span><br><span class="line">                            &amp;cc-&gt;migratepages);</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/* All pages were either migrated or will be released */</span></span><br><span class="line">        cc-&gt;nr_migratepages = ;</span><br><span class="line">        <span class="keyword">if</span> (err) &#123;------------------------------------------------------------没处理成功的页面会放回到合适的LRU链表中。</span><br><span class="line">            putback_movable_pages(&amp;cc-&gt;migratepages);</span><br><span class="line">            <span class="comment">/*</span></span><br><span class="line"><span class="comment">             * migrate_pages() may return -ENOMEM when scanners meet</span></span><br><span class="line"><span class="comment">             * and we want compact_finished() to detect it</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">            <span class="keyword">if</span> (err == -ENOMEM &amp;&amp; cc-&gt;free_pfn &gt; cc-&gt;migrate_pfn) &#123;</span><br><span class="line">                ret = COMPACT_PARTIAL;</span><br><span class="line">                <span class="keyword">goto</span> out;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">...</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">out:</span><br><span class="line">...</span><br><span class="line">    trace_mm_compaction_end(start_pfn, cc-&gt;migrate_pfn,</span><br><span class="line">                cc-&gt;free_pfn, end_pfn, sync, ret);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>compaction_suitable根据当前zone水位决定是否需要继续内存规整，主要工作由__compaction_suitable进行处理。</p>
+<p>主要依据zone低水位和extfrag_threshold两个参数进行判断。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">compaction_suitable</span><span class="params">(struct zone *zone, <span class="keyword">int</span> order,</span></span></span><br><span class="line"><span class="params"><span class="function">                    <span class="keyword">int</span> alloc_flags, <span class="keyword">int</span> classzone_idx)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> ret;</span><br><span class="line"> </span><br><span class="line">    ret = __compaction_suitable(zone, order, alloc_flags, classzone_idx);</span><br><span class="line">    trace_mm_compaction_suitable(zone, order, ret);</span><br><span class="line">    <span class="keyword">if</span> (ret == COMPACT_NOT_SUITABLE_ZONE)</span><br><span class="line">        ret = COMPACT_SKIPPED;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">static</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> __compaction_suitable(struct zone *zone, <span class="keyword">int</span> order,</span><br><span class="line">                    <span class="keyword">int</span> alloc_flags, <span class="keyword">int</span> classzone_idx)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">int</span> fragindex;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> watermark;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * order == -1 is expected when compacting via</span></span><br><span class="line"><span class="comment">     * /proc/sys/vm/compact_memory</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (order == -)</span><br><span class="line">        <span class="keyword">return</span> COMPACT_CONTINUE;</span><br><span class="line"> </span><br><span class="line">    watermark = low_wmark_pages(zone);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * If watermarks for high-order allocation are already met, there</span></span><br><span class="line"><span class="comment">     * should be no need for compaction at all.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (zone_watermark_ok(zone, order, watermark, classzone_idx,</span><br><span class="line">                                alloc_flags))--------------------------------------COMPACT_PARTIAL：如果满足低水位，则不需要进行内存规整。</span><br><span class="line">        <span class="keyword">return</span> COMPACT_PARTIAL;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Watermarks for order-0 must be met for compaction. Note the 2UL.</span></span><br><span class="line"><span class="comment">     * This is because during migration, copies of pages need to be</span></span><br><span class="line"><span class="comment">     * allocated and for a short time, the footprint is higher</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    watermark += (<span class="number">2UL</span> &lt;&lt; order);---------------------------------------------------增加水位高度为watermark+<span class="number">2</span>&lt;&lt;order。</span><br><span class="line">    <span class="keyword">if</span> (!zone_watermark_ok(zone, , watermark, classzone_idx, alloc_flags))--------COMPACT_SKIPPED：如果达不到新水位，说明当前zone中空闲页面很少，不适合作内存规整，跳过此zone。</span><br><span class="line">        <span class="keyword">return</span> COMPACT_SKIPPED;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * fragmentation index determines if allocation failures are due to</span></span><br><span class="line"><span class="comment">     * low memory or external fragmentation</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * index of -1000 would imply allocations might succeed depending on</span></span><br><span class="line"><span class="comment">     * watermarks, but we already failed the high-order watermark check</span></span><br><span class="line"><span class="comment">     * index towards 0 implies failure is due to lack of memory</span></span><br><span class="line"><span class="comment">     * index towards 1000 implies failure is due to fragmentation</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * Only compact if a failure would be due to fragmentation.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    fragindex = fragmentation_index(zone, order);</span><br><span class="line">    <span class="keyword">if</span> (fragindex &gt;=  &amp;&amp; fragindex &lt;= sysctl_extfrag_threshold)-----------------由extfrag_threshold控制的内存规整流程</span><br><span class="line">        <span class="keyword">return</span> COMPACT_NOT_SUITABLE_ZONE;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> COMPACT_CONTINUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>compact_finished判断内存规整流程是否可以结束，结束的条件有两个：</p>
+<p>一是cc-&gt;migrate_pfn和cc-&gt;free_pfn两个指针相遇；二是以order为条件判断当前zone的水位在低水位之上。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">compact_finished</span><span class="params">(struct zone *zone, struct compact_control *cc,</span></span></span><br><span class="line"><span class="params"><span class="function">                <span class="keyword">const</span> <span class="keyword">int</span> migratetype)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ret;</span><br><span class="line"> </span><br><span class="line">    ret = __compact_finished(zone, cc, migratetype);</span><br><span class="line">    trace_mm_compaction_finished(zone, cc-&gt;order, ret);</span><br><span class="line">    <span class="keyword">if</span> (ret == COMPACT_NO_SUITABLE_PAGE)</span><br><span class="line">        ret = COMPACT_CONTINUE;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> __compact_finished(struct zone *zone, struct compact_control *cc,</span><br><span class="line">                <span class="keyword">const</span> <span class="keyword">int</span> migratetype)</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">int</span> order;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> watermark;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (cc-&gt;contended || fatal_signal_pending(current))</span><br><span class="line">        <span class="keyword">return</span> COMPACT_PARTIAL;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/* Compaction run completes if the migrate and free scanner meet */</span></span><br><span class="line">    <span class="keyword">if</span> (cc-&gt;free_pfn &lt;= cc-&gt;migrate_pfn) &#123;-----------------------------------------扫描可迁移页面和空闲页面，从zone的头尾向中间运行。当两者相遇，可以停止规整。</span><br><span class="line">        <span class="comment">/* Let the next compaction start anew. */</span></span><br><span class="line">        zone-&gt;compact_cached_migrate_pfn[] = zone-&gt;zone_start_pfn;</span><br><span class="line">        zone-&gt;compact_cached_migrate_pfn[] = zone-&gt;zone_start_pfn;</span><br><span class="line">        zone-&gt;compact_cached_free_pfn = zone_end_pfn(zone);</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * Mark that the PG_migrate_skip information should be cleared</span></span><br><span class="line"><span class="comment">         * by kswapd when it goes to sleep. kswapd does not set the</span></span><br><span class="line"><span class="comment">         * flag itself as the decision to be clear should be directly</span></span><br><span class="line"><span class="comment">         * based on an allocation request.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (!current_is_kswapd())</span><br><span class="line">            zone-&gt;compact_blockskip_flush = <span class="literal">true</span>;</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">return</span> COMPACT_COMPLETE;--------------------------------------------------停止内存规整</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * order == -1 is expected when compacting via</span></span><br><span class="line"><span class="comment">     * /proc/sys/vm/compact_memory</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (cc-&gt;order == -)----------------------------------------------------------order为<span class="number">-1</span>表示强制执行内存规整，继续内存规整</span><br><span class="line">        <span class="keyword">return</span> COMPACT_CONTINUE;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/* Compaction run is not finished if the watermark is not met */</span></span><br><span class="line">    watermark = low_wmark_pages(zone);</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">if</span> (!zone_watermark_ok(zone, cc-&gt;order, watermark, cc-&gt;classzone_idx,</span><br><span class="line">                            cc-&gt;alloc_flags))--------------------------------------不满足低水位条件，继续内存规整。</span><br><span class="line">        <span class="keyword">return</span> COMPACT_CONTINUE;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/* Direct compactor: Is a suitable page free? */</span></span><br><span class="line">    <span class="keyword">for</span> (order = cc-&gt;order; order &lt; MAX_ORDER; order++) &#123;</span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">free_area</span> *<span class="title">area</span> =</span> &amp;zone-&gt;free_area[order];</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/* Job done if page is free of the right migratetype */</span></span><br><span class="line">        <span class="keyword">if</span> (!list_empty(&amp;area-&gt;free_list[migratetype]))----------------------------空闲页面为空，无法进行迁移，停止内存规整。</span><br><span class="line">            <span class="keyword">return</span> COMPACT_PARTIAL;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/* Job done if allocation would set block type */</span></span><br><span class="line">        <span class="keyword">if</span> (order &gt;= pageblock_order &amp;&amp; area-&gt;nr_free)</span><br><span class="line">            <span class="keyword">return</span> COMPACT_PARTIAL;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> COMPACT_NO_SUITABLE_PAGE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>isolate_migratepages扫描并寻找zone中可迁移页面，结果回添加到cc-&gt;migratepages链表中。</p>
+<p>扫描的一个重要参数是页的迁移属性参考MIGRATE_TYPES有详细解释。</p>
+<p>Linux内核以pageblock为单位来管理页的迁移属性，一个pageblock大小为4MB大小，即2^10个页面。</p>
+<p>pageblock_nr_pages即为1024个页面。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">isolate_migrate_t</span> <span class="title">isolate_migratepages</span><span class="params">(struct zone *zone,</span></span></span><br><span class="line"><span class="params"><span class="function">                    struct compact_control *cc)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> low_pfn, end_pfn;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">page</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">isolate_mode_t</span> isolate_mode =</span><br><span class="line">        (cc-&gt;mode == MIGRATE_ASYNC ? ISOLATE_ASYNC_MIGRATE : );</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Start at where we last stopped, or beginning of the zone as</span></span><br><span class="line"><span class="comment">     * initialized by compact_zone()</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    low_pfn = cc-&gt;migrate_pfn;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/* Only scan within a pageblock boundary */</span></span><br><span class="line">    end_pfn = ALIGN(low_pfn + , pageblock_nr_pages);</span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Iterate over whole pageblocks until we find the first suitable.</span></span><br><span class="line"><span class="comment">     * Do not cross the free scanner.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">for</span> (; end_pfn &lt;= cc-&gt;free_pfn;---------------------------------------从cc-&gt;migrate_pfn开始以pageblock_nr_pages为步长向zone尾部进行扫描。</span><br><span class="line">            low_pfn = end_pfn, end_pfn += pageblock_nr_pages) &#123;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * This can potentially iterate a massively long zone with</span></span><br><span class="line"><span class="comment">         * many pageblocks unsuitable, so periodically check if we</span></span><br><span class="line"><span class="comment">         * need to schedule, or even abort async compaction.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (!(low_pfn % (SWAP_CLUSTER_MAX * pageblock_nr_pages))</span><br><span class="line">                        &amp;&amp; compact_should_abort(cc))</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"> </span><br><span class="line">        page = pageblock_pfn_to_page(low_pfn, end_pfn, zone);</span><br><span class="line">        <span class="keyword">if</span> (!page)</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/* If isolation recently failed, do not retry */</span></span><br><span class="line">        <span class="keyword">if</span> (!isolation_suitable(cc, page))</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * For async compaction, also only scan in MOVABLE blocks.</span></span><br><span class="line"><span class="comment">         * Async compaction is optimistic to see if the minimum amount</span></span><br><span class="line"><span class="comment">         * of work satisfies the allocation.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">if</span> (cc-&gt;mode == MIGRATE_ASYNC &amp;&amp;</span><br><span class="line">            !migrate_async_suitable(get_pageblock_migratetype(page)))----migrate_async_suitable判断pageblock是否是MIGRATE_MOVABLE和MIGRATE_CMA两种类型，这两种类型可以迁移。</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/* Perform the isolation */</span></span><br><span class="line">        low_pfn = isolate_migratepages_block(cc, low_pfn, end_pfn,</span><br><span class="line">                                isolate_mode);---------------------------扫描和分离pageblock中的页面是否是和迁移。</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">if</span> (!low_pfn || cc-&gt;contended) &#123;</span><br><span class="line">            acct_isolated(zone, cc);</span><br><span class="line">            <span class="keyword">return</span> ISOLATE_ABORT;</span><br><span class="line">        &#125;</span><br><span class="line"> </span><br><span class="line">        <span class="comment">/*</span></span><br><span class="line"><span class="comment">         * Either we isolated something and proceed with migration. Or</span></span><br><span class="line"><span class="comment">         * we failed and compact_zone should decide if we should</span></span><br><span class="line"><span class="comment">         * continue or not.</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    acct_isolated(zone, cc);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Record where migration scanner will be restarted. If we end up in</span></span><br><span class="line"><span class="comment">     * the same pageblock as the free scanner, make the scanners fully</span></span><br><span class="line"><span class="comment">     * meet so that compact_finished() terminates compaction.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    cc-&gt;migrate_pfn = (end_pfn &lt;= cc-&gt;free_pfn) ? low_pfn : cc-&gt;free_pfn;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> cc-&gt;nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>compaction_alloc()从zone的末尾开始查找空闲页面，并把空闲页面添加到cc-&gt;freepages链表中。然后从cc-&gt;freepages中摘除页面，返回给migrate_pages作为迁移使用。</p>
+<p>compaction_free是规整失败的处理函数，将空闲页面返回给cc-&gt;freepages。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> struct page *<span class="title">compaction_alloc</span><span class="params">(struct page *migratepage,</span></span></span><br><span class="line"><span class="params"><span class="function">                    <span class="keyword">unsigned</span> <span class="keyword">long</span> data,</span></span></span><br><span class="line"><span class="params"><span class="function">                    <span class="keyword">int</span> **result)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">compact_control</span> *<span class="title">cc</span> =</span> (struct compact_control *)data;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">freepage</span>;</span></span><br><span class="line"> </span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Isolate free pages if necessary, and if we are not aborting due to</span></span><br><span class="line"><span class="comment">     * contention.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">if</span> (list_empty(&amp;cc-&gt;freepages)) &#123;</span><br><span class="line">        <span class="keyword">if</span> (!cc-&gt;contended)</span><br><span class="line">            isolate_freepages(cc);--------------------------------------查找可以用来作为迁移目的页面</span><br><span class="line"> </span><br><span class="line">        <span class="keyword">if</span> (list_empty(&amp;cc-&gt;freepages))---------------------------------如果没有页面可被用来作为迁移目的页面，返回<span class="literal">NULL</span>。</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">    &#125;</span><br><span class="line"> </span><br><span class="line">    freepage = list_entry(cc-&gt;freepages.next, struct page, lru);</span><br><span class="line">    list_del(&amp;freepage-&gt;lru);-------------------------------------------将空闲页面从cc-&gt;freepages中摘除。</span><br><span class="line">    cc-&gt;nr_freepages--;</span><br><span class="line"> </span><br><span class="line">    <span class="keyword">return</span> freepage;----------------------------------------------------找到可以被用作迁移目的的页面</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">compaction_free</span><span class="params">(struct page *page, <span class="keyword">unsigned</span> <span class="keyword">long</span> data)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">compact_control</span> *<span class="title">cc</span> =</span> (struct compact_control *)data;</span><br><span class="line"> </span><br><span class="line">    list_add(&amp;page-&gt;lru, &amp;cc-&gt;freepages);-------------------------------失败情况下，将页面放回cc-&gt;freepages。</span><br><span class="line">    cc-&gt;nr_freepages++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yNzAzNjY4Mjc=">https://zhuanlan.zhihu.com/p/270366827<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmJzbWF4LmNvbS9BL1pPSlByUWdvZHYv">https://www.bbsmax.com/A/ZOJPrQgodv/<i class="fa fa-external-link-alt"></i></span></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/" title="Linux内存管理（九）页面迁移和内存规整">http://carlyleliu.github.io/2021/Linux内存管理（九）页面迁移和内存规整/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/page-memory/" rel="tag"><i class="fa fa-tag"></i> page memory</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%8D%81%EF%BC%89KSM/" rel="prev" title="Linux内存管理（十）KSM">
+      <i class="fa fa-chevron-left"></i> Linux内存管理（十）KSM
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AB%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6/" rel="next" title="Linux内存管理（八）页面回收">
+      Linux内存管理（八）页面回收 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB"><span class="nav-text">1. 页面迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E7%9A%84api"><span class="nav-text">1.2 页面迁移的API</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E6%A8%A1%E5%BC%8F"><span class="nav-text">1.3 迁移模式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E5%8E%9F%E5%9B%A0"><span class="nav-text">1.4 迁移原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#migrate_pages%E4%BB%8B%E7%BB%8D"><span class="nav-text">1.5 migrate_pages()介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E5%89%8D%E7%9A%84%E5%87%86%E5%A4%87"><span class="nav-text">1.5 迁移前的准备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A7%A3%E9%99%A4old-page%E7%9A%84%E9%A1%B5%E8%A1%A8%E6%98%A0%E5%B0%84"><span class="nav-text">1.6 解除old page的页表映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEnew-page%E7%9A%84%E9%A1%B5%E9%9D%A2%E5%86%85%E5%AE%B9%E5%85%83%E6%95%B0%E6%8D%AE%E5%8F%8A%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"><span class="nav-text">1.7 设置new page的页面内容、元数据及映射关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E7%9A%84%E6%94%B6%E5%B0%BE%E5%B7%A5%E4%BD%9C"><span class="nav-text">1.6 页面迁移的收尾工作</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4"><span class="nav-text">2. 内存规整</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4%E7%9A%84%E8%A7%A6%E5%8F%91"><span class="nav-text">2.1 内存规整的触发</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4%E7%9B%B8%E5%85%B3%E8%8A%82%E7%82%B9"><span class="nav-text">2.1.1 内存规整相关节点</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.2 内存规整实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">980k</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/";
+    this.page.identifier = "2021/Linux内存管理（九）页面迁移和内存规整/";
+    this.page.title = "Linux内存管理（九）页面迁移和内存规整";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

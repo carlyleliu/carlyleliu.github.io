@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1. 概述 mtd驱动模型则通过对nor flash、nandflash等闪存设备进行抽象，对上层模块抽象成统一成设备模型（mtd_info），对下则通过mtd_info完成与具体闪存设备驱动的绑定，从而完成对闪存设备的访问操作。此处mtd的抽象，就和vfs抽象类似。原图  其中mtd block、mtd char均属于mtd驱动模型的部分，而FTL、NFTL则不属于mtd驱动模型部分 ，由具体的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之MTD子系统（二）实现分析">
+<meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="量子范式">
+<meta property="og:description" content="1. 概述 mtd驱动模型则通过对nor flash、nandflash等闪存设备进行抽象，对上层模块抽象成统一成设备模型（mtd_info），对下则通过mtd_info完成与具体闪存设备驱动的绑定，从而完成对闪存设备的访问操作。此处mtd的抽象，就和vfs抽象类似。原图  其中mtd block、mtd char均属于mtd驱动模型的部分，而FTL、NFTL则不属于mtd驱动模型部分 ，由具体的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/mtd/MTD_Framework.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/mtd/mtdchar_read.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/mtd/MTD_Struct.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/mtd/register_mtd_blktrans.png">
+<meta property="article:published_time" content="2020-10-07T02:55:47.000Z">
+<meta property="article:modified_time" content="2022-03-20T12:07:03.981Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="mtd">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/mtd/MTD_Framework.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动之MTD子系统（二）实现分析 | 量子范式</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">量子范式</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之MTD子系统（二）实现分析
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-07 10:55:47" itemprop="dateCreated datePublished" datetime="2020-10-07T10:55:47+08:00">2020-10-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之MTD子系统（二）实现分析/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="概述">1. 概述</h2>
+<p>mtd驱动模型则通过对nor flash、nandflash等闪存设备进行抽象，对上层模块抽象成统一成设备模型（mtd_info），对下则通过mtd_info完成与具体闪存设备驱动的绑定，从而完成对闪存设备的访问操作。此处mtd的抽象，就和vfs抽象类似。<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDlhMzIxZTA4NTMzYTAzMDM4MzUx">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/mtd/MTD_Framework.png" /></p>
+<p>其中mtd block、mtd char均属于mtd驱动模型的部分，而FTL、NFTL则不属于mtd驱动模型部分 ，由具体的文件系统来实现，如ubi文件系统挂载时，则是通过设备文件/dev/ubiX_Y进行挂载；而针对yaffs2文件系统，其可以直接使用/dev/mtdblockX进行挂载（当然其也可以不借助mtdblock）。</p>
+<p>其中mtd char当我们想在文件系统下实现对bootloader、kernel、文件系统镜像的升级操作时，则可以通过读写/dev/mtdX（mtd 字符设备），实现针对bootloader、kernel、filesystem的升级操作。</p>
+<p>而mtd_info则代表一个flash芯片或一个flash芯片的分区，当flash设备（nandflash设备、nor flash设备）的驱动初始化时，则会根据分区划分，创建对应的mtd_info，并完成mtd_info与该芯片驱动的绑定操作。而在mtd_info的创建过程中，则会创建对应的mtd char、mtd block，从而完成与vfs的关联。</p>
+<span id="more"></span>
+<h2 id="mtd字符设备linuxdriversmtdmtdchar.c">2. MTD字符设备（linux/drivers/mtd/mtdchar.c）</h2>
+<p>入口函数是init_mtdchar，如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __init <span class="title">init_mtdchar</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> ret;</span><br><span class="line"></span><br><span class="line">  ret = __register_chrdev(MTD_CHAR_MAJOR, <span class="number">0</span>, <span class="number">1</span> &lt;&lt; MINORBITS,</span><br><span class="line">           <span class="string">&quot;mtd&quot;</span>, &amp;mtd_fops);</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MTD_CHAR_MAJOR		90</span></span><br></pre></td></tr></table></figure> 该函数就注册了一个字符设备驱动程序(主设备号是 90)，file_operation结构体中实现了操作MTD设备的打开、读、写等函数。mtd_fops定义如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">mtd_fops</span> =</span> &#123;</span><br><span class="line">  .owner		= THIS_MODULE,</span><br><span class="line">  .llseek		= mtdchar_lseek,</span><br><span class="line">  .read		= mtdchar_read,</span><br><span class="line">  .write		= mtdchar_write,</span><br><span class="line">  .unlocked_ioctl	= mtdchar_unlocked_ioctl,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_COMPAT</span></span><br><span class="line">  .compat_ioctl	= mtdchar_compat_ioctl,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  .open		= mtdchar_open,</span><br><span class="line">  .release	= mtdchar_close,</span><br><span class="line">  .mmap		= mtdchar_mmap,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CONFIG_MMU</span></span><br><span class="line">  .get_unmapped_area = mtdchar_get_unmapped_area,</span><br><span class="line">  .mmap_capabilities = mtdchar_mmap_capabilities,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
+<p>看下mtdchar_open的实现： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">mtdchar_open</span><span class="params">(struct inode *inode, struct file *file)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> minor = iminor(inode);</span><br><span class="line">  <span class="keyword">int</span> devnum = minor &gt;&gt; <span class="number">1</span>;</span><br><span class="line">  <span class="keyword">int</span> ret = <span class="number">0</span>;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">mtd_info</span> *<span class="title">mtd</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">mtd_file_info</span> *<span class="title">mfi</span>;</span></span><br><span class="line"></span><br><span class="line">  pr_debug(<span class="string">&quot;MTD_open\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* You can&#x27;t open the RO devices RW */</span></span><br><span class="line">  <span class="keyword">if</span> ((file-&gt;f_mode &amp; FMODE_WRITE) &amp;&amp; (minor &amp; <span class="number">1</span>))</span><br><span class="line">    <span class="keyword">return</span> -EACCES;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 1. 根据设备节点找到mtd_info结构体 */</span></span><br><span class="line">  mtd = get_mtd_device(<span class="literal">NULL</span>, devnum);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (IS_ERR(mtd))</span><br><span class="line">    <span class="keyword">return</span> PTR_ERR(mtd);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (mtd-&gt;type == MTD_ABSENT) &#123;</span><br><span class="line">    ret = -ENODEV;</span><br><span class="line">    <span class="keyword">goto</span> out1;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* You can&#x27;t open it RW if it&#x27;s not a writeable device */</span></span><br><span class="line">  <span class="keyword">if</span> ((file-&gt;f_mode &amp; FMODE_WRITE) &amp;&amp; !(mtd-&gt;flags &amp; MTD_WRITEABLE)) &#123;</span><br><span class="line">    ret = -EACCES;</span><br><span class="line">    <span class="keyword">goto</span> out1;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 2. 分配mtd_file_info结构体 */</span></span><br><span class="line">  mfi = kzalloc(<span class="keyword">sizeof</span>(*mfi), GFP_KERNEL);</span><br><span class="line">  <span class="keyword">if</span> (!mfi) &#123;</span><br><span class="line">    ret = -ENOMEM;</span><br><span class="line">    <span class="keyword">goto</span> out1;</span><br><span class="line">  &#125;</span><br><span class="line">  mfi-&gt;mtd = mtd;</span><br><span class="line">    <span class="comment">/* 3. file结构体的私有数据指针指向mtd_file_info结构体 */</span></span><br><span class="line">  file-&gt;private_data = mfi;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">out1:</span><br><span class="line">  put_mtd_device(mtd);</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">&#125; <span class="comment">/* mtdchar_open */</span></span><br></pre></td></tr></table></figure> 该函数主要分配了一个mtd_file_info结构体，该结构体的mtd成员指向mtd_info，然后file结构体的私有数据指针private_data指向mtd_file_info结构体。</p>
+<p>对于read和write的流程基本上是一致的，这里以read为例列出函数调用流程，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZWIzOTBlNDAxZmQwNmFhYTU2MmY2">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/mtd/mtdchar_read.png" /></p>
+<p>可以看到函数最后调用mtd_info的_read_oob或者_read。这就涉及到mtd_info的注册及实现流程了，后续会给出其流程，这里先不过多讲解。</p>
+<h2 id="mtd块设备linuxdriversmtdmtdblock.c">3. MTD块设备（linux/drivers/mtd/mtdblock.c）</h2>
+<h3 id="数据结构">3.1 数据结构</h3>
+<p>MTD子系统是非常复杂的系统，里面涉及的数据结构和算法也非常多，这里首先必须要把各数据结构之间的关系理清楚，否则一头扎进去阅读源代码就出不来了，理清数据结构之间的关系和含义是理解代码的最重要的步骤，这里将mtd子系统涉及到的重要数据结构和各数据结构之间的关系列出一张表来，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZWZhMmI2Mzc2ODkwOTIwNzk0NGYw">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/mtd/MTD_Struct.png" /></p>
+<p>这个数据结构非常庞大，需要点击原图查看高清图片，下面对各数据结构做简要说明：</p>
+<p>mtd子系统主要是负责驱动nand flash或nor flash，这些都是块设备驱动程序，注册块设备驱动程序最基本的就是分配、设置注册一个gendisk结构体，该结构体是块设备驱动程序最基础的结构体。这里简单说明下块设备驱动程序和字符设备驱动程序最根本的区别在于，对块设备的读写操作不是立即执行的而是进行调整顺序优化后执行的，原因在于块设备的读写速率较慢（相较于内存等）尤其在频繁的读写的时候效率就会很低，为此块设备驱动程序将对flash的读写操作工作先提交到工作队列然后采用电梯算法对一系列的读写操作进行重新排序和优化后再执行（flash操作慢其中操作定位就是很慢通过对读写的重新排序减少磁盘的定位次数就可以大大加速读写速率）。在上图中左侧部分就是gendisk结构体相关部分，详细如下：</p>
+<ul>
+<li>gendisk代表了一个通用硬盘（generic hard disk）对象，它存储了一个硬盘的信息，包括请求队列、分区链表和块设备操作函数集等。块设备驱动程序分配结构gendisk实例，装载分区表，分配请求队列并填充结构的其他域。</li>
+<li>request_queue用于组织request结构。对于一些磁盘设备而言请求的速度很慢，这时候内核就提供一种队列的机制把这些I/O请求添加到队列中（即：请求队列），在驱动中用request_queue结构体描述。在向块设备提交这些请求前内核会先执行请求的合并和排序预操作，以提高访问的效率，然后再由内核中的I/O调度程序子系统来负责提交 I/O 请求， 调度程序将磁盘资源分配给系统中所有挂起的块 I/O 请求，其工作是管理块设备的请求队列，决定队列中的请求的排列顺序以及什么时候派发请求到设备。</li>
+<li>request代表了挂起的I/O请求，每个请求用一个结构request实例描述，存放在请求队列链表中，由电梯算法进行排序，每个请求包含1个或多个结构bio实例。</li>
+<li>bio是内核中块I/O操作的基本容器，定义 在&lt;linux/bio.h&gt;中，该结构体代表了正在现场的（活动的）以片段（segment）链表形式组织的块I/O操作。一个片段是一小 块连续的内存缓冲区。这样的好处就是不需要保证单个缓冲区一定要连续。所以通过片段来描述缓冲区，即使一个缓冲区分散在内存的多个位置上，bio结构体也 能对内核保证I/O操作的执行，这样的就叫做聚散I/O。bio为通用层的主要数据结构，既描述了磁盘的位置，又描述了内存的位置，是上层内核vfs与下层驱动的连接纽带。</li>
+<li>block_device代表一个块设备对象，如：整个硬盘或特定分区。如果该结构代表一个分区，则其成员bd_part指向设备的分区结构。如果该结构代表设备，则其成员bd_disk指向设备的通用硬盘结构gendisk。</li>
+<li>block_device_operations可以类比于字符设备驱动程序中的file_operations，该结构体是块设备的操作函数集。</li>
+<li>disk_events用于描述磁盘事件，例如插拔等。</li>
+<li>badblocks用于描述flash的坏块，由于flash会出现坏块，不能使用的情况，使用该结构来标识坏快。</li>
+</ul>
+<p>在结构体右侧就是mtd子系统中关于mtd系统实现部分，该部分主要实现对flash各个分区的设置和管理。同时下面我们会看到，该部分的实现会同时完成上面的gendisk结构体的设置和注册工作，这样对于普通的驱动开发人员而言就不需要手动设置注册gendisk结构体了。mtd子系统提供了更为简洁方便的接口给开发人员，实际上现在的驱动开发人员基本上都不需要怎么编写flash设备驱动程序了，而是通过dts设备树就可以完成对一个flash的适配工作。mtd子系统最重要的数据结构是 mtd_info，也就是上图的右半部分，准确来讲这部分才是mtd子系统的内容。该部分结构体内容如下：</p>
+<ul>
+<li>struct mtd_partition用于进行闪存芯片的分区定义，针对不支持设备树的内核，则一般在开发板对应的板级文件中定义该结构体类型变量的定义，用于说明本芯片的分区情况；针对支持设备树的内核，一般在设备树文件中定义分区信息，然后在芯片对应的驱动文件中解析该分区定义。</li>
+<li>struct mtd_part，主要由mtd设备驱动模型内部使用的分区信息，该结构体中包括本分区对应的struct mtd_info类型的变量以及指向master mtd_info的指针。系统中所有已注册的struct mtd_part变量。一般针对闪存芯片的操作接口（如mtd_info-&gt;_erase/_read/_write等），均在master mtd_info中定义。而在mtd_erase、mtd_read、mtd_write等对上层的接口中，根据传递的struct mtd_info类型变量，获取到对应的struct mtd_part类型变量，从而调用master mtd_info中对应的_erase、_read、_write等接口。</li>
+<li>struct mtd_info，该结构体是mtd设备驱动模型最主要的数据结构，通过该数据结构，对上完成与mtd接口层的关联；对下完成与具体类型闪存芯片驱动的关联（如针对nand flash controller driver，则通过mtd_info-&gt;priv=nand_chip，完成与nandflash controller driver的关联；针对nor flash，则同样通过mtd_info-&gt;priv=map_info完成关联；而针对其他类型的芯片，则同样是通过mtd_info-&gt;priv的关联），通过该结构体中的_erase、_read、_write等函数指针，完成针对下层设备驱动操作接口的抽象，完成对下层设备驱动接口的抽象模型的建立。</li>
+</ul>
+<p>上面讲了两个独立的数据结构系统，而将这两个数据结构联系起来的数据结构是mtd_blktrans_dev，该数据结构将mtd_info和gendisk联系起来，对于mtd驱动开发而言是不需要关心左侧部分的，右侧结构提供了简单易用的注册函数接口。</p>
+<h3 id="实现逻辑">3.2 实现逻辑</h3>
+<p>入口是module_mtd_blktrans(mtdblock_tr);详细过程如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> module_mtd_blktrans(__mtd_blktrans) \</span></span><br><span class="line"><span class="meta">	module_driver(__mtd_blktrans, register_mtd_blktrans, \</span></span><br><span class="line"><span class="meta">					deregister_mtd_blktrans)</span></span><br></pre></td></tr></table></figure> module_driver的定义如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> module_driver(__driver, __register, __unregister, ...) \</span></span><br><span class="line"><span class="meta">static int __init __driver##_init(void) \</span></span><br><span class="line"><span class="meta">&#123; \</span></span><br><span class="line"><span class="meta">	return __register(&amp;(__driver) , ##__VA_ARGS__); \</span></span><br><span class="line"><span class="meta">&#125; \</span></span><br><span class="line"><span class="meta">module_init(__driver##_init); \</span></span><br><span class="line"><span class="meta">static void __exit __driver##_exit(void) \</span></span><br><span class="line"><span class="meta">&#123; \</span></span><br><span class="line"><span class="meta">	__unregister(&amp;(__driver) , ##__VA_ARGS__); \</span></span><br><span class="line"><span class="meta">&#125; \</span></span><br><span class="line"><span class="meta">module_exit(__driver##_exit);</span></span><br></pre></td></tr></table></figure> 展开后得到： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> __init <span class="title">mtdblock_tr_init</span><span class="params">(<span class="keyword">void</span>)</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">  <span class="keyword">return</span> register_mtd_blktrans(&amp;mtdblock_tr); </span><br><span class="line">&#125; </span><br><span class="line">module_init(mtdblock_tr_init); </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> __exit <span class="title">mtdblock_tr_exit</span><span class="params">(<span class="keyword">void</span>)</span> </span></span><br><span class="line"><span class="function"></span>&#123; </span><br><span class="line">  deregister_mtd_blktrans(&amp;mtdblock_tr); </span><br><span class="line">&#125; </span><br><span class="line">module_exit(mtdblock_tr_exit);</span><br></pre></td></tr></table></figure></p>
+<p>一通展开后得到入口函数是register_mtd_blktrans(&amp;mtdblock_tr);该函数的调用栈非常复杂，主要函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZWNhN2MwNzkxMjkyOTgwNGI3ODc1">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/mtd/register_mtd_blktrans.png" /></p>
+<p>这个函数的流程很复杂，其中比较重要的工作有以下几点：</p>
+<ul>
+<li>注册一个mtd_user，register_mtd_user将blktrans_notifier添加到最终调用到mtd_notifiers为头部链表，并调用到blktrans_notifier中的add成员函数。此处的add函数最终会调用到mtdblock_tr结构体的add_mtd指针指向函数</li>
+<li>注册一个块设备（register_blkdev）</li>
+<li>分配并设置gendisk结构体，这个就是块设备驱动程序最重要的结构体。</li>
+<li>设置工作队列相关任务。</li>
+</ul>
+<p>关于函数详细的流程这里还没有分析清楚，这个后续有机会再看吧。</p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMzY3OTIyNDU=">https://zhuanlan.zhihu.com/p/136792245<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDQ3MTg1NjE=">https://blog.csdn.net/lickylin/article/details/104718561<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vMDUzMTc5aHUvcC8xMzk2NjE5OS5odG1s">https://www.cnblogs.com/053179hu/p/13966199.html<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cDovL2tlcm5lbC5kay9ibGstbXEucGRm">Linux Block IO: Introducing Multi-queue SSD Access on Multi-core Systems<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9lbi53aWtpcGVkaWEub3JnL3dpa2kvTm9vcF9zY2hlZHVsZXI=">NOOP scheduler<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly93d3cua2VybmVsLm9yZy9kb2MvaHRtbC9sYXRlc3QvYmxvY2svbnVsbF9ibGsuaHRtbA==">Null block device driver<i class="fa fa-external-link-alt"></i></span><br />
+《linux内核文档》</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/" title="Linux驱动之MTD子系统（二）实现分析">http://carlyleliu.github.io/2020/Linux驱动之MTD子系统（二）实现分析/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/mtd/" rel="tag"><i class="fa fa-tag"></i> mtd</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMMC%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Flash%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/" rel="prev" title="Linux驱动之MMC子系统（一）Flash设备基础">
+      <i class="fa fa-chevron-left"></i> Linux驱动之MMC子系统（一）Flash设备基础
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/" rel="next" title="Linux驱动之MTD子系统（一）Block设备基础">
+      Linux驱动之MTD子系统（一）Block设备基础 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mtd%E5%AD%97%E7%AC%A6%E8%AE%BE%E5%A4%87linuxdriversmtdmtdchar.c"><span class="nav-text">2. MTD字符设备（linux&#x2F;drivers&#x2F;mtd&#x2F;mtdchar.c）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mtd%E5%9D%97%E8%AE%BE%E5%A4%87linuxdriversmtdmtdblock.c"><span class="nav-text">3. MTD块设备（linux&#x2F;drivers&#x2F;mtd&#x2F;mtdblock.c）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">3.1 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="nav-text">3.2 实现逻辑</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">980k</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/";
+    this.page.identifier = "2020/Linux驱动之MTD子系统（二）实现分析/";
+    this.page.title = "Linux驱动之MTD子系统（二）实现分析";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

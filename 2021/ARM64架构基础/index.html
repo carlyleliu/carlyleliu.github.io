@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="1. ARM64架构介绍 1.1 ARMv8-A架构介绍 ARMv8-A是ARM公司发布的第一代支持64位处理器的指令集和架构。它在扩充64位寄存器的同时提供对上一代架构指令集的兼容，因而能同时提供运行32位和64位应用移序的执行环境。ARMv8-A架构除了提高了处理能力外，还引入了很多吸引人的新特性。  通过超大物理地址空间，提供超过4GB物理内存的访问。 具有64位宽的虚拟地址空间。32位处理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ARM64架构基础">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:site_name" content="量子范式">
+<meta property="og:description" content="1. ARM64架构介绍 1.1 ARMv8-A架构介绍 ARMv8-A是ARM公司发布的第一代支持64位处理器的指令集和架构。它在扩充64位寄存器的同时提供对上一代架构指令集的兼容，因而能同时提供运行32位和64位应用移序的执行环境。ARMv8-A架构除了提高了处理能力外，还引入了很多吸引人的新特性。  通过超大物理地址空间，提供超过4GB物理内存的访问。 具有64位宽的虚拟地址空间。32位处理">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/register.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/pstate_64.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/pstate_32.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/pstate_top.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/pstate_bottom.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/arm64.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/a64_1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/a64_2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/a64_3.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/mmu.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/mmu_table.png">
+<meta property="article:published_time" content="2021-10-24T06:51:39.000Z">
+<meta property="article:modified_time" content="2022-01-16T16:09:12.176Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="ARM64">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/arm64/register.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>ARM64架构基础 | 量子范式</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">量子范式</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          ARM64架构基础
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-10-24 14:51:39" itemprop="dateCreated datePublished" datetime="2021-10-24T14:51:39+08:00">2021-10-24</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Kernel/" itemprop="url" rel="index"><span itemprop="name">Linux Kernel</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/ARM64架构基础/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>7.2k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>7 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="arm64架构介绍">1. ARM64架构介绍</h2>
+<h3 id="armv8-a架构介绍">1.1 ARMv8-A架构介绍</h3>
+<p>ARMv8-A是ARM公司发布的第一代支持64位处理器的指令集和架构。它在扩充64位寄存器的同时提供对上一代架构指令集的兼容，因而能同时提供运行32位和64位应用移序的执行环境。ARMv8-A架构除了提高了处理能力外，还引入了很多吸引人的新特性。</p>
+<ul>
+<li>通过超大物理地址空间，提供超过4GB物理内存的访问。</li>
+<li>具有64位宽的虚拟地址空间。32位处理器中只能提供4GB大小的虚拟地址空间，这极大限制了桌面系统和服务器等应用的发挥。64位宽的虚拟地址空间可以提供超大的访问空间。</li>
+<li>提供31个64位宽的通用寄存器，可以减少对栈的访问，从而提高性能。</li>
+<li>提供16KB和64KB的页面，有助于降低TLB的未命中率（miss rate）。</li>
+<li>具有全新的异常处理模型，有助于降低操作系统和虚拟化的实现复杂度。</li>
+<li>具有全新的加载-获取、存储-释放指令（load-acquire，store-release instruction），专为C++11、C11以及Java内存模型而设计。</li>
+</ul>
+<span id="more"></span>
+<h3 id="常见的armv8处理器">1.2 常见的ARMv8处理器</h3>
+<p>下面介绍市面上常见的ARMv8架构的处理器内核。</p>
+<ul>
+<li>Cortex-A53处理器内核：ARM公司第一款采用ARMv8-A架构设计的处理器 内核，专为低功耗而设计，通常可以使用1~4个Cortex-A53处理器组成处理器簇（cluster），也可以和Cortex-A57/Cortex-A72等高性能处理器组成大小核架构。</li>
+<li>Cortex-A57处理器内核：采用64位ARMv8-A架构设计的CPU，而且通过AArch32执行状态来保持与ARMv7架构的完全后向兼容性。除了ARMv8的架构优势之外，Cortex-A57还提高了单个时钟周期的性能，比高性能的Cortex-A15CPU高出20%~40%。CortexA57还改进了二级高速缓存的设计以及内存系统的其他组件，极大地提高了能效。</li>
+<li>Cortex-A72处理器内核：2015年年初正式发布的基于ARMv8-A架构并对Cortex-A57处理器做了大量优化和改进的一款处理器内核。在相同的移动设备电池寿命限制下，Cortex-A72相比基于Cortex-A15的设备能提供3.5倍的性能提升，展现出优异的整体功耗效率。</li>
+</ul>
+<h3 id="arm64的基本概念">1.3 ARM64的基本概念</h3>
+<p>ARM处理器实现的是精简指令集计算机（ReducedInstruction Set Computer，RISC）架构。本节介绍ARMv8-A架构中的一些基本概念。</p>
+<ul>
+<li><p>处理单元<br />
+ARM公司的官方技术手册中提到了一个概念，可以把处理器处理事务的过程抽象为处理单元（Processing Element，（PE）。</p></li>
+<li><p>执行状态<br />
+执行状态（execution state）是处理器运行时的环境，包括寄存器的位宽、支持的指令集异常模型、内存管理以及编程模型等。ARMv8架构定义了两种执行模式。</p>
+<ul>
+<li>AArch64:64位的执行状态。提供31个64位的通用寄存器。提供64位的程序计数（PC）寄存器、栈指针（SP）寄存器以及异常链接寄存器（ELR）。提供A64指令集。定义ARMv8异常模型，支持4个异常等级ELO~EL3。提供64位的内存模型定义一组处理器状态（PSTATE）用来保存PE的状态。</li>
+<li>AArch32:32位的执行状态。提供13个32位的通用寄存器，再加上PC寄存器、SP寄存器、链接寄存器（LR）。支持两套指令集，分别是A32和T32指令集（Thumb指令集）。支持ARMv7-A异常模型，基于PE模式并映射到ARMv8的异常模型。提供32位的虚拟内存访问机制。定义一组处理器状态（PSTATE）用来保存PE的状态。</li>
+</ul></li>
+<li><p>ARMv8指令集<br />
+ARMv8架构根据不同的执行状态提供对不同指令集的支持。</p>
+<ul>
+<li>A64指令集：运行在AArch64状态，提供64位指令集支持。</li>
+<li>A32指令集：运行在AArch32状态，提供32位指令集支持。</li>
+<li>T32指令集：运行在AArch32状态，提供16和32位指令集支持。</li>
+</ul></li>
+<li><p>系统寄存器命名<br />
+在AArch64状态下，很多系统寄存器会根据不同的异常等级提供不同的变种寄存器</p>
+<p><register_name>_ELx, where x is 0,1, 2, or 3</p></li>
+</ul>
+<p>比如，SPELO表示ELO下的栈指针寄存器，SP_EL1表示EL1下的栈指针寄存器。</p>
+<h3 id="armv8处理器的运行状态">1.4 ARMv8处理器的运行状态</h3>
+<p>ARMv8处理器支持两种运行状态--AArch64状态和AArch32状态。AArch64状态是ARMv8新增的64位运行状态，而AArch32状态是为了兼容ARMv7架构而保留的32位运行状态。当处理器运行在AArch64状态时执行A64指令集；而当运行在AArch32状态时，可以执行A32指令集或T32指令集。 AArch64架构的异常等级（exception level）确定了处理器当前运行的特权级别，类似于ARMv7架构中的特权等级.</p>
+<ul>
+<li>EL0：用户特权，用于运行普通用户程序。</li>
+<li>EL1：系统特权，通常用于运行操作系统。</li>
+<li>EL2：运行虚拟化扩展的虚拟监控程序（hypervisor）。</li>
+<li>EL3：运行安全世界中的安全监控器（secure monitor）.</li>
+</ul>
+<p>在ARMv8架构里允许切换应用程序的运行模式。比如，在运行64位操作系统的ARMv8处理器中，我们可以同时运行A64指令集的应用程序和A32指令集的应用程序。但是在这行32位操作系统的ARMv8处理器中，就不能执行A64指令集的应用程序了。当需要执行 A32指令集的应用程序时，需要通过管理员调用（Supervisor Call, SVC）指令切换到EL1操作系统会执行任务的切换并且返回到AArch32的ELO，这时候系统便为这个应用程序备好了AArch32的运行环境。</p>
+<h3 id="armv8架构支持的数据宽度">1.5 ARMv8架构支持的数据宽度</h3>
+<p>ARMv8架构支持如下几种数据宽度。</p>
+<ul>
+<li>字节（byte）：1字节等于8位。</li>
+<li>半字（halfword）：16位。</li>
+<li>字（word）：32位。</li>
+<li>双字（doubleword）：64位。</li>
+<li>4字（quadword）：128位。</li>
+</ul>
+<h3 id="不对齐访问">1.6 不对齐访问</h3>
+<p>对齐访问有两种情况。一种是指令对齐，另一种是数据对齐。A64指令集要求指令存放的位置必须以字（word，32位宽）为单位对齐。访问存储位置不是以字为单位对齐的指令会导致PC对齐异常（PCaligment fault）。 对于数据访问，需要区分不同的内存类型。对内存类型是设备内存的不对齐访问会触发对齐异常（alignment fault）。 对于访问普通内存，除了使用独占。加载/独占-存储（load-exclusive/store-exclusive）指令或加载-获取/存储-释放（load-acquire/store-release）指令外，还可使用其他的用于加载或存储单个或多个寄存器的所有指令。如果访问地址和要访问的数据元素大小不对齐，那么可以根据以下两种情况进行处理:</p>
+<ul>
+<li><p>若对应的异常等级中的SCTLR_ELx寄存器的A域设置为1，则说明打开了地址对齐检查功能，因而会触发对齐异常。</p></li>
+<li><p>若对应的异常等级中的SCTLRELx寄存器的A域设置为0，则说明处理器支持不对齐访问。 当然，处理器支持的不对齐访问也有一些限制。</p></li>
+<li><p>不能保证单次访问原子地完成，有可能复制多次。</p></li>
+<li><p>不对齐访问比对齐访问需要更多的处理时间。</p></li>
+<li><p>不对齐的地址访问可能会引发中止（abort）。</p></li>
+</ul>
+<h2 id="armv8寄存器">2. ARMv8寄存器</h2>
+<h3 id="通用寄存器">2.1 通用寄存器</h3>
+<p>AArch64运行状态支持31个64位的通用寄存器，分别是x0~x30寄存器，而AArch32运行状态支持16个32位的通用寄存器。 通用寄存器除了用于数据运算和存储之外，还可以在函数调用过程中起到特殊作用，ARM64架构的函数调用标准和规范对此有所约定.</p>
+<ul>
+<li>传递参数和结果: x0 - x7</li>
+<li>间接结果寄存器: x8</li>
+<li>临时寄存器(调用的函数需要保存): x8 - x15</li>
+<li>平台寄存器: x16(IP0) x17(IP1) x18(PR)</li>
+<li>被调用函数需要保存: x19 - x28</li>
+<li>栈帧寄存器: x29(FP)</li>
+<li>链接寄存器: x30(LR)</li>
+</ul>
+<p>在AArch64运行状态下，使用X来表示64位通用寄存器，比如X0、X30等。另外，还可以使用W来表示低32位的寄存器，比如W0表示X0寄存器的低32位数据，W1表示X1寄存器的低32位数据。</p>
+<h3 id="特殊寄存器">2.2 特殊寄存器</h3>
+<p>ARMv8架构除了支持31个通用寄存器之外，还提供各个特殊的寄存器，如下图所示： <img src="/picture/linux/kernel/arm64/register.png" /></p>
+<h4 id="零寄存器">2.2.1 零寄存器</h4>
+<p>ARMv8架构提供两个零寄存器（zero register），这两个零寄存器的内容全是0，可以用作源寄存器，也可以当作目标寄存器。WZR是32位的零寄存器，XZR是64位的零寄存器。</p>
+<h4 id="栈指针寄存器">2.2.2 栈指针寄存器</h4>
+<p>ARMv8架构支持4个异常等级，每一个异常等级都有专门的SP_ELn寄存器，比如当处理器运行在EL1时就选择SP_EL1寄存器作为栈指针（Stack Pointer，SP）寄仔器。</p>
+<ul>
+<li>SP EL0：EL0下的栈指针寄存器。</li>
+<li>SP EL1：EL1下的栈指针寄存器。</li>
+<li>SP EL2：EL2下的栈指针寄存器。</li>
+<li>SP EL3：EL3下的栈指针寄存器。</li>
+</ul>
+<p>当处理器运行在比EL0高的异常等级时：</p>
+<ul>
+<li>处理器可以访问当前异常等级对应的栈指针寄存器SP_ELn。</li>
+<li>EL0对应的栈指针寄存器SP_ELO可以当作临时寄存器，比如Linux内核就使用这种临时寄存器存放进程的task struct数据结构的指针。</li>
+</ul>
+<p>当运行在ELO时，处理器只能访问SP_EL0寄存器，而不能访问其他高等级的SP寄存器。</p>
+<h4 id="pc寄存器">2.2.3 PC寄存器</h4>
+<p>PC （Program Counter）寄存器通常用来指向当前运行指令的下一条指令的地址，用于控制程序中指令的执行顺序，但是编程人员不能通过指令来直接访问。</p>
+<h4 id="异常链接寄存器">2.2.4 异常链接寄存器</h4>
+<p>异常链接寄存器（Exception Link Register，ELR）用来存放异常返回地址。</p>
+<h4 id="保存处理状态寄存器">2.2.5 保存处理状态寄存器</h4>
+<p>当我们进行异常处理时，处理器的处理状态会保存到保存处理状态寄存器（SavedProcess Status Register，（SPSR）里，这种寄存器非常类似于ARMv7架构中的CPSR。当异常将要发生时，处理器会把处理状态寄存器（PSTATE）的值暂时保存到SPSR里；当异常处理完成并返回时，再把SPSR中的值恢复到处理器状态寄存器。SPSR的布局如图所示: <img src="/picture/linux/kernel/arm64/pstate_64.png" /> <img src="/picture/linux/kernel/arm64/pstate_32.png" /></p>
+<p><img src="/picture/linux/kernel/arm64/pstate_top.png" /> <img src="/picture/linux/kernel/arm64/pstate_bottom.png" /></p>
+<ul>
+<li>D Debug exceptions mask.</li>
+<li>A SError interrupt Process state mask, for example, asynchronous external abort.</li>
+<li>I IRQ interrupt Process state mask.</li>
+<li>F FIQ interrupt Process state mask.</li>
+</ul>
+<h4 id="currentel寄存器">2.2.6 CurrentEL寄存器</h4>
+<p>PSTATE寄存器中的EL字段保存了当前异常等级。使用MRS指令可以读取当前异等级。</p>
+<ul>
+<li>0：表示ELO。</li>
+<li>1：表示EL1。</li>
+<li>2：表示EL2.</li>
+<li>3：表示EL3。</li>
+</ul>
+<h4 id="daif寄存器">2.2.7 DAIF寄存器</h4>
+<p>表示PSTATE寄存器中的{D，A，I，F}字段。</p>
+<h4 id="spsel寄存器">2.2.8 SPSel寄存器</h4>
+<p>表示PSTATE寄存器中的SP字段，用来在SP_EL0和SP_ELn中选择栈指针寄存器。</p>
+<h4 id="pan寄存器">2.2.9 PAN寄存器</h4>
+<p>用来表示PSTATE寄存器中的PAN字段。可以通过MSR和MRS指令来设置PAN寄存器。</p>
+<h4 id="uao寄存器">2.2.10 UAO寄存器</h4>
+<p>用来表示PSTATE寄存器中的UAO字段。可以通过MSR和MRS指令来设置UAO寄存器。</p>
+<h3 id="系统寄存器">2.4 系统寄存器</h3>
+<p>除了上面介绍的通用寄存器和特殊寄存器之外，ARMv8架构还定义了很多系统寄存器，可通过访问和设置这些系统寄存器来完成对处理器不同功能的配置。在ARMv7架构里，我们需要通过访问CP15协处理器来间接访问这些系统寄存器：而在ARMv8架构中没有协处理器，可直接访问系统寄存器。ARMv8架构支持如下7大类的系统寄存器:</p>
+<ul>
+<li>通用系统控制寄存器。</li>
+<li>调试寄存器。</li>
+<li>性能监控寄存器。</li>
+<li>活动监控寄存器。</li>
+<li>统计扩展寄存器。</li>
+<li>RAS寄存器。</li>
+<li>通用定时器寄存器。</li>
+</ul>
+<p>系统寄存器支持不同异常等级下的访问，通常系统寄存器可使用“Reg ELn”的方式来表示，示例如下。</p>
+<ul>
+<li>Reg_EL1：处理器处于EL1、EL2以及EL3时可以访问该寄存器。</li>
+<li>Reg_EL2：处理器处于EL2和EL3时可以访问该寄存器。</li>
+</ul>
+<p>当处于EL0时，大部分系统寄存器不支持处理器访问，但也有一些例外，比如CTR_ELO。可以通过MSR和MRS指令来访问系统寄存器，比如：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mrs x0, TTBRO_EL1 //把TTBR0_EL1的值复制到x0寄存器</span><br><span class="line">msr TTBROEL1, xO //把x0寄存器的值复制到TTBR0_EL1</span><br></pre></td></tr></table></figure>
+<h2 id="a64指令集">3. A64指令集</h2>
+<p>指令集架构（ISA）是处理器架构设计的重点之一。ARM公司定义和实现的指令集架构一直在不断变化和发展。ARMv8架构最大的改变是增加了一种新的64位的指令集，这是对早前ARM指令集的有益补充和增强，称为A64指令集。这种指令集可以处理64位宽的寄存器，并且使用64位的指针来访问内存，运行在AArch64状态下。ARMv8兼容老的32位指令集，又称为A32指令集，运行在AArch32状态下。 A64指令集和A32指令集是不兼容的，它们是两套完全不一样的指令集架构，它们的指令编码也不一样。需要注意的是，A64指令集的指令为32位宽，而不是64位宽</p>
+<h3 id="aarch64架构图">3.1 aarch64架构图</h3>
+<p><img src="/picture/linux/kernel/arm64/arm64.png" /></p>
+<h3 id="section">3.2</h3>
+<p>指令集概览： <img src="/picture/linux/kernel/arm64/a64_1.png" /> <img src="/picture/linux/kernel/arm64/a64_2.png" /> <img src="/picture/linux/kernel/arm64/a64_3.png" /></p>
+<p>详细可以查看原文<span class="exturl" data-url="aHR0cHM6Ly9jb3Vyc2VzLmNzLndhc2hpbmd0b24uZWR1L2NvdXJzZXMvY3NlNDY5LzE5d2kvYXJtNjQucGRm">点击<i class="fa fa-external-link-alt"></i></span></p>
+<h2 id="arm64异常处理">4. ARM64异常处理</h2>
+<p>在arm64架构里，中断属于异常的一种。中断是外部设备通知处理器的一种方式，他会打断处理器正在执行的指令流。在前面的描述中断的文章中已经介绍了关于异常的处理，这里不再细说。</p>
+<h2 id="arm64内存管理">5. ARM64内存管理</h2>
+<p>如图所示，ARM处理器的内存管理单元（Memory Management Unit，MMU）包括TLB和页表遍历单元（Table Walk Unit）两个部件。TLB是一块高速缓存，用于缓存页表转换结果，从而减少页表查询的时间。完整的页表翻译和查找的过程叫作页表查询（TranslatonTable Walk），页表查询的过程由硬件自动完成，但是页表的维护需要由软件完成。页表查询是一个相对比较耗时的过程，理想状态下TLB存放页表相关信息。当TLB未命中时，才会去查询页表，并且开始读入页表的内容 <img src="/picture/linux/kernel/arm64/mmu.png" /></p>
+<p>对于多任务操作系统，每个进程都拥有独立的进程地址空间。这些进程地址空间在虚地址范围内是相互隔离的，但是在物理地址空间内有可能映射到同一个物理页面，那么这些进程地址空间是如何和物理地址空间发生映射关系的呢？这就需要处理器的内存管理单元提供页表映射和管理的功能。</p>
+<h3 id="页表">5.1 页表</h3>
+<p>AArch64架构中的MMU不仅支持单一阶段的地址页表转换，还支持虚拟化扩展中的两阶段页表转换。</p>
+<ul>
+<li>单一阶段页表：虚拟地址（VA）被翻译成物理地址（PA）。</li>
+<li>两阶段页表（虚拟化扩展）。<br />
+阶段1一虚拟地址被翻译成中间物理地址（Intermediate Physical Adress，IPA）。 阶段2中间物理地址被翻译成最终物理地址。</li>
+</ul>
+<p>另外，ARMv8架构支持多种页表格式。</p>
+<ul>
+<li>ARMv8架构的长描述符格式。</li>
+<li>ARMv7架构的长描述符格式，需要打开LPAE。</li>
+<li>ARMv7架构的短描述符格式。</li>
+</ul>
+<p>当处于AArch32状态时，可使用ARMv7架构的短描述符格式或长描述符格式的页表来运行32位的应用程序；当处于AArch64状态时，可使用ARMv8架构的长描述符格式的页表来运行64位的应用程序。 另外，ARMv8架构还支持4KB、16KB和64KB这3种页面粒度。</p>
+<h3 id="页表映射">5.2 页表映射</h3>
+<p>在AArch64架构中，因为地址总线位宽最多支持48位，所以虚拟地址被划分为两个空间，每个空间最多支持256TB。</p>
+<ul>
+<li>低位的虚拟地址空间位于0x00000000000000~0x0000FFFFFFFFF。如果虚拟地址的最高位等于0，那就使用这个虚拟地址空间，并且使用TTBRO_ELx （TranslationTable Base Register）来存放页表的基地址。</li>
+<li>高位的虚拟地址空间介于0xFFFF00000000000~0xFFFFFFFFFFFFF。如果虚拟地址的最高位等于1，那就使用这个虚拟地址空间，并且使用TTBR1_ELx来存放页表的基地址。</li>
+</ul>
+<p>AArch64架构中的页表支持如下特性。</p>
+<ul>
+<li>最多可以支持4级页表</li>
+<li>输入地址的最大有效位宽为48位</li>
+<li>输出地址的最大有效位宽为48位</li>
+<li>翻译的页面粒度可以是4KB、16KB或64KB</li>
+</ul>
+<p>当TLB未命中时，处理器查询页表的过程如下。 <img src="/picture/linux/kernel/arm64/mmu_table.png" /></p>
+<ul>
+<li>处理器根据TTBRx和虚拟地址来判断使用哪个页表基地址寄存器，是使用 TTBR0还是TTBR1。当虚拟地址的第63位（简称VA【63】）为1时选择TTBR1当VA【63】为0时选择TTBR0。页表基地址寄存器中存放着一级页表的基地址。</li>
+<li>处理器将虚拟地址的VA【47:39】作为L0索引，在一级页表（L0页表）中找到页表项，一级页表一共有512个页表项。</li>
+<li>一级页表的页表项中存放有二级页表（L1页表）的物理基地址。处理器将虚拟地址的VA【38:30】作为L1索引，在二级页表中找到相应的页表项，二级页表有512个页表项。</li>
+<li>二级页表的页表项中存放有三级页表（L2页表）的物理基地址。处理器将虚拟地址的VA【29:21】作为L2索引，在三级页表（L2页表）中找到相应的页表项，三级页表有512个页表项。</li>
+<li>三级页表的页表项中存放有四级页表（L3页表）的物理基地址。处理器将虚拟地址 的VA【20:12】作为L3索引，在四级页表（L3页表）中找到相应的页表项，四级页表有512个页表项。</li>
+<li>四级页表的页表项里存放有4KB页的物理基地址，然后加上虚拟地址的VA【11：0】就构成了新的物理地址，于是处理器就完成了页表的查询和翻译工作。</li>
+</ul>
+<h3 id="参考文献">参考文献</h3>
+<p>《ARM-Architecture Reference Manual，for ARMv8-A Architecture Profile，v8.4》<br />
+《奔跑吧Linux内核-入门篇》<br />
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLjUxY3RvLmNvbS91XzE1Mjc4MjE4LzI5MzA5NjM=">https://blog.51cto.com/u_15278218/2930963<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9jb3Vyc2VzLmNzLndhc2hpbmd0b24uZWR1L2NvdXJzZXMvY3NlNDY5LzE5d2kvYXJtNjQucGRm">https://courses.cs.washington.edu/courses/cse469/19wi/arm64.pdf<i class="fa fa-external-link-alt"></i></span></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/" title="ARM64架构基础">http://carlyleliu.github.io/2021/ARM64架构基础/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/ARM64/" rel="tag"><i class="fa fa-tag"></i> ARM64</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/" rel="prev" title="Linux系统调用">
+      <i class="fa fa-chevron-left"></i> Linux系统调用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/" rel="next" title="Linux中断子系统（七）WorkQueue">
+      Linux中断子系统（七）WorkQueue <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#arm64%E6%9E%B6%E6%9E%84%E4%BB%8B%E7%BB%8D"><span class="nav-text">1. ARM64架构介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#armv8-a%E6%9E%B6%E6%9E%84%E4%BB%8B%E7%BB%8D"><span class="nav-text">1.1 ARMv8-A架构介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E7%9A%84armv8%E5%A4%84%E7%90%86%E5%99%A8"><span class="nav-text">1.2 常见的ARMv8处理器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#arm64%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">1.3 ARM64的基本概念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#armv8%E5%A4%84%E7%90%86%E5%99%A8%E7%9A%84%E8%BF%90%E8%A1%8C%E7%8A%B6%E6%80%81"><span class="nav-text">1.4 ARMv8处理器的运行状态</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#armv8%E6%9E%B6%E6%9E%84%E6%94%AF%E6%8C%81%E7%9A%84%E6%95%B0%E6%8D%AE%E5%AE%BD%E5%BA%A6"><span class="nav-text">1.5 ARMv8架构支持的数据宽度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8D%E5%AF%B9%E9%BD%90%E8%AE%BF%E9%97%AE"><span class="nav-text">1.6 不对齐访问</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#armv8%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2. ARMv8寄存器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%9A%E7%94%A8%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.1 通用寄存器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E6%AE%8A%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2 特殊寄存器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%9B%B6%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.1 零寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A0%88%E6%8C%87%E9%92%88%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.2 栈指针寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pc%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.3 PC寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E9%93%BE%E6%8E%A5%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.4 异常链接寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BF%9D%E5%AD%98%E5%A4%84%E7%90%86%E7%8A%B6%E6%80%81%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.5 保存处理状态寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#currentel%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.6 CurrentEL寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#daif%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.7 DAIF寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#spsel%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.8 SPSel寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#pan%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.9 PAN寄存器</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#uao%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.2.10 UAO寄存器</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%AF%84%E5%AD%98%E5%99%A8"><span class="nav-text">2.4 系统寄存器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#a64%E6%8C%87%E4%BB%A4%E9%9B%86"><span class="nav-text">3. A64指令集</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#aarch64%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-text">3.1 aarch64架构图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#section"><span class="nav-text">3.2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#arm64%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="nav-text">4. ARM64异常处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#arm64%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">5. ARM64内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8"><span class="nav-text">5.1 页表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E6%98%A0%E5%B0%84"><span class="nav-text">5.2 页表映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">980k</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/";
+    this.page.identifier = "2021/ARM64架构基础/";
+    this.page.title = "ARM64架构基础";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>
