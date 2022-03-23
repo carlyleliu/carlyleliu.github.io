@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. MTPA 1.1 为什么要用MTPA 当电机采用id&#x3D;0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下 \[ \tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q] \] 转矩分为永磁转矩Tr和磁阻转矩Tm，而id&#x3D;0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id&#x3D;0的控制比">
+  <meta name="description" content="1. MTPA1.1 为什么要用MTPA当电机采用id&#x3D;0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下  \tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]转矩分为永磁转矩Tr和磁阻转矩Tm，而id&#x3D;0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id&#x3D;0的控制比较适用于隐极式电">
 <meta property="og:type" content="article">
 <meta property="og:title" content="foc相关算法">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/foc%E7%9B%B8%E5%85%B3%E7%AE%97%E6%B3%95/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. MTPA 1.1 为什么要用MTPA 当电机采用id&#x3D;0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下 \[ \tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q] \] 转矩分为永磁转矩Tr和磁阻转矩Tm，而id&#x3D;0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id&#x3D;0的控制比">
+<meta property="og:description" content="1. MTPA1.1 为什么要用MTPA当电机采用id&#x3D;0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下  \tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]转矩分为永磁转矩Tr和磁阻转矩Tm，而id&#x3D;0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id&#x3D;0的控制比较适用于隐极式电">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/foc/mtpa.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/foc/qiankui.png">
@@ -267,14 +267,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.9k</span>
+              <span>2.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
+              <span>2 分钟</span>
             </span>
 
         </div>
@@ -286,96 +286,77 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="mtpa">1. MTPA</h2>
-<h3 id="为什么要用mtpa">1.1 为什么要用MTPA</h3>
-<p>当电机采用id=0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下 <span class="math display">\[
-\tau _e = \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]
-\]</span> 转矩分为永磁转矩Tr和磁阻转矩Tm，而id=0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id=0的控制比较适用于隐极式电机（Ld=Lq），而对于凸极式电机并不最优，所以需要重新考虑控制策略。</p>
+        <h2 id="1-MTPA"><a href="#1-MTPA" class="headerlink" title="1. MTPA"></a>1. MTPA</h2><h3 id="1-1-为什么要用MTPA"><a href="#1-1-为什么要用MTPA" class="headerlink" title="1.1 为什么要用MTPA"></a>1.1 为什么要用MTPA</h3><p>当电机采用id=0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下</p>
+<script type="math/tex; mode=display">
+\tau _e = \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]</script><p>转矩分为永磁转矩Tr和磁阻转矩Tm，而id=0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id=0的控制比较适用于隐极式电机（Ld=Lq），而对于凸极式电机并不最优，所以需要重新考虑控制策略。</p>
 <span id="more"></span>
-<h3 id="推导过程">1.2 推导过程</h3>
-<p>电动机电压方程 <span class="math display">\[
+<h3 id="1-2-推导过程"><a href="#1-2-推导过程" class="headerlink" title="1.2 推导过程"></a>1.2 推导过程</h3><p>电动机电压方程</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
 U_d = rI_d - L_qI_q\omega_e \\
 U_q = rI_q + k_E\omega_e + L_dI_d\omega_e
-\end{aligned}
-\]</span> 那么电动机消耗对有功功率为 <span class="math display">\[
-P = \frac{3}{2}(U_dI_d + U_qI_q)
-\]</span> 将电动机方程代入功率方程得： <span class="math display">\[
-P = \frac{3}{2} r (I_d^2 + I_q^2) + [k_EI_q + (L_d - L_q)I_dI_q]\omega_e
-\]</span></p>
-<p>电动机的有功功率一部分消耗在绕阻电阻上发热，另一部分用于输出机械功率： <img src="/picture/algorithm/foc/mtpa.png" /></p>
-<p>电动机的机械功率为： <span class="math display">\[
-P_{mech} = \tau_e \omega_{mech}
-\]</span> 机械转速与电频率之间的关系为： <span class="math display">\[
-\omega_e = p \omega_{mech}
-\]</span> 所以： <span class="math display">\[
-\tau_e \omega_{mech} = \frac{3}{2} r (I_d^2 + I_q^2) + [k_EI_q + (L_d - L_q)I_dI_q] p \omega_{mech}
-\]</span> 得到电磁转钜公式： <span class="math display">\[
-\tau _e = \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]
-\]</span></p>
-<p>如果绕阻中电流峰值是I_s <span class="math display">\[
-I_s^2 = I_d^2 + I_q^2
-\]</span> 当输出电磁转钜一定时: <span class="math display">\[
-I_q = \frac{\tau_e}{\frac{3}{2}p[(k_E) + (L_d - L_q)I_d]}
-\]</span> 联立上两式得: <span class="math display">\[
-I_s^2 = I_d^2 + \left ( \frac{\tau_e}{\frac{3}{2}p[(k_E) + (L_d - L_q)I_d]} \right )^2
-\]</span> 上式可以看作是一个关于<span class="math inline">\(I_d\)</span>的函数，上式有最小值，当电磁转钜一定时，有一个最小峰值电流<span class="math inline">\(I_s\)</span>，取<span class="math inline">\(I_s\)</span>最小时有： <span class="math display">\[
+\end{aligned}</script><p>那么电动机消耗对有功功率为</p>
+<script type="math/tex; mode=display">
+P = \frac{3}{2}(U_dI_d + U_qI_q)</script><p>将电动机方程代入功率方程得：</p>
+<script type="math/tex; mode=display">
+P = \frac{3}{2} r (I_d^2 + I_q^2) + [k_EI_q + (L_d - L_q)I_dI_q]\omega_e</script><p>电动机的有功功率一部分消耗在绕阻电阻上发热，另一部分用于输出机械功率：<br><img src="/picture/algorithm/foc/mtpa.png" alt=""></p>
+<p>电动机的机械功率为：</p>
+<script type="math/tex; mode=display">
+P_{mech} = \tau_e \omega_{mech}</script><p>机械转速与电频率之间的关系为：</p>
+<script type="math/tex; mode=display">
+\omega_e = p \omega_{mech}</script><p>所以：</p>
+<script type="math/tex; mode=display">
+\tau_e \omega_{mech} = \frac{3}{2} r (I_d^2 + I_q^2) + [k_EI_q + (L_d - L_q)I_dI_q] p \omega_{mech}</script><p>得到电磁转钜公式：</p>
+<script type="math/tex; mode=display">
+\tau _e = \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]</script><p>如果绕阻中电流峰值是I_s</p>
+<script type="math/tex; mode=display">
+I_s^2 = I_d^2 + I_q^2</script><p>当输出电磁转钜一定时:</p>
+<script type="math/tex; mode=display">
+I_q = \frac{\tau_e}{\frac{3}{2}p[(k_E) + (L_d - L_q)I_d]}</script><p>联立上两式得:</p>
+<script type="math/tex; mode=display">
+I_s^2 = I_d^2 + \left ( \frac{\tau_e}{\frac{3}{2}p[(k_E) + (L_d - L_q)I_d]} \right )^2</script><p>上式可以看作是一个关于$I_d$的函数，上式有最小值，当电磁转钜一定时，有一个最小峰值电流$I_s$，取$I_s$最小时有：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-\frac{\partial I_s^2}{\partial I_d} &amp;= 2I_d + 2I_q \frac{\tau_e}{\frac{3}{2}p} \frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]^2} \\
-&amp; = 2I_d + 2I_q \frac{\tau_e}{\frac{3}{2}p[k_E + (L_d - L_q)I_d]} \frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]} \\
-&amp; = 2I_d + 2I_q^2\frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]} = 0
-\end{aligned}
-\]</span> 整理得： <span class="math display">\[
-(L_d - L_q)I_d^2 + k_EI_d - (L_d - L_q)I_q^2 = 0
-\]</span></p>
-<p>求解<span class="math inline">\(I_d\)</span>得到： <span class="math display">\[
-I_d = - \frac{k_E}{2(L_d - L_q)} \pm \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}
-\]</span> 如果<span class="math inline">\(L_d &lt; L_q\)</span>时当电磁转钜一定时电流峰值<span class="math inline">\(I_s\)</span>最小 <span class="math display">\[
-I_d = - \frac{k_E}{2(L_d - L_q)} - \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}
-\]</span></p>
-<h2 id="弱磁控制">2. 弱磁控制</h2>
-<h3 id="简介">2.1 简介</h3>
-<p>弱磁控制的这个思想源还是来自他励直流电动机的调磁控制。当他励直流电动机端电压达到最大电压时，只能通过调节电机的励磁电流，进而改变励磁磁通，在保证输出电压最大值不变的条件下，使电机能恒功率运行于更高的转速。也就是说，他励直流电动机可以通过降低励磁电流达到弱磁扩速的目的。对于PMSM而言，励磁磁动势因永磁体产生而无法调节，只能通过调节定子电流，即增加定子直轴去磁电流分量来维持高速运行时电压的平衡。达到弱磁扩速的目的。</p>
-<h3 id="推导">2.2 推导</h3>
-<p>很多应用需要马达工作在高于额定速度的范围内，这里就需要弱磁控制来实现，电流的电压约束条件如下： <span class="math display">\[
-(L_qI_q)^2 + (k_E + L_dI_d)^2 \leqslant \frac{U_{1-limit}^2}{\omega_e^2}
-\]</span> 电流幅值约束条件: <span class="math display">\[
-I_d^2 + I_q^2 \leqslant I_{s-limit}^2
-\]</span></p>
-<p>MTPA下有<span class="math inline">\(I_d\)</span>： <span class="math display">\[
+\frac{\partial I_s^2}{\partial I_d} &= 2I_d + 2I_q \frac{\tau_e}{\frac{3}{2}p} \frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]^2} \\
+& = 2I_d + 2I_q \frac{\tau_e}{\frac{3}{2}p[k_E + (L_d - L_q)I_d]} \frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]} \\
+& = 2I_d + 2I_q^2\frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]} = 0
+\end{aligned}</script><p>整理得：</p>
+<script type="math/tex; mode=display">
+(L_d - L_q)I_d^2 + k_EI_d - (L_d - L_q)I_q^2 = 0</script><p>求解$I_d$得到：</p>
+<script type="math/tex; mode=display">
+I_d = - \frac{k_E}{2(L_d - L_q)} \pm \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}</script><p>如果$L_d &lt; L_q$时当电磁转钜一定时电流峰值$I_s$最小</p>
+<script type="math/tex; mode=display">
+I_d = - \frac{k_E}{2(L_d - L_q)} - \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}</script><h2 id="2-弱磁控制"><a href="#2-弱磁控制" class="headerlink" title="2. 弱磁控制"></a>2. 弱磁控制</h2><h3 id="2-1-简介"><a href="#2-1-简介" class="headerlink" title="2.1 简介"></a>2.1 简介</h3><p>弱磁控制的这个思想源还是来自他励直流电动机的调磁控制。当他励直流电动机端电压达到最大电压时，只能通过调节电机的励磁电流，进而改变励磁磁通，在保证输出电压最大值不变的条件下，使电机能恒功率运行于更高的转速。也就是说，他励直流电动机可以通过降低励磁电流达到弱磁扩速的目的。对于PMSM而言，励磁磁动势因永磁体产生而无法调节，只能通过调节定子电流，即增加定子直轴去磁电流分量来维持高速运行时电压的平衡。达到弱磁扩速的目的。</p>
+<h3 id="2-2-推导"><a href="#2-2-推导" class="headerlink" title="2.2 推导"></a>2.2 推导</h3><p>很多应用需要马达工作在高于额定速度的范围内，这里就需要弱磁控制来实现，电流的电压约束条件如下：</p>
+<script type="math/tex; mode=display">
+(L_qI_q)^2 + (k_E + L_dI_d)^2 \leqslant \frac{U_{1-limit}^2}{\omega_e^2}</script><p>电流幅值约束条件:</p>
+<script type="math/tex; mode=display">
+I_d^2 + I_q^2 \leqslant I_{s-limit}^2</script><p>MTPA下有$I_d$：</p>
+<script type="math/tex; mode=display">
 MTPA: I_d = \left\{\begin{matrix}
 - \frac{k_E}{2(L_d - L_q)} + sign(L_d - L_q) \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}, L_d \neq L_q\\ 
 0, L_d = L_q
-\end{matrix}\right.
-\]</span> 其中： <span class="math display">\[
+\end{matrix}\right.</script><p>其中：</p>
+<script type="math/tex; mode=display">
 sign(x) = \left\{\begin{matrix}
-1, x &gt; 0\\ 
+1, x > 0\\ 
 0, x = 0\\ 
--1, x &lt; 0
-\end{matrix}\right.
-\]</span> 弱磁情况下有<span class="math inline">\(I_d\)</span>: <span class="math display">\[
+-1, x < 0
+\end{matrix}\right.</script><p>弱磁情况下有$I_d$:</p>
+<script type="math/tex; mode=display">
 I_d = \left\{\begin{matrix}
 -\frac{k_E}{L_d}+ \frac{\sqrt{(\frac{U_{1-limit}}{\omega_e})^2 - (L_qI_q)^2}}{L_d}, \frac{U_{1-limit}}{\omega_e} \geq L_qI_q\\ 
-n/a, \frac{U_{1-limit}}{\omega_e} &lt; L_qI_q
-\end{matrix}\right.
-\]</span></p>
-<h2 id="电流前馈">3. 电流前馈</h2>
-<h3 id="前馈理论">3.1 前馈理论</h3>
-<p>前馈控制是按照扰动量进行补偿都开环控制，当系统出现扰动时，按照扰动量当大小直接产生矫正作用。 前馈控制结构图如下： <img src="/picture/algorithm/foc/qiankui.png" /></p>
-<p>图中<span class="math inline">\(G_n(s)\)</span>是被控对象扰动通道的传递函数，<span class="math inline">\(D_n(s)\)</span>是前馈控制器的传递函数，<span class="math inline">\(G(s)\)</span>为被控对象控制通道传递函数，n、u、y分别为扰动量、控制量和输出量 假定输入量u1=0，则有： <span class="math display">\[
-Y(s) = Y_1(s) + Y_2(s) = [D_n(s)G(s) + G_n(s)]N(s)
-\]</span> 若使前馈控制作用完全补偿扰动作用，则应使<span class="math inline">\(Y(s) = 0\)</span>即： <span class="math display">\[
-D_n(s)G(s) + G_n(s) = 0
-\]</span> 所以前馈控制器的传递函数为： <span class="math display">\[
-D_n(s) = - \frac{G_n(s)}{G(s)}
-\]</span> 在实际应用中。因为前馈控制为一个开环系统。因此常常采用反馈+前馈的复合控制方式。</p>
-<h3 id="电机控制中的前馈控制">3.2 电机控制中的前馈控制</h3>
-<p>在电机控制中加入前馈控制，其结构框图如下： <img src="/picture/algorithm/foc/ff.png" /></p>
-<h4 id="参考文献">参考文献</h4>
-<p>《2.ST MC SDK 5.x 矢量控制理论基础》<br />
-<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yMzU3MjMxMw==">永磁同步电机也能弱磁调速<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yODgwMzE0MjU=">永磁同步电机弱磁控制<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC83ODcwNTA4NA==">永磁同步电机-弱磁<i class="fa fa-external-link-alt"></i></span></p>
+n/a, \frac{U_{1-limit}}{\omega_e} < L_qI_q
+\end{matrix}\right.</script><h2 id="3-电流前馈"><a href="#3-电流前馈" class="headerlink" title="3. 电流前馈"></a>3. 电流前馈</h2><h3 id="3-1-前馈理论"><a href="#3-1-前馈理论" class="headerlink" title="3.1 前馈理论"></a>3.1 前馈理论</h3><p>前馈控制是按照扰动量进行补偿都开环控制，当系统出现扰动时，按照扰动量当大小直接产生矫正作用。<br>前馈控制结构图如下：<br><img src="/picture/algorithm/foc/qiankui.png" alt=""></p>
+<p>图中$G_n(s)$是被控对象扰动通道的传递函数，$D_n(s)$是前馈控制器的传递函数，$G(s)$为被控对象控制通道传递函数，n、u、y分别为扰动量、控制量和输出量<br>假定输入量u1=0，则有：</p>
+<script type="math/tex; mode=display">
+Y(s) = Y_1(s) + Y_2(s) = [D_n(s)G(s) + G_n(s)]N(s)</script><p>若使前馈控制作用完全补偿扰动作用，则应使$Y(s) = 0$即：</p>
+<script type="math/tex; mode=display">
+D_n(s)G(s) + G_n(s) = 0</script><p>所以前馈控制器的传递函数为：</p>
+<script type="math/tex; mode=display">
+D_n(s) = - \frac{G_n(s)}{G(s)}</script><p>在实际应用中。因为前馈控制为一个开环系统。因此常常采用反馈+前馈的复合控制方式。</p>
+<h3 id="3-2-电机控制中的前馈控制"><a href="#3-2-电机控制中的前馈控制" class="headerlink" title="3.2 电机控制中的前馈控制"></a>3.2 电机控制中的前馈控制</h3><p>在电机控制中加入前馈控制，其结构框图如下：<br><img src="/picture/algorithm/foc/ff.png" alt=""></p>
+<h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><p>《2.ST MC SDK 5.x 矢量控制理论基础》<br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yMzU3MjMxMw==">永磁同步电机也能弱磁调速<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yODgwMzE0MjU=">永磁同步电机弱磁控制<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC83ODcwNTA4NA==">永磁同步电机-弱磁<i class="fa fa-external-link-alt"></i></span>   </p>
 
     </div>
 
@@ -484,7 +465,7 @@ D_n(s) = - \frac{G_n(s)}{G(s)}
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#mtpa"><span class="nav-text">1. MTPA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%94%A8mtpa"><span class="nav-text">1.1 为什么要用MTPA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B"><span class="nav-text">1.2 推导过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%B1%E7%A3%81%E6%8E%A7%E5%88%B6"><span class="nav-text">2. 弱磁控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-text">2.1 简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A8%E5%AF%BC"><span class="nav-text">2.2 推导</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%B5%E6%B5%81%E5%89%8D%E9%A6%88"><span class="nav-text">3. 电流前馈</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%89%8D%E9%A6%88%E7%90%86%E8%AE%BA"><span class="nav-text">3.1 前馈理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%B5%E6%9C%BA%E6%8E%A7%E5%88%B6%E4%B8%AD%E7%9A%84%E5%89%8D%E9%A6%88%E6%8E%A7%E5%88%B6"><span class="nav-text">3.2 电机控制中的前馈控制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-MTPA"><span class="nav-text">1. MTPA</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%94%A8MTPA"><span class="nav-text">1.1 为什么要用MTPA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B"><span class="nav-text">1.2 推导过程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%BC%B1%E7%A3%81%E6%8E%A7%E5%88%B6"><span class="nav-text">2. 弱磁控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E7%AE%80%E4%BB%8B"><span class="nav-text">2.1 简介</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E6%8E%A8%E5%AF%BC"><span class="nav-text">2.2 推导</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E7%94%B5%E6%B5%81%E5%89%8D%E9%A6%88"><span class="nav-text">3. 电流前馈</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E5%89%8D%E9%A6%88%E7%90%86%E8%AE%BA"><span class="nav-text">3.1 前馈理论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E7%94%B5%E6%9C%BA%E6%8E%A7%E5%88%B6%E4%B8%AD%E7%9A%84%E5%89%8D%E9%A6%88%E6%8E%A7%E5%88%B6"><span class="nav-text">3.2 电机控制中的前馈控制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -569,7 +550,7 @@ D_n(s) = - \frac{G_n(s)}{G(s)}
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">980k</span>
+    <span title="站点总字数">951k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

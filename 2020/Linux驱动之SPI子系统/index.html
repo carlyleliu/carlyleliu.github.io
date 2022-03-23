@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. SPI协议 1.1 概述 SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。 有时SPI接口被称作四线式接口，这是为了与其他不同线制的数据传输接口加以区分。SPI准确来讲应为“同步串行接口”，但是它又与同步串行接口协议（SSI）是完全不">
+  <meta name="description" content="1. SPI协议1.1 概述SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。 有时SPI接口被称作四线式接口，这是为了与其他不同线制的数据传输接口加以区分。SPI准确来讲应为“同步串行接口”，但是它又与同步串行接口协议（SSI）是完全不同的">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之SPI子系统">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BSPI%E5%AD%90%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. SPI协议 1.1 概述 SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。 有时SPI接口被称作四线式接口，这是为了与其他不同线制的数据传输接口加以区分。SPI准确来讲应为“同步串行接口”，但是它又与同步串行接口协议（SSI）是完全不">
+<meta property="og:description" content="1. SPI协议1.1 概述SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。 有时SPI接口被称作四线式接口，这是为了与其他不同线制的数据传输接口加以区分。SPI准确来讲应为“同步串行接口”，但是它又与同步串行接口协议（SSI）是完全不同的">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/spi/SPI.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/spi/SPI_8-bit_circular_transfer.png">
@@ -287,81 +287,64 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="spi协议">1. SPI协议</h2>
-<h3 id="概述">1.1 概述</h3>
-<p>SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。</p>
+        <h2 id="1-SPI协议"><a href="#1-SPI协议" class="headerlink" title="1. SPI协议"></a>1. SPI协议</h2><h3 id="1-1-概述"><a href="#1-1-概述" class="headerlink" title="1.1 概述"></a>1.1 概述</h3><p>SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。</p>
 <p>有时SPI接口被称作四线式接口，这是为了与其他不同线制的数据传输接口加以区分。SPI准确来讲应为“同步串行接口”，但是它又与同步串行接口协议（SSI）是完全不同的两种协议。虽然SSI也是一个四线式同步通信协议，但是它使用差分信号，而且仅提供一个单工通信信道。于此相对地，SPI是一个单主机多从机的通信接口。</p>
-<p><img src="/picture/linux_driver/spi/SPI.png" /></p>
+<p><img src="/picture/linux_driver/spi/SPI.png" alt=""></p>
 <span id="more"></span>
-<h3 id="接口">1.2 接口</h3>
-<p>SPI总线规定了4个保留逻辑信号接口：</p>
+<h3 id="1-2-接口"><a href="#1-2-接口" class="headerlink" title="1.2 接口"></a>1.2 接口</h3><p>SPI总线规定了4个保留逻辑信号接口：</p>
 <ul>
-<li>SCLK（Serial Clock）：串列时脉，由主机发出<br />
-</li>
-<li>MOSI（Master Output, Slave Input）：主机输出从机输入信号（数据由主机发出）<br />
-</li>
-<li>MISO（Master Input, Slave Output）：主机输入从机输出信号（数据由从机发出）<br />
-</li>
-<li>SS（Slave Select）：片选信号，由主机发出，一般是低电位有效</li>
+<li>SCLK（Serial Clock）：串列时脉，由主机发出    </li>
+<li>MOSI（Master Output, Slave Input）：主机输出从机输入信号（数据由主机发出）   </li>
+<li>MISO（Master Input, Slave Output）：主机输入从机输出信号（数据由从机发出）   </li>
+<li>SS（Slave Select）：片选信号，由主机发出，一般是低电位有效   </li>
 </ul>
-<h3 id="数据传输">1.3 数据传输</h3>
-<p>为了开始通信，总线上的主设备需要使用从设备支持的频率来配置时钟，这个频率最高为几兆赫兹左右。然后主设备将某个从设备的SS线置为低电平，来选中这个从设备。如果等待时间是必要的话（例如进行模数转换），主设备必须在这段时间结束后，才可以发出时钟周期信号。</p>
+<h3 id="1-3-数据传输"><a href="#1-3-数据传输" class="headerlink" title="1.3 数据传输"></a>1.3 数据传输</h3><p>为了开始通信，总线上的主设备需要使用从设备支持的频率来配置时钟，这个频率最高为几兆赫兹左右。然后主设备将某个从设备的SS线置为低电平，来选中这个从设备。如果等待时间是必要的话（例如进行模数转换），主设备必须在这段时间结束后，才可以发出时钟周期信号。</p>
 <p>在每个SPI时钟周期内，都会发生全双工数据传输。主设备在MOSI线上发送一个位，从设备读取它，同时从机在MISO线上发送一位数据，主机读取它。即使只有单向数据传输的目的，主从机之间的通信工作方式仍然是双工的。</p>
-<p>传输通常会使用给定字长的两个移位寄存器，一个在主设备中，一个在从设备中，这两个寄存器连接成一个虚拟的环形缓冲器。数据通常先从最高位移出。在时钟信号边沿，主机和从机均移出一位，然后在传输线上输出给对方。在下一个时钟沿，每个接收器都从传输线接受对方发出的数据位，并且从移位寄存器的最低位推入。每完成这样一个移出——推入的周期后，主机和从机就交换寄存器中的一位数据。当所有数据位都经过了这样的移出——推入过程后，主机和从机就完成了寄存器上的数据交换。如果需要交换的数据比寄存器的位数还要长的话，则需要重新加载移位寄存器并重复该过程。传输可能会持续任意数量的时钟周期。完成后，主设备会停止发送时钟信号，并通常会取消选择从设备。 <img src="/picture/linux_driver/spi/SPI_8-bit_circular_transfer.png" /></p>
+<p>传输通常会使用给定字长的两个移位寄存器，一个在主设备中，一个在从设备中，这两个寄存器连接成一个虚拟的环形缓冲器。数据通常先从最高位移出。在时钟信号边沿，主机和从机均移出一位，然后在传输线上输出给对方。在下一个时钟沿，每个接收器都从传输线接受对方发出的数据位，并且从移位寄存器的最低位推入。每完成这样一个移出——推入的周期后，主机和从机就交换寄存器中的一位数据。当所有数据位都经过了这样的移出——推入过程后，主机和从机就完成了寄存器上的数据交换。如果需要交换的数据比寄存器的位数还要长的话，则需要重新加载移位寄存器并重复该过程。传输可能会持续任意数量的时钟周期。完成后，主设备会停止发送时钟信号，并通常会取消选择从设备。<br><img src="/picture/linux_driver/spi/SPI_8-bit_circular_transfer.png" alt=""></p>
 <p>传输寄存器通常包含8位。但是其他字长也很常见，例如触摸屏控制器或音频编解码器通常采用16位字长（如德州仪器的TSC2101），许多数模转换或者模数转换的设备则会采用12位字长。</p>
 <p>所有在总线上的没有被片选线激活的从设备必须忽略输入时钟和MOSI信号，并且不得从MISO发送数据。</p>
-<h2 id="linux驱动框架">2. Linux驱动框架</h2>
-<p>对于SPI的驱动框架，与I2C是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供transfer函数，进行spi协议的收发。spi_controller也是基于 Platform 模型的，注册 spi_controller 时也会扫描一个链表进行注册设备，简直太相似了。</p>
+<h2 id="2-Linux驱动框架"><a href="#2-Linux驱动框架" class="headerlink" title="2. Linux驱动框架"></a>2. Linux驱动框架</h2><p>对于SPI的驱动框架，与I2C是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供transfer函数，进行spi协议的收发。spi_controller也是基于 Platform 模型的，注册 spi_controller 时也会扫描一个链表进行注册设备，简直太相似了。</p>
 <p>另一层是设备驱动层，基于 spi_bus_type，在driver里则使用spi_read、spi_writer 等函数，最终也会调用到 controller-&gt;transfer 函数进行发送接收。</p>
-<h3 id="数据结构">2.1 数据结构</h3>
-<p>整体数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU0NzQ2Mzc2ODkyMWZhMjUwYTJk">原图<i class="fa fa-external-link-alt"></i></span><br />
-<img src="/picture/linux_driver/spi/SPI_Struct.png" /></p>
+<h3 id="2-1-数据结构"><a href="#2-1-数据结构" class="headerlink" title="2.1 数据结构"></a>2.1 数据结构</h3><p>整体数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU0NzQ2Mzc2ODkyMWZhMjUwYTJk">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/spi/SPI_Struct.png" alt="">  </p>
 <ul>
 <li>spi_controller结构体用于描述一个spi控制器，可以类比iic的i2c_adapt。</li>
 <li>spi_device结构体用于描述一个spi设备，可以类比于i2c_client结构体。</li>
 </ul>
-<p>spi_device结构里有个mode很重要下面是其详细描述： 关于SPI的模式这里详细说明一下，SPI模式主要有两个特征：</p>
+<p>spi_device结构里有个mode很重要下面是其详细描述：<br>关于SPI的模式这里详细说明一下，SPI模式主要有两个特征：    </p>
 <ul>
-<li>CPOL：这是最初的时钟极性。
+<li><p>CPOL：这是最初的时钟极性。    </p>
 <ul>
-<li>0：初始时钟状态为低电平，第一个时钟边沿是上升沿<br />
-</li>
-<li>1：初始时钟状态为高电平，第一个时钟边沿是下降沿</li>
-</ul></li>
-<li>CPHA：这是时钟相位，选择在哪个边沿采样数据
-<ul>
-<li>0：数据在下降沿锁存，输出在上升沿改变<br />
-</li>
-<li>1：数据在上升沿锁存，并在下降沿输出</li>
-</ul></li>
+<li>0：初始时钟状态为低电平，第一个时钟边沿是上升沿    </li>
+<li>1：初始时钟状态为高电平，第一个时钟边沿是下降沿    </li>
 </ul>
-<p>这有四种SPI模式，如下： <img src="/picture/linux_driver/spi/spi4mode.png" /></p>
+</li>
+<li><p>CPHA：这是时钟相位，选择在哪个边沿采样数据    </p>
+<ul>
+<li>0：数据在下降沿锁存，输出在上升沿改变    </li>
+<li>1：数据在上升沿锁存，并在下降沿输出   </li>
+</ul>
+</li>
+</ul>
+<p>这有四种SPI模式，如下：<br><img src="/picture/linux_driver/spi/spi4mode.png" alt=""></p>
 <ul>
 <li>spi_driver用于驱动spi设备，可以类比i2c_driver结构体。</li>
 <li>spi_message用于描述spi传输的消息,由多个spi_transfer段组成，可以类比i2c_message结构体。</li>
 <li>spi_transfer代表一个读写缓冲对，包含接收缓冲区及发送缓冲区，其实，spi_transfer的发送是通过构建spi_message实现，通过将spi_transfer中的链 transfer_list链接到spi_message中的transfers，再以spi_message形势向底层发送数据。</li>
 </ul>
-<h3 id="实现">2.2 实现</h3>
-<p>关于spi的实现其实也是分为controller和设备及设备驱动这三部分，controller一般由soc厂商编写好了驱动通过spi_register_controller向内核注册一个controller设备并挂载在spi_bus总线下，而device和device_driver的实现根platform或iic的实现也是大同小异，这里不做详细的分析了，感兴趣的可以查看内核源码。</p>
-<h3 id="消息传输实现">2.3 消息传输实现</h3>
-<p>spi的message处理如下： 消息提交给总线之前必须调用spi_message_init初始化消息结构体。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spi_message_init(struct spi_message *m)</span><br></pre></td></tr></table></figure> 该函数将message里的元素清零并初始化transfers列表。对于要传输的每个消息应该调用： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spi_message_add_tail(struct spi_transfer *t, struct spi_message *m)</span><br></pre></td></tr></table></figure> 把消息传输添加到transfers列表队列里，完成后有两种方式来启动传输服务：<br />
-<strong>同步：</strong> 使用spi_sync函数完成同步传输 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_sync</span><span class="params">(struct spi_device *spi, struct spi_message *message)</span></span></span><br></pre></td></tr></table></figure></p>
-<p><strong>异步：</strong> 使用spi_async完成传输。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_async</span><span class="params">(struct spi_device *spi, struct spi_message *message)</span></span></span><br></pre></td></tr></table></figure> 需要提供回调函数，在消息传输完成时调用。</p>
-<p>除此之外还有以下函数可以用于数据传输，他们都是基于spi_sync实现的： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_read</span><span class="params">(struct spi_device *spi, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_write</span><span class="params">(struct spi_device *spi, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_write_then_read</span><span class="params">(struct spi_device *spi,</span></span></span><br><span class="line"><span class="params"><span class="function">		<span class="keyword">const</span> <span class="keyword">void</span> *txbuf, <span class="keyword">unsigned</span> n_tx,</span></span></span><br><span class="line"><span class="params"><span class="function">		<span class="keyword">void</span> *rxbuf, <span class="keyword">unsigned</span> n_rx)</span></span></span><br></pre></td></tr></table></figure></p>
-<h3 id="spi-driver编写步骤">2.4 spi driver编写步骤</h3>
-<ul>
-<li><p>声明驱动程序支持的设备id，可以通过spi_device_id来实现，也可以通过设备树提供of_device_id。</p></li>
-<li><p>调用MODULE_BEVICE_TABLE(spi, my_id_table);向spi内核注册设备驱动。如果支持设备树必须调用MODULE_BEVICE_TABLE(spi, of_match_table);注册。</p></li>
-<li><p>编写probe和remove函数。probe函数里识别设备，配置设备，定义设备需要的私有数据，使用spi_setup完成总线配置。remove函数中完成probe的反过程。</p></li>
-<li><p>声明并填充spi_driver结构体。</p></li>
+<h3 id="2-2-实现"><a href="#2-2-实现" class="headerlink" title="2.2 实现"></a>2.2 实现</h3><p>关于spi的实现其实也是分为controller和设备及设备驱动这三部分，controller一般由soc厂商编写好了驱动通过spi_register_controller向内核注册一个controller设备并挂载在spi_bus总线下，而device和device_driver的实现根platform或iic的实现也是大同小异，这里不做详细的分析了，感兴趣的可以查看内核源码。</p>
+<h3 id="2-3-消息传输实现"><a href="#2-3-消息传输实现" class="headerlink" title="2.3 消息传输实现"></a>2.3 消息传输实现</h3><p>spi的message处理如下：<br>消息提交给总线之前必须调用spi_message_init初始化消息结构体。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spi_message_init(struct spi_message *m)</span><br></pre></td></tr></table></figure><br>该函数将message里的元素清零并初始化transfers列表。对于要传输的每个消息应该调用：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">spi_message_add_tail(struct spi_transfer *t, struct spi_message *m)</span><br></pre></td></tr></table></figure><br>把消息传输添加到transfers列表队列里，完成后有两种方式来启动传输服务：<br><strong>同步：</strong> 使用spi_sync函数完成同步传输<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_sync</span><span class="params">(struct spi_device *spi, struct spi_message *message)</span></span></span><br></pre></td></tr></table></figure></p>
+<p><strong>异步：</strong> 使用spi_async完成传输。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_async</span><span class="params">(struct spi_device *spi, struct spi_message *message)</span></span></span><br></pre></td></tr></table></figure><br>需要提供回调函数，在消息传输完成时调用。</p>
+<p>除此之外还有以下函数可以用于数据传输，他们都是基于spi_sync实现的：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_read</span><span class="params">(struct spi_device *spi, <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_write</span><span class="params">(struct spi_device *spi, <span class="keyword">const</span> <span class="keyword">void</span> *buf, <span class="keyword">size_t</span> len)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">spi_write_then_read</span><span class="params">(struct spi_device *spi,</span></span></span><br><span class="line"><span class="params"><span class="function">		<span class="keyword">const</span> <span class="keyword">void</span> *txbuf, <span class="keyword">unsigned</span> n_tx,</span></span></span><br><span class="line"><span class="params"><span class="function">		<span class="keyword">void</span> *rxbuf, <span class="keyword">unsigned</span> n_rx)</span></span></span><br></pre></td></tr></table></figure></p>
+<h3 id="2-4-spi-driver编写步骤"><a href="#2-4-spi-driver编写步骤" class="headerlink" title="2.4 spi driver编写步骤"></a>2.4 spi driver编写步骤</h3><ul>
+<li>声明驱动程序支持的设备id，可以通过spi_device_id来实现，也可以通过设备树提供of_device_id。</li>
+<li>调用MODULE_BEVICE_TABLE(spi, my_id_table);向spi内核注册设备驱动。如果支持设备树必须调用MODULE_BEVICE_TABLE(spi, of_match_table);注册。</li>
+<li>编写probe和remove函数。probe函数里识别设备，配置设备，定义设备需要的私有数据，使用spi_setup完成总线配置。remove函数中完成probe的反过程。</li>
+<li>声明并填充spi_driver结构体。</li>
 <li><p>使用module_spi_driver(__spi_driver)向内核注册driver，其定义如下：</p>
-<p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> module_spi_driver(__spi_driver) \</span></span><br><span class="line"><span class="meta">	module_driver(__spi_driver, spi_register_driver, \</span></span><br><span class="line"><span class="meta">			spi_unregister_driver)</span></span><br></pre></td></tr></table></figure></p></li>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> module_spi_driver(__spi_driver) \</span></span><br><span class="line"><span class="meta">	module_driver(__spi_driver, spi_register_driver, \</span></span><br><span class="line"><span class="meta">			spi_unregister_driver)</span></span><br></pre></td></tr></table></figure>
+</li>
 </ul>
-<h3 id="参考文献">参考文献</h3>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cud2lraXdhbmQuY29tL3poLWNuLyVFNSVCQSU4RiVFNSU4OCU5NyVFNSU5MSVBOCVFOSU4MiU4QSVFNCVCQiU4QiVFOSU5RCVBMg==">https://www.wikiwand.com/zh-cn/%E5%BA%8F%E5%88%97%E5%91%A8%E9%82%8A%E4%BB%8B%E9%9D%A2<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpenVvYmluMi9hcnRpY2xlL2RldGFpbHMvNTE3MzU5NjM=">https://blog.csdn.net/lizuobin2/article/details/51735963<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3pob3V0YW9wb3dlci9hcnRpY2xlL2RldGFpbHMvOTk4NjY3NzM=">https://blog.csdn.net/zhoutaopower/article/details/99866773<i class="fa fa-external-link-alt"></i></span><br />
-《Linux设备驱动开发》</p>
+<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cHM6Ly93d3cud2lraXdhbmQuY29tL3poLWNuLyVFNSVCQSU4RiVFNSU4OCU5NyVFNSU5MSVBOCVFOSU4MiU4QSVFNCVCQiU4QiVFOSU5RCVBMg==">https://www.wikiwand.com/zh-cn/%E5%BA%8F%E5%88%97%E5%91%A8%E9%82%8A%E4%BB%8B%E9%9D%A2<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpenVvYmluMi9hcnRpY2xlL2RldGFpbHMvNTE3MzU5NjM=">https://blog.csdn.net/lizuobin2/article/details/51735963<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3pob3V0YW9wb3dlci9hcnRpY2xlL2RldGFpbHMvOTk4NjY3NzM=">https://blog.csdn.net/zhoutaopower/article/details/99866773<i class="fa fa-external-link-alt"></i></span><br>《Linux设备驱动开发》   </p>
 
     </div>
 
@@ -470,7 +453,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#spi%E5%8D%8F%E8%AE%AE"><span class="nav-text">1. SPI协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3"><span class="nav-text">1.2 接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93"><span class="nav-text">1.3 数据传输</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6"><span class="nav-text">2. Linux驱动框架</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.1 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.2 实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E4%BC%A0%E8%BE%93%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.3 消息传输实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spi-driver%E7%BC%96%E5%86%99%E6%AD%A5%E9%AA%A4"><span class="nav-text">2.4 spi driver编写步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-SPI%E5%8D%8F%E8%AE%AE"><span class="nav-text">1. SPI协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E6%A6%82%E8%BF%B0"><span class="nav-text">1.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E6%8E%A5%E5%8F%A3"><span class="nav-text">1.2 接口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E6%95%B0%E6%8D%AE%E4%BC%A0%E8%BE%93"><span class="nav-text">1.3 数据传输</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Linux%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6"><span class="nav-text">2. Linux驱动框架</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.1 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.2 实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E6%B6%88%E6%81%AF%E4%BC%A0%E8%BE%93%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.3 消息传输实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-spi-driver%E7%BC%96%E5%86%99%E6%AD%A5%E9%AA%A4"><span class="nav-text">2.4 spi driver编写步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -555,7 +538,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">980k</span>
+    <span title="站点总字数">951k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
