@@ -298,47 +298,50 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/linux/brief/内存管理-虚拟地址转换.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2ZWUxMmYzNDZmYjA3MjVmNzkyOGY=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/linux/brief/内存管理-虚拟地址转换.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2ZWUxMmYzNDZmYjA3MjVmNzkyOGY=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <blockquote>
 <p>声明： 本文转载自<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NTM0ODE0NQ==">虚拟地址转换[二] - 具体实现<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NDk3ODk0Ng==">虚拟地址转换[三] - 多级页表<i class="fa fa-external-link-alt"></i></span></p>
 </blockquote>
-<h2 id="1-单级页表转换流程"><a href="#1-单级页表转换流程" class="headerlink" title="1. 单级页表转换流程"></a>1. 单级页表转换流程</h2><p>假设当前CPU支持的虚拟地址是14位，物理地址是12位，page size为64字节（这里要说明一下，通常情况下呢，虚拟地址和物理地址的位数是一样的，但其实并不一定需要一样，因为本来就可以多个虚拟地址指向同一个物理地址嘛）。</p>
-<p>不管是虚拟地址还是物理地址，因为最小管理单位都是page，在转换过程中，代表page内的偏移地址（offset）的低位bits部分是不需要参与的，需要转换的只是代表page唯一性标识的高位bits部分，称作page number。由此产生了4个概念：VPN（virtual page number），PPN（physical page number），VPO（virtual page offset）和PPO（physical page offset）<br><img src="/picture/linux/kernel/task/mmu1.jpg" alt=""></p>
-<p>VPO和PPO占的bit位数为 $log_2 p$ ，p为page size大小，即64，因而VPO和PPO的值为6。因为所有pages都是同样大小的，所以VPO始终等于PPO。<br><img src="/picture/linux/kernel/task/mmu2.jpg" alt=""></p>
-<p>虚拟地址中剩下的bit位就成了VPN，物理地址中剩下的bit位就成了PPN。<br><img src="/picture/linux/kernel/task/mmu3.jpg" alt=""></p>
-<p>假设我们的TLB一共有16个entries，是4路组相关（4-way set associative）的，则有16/4=4个sets。TLB本身就是一个hardware cache.<br>TLB Index（以下简称TI）的值为 $log_2 4$ =2，剩下的bit位就成了TLB Tag（以下简称TT）。<br><img src="/picture/linux/kernel/task/mmu4.jpg" alt=""></p>
+<h2 id="单级页表转换流程">1. 单级页表转换流程</h2>
+<p>假设当前CPU支持的虚拟地址是14位，物理地址是12位，page size为64字节（这里要说明一下，通常情况下呢，虚拟地址和物理地址的位数是一样的，但其实并不一定需要一样，因为本来就可以多个虚拟地址指向同一个物理地址嘛）。</p>
+<p>不管是虚拟地址还是物理地址，因为最小管理单位都是page，在转换过程中，代表page内的偏移地址（offset）的低位bits部分是不需要参与的，需要转换的只是代表page唯一性标识的高位bits部分，称作page number。由此产生了4个概念：VPN（virtual page number），PPN（physical page number），VPO（virtual page offset）和PPO（physical page offset） <img src="/picture/linux/kernel/task/mmu1.jpg" /></p>
+<p>VPO和PPO占的bit位数为 <span class="math inline">\(log_2 p\)</span> ，p为page size大小，即64，因而VPO和PPO的值为6。因为所有pages都是同样大小的，所以VPO始终等于PPO。 <img src="/picture/linux/kernel/task/mmu2.jpg" /></p>
+<p>虚拟地址中剩下的bit位就成了VPN，物理地址中剩下的bit位就成了PPN。 <img src="/picture/linux/kernel/task/mmu3.jpg" /></p>
+<p>假设我们的TLB一共有16个entries，是4路组相关（4-way set associative）的，则有16/4=4个sets。TLB本身就是一个hardware cache. TLB Index（以下简称TI）的值为 <span class="math inline">\(log_2 4\)</span> =2，剩下的bit位就成了TLB Tag（以下简称TT）。 <img src="/picture/linux/kernel/task/mmu4.jpg" /></p>
 <p>下面，我们准备读取虚拟地址为0x0334处的内容。</p>
-<ol>
-<li><p>将这一地址分割成VPN和VPO<br><img src="/picture/linux/kernel/task/mmu5.jpg" alt=""></p>
-</li>
-<li><p>将VPN分割成TT和TI<br><img src="/picture/linux/kernel/task/mmu6.jpg" alt=""></p>
-</li>
-<li><p>使用TT (0x03) 和TI (0) 在TLB中查找。一个TLB entry的构成如下：<br><img src="/picture/linux/kernel/task/mmu7.jpg" alt=""></p>
-</li>
+<ol type="1">
+<li><p>将这一地址分割成VPN和VPO <img src="/picture/linux/kernel/task/mmu5.jpg" /></p></li>
+<li><p>将VPN分割成TT和TI <img src="/picture/linux/kernel/task/mmu6.jpg" /></p></li>
+<li><p>使用TT (0x03) 和TI (0) 在TLB中查找。一个TLB entry的构成如下： <img src="/picture/linux/kernel/task/mmu7.jpg" /></p></li>
 </ol>
 <p>作为cache，TLB index是用来索引的，不会存储在TLB entry中，TLB entry中存的只有tag, 权限位，有效位和内容（对于TLB来说就是PPN）。</p>
-<p>假设现在TLB中的内容是这样的（这里为了简化，省略了permission bits）：<br><img src="/picture/linux/kernel/task/mmu8.jpg" alt=""></p>
+<p>假设现在TLB中的内容是这样的（这里为了简化，省略了permission bits）： <img src="/picture/linux/kernel/task/mmu8.jpg" /></p>
 <p>虽然在set/index为0这一行，找到了tag为03的一个entry，但这个entry中PPN是不存在的，整个entry目前是invalid的，也就是说TLB miss了，需要去page table中找。</p>
-<ol>
-<li>使用VPN (0x0C) 作为index在page table中查找。一个只有one level的page table（单级页表）构成如下：<br><img src="/picture/linux/kernel/task/mmu9.jpg" alt=""></li>
+<ol start="4" type="1">
+<li>使用VPN (0x0C) 作为index在page table中查找。一个只有one level的page table（单级页表）构成如下： <img src="/picture/linux/kernel/task/mmu9.jpg" /></li>
 </ol>
 <p>index作为索引，也是不会存储于page table entry中的，PTE存的只有权限位，有效位和内容（对于PTE来说也是PPN）。</p>
-<p>假设现在的page table是这样的（同样为了简化，省略了permission bits）：<br><img src="/picture/linux/kernel/task/mmu10.jpg" alt=""></p>
+<p>假设现在的page table是这样的（同样为了简化，省略了permission bits）： <img src="/picture/linux/kernel/task/mmu10.jpg" /></p>
 <p>对应的PTE（page table entry）中的PPN不存在，依然是invalid的，这将触发一个page fault。</p>
-<p>实现的细节展开后，上文中的图也可以展开了（只用关注左半部分）<br><img src="/picture/linux/kernel/task/mmu11.jpg" alt=""></p>
-<h2 id="2-使用单级页表的问题"><a href="#2-使用单级页表的问题" class="headerlink" title="2. 使用单级页表的问题"></a>2. 使用单级页表的问题</h2><p>上文为了演示的需要，使用的是一个单级页表。事实上，若内存容量较大，按照常规的4KB的page大小的话，page table entry的数目将会很大。因为page table是按照VPN（virtual page number）来索引查找的，如果把单级页表视作一个big array，则VPN就相当于数组下标，因此page table本身需要在内存中是连续分布的，而且即便没有使用到的page，也会占用一个entry。<br><img src="/picture/linux/kernel/task/mmu12.jpg" alt=""></p>
+<p>实现的细节展开后，上文中的图也可以展开了（只用关注左半部分） <img src="/picture/linux/kernel/task/mmu11.jpg" /></p>
+<h2 id="使用单级页表的问题">2. 使用单级页表的问题</h2>
+<p>上文为了演示的需要，使用的是一个单级页表。事实上，若内存容量较大，按照常规的4KB的page大小的话，page table entry的数目将会很大。因为page table是按照VPN（virtual page number）来索引查找的，如果把单级页表视作一个big array，则VPN就相当于数组下标，因此page table本身需要在内存中是连续分布的，而且即便没有使用到的page，也会占用一个entry。 <img src="/picture/linux/kernel/task/mmu12.jpg" /></p>
 <p>为了解决这些问题，在现代32/64位处理器中，通常使用的都是多级页表，操作系统的实现中也提供了对多级页表的支持。</p>
-<h2 id="3-多级页表的查找方法"><a href="#3-多级页表的查找方法" class="headerlink" title="3. 多级页表的查找方法"></a>3. 多级页表的查找方法</h2><p>MMU中的table walk unit使用虚拟地址中位域的子集做为index，顺着页表层次结构的各个级别往下查找。以一个虚拟地址为30位，第一级页表PD（Page Directory）占8 bits，第二级页表PT（Page Table）占10 bits，页大小为4KB（占12 bits）的系统为例，<br><img src="/picture/linux/kernel/task/mmu13.jpg" alt=""></p>
-<ol>
+<h2 id="多级页表的查找方法">3. 多级页表的查找方法</h2>
+<p>MMU中的table walk unit使用虚拟地址中位域的子集做为index，顺着页表层次结构的各个级别往下查找。以一个虚拟地址为30位，第一级页表PD（Page Directory）占8 bits，第二级页表PT（Page Table）占10 bits，页大小为4KB（占12 bits）的系统为例， <img src="/picture/linux/kernel/task/mmu13.jpg" /></p>
+<ol type="1">
 <li>通过PTBP（Page Table Base Register）寄存器获得PD页表的起始物理地址（如果页表自己都用虚拟地址，那岂不是还得另外有个页表来转换，陷入死循环了……），然后从待转换的虚拟地址中取出高8位作为index找到对应的PD entry， 这个PD entry中存放的是它对应的PT页表的起始物理地址。</li>
 <li>从待转换的虚拟地址中取出中间10位作为index在PT表中找到对应的PT entry，这个PT entry中存放的是就是物理页面号（PPN, Physical Page Number）了。</li>
 </ol>
 <p>在多级页表系统中，其实每级页表都可以视为一种“虚拟地址”向“物理地址”的转换，只是这里的“虚拟地址”是待转换的虚拟地址的一个位域子集，而除了最后一级页表PTE是直接指向物理页面的，其他级别页表里的“物理地址”都是指向对应下一级页表的首地址。</p>
-<p>再举一个更加鲜活的带有实际地址的例子，为了便于演示，使用一个PD，PT，page offset分别占4 bits, 4bits, 12bits的系统。<br><img src="/picture/linux/kernel/task/mmu14.jpg" alt=""></p>
+<p>再举一个更加鲜活的带有实际地址的例子，为了便于演示，使用一个PD，PT，page offset分别占4 bits, 4bits, 12bits的系统。 <img src="/picture/linux/kernel/task/mmu14.jpg" /></p>
 <p>对于虚拟地址0x01ABC，其中“ABC”为page offset, 真正用来转换的只有高8位“0x01”。PD index为0，对应PFN为第一行的0x3，然后找到0x3对应的PT表，PT index为1，对应PFN为第二行的0x23，这样就得到了PPN为0x23，加上page offset就是最后的物理地址0x23ABC。另外两个虚拟地址0x00000和0xFEED0的查找过程也是一样的。</p>
 <p>如果真的只有这3个地址所在的page被用到，那么只需要 [公式] 个entries就可以了，而如果采用单级页表，则需要 [公式] 个entries。在32位系统中，进程的虚拟地址空间为4GB，但某个进程实际使用的页只占其中的一小部分，其分布是稀疏的，因此非常适合使用多级页表这种稀疏的级联数组(radix tree)来表示。</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NTI5ODI2MA==">https://zhuanlan.zhihu.com/p/65298260<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NTM0ODE0NQ==">https://zhuanlan.zhihu.com/p/65348145<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NDk3ODk0Ng==">https://zhuanlan.zhihu.com/p/64978946<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9jb3Vyc2VzLmNzLndhc2hpbmd0b24uZWR1L2NvdXJzZXMvY3NlMzUxLzE2d2kvc2VjdGlvbnMvOC9jc2UzNTFfMTZ3aV8wOC5wZGY=">https://courses.cs.washington.edu/courses/cse351/16wi/sections/8/cse351_16wi_08.pdf<i class="fa fa-external-link-alt"></i></span>   </p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NTI5ODI2MA==">https://zhuanlan.zhihu.com/p/65298260<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NTM0ODE0NQ==">https://zhuanlan.zhihu.com/p/65348145<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82NDk3ODk0Ng==">https://zhuanlan.zhihu.com/p/64978946<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9jb3Vyc2VzLmNzLndhc2hpbmd0b24uZWR1L2NvdXJzZXMvY3NlMzUxLzE2d2kvc2VjdGlvbnMvOC9jc2UzNTFfMTZ3aV8wOC5wZGY=">https://courses.cs.washington.edu/courses/cse351/16wi/sections/8/cse351_16wi_08.pdf<i class="fa fa-external-link-alt"></i></span></p>
 
     </div>
 
@@ -447,7 +450,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%8D%95%E7%BA%A7%E9%A1%B5%E8%A1%A8%E8%BD%AC%E6%8D%A2%E6%B5%81%E7%A8%8B"><span class="nav-text">1. 单级页表转换流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BD%BF%E7%94%A8%E5%8D%95%E7%BA%A7%E9%A1%B5%E8%A1%A8%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text">2. 使用单级页表的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%A4%9A%E7%BA%A7%E9%A1%B5%E8%A1%A8%E7%9A%84%E6%9F%A5%E6%89%BE%E6%96%B9%E6%B3%95"><span class="nav-text">3. 多级页表的查找方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E7%BA%A7%E9%A1%B5%E8%A1%A8%E8%BD%AC%E6%8D%A2%E6%B5%81%E7%A8%8B"><span class="nav-text">1. 单级页表转换流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E5%8D%95%E7%BA%A7%E9%A1%B5%E8%A1%A8%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text">2. 使用单级页表的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E7%BA%A7%E9%A1%B5%E8%A1%A8%E7%9A%84%E6%9F%A5%E6%89%BE%E6%96%B9%E6%B3%95"><span class="nav-text">3. 多级页表的查找方法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -532,7 +535,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">951k</span>
+    <span title="站点总字数">980k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

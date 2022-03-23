@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. GPIO概述以前学习stm32的时候看到手册里有关于gpio的电路图，如下：  保护二极体：  IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。  P-">
+  <meta name="description" content="1. GPIO概述 以前学习stm32的时候看到手册里有关于gpio的电路图，如下：   保护二极体： IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。 P-">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之GPIO子系统">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BGPIO%E5%AD%90%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. GPIO概述以前学习stm32的时候看到手册里有关于gpio的电路图，如下：  保护二极体：  IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。  P-">
+<meta property="og:description" content="1. GPIO概述 以前学习stm32的时候看到手册里有关于gpio的电路图，如下：   保护二极体： IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。 P-">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/gpio/gpio.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/gpio/floatin.png">
@@ -293,181 +293,194 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="1-GPIO概述"><a href="#1-GPIO概述" class="headerlink" title="1. GPIO概述"></a>1. GPIO概述</h2><p>以前学习stm32的时候看到手册里有关于gpio的电路图，如下：<br><img src="/picture/linux_driver/gpio/gpio.png" alt=""></p>
+        <h2 id="gpio概述">1. GPIO概述</h2>
+<p>以前学习stm32的时候看到手册里有关于gpio的电路图，如下： <img src="/picture/linux_driver/gpio/gpio.png" /></p>
 <ul>
-<li><p>保护二极体：<br>  IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。</p>
-</li>
-<li><p>P-MOS管和N-MOS管：<br>  由P-MOS管和N-MOS管组成的单元电路使得GPIO具有“推挽输出”和“开漏输出”的模式。这里的电路会在下面很详细地分析到。</p>
-</li>
-<li><p>TTL肖特基触发器：<br>  信号经过触发器后，模拟信号转化为0和1的数字信号。但是，当GPIO引脚作为ADC采集电压的输入通道时，用其“模拟输入”功能，此时信号不再经过触发器进行TTL电平转换。ADC外设要采集到的原始的模拟信号。</p>
-</li>
+<li><p>保护二极体：<br />
+IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。</p></li>
+<li><p>P-MOS管和N-MOS管：<br />
+由P-MOS管和N-MOS管组成的单元电路使得GPIO具有“推挽输出”和“开漏输出”的模式。这里的电路会在下面很详细地分析到。</p></li>
+<li><p>TTL肖特基触发器：<br />
+信号经过触发器后，模拟信号转化为0和1的数字信号。但是，当GPIO引脚作为ADC采集电压的输入通道时，用其“模拟输入”功能，此时信号不再经过触发器进行TTL电平转换。ADC外设要采集到的原始的模拟信号。</p></li>
 </ul>
 <span id="more"></span>
 <p>STM32的GPIO支持4种输入模式（浮空输入、上拉输入、下拉输入、模拟输入）和4种输出模式（开漏输出、开漏复用输出、推挽输出、推挽复用输出）</p>
 <ul>
-<li>浮空输入模式<br><img src="/picture/linux_driver/gpio/floatin.png" alt=""></li>
+<li>浮空输入模式<br />
+<img src="/picture/linux_driver/gpio/floatin.png" /></li>
 </ul>
 <p>浮空输入模式下，I/O口的电平信号直接进入输入寄存器。也就是说，I/O的电平状态是不确定的，完全由外部输入决定；如果在该引脚悬空（在无信号输入）的情况下，读取该口的电平是不确定的。</p>
 <ul>
-<li>上拉输入模式<br><img src="/picture/linux_driver/gpio/pullupin.png" alt=""></li>
+<li>上拉输入模式<br />
+<img src="/picture/linux_driver/gpio/pullupin.png" /></li>
 </ul>
 <p>上拉输入模式下，I/O口的电平信号直接进入输入寄存器。但是在I/O口悬空（在无信号输入）的情况下，输入端的电平可以保持在高电平；并且在I/O口输入为低电平的时候，输入端的电平也还是低电平。</p>
 <ul>
-<li>下拉输入模式<br><img src="/picture/linux_driver/gpio/pulldownin.png" alt=""></li>
+<li>下拉输入模式<br />
+<img src="/picture/linux_driver/gpio/pulldownin.png" /></li>
 </ul>
 <p>下拉输入模式下，I/O口的电平信号直接进入输入寄存器。但是在I/O口悬空（在无信号输入）的情况下，输入端的电平可以保持在低电平；并且在I/O口输入为高电平的时候，输入端的电平也还是高电平。</p>
 <ul>
-<li>模拟输入模式<br><img src="/picture/linux_driver/gpio/ain.png" alt=""></li>
+<li>模拟输入模式<br />
+<img src="/picture/linux_driver/gpio/ain.png" /></li>
 </ul>
 <p>模拟输入模式下，I/O口的模拟信号（电压信号，而非电平信号）直接模拟输入到片上外设模组，比如ADC模组等等。</p>
 <ul>
-<li>开漏输出模式<br><img src="/picture/linux_driver/gpio/openout.png" alt=""></li>
+<li>开漏输出模式<br />
+<img src="/picture/linux_driver/gpio/openout.png" /></li>
 </ul>
 <p>开漏输出模式下，通过设定位设定/清除寄存器或者输出寄存器的值，途经N-MOS管，最终输出到I/O口。这里要注意N-MOS管，当设定输出的值为高电平的时候，N-MOS管处于关闭状态，此时I/O口的电平就不会由输出的高低电平决定，而是由I/O口外部的上拉或者下拉决定；当设定输出的值为低电平的时候，N-MOS管处于开启状态，此时I/O口的电平就是低电平。同时，I/O口的电平也可以通过输入电路进行读取；注意，I/O口的电平不一定是输出的电平。</p>
 <ul>
-<li>开漏复用输出模式<br><img src="/picture/linux_driver/gpio/openflexout.png" alt=""></li>
+<li>开漏复用输出模式<br />
+<img src="/picture/linux_driver/gpio/openflexout.png" /></li>
 </ul>
 <p>开漏复用输出模式，与开漏输出模式很是类似。只是输出的高低电平的来源不是让CPU直接写输出寄存器，取而代之利用片上外设模组的复用功能输出来决定的。</p>
-<h2 id="2-GPIO驱动中几个概念"><a href="#2-GPIO驱动中几个概念" class="headerlink" title="2. GPIO驱动中几个概念"></a>2. GPIO驱动中几个概念</h2><ul>
-<li><p>Active-High and Active-Low<br>以LED为例，需要设置GPIO电平。但是有些电路可能是高电平点亮LED，有些是低电平点亮LED。</p>
+<h2 id="gpio驱动中几个概念">2. GPIO驱动中几个概念</h2>
+<ul>
+<li><p>Active-High and Active-Low<br />
+以LED为例，需要设置GPIO电平。但是有些电路可能是高电平点亮LED，有些是低电平点亮LED。</p>
 <p>可以使用如下代码：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gpiod_set_value(gpio, <span class="number">1</span>);  <span class="comment">// 输出高电平点亮LED</span></span><br><span class="line">gpiod_set_value(gpio, <span class="number">0</span>);  <span class="comment">// 输出低电平点亮LED</span></span><br></pre></td></tr></table></figure>
-<p>对应同一个目标：点亮LED，对于不同的LED，就需要不同的代码，原因在于上面的代码中1、0表示的是”物理值”。</p>
-<p>如果能使用”逻辑值”，同样的逻辑值在不同的配置下输出对应的物理值，就可以保持代码一致，比如：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">gpiod_set_value(gpio, <span class="number">1</span>);  <span class="comment">// 输出逻辑1</span></span><br><span class="line">                           <span class="comment">// 在Active-High的情况下它会输出高电平</span></span><br><span class="line">                           <span class="comment">// 在Active-Low的情况下它会输出低电平</span></span><br></pre></td></tr></table></figure>
-</li>
-<li><p>Open Drain and Open Source<br>有多个GPIO驱动同时驱动一个电路时，就需要设置Open Drain或Open Source。</p>
+<p>对应同一个目标：点亮LED，对于不同的LED，就需要不同的代码，原因在于上面的代码中1、0表示的是"物理值"。</p>
+<p>如果能使用"逻辑值"，同样的逻辑值在不同的配置下输出对应的物理值，就可以保持代码一致，比如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">gpiod_set_value(gpio, <span class="number">1</span>);  <span class="comment">// 输出逻辑1</span></span><br><span class="line">                           <span class="comment">// 在Active-High的情况下它会输出高电平</span></span><br><span class="line">                           <span class="comment">// 在Active-Low的情况下它会输出低电平</span></span><br></pre></td></tr></table></figure></li>
+<li><p>Open Drain and Open Source 有多个GPIO驱动同时驱动一个电路时，就需要设置Open Drain或Open Source。</p>
 <ul>
 <li>Open Drain：引脚被设置为低电平时才会驱动电路，典型场景是I2C接口。</li>
 <li>Open Source：引脚被设置为高电平时才会驱动电路</li>
+</ul></li>
 </ul>
-</li>
-</ul>
-<h2 id="3-GPIO数据结构"><a href="#3-GPIO数据结构" class="headerlink" title="3. GPIO数据结构"></a>3. GPIO数据结构</h2><p>要理解一个驱动框架的设计就一定要理清楚该框架下的数据结构组织关系，首先列出gpio子系统的数据结构关系图如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU2OGI1NjUzYmI2NDkzMGMxOTFj">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/gpio/GPIO_Struct.png" alt="">  </p>
+<h2 id="gpio数据结构">3. GPIO数据结构</h2>
+<p>要理解一个驱动框架的设计就一定要理清楚该框架下的数据结构组织关系，首先列出gpio子系统的数据结构关系图如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU2OGI1NjUzYmI2NDkzMGMxOTFj">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/gpio/GPIO_Struct.png" /></p>
 <ul>
-<li><p>gpio_chip<br>  gpio_chip这个数据结构用于描述一组gpio，soc里的gpio一般都是分为几组，同一组内的gpio具有相同的操作方式。</p>
-</li>
-<li><p>gpio_device<br>  gpio_device是具体的device它管理一个gpio_chip和该组下的所有pin。gpio_device通过链表连接起来就是soc内的多组gpio。</p>
-</li>
-<li><p>gpio_desc<br>  gpio_desc这个结构用于描述一个pin，一组gpio里面有32个pin或者多个pin，每一个pin由gpio_desc描述，同一组的pin挂载在gpio_device下。</p>
-</li>
+<li><p>gpio_chip<br />
+gpio_chip这个数据结构用于描述一组gpio，soc里的gpio一般都是分为几组，同一组内的gpio具有相同的操作方式。</p></li>
+<li><p>gpio_device<br />
+gpio_device是具体的device它管理一个gpio_chip和该组下的所有pin。gpio_device通过链表连接起来就是soc内的多组gpio。</p></li>
+<li><p>gpio_desc<br />
+gpio_desc这个结构用于描述一个pin，一组gpio里面有32个pin或者多个pin，每一个pin由gpio_desc描述，同一组的pin挂载在gpio_device下。</p></li>
 </ul>
-<h2 id="4-GPIO子系统的层次和接口"><a href="#4-GPIO子系统的层次和接口" class="headerlink" title="4. GPIO子系统的层次和接口"></a>4. GPIO子系统的层次和接口</h2><p><img src="/picture/linux_driver/gpio/GPIO_Struct.png/gpio_system_level.png" alt=""></p>
+<h2 id="gpio子系统的层次和接口">4. GPIO子系统的层次和接口</h2>
+<p><img src="/picture/linux_driver/gpio/GPIO_Struct.png/gpio_system_level.png" /></p>
 <p>硬件层之上是soc原厂提供的gpio controller驱动这部分提供了具体soc的pin脚的描述和控制接口，在这之上是gpiolib层为其他驱动程序提供统一的接口来配置和控制gpio，在往上就是其他驱动程序使用gpio的接口完成他们想要的工作。当然在gpiolib之下还会使用pinctrl子系统来管理pin的功能复用与配置，这个在pinctrl一篇文章里再详细说明。</p>
 <p>gpiolib对外提供一些标准接口用于控制gpio，具体接口如下：</p>
-<div class="table-container">
 <table>
 <thead>
-<tr>
+<tr class="header">
 <th>descriptor-based</th>
 <th>legacy</th>
 <th>说明</th>
 </tr>
 </thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td>获得GPIO</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>gpiod_get</td>
 <td>gpio_request</td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>gpiod_get_index</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>gpiod_get_array</td>
 <td>gpio_request_array</td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>devm_gpiod_get</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>devm_gpiod_get_index</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>devm_gpiod_get_array</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>设置方向</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>gpiod_direction_input</td>
 <td>gpio_direction_input</td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>gpiod_direction_output</td>
 <td>gpio_direction_output</td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>读值、写值</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>gpiod_get_value</td>
 <td>gpio_get_value</td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>gpiod_set_value</td>
 <td>gpio_set_value</td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>释放GPIO</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>gpio_free</td>
 <td>gpio_free</td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>gpiod_put</td>
 <td>gpio_free_array</td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>gpiod_put_array</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="even">
 <td>devm_gpiod_put</td>
 <td></td>
 <td></td>
 </tr>
-<tr>
+<tr class="odd">
 <td>devm_gpiod_put_array</td>
+<td></td>
 <td></td>
 </tr>
 </tbody>
 </table>
-</div>
 <p>这里以gpiod开头的是新的驱动使用的接口（以pin描述符来表示引脚而不是数字），推荐使用新的接口；以devm开头的是资源管理版本的接口，而以gpio开头的旧的gpio接口，基于数字表示pin的接口。</p>
-<h2 id="5-实现"><a href="#5-实现" class="headerlink" title="5. 实现"></a>5. 实现</h2><p>gpio_chip是描述一个gpio控制器的数据结构，将一个gpio控制器添加到系统中的流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU2Y2YwNzkxMjkwNmIyYTQ0ZGEx">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/gpio/GPIO_CHIP_ADD.png" alt=""></p>
+<h2 id="实现">5. 实现</h2>
+<p>gpio_chip是描述一个gpio控制器的数据结构，将一个gpio控制器添加到系统中的流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU2Y2YwNzkxMjkwNmIyYTQ0ZGEx">原图<i class="fa fa-external-link-alt"></i></span><br />
+<img src="/picture/linux_driver/gpio/GPIO_CHIP_ADD.png" /></p>
 <p>对于gpio驱动一般由原厂写好，其他驱动工程师不需要编写具体驱动，需要的时候直接在dts里配置就可以直接使用。其中gpio_chip结构体的注册如上图所示，每个gpio_chip都需要一个gpio_device结构，要先分配一个gpio_device结构体，然后就是处理该组下的pin，以及各种中断信息。</p>
-<h2 id="6-sysfs接口"><a href="#6-sysfs接口" class="headerlink" title="6. sysfs接口"></a>6. sysfs接口</h2><p><code>/sys/bus/gpio/devices</code>目录下，列出了所有的GPIO控制器<br><code>/sys/class/gpio/gpiochipXXX</code>下有每个GPIO控制器的详细信息<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">/sys/class/gpio/gpiochip508]#</span><span class="bash"> ls -1</span></span><br><span class="line">base     // 这个GPIO控制器的GPIO编号</span><br><span class="line">device</span><br><span class="line">label    // 名字</span><br><span class="line">ngpio    // 引脚个数</span><br><span class="line">power</span><br><span class="line">subsystem</span><br><span class="line">uevent</span><br></pre></td></tr></table></figure><br>查看gpio使用情况：<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /sys/kernel/debug/gpio</span><br></pre></td></tr></table></figure><br>导出/设置方向/读写值：</p>
+<h2 id="sysfs接口">6. sysfs接口</h2>
+<p><code>/sys/bus/gpio/devices</code>目录下，列出了所有的GPIO控制器 <code>/sys/class/gpio/gpiochipXXX</code>下有每个GPIO控制器的详细信息 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">/sys/class/gpio/gpiochip508]#</span><span class="bash"> ls -1</span></span><br><span class="line">base     // 这个GPIO控制器的GPIO编号</span><br><span class="line">device</span><br><span class="line">label    // 名字</span><br><span class="line">ngpio    // 引脚个数</span><br><span class="line">power</span><br><span class="line">subsystem</span><br><span class="line">uevent</span><br></pre></td></tr></table></figure> 查看gpio使用情况： <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /sys/kernel/debug/gpio</span><br></pre></td></tr></table></figure> 导出/设置方向/读写值：</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">echo 509 &gt; /sys/class/gpio/export</span><br><span class="line">echo out &gt; /sys/class/gpio/gpio509/direction</span><br><span class="line">echo 1 &gt; /sys/class/gpio/gpio509/value</span><br><span class="line">echo 509 &gt; /sys/class/gpio/unexport</span><br><span class="line"></span><br><span class="line">echo 509 &gt; /sys/class/gpio/export</span><br><span class="line">echo in &gt; /sys/class/gpio/gpio509/direction</span><br><span class="line">cat /sys/class/gpio/gpio509/value</span><br><span class="line">echo 509 &gt; /sys/class/gpio/unexport</span><br></pre></td></tr></table></figure>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p>《韦东山老师的书籍和课程》<br><span class="exturl" data-url="aHR0cHM6Ly9pdGVyMDEuY29tLzUzOTA0MS5odG1s">https://iter01.com/539041.html<i class="fa fa-external-link-alt"></i></span>   </p>
+<h3 id="参考文献">参考文献</h3>
+<p>《韦东山老师的书籍和课程》<br />
+<span class="exturl" data-url="aHR0cHM6Ly9pdGVyMDEuY29tLzUzOTA0MS5odG1s">https://iter01.com/539041.html<i class="fa fa-external-link-alt"></i></span></p>
 
     </div>
 
@@ -576,7 +589,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-GPIO%E6%A6%82%E8%BF%B0"><span class="nav-text">1. GPIO概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-GPIO%E9%A9%B1%E5%8A%A8%E4%B8%AD%E5%87%A0%E4%B8%AA%E6%A6%82%E5%BF%B5"><span class="nav-text">2. GPIO驱动中几个概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-GPIO%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">3. GPIO数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-GPIO%E5%AD%90%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%B1%82%E6%AC%A1%E5%92%8C%E6%8E%A5%E5%8F%A3"><span class="nav-text">4. GPIO子系统的层次和接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%AE%9E%E7%8E%B0"><span class="nav-text">5. 实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-sysfs%E6%8E%A5%E5%8F%A3"><span class="nav-text">6. sysfs接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#gpio%E6%A6%82%E8%BF%B0"><span class="nav-text">1. GPIO概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpio%E9%A9%B1%E5%8A%A8%E4%B8%AD%E5%87%A0%E4%B8%AA%E6%A6%82%E5%BF%B5"><span class="nav-text">2. GPIO驱动中几个概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpio%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">3. GPIO数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gpio%E5%AD%90%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%B1%82%E6%AC%A1%E5%92%8C%E6%8E%A5%E5%8F%A3"><span class="nav-text">4. GPIO子系统的层次和接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">5. 实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sysfs%E6%8E%A5%E5%8F%A3"><span class="nav-text">6. sysfs接口</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -661,7 +674,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">951k</span>
+    <span title="站点总字数">980k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
