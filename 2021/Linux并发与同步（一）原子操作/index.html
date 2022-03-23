@@ -24,18 +24,20 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 原子操作 原子操作是指保证指令以原子的方式执行・执行过程不会被打断。在如下代码片段中，假设 thread_A_func和 thread_B_fumc都尝试进行i++操作，请间 thread_A_func和 thread_B_func执行完后，i的值是多少？ 12345678910111213static int i &#x3D;0;&#x2F;&#x2F;线程A函数void thread_A_func()&amp;#123;">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux并发与同步（一）原子操作">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 原子操作 原子操作是指保证指令以原子的方式执行・执行过程不会被打断。在如下代码片段中，假设 thread_A_func和 thread_B_fumc都尝试进行i++操作，请间 thread_A_func和 thread_B_func执行完后，i的值是多少？ 12345678910111213static int i &#x3D;0;&#x2F;&#x2F;线程A函数void thread_A_func()&amp;#123;">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-原子操作.png">
 <meta property="article:published_time" content="2021-12-06T07:17:39.000Z">
-<meta property="article:modified_time" content="2022-01-20T16:15:07.966Z">
+<meta property="article:modified_time" content="2022-03-23T13:53:52.343Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="atomic">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-原子操作.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C/">
 
@@ -282,7 +284,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="原子操作">1. 原子操作</h2>
+        <p><img src="/picture/linux/brief/并发与同步-原子操作.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5NzdhMTYzNzY4OTA3MTA2MDk1ZDE=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="原子操作">1. 原子操作</h2>
 <p>原子操作是指保证指令以原子的方式执行・执行过程不会被打断。在如下代码片段中，假设 thread_A_func和 thread_B_fumc都尝试进行i++操作，请间 thread_A_func和 thread_B_func执行完后，i的值是多少？</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> i =<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程A函数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">thread_A_func</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    i++;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程B函数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">thread_B_func</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    i++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>有的读者可能认为是2，但也可能不是2，代码的执行过程如下：</p>
@@ -303,7 +307,6 @@
 <li>把新值写回内存中。</li>
 </ul>
 <p>在读取原子变量的值、修改原子变量的值、把新值写入内存的过程中，处理器必须提供原子操作的汇编指令来完成上述操作，如ARM64处理器提供cas指令，x86处理器提供 cmpxchg指令。</p>
-<span id="more"></span>
 <h2 id="api">2. API</h2>
 <h3 id="基本原子操作函数">2.1. 基本原子操作函数</h3>
 <p>Linux内核提供最基本的原子操作函数包括 atomic_read()函数和 atomic_set()函数。</p>

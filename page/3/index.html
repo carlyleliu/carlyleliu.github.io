@@ -794,7 +794,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E5%9D%97I-O/">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -808,7 +808,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/Linux%E5%9D%97I-O/" class="post-title-link" itemprop="url">Linux块I/O</a>
+            <a href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/" class="post-title-link" itemprop="url">Linux文件系统（二）块I/O</a>
         </h2>
 
         <div class="post-meta">
@@ -839,8 +839,8 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
       </span>
       <span class="post-meta-item-text">Disqus：</span>
     
-    <a title="disqus" href="/2021/Linux%E5%9D%97I-O/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux块I-O/" itemprop="commentCount"></span>
+    <a title="disqus" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux文件系统（二）块I/Linux文件系统（二）块IO/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -869,11 +869,10 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>系统中能够随机（不需要按顺序）访问固定大小数据片（chunks）的硬件设备称作块设备，这些固定大小的数据片就称作块。最常见的块设备是硬盘，除此以外，还有软盘驱动器、蓝光光驱和闪存等许多其他块设备。注意，它们都是以安装文件系统的方式使用的—一这也是块设备一般的访问方式。 另一种基本的设备类型是字符设备。字符设备按照字符流的方式被有序访问，像串口和键盘就属于字符设备。如果一个硬件设备是以字符流的方式被访问的话，那就应该将它归于字符设备：反过来，如果一个设备是随机（无序的）访问的，那么它就属于块设备。 对于这两种类型的设备，它们的区别在于是否可以随机访问数据—一换句话说，就是能否在访问设备时随意地从一个位置跳转到另一个位置。举个例子，键盘这种设备提供的就是一个数据流，当你输入“w01f”这个字符串时，键盘驱动程序会按照和输入完全相同的顺序返回这个由四个字符组成的数据流。如果让键盘驱动程序打乱顺序来读字符串，或读取其他字符，都是没有意义的。所以键盘就是一种典型的字符设备，它提供的就是用户从键盘输入的字符流。对键盘进行读操作会得到一个字符流，首先是“w”，然后是“o”，再是“l”，最后是“x”。当没人敲键盘时，字符流就是空的。硬盘设备的情况就不大一样了。硬盘设备的驱动可能要求读取磁盘上任意块的内容，然后又转去读取别的块的内容，而被读取的块在磁盘上位置不一定要连续。所以说硬盘的数据可以被随机访问，而不是以流的方式被访问，因此它是一个块设备。</p>
-<p>内核管理块设备要比管理字符设备细致得多，需要考虑的问题和完成的工作相对于字符设备来说要复杂许多。这是因为字符设备仅仅需要控制一个位置—一当前位置，而块设备访问的位置必须能够在介质的不同区间前后移动。所以事实上内核不必提供一个专门的子系统来管理字符设备，但是对块设备的管理却必须要有一个专门的提供服务的子系统。不仅仅是因为块设备的复杂性远远高于字符设备，更重要的原因是块设备对执行性能的要求很高；对硬盘每多一份利用都会对整个系统的性能带来提升，其效果要远远比键盘吞吐速度成倍的提高大得多。另外，我们将会看到，块设备的复杂性会为这种优化留下很大的施展空间。这一章的主题就是讨论内核如何对块设备和块设备的请求进行管理。该部分在内核中称作块/O层。有趣的是，改写块/O层正是2.5开发版内核的主要目标。本章涵盖了2.6版内核中所有新的块/0层。</p>
+          <p><img src="/picture/linux/brief/Linux文件系统-块I_O.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhZTkxMTA3OTEyOTA2ZjUxNDZjODg=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/Linux%E5%9D%97I-O/#more" rel="contents">
+              <a class="btn" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -897,7 +896,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89VFS/">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%89%EF%BC%89VFS/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -911,7 +910,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
           
-            <a href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89VFS/" class="post-title-link" itemprop="url">Linux文件系统（二）VFS</a>
+            <a href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%89%EF%BC%89VFS/" class="post-title-link" itemprop="url">Linux文件系统（三）VFS</a>
         </h2>
 
         <div class="post-meta">
@@ -942,8 +941,8 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
       </span>
       <span class="post-meta-item-text">Disqus：</span>
     
-    <a title="disqus" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89VFS/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux文件系统（二）VFS/" itemprop="commentCount"></span>
+    <a title="disqus" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%89%EF%BC%89VFS/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux文件系统（三）VFS/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -972,15 +971,10 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="通用文件系统接口">1. 通用文件系统接口</h2>
-<p>VFS使得用户可以直接使用open()、read()和write()这样的系统调用而无须考虑具体文件系统和实际物理介质。现在听起来这并没什么新奇的（我们早就认为这是理所当然的），但是，使得这些通用的系统调用可以跨越各种文件系统和不同介质执行，绝非是微不足道的成绩。更了不起的是，系统调用可以在这些不同的文件系统和介质之间执行一我们可以使用标准的系统调用从一个文件系统拷贝或移动数据到另一个文件系统。老式的操作系统（比如DOS）是无力完成上述工作的，任何对非本地文件系统的访问都必须依靠特殊工具才能完成。正是由于现代操作系统引入抽象层，比如Linux，通过虚拟接口访问文件系统，才使得这种协作性和泛型存取成为可能。</p>
-<h2 id="文件系统抽象层">2. 文件系统抽象层</h2>
-<p>之所以可以使用这种通用接口对所有类型的文件系统进行操作，是因为内核在它的底层文件系统接口上建立了一个抽象层。该抽象层使Linux能够支持各种文件系统，即便是它们在功能和行为上存在很大差别。为了支持多文件系统，VFS提供了一个通用文件系统模型，该模型囊括了任何文件系统的常用功能集和行为。当然，该模型偏重于Unix风格的文件系统（我们将在后面的小节看到Unix风格的文件系统的构成）。但即使这样，Linux仍然可以支持很多种差异很大的文件系统，从DOS系统的FAT到Windows系统的NTFS，再到各种Unix风格文件系统和Linux特有的文件系统。 VFS抽象层之所以能衔接各种各样的文件系统，是因为它定义了所有文件系统都支持的、基本的、概念上的接口和数据结构。同时实际文件系统也将自身的诸如“如何打开文件”，“目录是什么”等概念在形式上与VFS的定义保持一致。因为实际文件系统的代码在统一的接口和数据结构下隐藏了具体的实现细节，所以在VFS层和内核的其他部分看来，所有文件系统都是相 同的，它们都支持像文件和目录这样的概念，同时也支持像创建文件和删除文件这样的操作。 内核通过抽象层能够方便、简单地支持各种类型的文件系统。实际文件系统通过编程提供VFS所期望的抽象接口和数据结构，这样，内核就可以毫不费力地和任何文件系统协同工作，并 且这样提供给用户空间的接口，也可以和任何文件系统无缝地连接在一起，完成实际工作。 其实在内核中，除了文件系统本身外，其他部分并不需要了解文件系统的内部细节。比如一个简单的用户空间程序执行如下的操作：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">ret <span class="title">write</span><span class="params">(fd,buf,len)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>该系统调用将buf指针指向的长度为len字节的数据写入文件描述符fd对应的文件的当前位置。这个系统调用首先被一个通用系统调用sys_write()处理，sys_write()函数要找到fd所在的文件系统实际给出的是哪个写操作，然后再执行该操作。实际文件系统的写方法是文件系统实现的一部分，数据最终通过该操作写入介质（或执行这个文件系统想要完成的写动作）。图13-2描述了从用户空间的write()调用到数据被写入磁盘介质的整个流程。一方面，系统调用是通用VFS接口，提供给用户空间的前端；另一方面，系统调用是具体文件系统的后端，处理实现细节。接下来的小节中我们会具体看到VF抽象模型以及它提供的接口。 <img src="/picture/linux/kernel/filesystem/vfs1.png" /></p>
+          <p><img src="/picture/linux/brief/文件系统-VFS.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhYmExNzdkOWMwODA3MGU1YjkwODc=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
-              <a class="btn" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89VFS/#more" rel="contents">
+              <a class="btn" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%89%EF%BC%89VFS/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1079,14 +1073,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p>声明：本文转载自<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDY0NTk0NDU=">文件系统的原理<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDAzMjkxNzc=">Linux中的VFS实现 [一]<i class="fa fa-external-link-alt"></i></span></p>
-</blockquote>
-<p>持久性的数据是存储在外部磁盘上的【注1】，如果没有文件系统，访问这些数据就需要直接读写磁盘的sector，实在太不方便了。而文件系统存在的意义，就是能更有效的组织、管理和使用磁盘上的这些raw data。</p>
-<h2 id="文件系统的组成">1. 文件系统的组成</h2>
-<p>要管理，就得先划分，那按照什么粒度划分呢？因为磁盘上的数据要和内存交互，而内存通常是以4KB为单位的，所以从逻辑上，把磁盘按照4KB划分比较方便（称为一个block）。现在假设由一个文件系统管理64个blocks的一个磁盘区域： <img src="/picture/linux/kernel/filesystem/filesystem1.png" /></p>
-<p>那在这些blocks中应该存储些什么？文件系统的基础要素自然是文件，而文件作为一个数据容器的逻辑概念，本质上是一些字节构成的集合，这些字节就是文件的user data（对应下图的"D"）。 <img src="/picture/linux/kernel/filesystem/filesystem2.jpg" /></p>
-<p>除了文件本身包含的数据，还有文件的访问权限、大小和创建时间等控制信息，这些信息被称为meta data。meta data可理解为是关于文件user data的data，这些meta data存储的数据结构就是inode（对应下图的"I"，有些文件系统称之为dnode或fnode）。</p>
+          <p><img src="/picture/linux/brief/文件系统-基本概念.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhYjMyOTFlMDg1MzA2ZjhjZDczYTk=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5/#more" rel="contents">
@@ -1169,7 +1156,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>891</span>
+              <span>893</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -1188,44 +1175,15 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>一般的内存访问错误如下。</p>
-<ul>
-<li>越界访问（out-of-bounds）</li>
-<li>访问已经被释放的内存（use after free）</li>
-<li>重复释放（double free）</li>
-<li>内存泄漏（memory leak）</li>
-<li>栈溢出（stack overflow）</li>
-</ul>
-<p>本节主要介绍Linux内核中常用的内存检测的工具和方法。</p>
-<h2 id="slub_debug">1. slub_debug</h2>
-<p>在Linux内核中，对于小块内存分配，大量使用slab/slub分配器。slab/slub分配器提供了一个内存检测功能，很方便在产品开发阶段进行内存检查。内存访问中比较容易出现错误的地方如下。</p>
-<ul>
-<li>访问己经被释放的内存</li>
-<li>越界访问</li>
-<li>释放己经释放过的内存</li>
-</ul>
-<h3 id="配置和编译内核">1.1. 配置和编译内核</h3>
-<p>首先，需要重新配置内核选项，打开CONFIG_SLUB、CONFIG_SLUB_DEBUG_ON以及CONFIG_SLUB_STATS选项。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># CONFIG_SLAB is <span class="keyword">not</span> <span class="built_in">set</span></span><br><span class="line">CONFIG_SLUB=y</span><br><span class="line">CONFIG_SLUB_DEBUG_ON=y</span><br><span class="line">CONFIG_SLUB_STATS=y</span><br></pre></td></tr></table></figure>
-<p>修改了上述配置文件之后，需要重新编译内核并更新根文件系统。</p>
-<h3 id="添加slub_debug选项">1.2. 添加slub_debug选项</h3>
-<p>在内核commandline中添加slub_debug字符串来打开该功能。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-append <span class="string">&quot;nointrd root=/dev/vda rootfstype=ext4 rw loglevel=8 slub_debug=UFPZ&quot;</span> \</span><br></pre></td></tr></table></figure>
-<h3 id="编译slabinfo工具">1.3. 编译slabinfo工具</h3>
-<p>在Linux-5.0内核的tools/vm目录下编译slabinfo工具。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># gcc slabinfo.c -o slabinfo</span></span><br></pre></td></tr></table></figure>
-<h3 id="运行">1.4 运行</h3>
-<p>加载驱动或运行程序，启动slabinfo：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ slabinfo -v</span><br></pre></td></tr></table></figure>
-<p>之后如果有内存越界访问就会有异常log输出。</p>
-<h2 id="kasan内存检测">2. KASAN内存检测</h2>
-<p>KASAN在Linux4.0内核中被合并到官方Linux内核，他是一个动态检测内存错误的工具，可以检查内存越界访问和使用已经被释放的内存等问题。Linux内核早期有一个类似的工具kmemcheck，KASAN比kmemeheck的检测速度更快。要使用KASAN，必须打开CONFIG_KASAN等选项。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/configs/debian_defconfig&gt;</span><br><span class="line">CONFIG_HAVE_ARCH_KASAN=y</span><br><span class="line">CONFIG_KASAN=y</span><br><span class="line">CONFIG_KASAN_OUTLINE=y</span><br><span class="line">CONFIG_KASAN_INLINE=y</span><br><span class="line">CONFIG_TEST_KASAN=m</span><br></pre></td></tr></table></figure>
-<p>使用起来比较简单，不需要像slab_debug一样还有单独运行slabinfo程序。KASAN启动后会动态监测内存访问，如果出错会打印相关log信息。</p>
-<p>KASAN总体效率比slub_debug要高得多，并且支持的内存错误访问类型更多。缺点是KASAN需要较新的内核（Linx4.4内核才支持ARM64版本的KASAN）和较新的GCC编译 器（GCC-4.9.2以上）。</p>
-<h3 id="参考文献">参考文献</h3>
-<p>《奔跑吧Linux内核》</p>
-
+          <p><img src="/picture/linux/brief/内核调试-内存检测.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YjAzNWU0MDFmZDA3MGJiYTBlYmE=">原图<i class="fa fa-external-link-alt"></i></span></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/Linux%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95%EF%BC%88%E4%BA%8C%EF%BC%89%E5%86%85%E5%AD%98%E6%A3%80%E6%B5%8B/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -1319,17 +1277,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="位置无关码">1. 位置无关码</h2>
-<ul>
-<li>加载地址：存储代码的物理地址。如ARM64处理器上电复位后是从0x0地址开始第一条指令的，所以通常这个地方存放代码最开始的部分，如异常向量表的处理地址。</li>
-<li>运行地址：指程序运行时的地址。</li>
-<li>链接地址：在编译链接时指定的地址，编程人员设想将来程序要运行的地址。程序所有标号的地址在链接后便确定了，不管程序在哪里运行都不会改变。aarch64-linux-gnu-obidump (objdump)工具进行反汇编查看的就接地链接地址。</li>
-</ul>
-<p>链接地址和运行地址可以相同，也可以不同。那什么时候运行地址和链接地址不相同，什么时候相同呢？我们以一块ARM64开发板为例，芯片内部有SRAM，起始地址为0x0，DDR内存的起始地址为0x4000 0000。 通常代码存储在 Nor Flash存储器或者 Nand Flash存储器中，芯片内部的 BOOT ROM会把开始的小部分代码装载到SRAM中运行。芯片上电复位之后，从SRAM中取指令。由于 Uboot的镜像太大了，SRAM放不下，因此必须要放在DDR内存中。通常Uboot编译时链接地址都没置到DDR内存中，也就是0x4000 0000地址处。那这时运行地址和链接地址就不一样了。运行地址为0x0，链接地址变成了0x4000 0000那么程序为什么还能运行呢？这就涉及汇编编程的一个重要问题，就是位置无关代码和位置有关代码。</p>
-<ul>
-<li>位置无关代码：从字面意思看，该指令的执行是与内存地址无关的；无论运行地址和链接地址相等或者不相等，该指令都能正常运行。在汇编语言中，像BL、B、MOV指令属于位置无关指令，不管程序装载在哪个位置，它们都能正确地运行，它们的地址域是基于PC值的相对偏移寻址，相当于[pc+offset]。</li>
-<li>位置有关代码：从字面意思看，该指令的执行是与内存地址有关的，和当前PC值无关。ARM汇编里面通过绝对跳转修改PC值为当前链接地址的值。</li>
-</ul>
+          <p><img src="/picture/linux/brief/内核调试-ftrace.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YjAzNWU0MDFmZDA3MGJiYTBlYmE=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95%EF%BC%88%E4%B8%80%EF%BC%89ftrace/#more" rel="contents">
@@ -1431,8 +1379,7 @@ g \| m, z=0  \Rightarrow \omega_{h}=\alpha p_{\omega_{h}}^{\perp} \\
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="rcu概述">1. RCU概述</h2>
-<p>RCU的全称Read-Copy-Update，它是Linux内核中一种重要的同步机制。Linux内核中已有了原子操作、自旋锁、读写自旋锁、读写信号量、互斥锁等锁机制，为什么要单独设计一个比它们复杂得多的新机制呢？回忆自旋锁、读写信号量和互斥锁的实现，它们都使用了原子操作指令，即原子地访问内存，多CPU争用共享的变量会让高速缓存一致性变得很糟，使得性能下降。以读写信号量为例，除了上述缺点外，读写信号量还有一个致命弱点，它允许多个读者同时存在，但是读者和写者不能同时存在。因此RCU机制要实现的目标是，读者线程没有同步开销，或者说同步开销变得很小，甚至可以忽略不计，不需要额外的锁，不需要使用原子操作指令和内存屏障指令，即可畅通无阻地访问；而把需要同步的任务交给写者线程，写者线程等待所有读者线程完成后才会把旧数据销毁。在RCU中，如果有多个写者同时存在，那么需要额外的保护机制。RCU机制的原理可以概括为RCU记录了所有指向共享数据的指针的使用者，当要修改共享数据时，首先创建一个副本，在副本中修改。所有读者线程离开读者临界区之后，指针指向修改后的副本，并且删除旧数据。 RCU的一个重要的应用场景是链表，链表可以有效地提高遍历读取数据的效率。读取链表成员数据时通常只需要 rcu_read_lock()函数，允许多个线程同时读取该链表，并且允许一个线程同时修改链表。那为什么这个过程能保证链表访问的正确性呢？ 在读者遍历链表时，假设另外一个线程删除了一个节点。删除线程会把这个节点从链表中移出，但不会直接销毁它。RCU会等到所有读线程读取完成后，才销毁这个节点 RCU提供的接口如下。</p>
+          <p><img src="/picture/linux/brief/并发与同步-RCU.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YWMzNzBlM2U3NDA3NGNmODlhMDI=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%BA%94%EF%BC%89RCU/#more" rel="contents">

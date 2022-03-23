@@ -24,21 +24,22 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="声明本文以linux5.x arm64为参考进行分析  1. 异常级别  通常ARM64的进程执行在EL0级别,内核执行在EL1级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统，运行虚拟机的操作系统是宿主操作系统，虚拟机里运行的操作系统是客户操作系统，常用的开源虚拟机管理软件是QEMU,QEMU支持基于内核的虚拟机KVM，KVM的特点是直接在处理器上执">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux中断子系统（二）ARM的异常处理过程">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89ARM%E7%9A%84%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E8%BF%87%E7%A8%8B/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="声明本文以linux5.x arm64为参考进行分析  1. 异常级别  通常ARM64的进程执行在EL0级别,内核执行在EL1级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统，运行虚拟机的操作系统是宿主操作系统，虚拟机里运行的操作系统是客户操作系统，常用的开源虚拟机管理软件是QEMU,QEMU支持基于内核的虚拟机KVM，KVM的特点是直接在处理器上执">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-ARM的异常处理过程.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/ARM64_ELEVEL.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/armv8_vector.png">
 <meta property="article:published_time" content="2021-09-14T08:03:15.000Z">
-<meta property="article:modified_time" content="2022-01-16T15:20:04.838Z">
+<meta property="article:modified_time" content="2022-03-23T13:21:56.726Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="IRQ">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/ARM64_ELEVEL.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-ARM的异常处理过程.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89ARM%E7%9A%84%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E8%BF%87%E7%A8%8B/">
 
@@ -285,15 +286,13 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <blockquote>
-<p>声明本文以linux5.x arm64为参考进行分析</p>
-</blockquote>
+        <p><img src="/picture/linux/brief/中断子系统-ARM的异常处理过程.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1Nzk2NjA3OTEyOTA2ZjUwN2QxMDg=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
 <h2 id="异常级别">1. 异常级别</h2>
 <p><img src="/picture/linux/kernel/ARM64_ELEVEL.png" /></p>
 <p>通常ARM64的进程执行在EL0级别,内核执行在EL1级别。</p>
 <p>虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统，运行虚拟机的操作系统是宿主操作系统，虚拟机里运行的操作系统是客户操作系统，常用的开源虚拟机管理软件是QEMU,QEMU支持基于内核的虚拟机KVM，KVM的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。</p>
 <p>ARM64架构的安全扩展定义了两种安全状态，正常世界和安全世界，两个世界只能通过异常级别3的安全监视器切换</p>
-<span id="more"></span>
 <h2 id="异常类型">2. 异常类型</h2>
 <h3 id="中断">2.1. 中断</h3>
 <p>在ARM处理器中，FIQ（FastInterruptreQuest）的优先级要高于IRQ（Interrupt ReQuest）。在芯片内部，分别由IRQ和FIQ两根中断线连接到处理器内部。通常，SoC内部会有一个中断控制器，众多外部设备的中断引脚会连接到中断控制器，由中断控制器负责中断优先级调度，然后发送中断信号给处理器。</p>

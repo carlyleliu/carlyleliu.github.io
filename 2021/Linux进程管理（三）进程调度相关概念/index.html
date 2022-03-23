@@ -24,21 +24,22 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 进程调度的基本概念 进程调度的概念比较简单。假设在只有单核处理器的系统中，同一时刻只有一个进程可以拥有处理器资源，那么其他的进程只能在就绪队列（runqueue）中等待，等到处理器空闲之后才有机会获取处理器资源并运行。在这种场景下，操作系统就需要从众多的就绪进程中选择一个最合适的进程来运行，这就是进程调度器（scheduler）。进程调度器产生的最大原因是为了提高处理器的利用率。一个进程在运">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux进程管理（三）进程调度相关概念">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 进程调度的基本概念 进程调度的概念比较简单。假设在只有单核处理器的系统中，同一时刻只有一个进程可以拥有处理器资源，那么其他的进程只能在就绪队列（runqueue）中等待，等到处理器空闲之后才有机会获取处理器资源并运行。在这种场景下，操作系统就需要从众多的就绪进程中选择一个最合适的进程来运行，这就是进程调度器（scheduler）。进程调度器产生的最大原因是为了提高处理器的利用率。一个进程在运">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-进程调度相关概念.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/sched_list.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/MLFQ.png">
 <meta property="article:published_time" content="2021-10-30T23:49:26.000Z">
-<meta property="article:modified_time" content="2022-03-20T04:28:16.281Z">
+<meta property="article:modified_time" content="2022-03-23T13:32:37.649Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="scheduler">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/sched_list.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-进程调度相关概念.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5/">
 
@@ -285,9 +286,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="进程调度的基本概念">1. 进程调度的基本概念</h2>
-<p>进程调度的概念比较简单。假设在只有单核处理器的系统中，同一时刻只有一个进程可以拥有处理器资源，那么其他的进程只能在就绪队列（runqueue）中等待，等到处理器空闲之后才有机会获取处理器资源并运行。在这种场景下，操作系统就需要从众多的就绪进程中选择一个最合适的进程来运行，这就是进程调度器（scheduler）。进程调度器产生的最大原因是为了提高处理器的利用率。一个进程在运行的过程中有可能需要等待某些资源，比如等待磁盘操作的完成、等待键盘输入、等待物理页面的分配等。如果处理器和进程一起等待，那么明显会浪费处理器资源，所以一个进程在睡眠等待时，调度器可以调度其他进程来运行，这样就提高了处理器的利用率。</p>
+        <p><img src="/picture/linux/brief/进程管理-进程调度相关概念.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2OWUzYzBlM2U3NDA3NGNmMGYxOWI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
+<h2 id="进程调度的基本概念">1. 进程调度的基本概念</h2>
+<p>进程调度的概念比较简单。假设在只有单核处理器的系统中，同一时刻只有一个进程可以拥有处理器资源，那么其他的进程只能在就绪队列（runqueue）中等待，等到处理器空闲之后才有机会获取处理器资源并运行。在这种场景下，操作系统就需要从众多的就绪进程中选择一个最合适的进程来运行，这就是进程调度器（scheduler）。进程调度器产生的最大原因是为了提高处理器的利用率。一个进程在运行的过程中有可能需要等待某些资源，比如等待磁盘操作的完成、等待键盘输入、等待物理页面的分配等。如果处理器和进程一起等待，那么明显会浪费处理器资源，所以一个进程在睡眠等待时，调度器可以调度其他进程来运行，这样就提高了处理器的利用率。</p>
 <h3 id="进程的分类">1.1. 进程的分类</h3>
 <p>站在处理器的角度看进程的行为，你会发现有的进程一直占用处理器，有的进程只需要处理器的一部分计算资源即可。所以进程按照这个标准可以分成两类：一类是CPU消耗型（CPU-Bound），另外一类是I/O消耗型（I/O-Bound）。 CPU消耗型的进程会把大部分时间用在执行代码上，也就是一直占用CPU。一个常见的例子就是执行while循环。实际上，常用的例子就是执行大量数学计算的程序，比如MATLAB等。 I/O消耗型的进程大部分时间在提交I/O请求或者等待I/O请求，所以这种类型的进程通常只需要很少的处理器计算资源即可，比如需要键盘输入的进程或者等待网络I/O的进程。</p>
 <p>有时候，鉴别一个进程是CPU消耗型还是I/O消耗型其实挺困难的，一个典型的例子就是Linux图形服务器X-window进程，它既是I/O消耗型也是CPU消耗型。所以，调度器有必要在系统吞吐率和系统响应性方面做出一些妥协和平衡。Linux内核的调度器通常倾向于提高系统的响应性。</p>

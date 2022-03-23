@@ -24,22 +24,23 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 进程的概念 进程就是处于执行期的程序（目标码存放在某种存储介质上）。但进程并不仅仅局限于一段可执行程序代码（Unix称其为代码段，text section）。通常进程还要包含其他资源，像打开的文件，挂起的信号，内核内部数据，处理器状态，一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution），当然还包括用来存放全局变量的数据段等。实际上，进程就是正在">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux进程管理（一）概述">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%80%EF%BC%89%E6%A6%82%E8%BF%B0/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 进程的概念 进程就是处于执行期的程序（目标码存放在某种存储介质上）。但进程并不仅仅局限于一段可执行程序代码（Unix称其为代码段，text section）。通常进程还要包含其他资源，像打开的文件，挂起的信号，内核内部数据，处理器状态，一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution），当然还包括用来存放全局变量的数据段等。实际上，进程就是正在">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-概述.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_list.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_status.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_current.png">
 <meta property="article:published_time" content="2021-10-30T18:41:22.000Z">
-<meta property="article:modified_time" content="2022-01-16T01:55:06.666Z">
+<meta property="article:modified_time" content="2022-03-23T13:30:55.803Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="task">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_list.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-概述.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%80%EF%BC%89%E6%A6%82%E8%BF%B0/">
 
@@ -286,7 +287,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="进程的概念">1. 进程的概念</h2>
+        <p><img src="/picture/linux/brief/进程管理-概述.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZDg4NDFlMDg1MzA2ZjhjMzUxZjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="进程的概念">1. 进程的概念</h2>
 <p>进程就是处于执行期的程序（目标码存放在某种存储介质上）。但进程并不仅仅局限于一段可执行程序代码（Unix称其为代码段，text section）。通常进程还要包含其他资源，像打开的文件，挂起的信号，内核内部数据，处理器状态，一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution），当然还包括用来存放全局变量的数据段等。实际上，进程就是正在执行的程序代码的实时结果。内核需要有效而又透明地管理所有细节。</p>
 <p>执行线程，简称线程（thread），是在进程中活动的对象。每个线程都拥有一个独立的程序计数器、进程栈和一组进程寄存器。内核调度的对象是线程，而不是进程。在传统的Unix系统中，一个进程只包含一个线程，但现在的系统中，包含多个线程的多线程程序司空见惯。稍后你会看到，Linux系统的线程实现非常特别：它对线程和进程并不特别区分。对Linux而言，线程只不过是一种特殊的进程罢了。</p>
 <p>在现代操作系统中，进程提供两种虚拟机制：虚拟处理器和虚拟内存。虽然实际上可能是许多进程正在分享一个处理器，但虚拟处理器给进程一种假象，让这些进程觉得自己在独享处理器。第4章将详细描述这种虚拟机制。而虚拟内存让进程在分配和管理内存时觉得自己拥有整个系统的所有内存资源。</p>
@@ -294,7 +297,6 @@
 <p>无疑，进程在创建它的时刻开始存活。在Linux系统中，这通常是调用fork()系统的结果，该系统调用通过复制一个现有进程来创建一个全新的进程。调用fork()的进程称为父进程，新产生的进程称为子进程。在该调用结束时，在返回点这个相同位置上，父进程恢复执行，子进程开始执行。fork()系统调用从内核返回两次：一次回到父进程，另一次回到新产生的子进程。</p>
 <p>通常，创建新的进程都是为了立即执行新的、不同的程序，而接着调用exec()这组函数就可以创建新的地址空间，并把新的程序载入其中。在现代Linux内核中，fork()实际上是由clone()系统调用实现的，后者将在后面讨论。</p>
 <p>最终，程序通过exit()系统调用退出执行。这个函数会终结进程并将其占用的资源释放掉。父进程可以通过wait()系统调用查询子进程是否终结，这其实使得进程拥有了等待特定进程执行完毕的能力。进程退出执行后被设置为僵死状态，直到它的父进程调用wait()或waitpid()为止。</p>
-<span id="more"></span>
 <h2 id="进程描述符">2. 进程描述符</h2>
 <p>进程是操作系统中调度的实体，需要对进程所必须拥有的资源做抽象描述，这种批象描述称为讲程控制块（Process Control Block，PCB）。进程控制块需要描述如下几类信息。</p>
 <ul>

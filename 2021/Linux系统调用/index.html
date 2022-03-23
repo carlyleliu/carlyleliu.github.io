@@ -24,20 +24,21 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述 在现代操作系统中，内核提供了用户进程与内核进行交互的一组接口。这些接口让应用程序受限地访问硬件设备，提供了创建新进程并与已有进程进行通信的机制，也提供了申请操作系统其他资源的能力。这些接口在应用程序和内核之间扮演了使者的角色，应用程序发出各种请求，而内核负责满足这些请求（或者无法满足时返回一个错误）。 1.1 系统调用的作用  为用户空间程序提供一层硬件抽象接口。这能够让应用程序编程者">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux系统调用">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 概述 在现代操作系统中，内核提供了用户进程与内核进行交互的一组接口。这些接口让应用程序受限地访问硬件设备，提供了创建新进程并与已有进程进行通信的机制，也提供了申请操作系统其他资源的能力。这些接口在应用程序和内核之间扮演了使者的角色，应用程序发出各种请求，而内核负责满足这些请求（或者无法满足时返回一个错误）。 1.1 系统调用的作用  为用户空间程序提供一层硬件抽象接口。这能够让应用程序编程者">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/Linux系统调用.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/syscall/syscall.png">
 <meta property="article:published_time" content="2021-10-25T07:15:30.000Z">
-<meta property="article:modified_time" content="2022-01-16T16:15:15.848Z">
+<meta property="article:modified_time" content="2022-03-23T13:29:34.332Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="syscall">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/syscall/syscall.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/Linux系统调用.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/">
 
@@ -284,7 +285,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概述">1. 概述</h2>
+        <p><img src="/picture/linux/brief/Linux系统调用.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZDQxYjdkOWMwODA3MGU1MGY0ZGI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="概述">1. 概述</h2>
 <p>在现代操作系统中，内核提供了用户进程与内核进行交互的一组接口。这些接口让应用程序受限地访问硬件设备，提供了创建新进程并与已有进程进行通信的机制，也提供了申请操作系统其他资源的能力。这些接口在应用程序和内核之间扮演了使者的角色，应用程序发出各种请求，而内核负责满足这些请求（或者无法满足时返回一个错误）。</p>
 <h3 id="系统调用的作用">1.1 系统调用的作用</h3>
 <ul>
@@ -296,7 +299,6 @@
 <p>对于应用编程接口（API）和系统调用之间的关系，有的读者可能有点糊涂了。一般来说，应用程序调用用户空间实现的应用编程接口来编程，而不是直接执行系统调用。一个接口函数可以由一个系统调用实现，也可以由多个系统调用实现，甚至完全不使用任何系统调用。因此，一个接口函数没有必要对应一个特定的系统调用。</p>
 <p>UNIX系统在设计的早期就出现了操作系统的API层。在UNIX的世界里，最通用的系统调用层接口是POSIX （Portable Operating System Interface of UNIX）标准。POSIX的诞生和UNIX的发展密不可分。UNIX系统诞生于20世纪70年代的贝尔实验室，很多商业厂商基于UNIX系统发展自己的UNIX系统，但是标准不统一。后来IEEE制定了POSIX标准，但需要注意的是，POSIX标准针对的是API而不是系统调用。判断一个系统是否与POSIX兼容时，要看它是否提供一组合适的应用编程接口，而不是看它的系统调用是如何定义和实现的。</p>
 <p>Linux操作系统的API通常是以C标准库的方式提供的，比如Linux中的libc库。C标准库提供了POSIX的绝大部分API的实现，同时也为内核提供的每个系统调用封装了相应的函数，并且系统调用和C标准库封装的函数名称通常是相同的。例如，open系统调用在C标准库中对应的函数是open函数。另外，有几个接口函数可能调用封装了不同功能的同一个系统调用，例如libc库中实现的malloc()、calloc()和free()等函数，这几个函数用来分配和释放虚拟内存（堆上的虚拟内存），它们都是利用brk系统调用来实现的。</p>
-<span id="more"></span>
 <h2 id="系统调用实现">2. 系统调用实现</h2>
 <h3 id="系统调用表">2.1 系统调用表</h3>
 <p>Linux系统为每一个系统调用赋予了一个系统调用号，这样当应用程序执行一个系统调用时，应用程序知道执行和调用到哪个系统调用了，从而不会造成混乱。系统调用号一旦分配之后，就不会有任何变更；否则，已经编译好的应用程序就不能运行了。对于ARM64系统来说，系统调用表的定义在linux/arch/arm64/kernel/sys32.c文件中，如下：</p>

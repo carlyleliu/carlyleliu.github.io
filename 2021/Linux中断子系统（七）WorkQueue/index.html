@@ -24,21 +24,22 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述 工作队列（work queue）是使用内核线程异步执行函数的通用机制。工作队列机制是中断处理程序的一种下半部机制，中断处理程序可以把耗时比较长并且可能睡眠的函数交给工作队列执行。 工作队列不完全是中断处理程序的下半部。内核的很多模块需要异步执行函数，这些模也可以创建一个内核线程来异步执行函数。但是，如果每个模块都创建自己的内核线程，会造成内核线程的数量过多，内存消耗比较大，影响系统性能">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux中断子系统（七）WorkQueue">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 概述 工作队列（work queue）是使用内核线程异步执行函数的通用机制。工作队列机制是中断处理程序的一种下半部机制，中断处理程序可以把耗时比较长并且可能睡眠的函数交给工作队列执行。 工作队列不完全是中断处理程序的下半部。内核的很多模块需要异步执行函数，这些模也可以创建一个内核线程来异步执行函数。但是，如果每个模块都创建自己的内核线程，会造成内核线程的数量过多，内存消耗比较大，影响系统性能">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-WorkQueue.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/workqueue_bind.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/workqueue_unbind.png">
 <meta property="article:published_time" content="2021-09-21T07:10:33.000Z">
-<meta property="article:modified_time" content="2022-01-16T16:00:21.833Z">
+<meta property="article:modified_time" content="2022-03-23T13:26:56.284Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="work queue">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/workqueue_bind.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-WorkQueue.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/">
 
@@ -285,10 +286,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概述">1. 概述</h2>
+        <p><img src="/picture/linux/brief/中断子系统-WorkQueue.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OTA4ZTA3OTEyOTA2ZjUwODBjYjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="概述">1. 概述</h2>
 <p>工作队列（work queue）是使用内核线程异步执行函数的通用机制。工作队列机制是中断处理程序的一种下半部机制，中断处理程序可以把耗时比较长并且可能睡眠的函数交给工作队列执行。</p>
 <p>工作队列不完全是中断处理程序的下半部。内核的很多模块需要异步执行函数，这些模也可以创建一个内核线程来异步执行函数。但是，如果每个模块都创建自己的内核线程，会造成内核线程的数量过多，内存消耗比较大，影响系统性能。所以，最好的方法是提供一种通用机制，让这些模块把需要异步执行的函数交给工作队列执行，共享内核线程，节省资源。</p>
-<span id="more"></span>
 <h2 id="编程接口">2. 编程接口</h2>
 <p>内核使用工作项保存需要异步执行的函数，工作项的数据类型是work_struct，需要异步执行的函数的原型如下所示：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">void</span> <span class="params">(*<span class="keyword">work_func_t</span>)</span><span class="params">(struct work_struct *work)</span></span>;</span><br></pre></td></tr></table></figure>

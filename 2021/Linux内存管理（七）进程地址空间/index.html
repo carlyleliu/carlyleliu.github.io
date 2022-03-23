@@ -24,13 +24,14 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述 在64位系统中，每个用户进程最多可以拥有256TB的虚拟地址空间，这个数值通常要远大于物理内存，那么如何管理这些虚拟地址空间呢？用户进程通常会多次调用malloc()或使用mmap()映射文件到用户空间进行读写等操作，这些操作都会要求在虚拟地址空间中分配内块，这些内存块基本上都是离散的。malloc()是用户态下常用于分配内存的接口函数，后面会详细介绍了其内核实现机制；mmap()是用">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存管理（七）进程地址空间">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E8%BF%9B%E7%A8%8B%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 概述 在64位系统中，每个用户进程最多可以拥有256TB的虚拟地址空间，这个数值通常要远大于物理内存，那么如何管理这些虚拟地址空间呢？用户进程通常会多次调用malloc()或使用mmap()映射文件到用户空间进行读写等操作，这些操作都会要求在虚拟地址空间中分配内块，这些内存块基本上都是离散的。malloc()是用户态下常用于分配内存的接口函数，后面会详细介绍了其内核实现机制；mmap()是用">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-进程地址空间.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vma1.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vma1.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vma2.png">
@@ -38,11 +39,11 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/malloc.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mmap.png">
 <meta property="article:published_time" content="2021-11-27T08:07:03.000Z">
-<meta property="article:modified_time" content="2022-01-20T15:49:05.560Z">
+<meta property="article:modified_time" content="2022-03-23T13:46:54.364Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="vma">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vma1.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-进程地址空间.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E8%BF%9B%E7%A8%8B%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/">
 
@@ -289,11 +290,12 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概述">1. 概述</h2>
+        <p><img src="/picture/linux/brief/内存管理-进程地址空间.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3NDZmYzU2NTNiYjA3MWU3MTM0NTc=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="概述">1. 概述</h2>
 <p>在64位系统中，每个用户进程最多可以拥有256TB的虚拟地址空间，这个数值通常要远大于物理内存，那么如何管理这些虚拟地址空间呢？用户进程通常会多次调用malloc()或使用mmap()映射文件到用户空间进行读写等操作，这些操作都会要求在虚拟地址空间中分配内块，这些内存块基本上都是离散的。malloc()是用户态下常用于分配内存的接口函数，后面会详细介绍了其内核实现机制；mmap()是用户态下常用于建立文件映射或匿名映射的函数，后面会详细介绍了其内核实现机制。这些进程地址空间在内核中使用vm_area_struct数据结构来描述简称VMA，表示进程地址空间或进程线性区。由于这些地址空间属于各个用户进程，因此在用户进程的mm_struct数据结构中有相应的成员，用于对这些VMA进行管理。</p>
 <h2 id="进程地址空间">2. 进程地址空间</h2>
 <p>进程地址空间（process address space）是指进程可寻址的虚拟地址空间。在64位的处理器中，进程可以寻址256B的用户态地址空间，但是进程没有权限去寻址内核空间的虚拟地址只能通过系统调用的方式间接访问。而用户空间的进程地址空间则可以被合法访问，地址空间称为内存区域（memory area）。进程可以通过内核的内存管理机制动态地添加和删除这些内存区域，这些内存区域在Linux内核采用VMA数据结构来抽象描述。 每个内存区域具有相关的权限，如可读、可写或者可执行权限。若一个进程访问了不在有效范围的内存区域，或者非法访问了内存区域，或者以不正确的方式访问了内存区域，那么处理器会报告缺页异常。在Linux内核的缺页异常处理中会处理这些情况，严重的会报告“SegmentFault'”并终止该进程。</p>
-<span id="more"></span>
 <p>内存区域包含内容如下。</p>
 <ul>
 <li>代码段映射，可执行文件中包含只读并可执行的程序头，如代码段和init段等。</li>

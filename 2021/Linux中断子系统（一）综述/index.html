@@ -24,20 +24,21 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 硬件相关描述  在上图中主要分为三部分，产生中断的外部设备、用于管理中断的中断控制器以及处理中断信号的cpu。  产生中断的设备没什么好说的，很多外部设备都支持中断事件，对于soc而言其实也就是一个电信号，外部设备可以产生一个中断信号接到soc上。 中断控制器用于管理中断，例如屏蔽某些中断，设置中断优先级等。 cpu连接中断控制器，cpu开启中断总开关后就可以接收来自中断控制器的中断信号了，">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux中断子系统（一）综述">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89%E7%BB%BC%E8%BF%B0/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 硬件相关描述  在上图中主要分为三部分，产生中断的外部设备、用于管理中断的中断控制器以及处理中断信号的cpu。  产生中断的设备没什么好说的，很多外部设备都支持中断事件，对于soc而言其实也就是一个电信号，外部设备可以产生一个中断信号接到soc上。 中断控制器用于管理中断，例如屏蔽某些中断，设置中断优先级等。 cpu连接中断控制器，cpu开启中断总开关后就可以接收来自中断控制器的中断信号了，">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-综述.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/irq/HW_IRQ.png">
 <meta property="article:published_time" content="2021-09-12T04:43:35.000Z">
-<meta property="article:modified_time" content="2022-01-16T14:40:11.098Z">
+<meta property="article:modified_time" content="2022-03-23T13:20:01.243Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="IRQ">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/irq/HW_IRQ.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-综述.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89%E7%BB%BC%E8%BF%B0/">
 
@@ -284,7 +285,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="硬件相关描述">1. 硬件相关描述</h2>
+        <p><img src="/picture/linux/brief/中断子系统-综述.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1NzIyNWYzNDZmYjA3MjVmNTU0YjU=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="硬件相关描述">1. 硬件相关描述</h2>
 <p><img src="/picture/linux_driver/irq/HW_IRQ.png" /></p>
 <p>在上图中主要分为三部分，产生中断的外部设备、用于管理中断的中断控制器以及处理中断信号的cpu。</p>
 <ul>
@@ -292,7 +295,6 @@
 <li>中断控制器用于管理中断，例如屏蔽某些中断，设置中断优先级等。</li>
 <li>cpu连接中断控制器，cpu开启中断总开关后就可以接收来自中断控制器的中断信号了，然后调度程序处理中断事物。</li>
 </ul>
-<span id="more"></span>
 <p>在上图中存在几个问题，第一是多核cpu该由哪个cpu来处理中断信号，第二是多个中断控制器之间的级联方式。</p>
 <ul>
 <li><p>第一个问题多核cpu的问题这个一般中断控制器可以绑定某个中断到某个cpu上或某个中断绑定到多个cpu上，对于绑定到一个cpu上这种情况很简单就由该cpu处理该中断，对于绑定到多cpu的情况实际上也只能有一个cpu处理，这里应该有一些负载均衡算法去分配到具体的cpu而当该中断被分配到具体cpu后其他cpu就不再处理当前中断了，具体细节我还没有去了解。</p></li>

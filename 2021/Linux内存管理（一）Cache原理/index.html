@@ -24,13 +24,14 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="声明： 本文转载自Cache的基本原理和Cache组织方式  1. 为什么需要cache 在思考为什么需要cache之前，我们首先先来思考另一个问题：我们的程序是如何运行起来的？ 我们应该知道程序是运行在 RAM之中，RAM 就是我们常说的DDR（例如： DDR3、DDR4等）。我们称之为main memory（主存）。当我们需要运行一个进程的时候，首先会从磁盘设备（例如，eMMC、UFS、SS">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存管理（一）Cache">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%80%EF%BC%89Cache%E5%8E%9F%E7%90%86/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="声明： 本文转载自Cache的基本原理和Cache组织方式  1. 为什么需要cache 在思考为什么需要cache之前，我们首先先来思考另一个问题：我们的程序是如何运行起来的？ 我们应该知道程序是运行在 RAM之中，RAM 就是我们常说的DDR（例如： DDR3、DDR4等）。我们称之为main memory（主存）。当我们需要运行一个进程的时候，首先会从磁盘设备（例如，eMMC、UFS、SS">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-Cache.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/hardware/cache/cache1.jpeg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/hardware/cache/cache2.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/hardware/cache/cache3.jpg">
@@ -49,11 +50,11 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/hardware/cache/cache16.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/hardware/cache/cache17.jpg">
 <meta property="article:published_time" content="2021-11-10T07:10:44.000Z">
-<meta property="article:modified_time" content="2022-01-19T13:31:47.725Z">
+<meta property="article:modified_time" content="2022-03-23T13:41:41.099Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="cache">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/hardware/cache/cache1.jpeg">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-Cache.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%80%EF%BC%89Cache%E5%8E%9F%E7%90%86/">
 
@@ -300,7 +301,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <blockquote>
+        <p><img src="/picture/linux/brief/内存管理-Cache.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2ZDczZDdkOWMwODA3MGU1MjAzMDM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<blockquote>
 <p>声明： 本文转载自<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDIyOTM0Mzc=">Cache的基本原理<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDcwOTYxMzA=">Cache组织方式<i class="fa fa-external-link-alt"></i></span></p>
 </blockquote>
 <h2 id="为什么需要cache">1. 为什么需要cache</h2>
@@ -315,7 +318,6 @@
 <p>其实现实中，CPU通用寄存器的速度和主存之间存在着太大的差异。两者之间的速度大致如下关系： <img src="/picture/hardware/cache/cache2.jpg" /></p>
 <p>CPU register的速度一般小于1ns，主存的速度一般是65ns左右。速度差异近百倍。因此，上面举例的3个步骤中，步骤1和步骤3实际上速度很慢。当CPU试图从主存中load/store 操作时，由于主存的速度限制，CPU不得不等待这漫长的65ns时间。如果我们可以提升主存的速度，那么系统将会获得很大的性能提升。如今的DDR存储设备，动不动就是几个GB，容量很大。如果我们采用更快材料制作更快速度的主存，并且拥有几乎差不多的容量。其成本将会大幅度上升。我们试图提升主存的速度和容量，又期望其成本很低，这就有点难为人了。因此，我们有一种折中的方法，那就是制作一块速度极快但是容量极小的存储设备。那么其成本也不会太高。这块存储设备我们称之为cache memory。在硬件上，我们将cache放置在CPU和主存之间，作为主存数据的缓存。 当CPU试图从主存中load/store数据的时候， CPU会首先从cache中查找对应地址的数据是否缓存在cache 中。如果其数据缓存在cache中，直接从cache中拿到数据并返回给CPU。当存在cache的时候，以上程序如何运行的例子的流程将会变成如下： <img src="/picture/hardware/cache/cache3.jpg" /></p>
 <p>CPU和主存之间直接数据传输的方式转变成CPU和cache之间直接数据传输。cache负责和主存之间数据传输。</p>
-<span id="more"></span>
 <h2 id="多级cache存储结构">2. 多级cache存储结构</h2>
 <p>cahe的速度在一定程度上同样影响着系统的性能。一般情况cache的速度可以达到1ns，几乎可以和CPU寄存器速度媲美。但是，这就满足人们对性能的追求了吗？并没有。当cache中没有缓存我们想要的数据的时候，依然需要漫长的等待从主存中load数据。为了进一步提升性能，引入多级cache。前面提到的cache，称之为L1 cache（第一级cache）。我们在L1 cache 后面连接L2 cache，在L2 cache 和主存之间连接L3 cache。等级越高，速度越慢，容量越大。但是速度相比较主存而言，依然很快。不同等级cache速度之间关系如下： <img src="/picture/hardware/cache/cache4.jpg" /></p>
 <p>经过3级cache的缓冲，各级cache和主存之间的速度最萌差也逐级减小。在一个真实的系统上，各级cache之间硬件上是如何关联的呢？我们看下Cortex-A53架构上各级cache之间的硬件抽象框图如下： <img src="/picture/hardware/cache/cache5.jpg" /></p>

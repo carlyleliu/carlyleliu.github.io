@@ -24,13 +24,14 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="声明本文转载自知乎兰新宇内存相关文章  1. 内存池 1.1 空闲链表（free list） 将内存中所有的空闲内存块通过链表的形式组织起来，就形成了最基础的free list。内存分配时，扫描free list的各个空闲内存块，从中找到一个大小满足要求的内存块，并将该内存块从free list中移除。内存释放时，释放的内存块被重新插入到free list中。 假设现在内存的使用情况是这样的：">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存管理（六）slab分配器">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AD%EF%BC%89slab%E5%88%86%E9%85%8D%E5%99%A8/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="声明本文转载自知乎兰新宇内存相关文章  1. 内存池 1.1 空闲链表（free list） 将内存中所有的空闲内存块通过链表的形式组织起来，就形成了最基础的free list。内存分配时，扫描free list的各个空闲内存块，从中找到一个大小满足要求的内存块，并将该内存块从free list中移除。内存释放时，释放的内存块被重新插入到free list中。 假设现在内存的使用情况是这样的：">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-slab分配器.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mem_list1.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mem_list2.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mem_list3.jpg">
@@ -55,11 +56,11 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/slab10.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/slab11.jpg">
 <meta property="article:published_time" content="2021-11-23T08:09:31.000Z">
-<meta property="article:modified_time" content="2022-01-20T15:30:48.782Z">
+<meta property="article:modified_time" content="2022-03-23T13:46:08.862Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="slab">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mem_list1.jpg">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-slab分配器.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AD%EF%BC%89slab%E5%88%86%E9%85%8D%E5%99%A8/">
 
@@ -306,7 +307,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <blockquote>
+        <p><img src="/picture/linux/brief/内存管理-slab分配器.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3NDI1M2YzNDZmYjA3MjVmODQ0Yjg=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<blockquote>
 <p>声明本文转载自知乎<span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3Blb3BsZS9sYW4teGluLXl1">兰新宇<i class="fa fa-external-link-alt"></i></span>内存相关文章</p>
 </blockquote>
 <h2 id="内存池">1. 内存池</h2>
@@ -319,7 +322,6 @@
 <li><p>Best fit（最佳适配），就是遍历free list的所有空闲内存块，从中找到和所申请的内存大小最接近的空闲内存块，这里第二个16字节的内存块是最接近12字节的。 <img src="/picture/linux/kernel/mem/mem_list3.jpg" /></p></li>
 <li><p>Worst fit（最差适配），也是遍历free list的所有空闲内存块，如果找不到大小刚好匹配的，就从最大的空闲内存块中分配。初看起来很反直觉是不是？但假设接下来的内存申请是64个字节，那只有worst fit的这种方法才能满足需求，所以其价值体现在：分配之后剩下的空闲内存块很可能仍然足够大。 <img src="/picture/linux/kernel/mem/mem_list4.jpg" /></p></li>
 </ul>
-<span id="more"></span>
 <p>以上讨论的是内存分配的情况，接下来看看内存释放的操作是怎样的。假设从第80字节到第100字节中间的20字节内存被释放了，那么它将和前面相邻的空闲内存块合并： <img src="/picture/linux/kernel/mem/mem_list5.jpg" /></p>
 <p>接下来从第100字节到第112字节中间的12字节内存也被释放了，那么它将同时和前后相邻的空闲内存块合并： <img src="/picture/linux/kernel/mem/mem_list6.jpg" /></p>
 <p>不过，既然用到了链表，那就需要指针，而指针本身也是要占用内存空间的。而且在内存释放时，要判断被释放的内存块前后的内存块是不是也是空闲的，这就需要每个内存块有一个空闲状态的标志位。可以采用的一种方式是bitmap，假设以4个字节为最小分配单位，那么每4字节需要一个bit，因此额外消耗的内存为1/32。 <img src="/picture/linux/kernel/mem/mem_list7.jpg" /></p>

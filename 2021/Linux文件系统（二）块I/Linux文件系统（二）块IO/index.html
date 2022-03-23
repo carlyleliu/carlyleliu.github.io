@@ -24,24 +24,25 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="系统中能够随机（不需要按顺序）访问固定大小数据片（chunks）的硬件设备称作块设备，这些固定大小的数据片就称作块。最常见的块设备是硬盘，除此以外，还有软盘驱动器、蓝光光驱和闪存等许多其他块设备。注意，它们都是以安装文件系统的方式使用的—一这也是块设备一般的访问方式。 另一种基本的设备类型是字符设备。字符设备按照字符流的方式被有序访问，像串口和键盘就属于字符设备。如果一个硬件设备是以字符流的方式被">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Linux块I&#x2F;O">
-<meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%9D%97I-O/index.html">
+<meta property="og:title" content="Linux文件系统（二）块I&#x2F;O">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="系统中能够随机（不需要按顺序）访问固定大小数据片（chunks）的硬件设备称作块设备，这些固定大小的数据片就称作块。最常见的块设备是硬盘，除此以外，还有软盘驱动器、蓝光光驱和闪存等许多其他块设备。注意，它们都是以安装文件系统的方式使用的—一这也是块设备一般的访问方式。 另一种基本的设备类型是字符设备。字符设备按照字符流的方式被有序访问，像串口和键盘就属于字符设备。如果一个硬件设备是以字符流的方式被">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/Linux文件系统-块I_O.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/io/io1.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/io/io2.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/io/io3.png">
 <meta property="article:published_time" content="2021-12-18T04:35:17.000Z">
-<meta property="article:modified_time" content="2021-12-18T13:36:00.000Z">
+<meta property="article:modified_time" content="2022-03-23T14:09:11.598Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="I&#x2F;O">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/io/io1.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/Linux文件系统-块I_O.png">
 
-<link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%9D%97I-O/">
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/">
 
 
 <script id="page-configurations">
@@ -54,7 +55,7 @@
   };
 </script>
 
-  <title>Linux块I/O | 量子范式</title>
+  <title>Linux文件系统（二）块I/O | 量子范式</title>
   
 
 
@@ -212,7 +213,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E5%9D%97I-O/">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -225,7 +226,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          Linux块I/O
+          Linux文件系统（二）块I/O
         </h1>
 
         <div class="post-meta">
@@ -256,8 +257,8 @@
       </span>
       <span class="post-meta-item-text">Disqus：</span>
     
-    <a title="disqus" href="/2021/Linux%E5%9D%97I-O/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux块I-O/" itemprop="commentCount"></span>
+    <a title="disqus" href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux文件系统（二）块I/Linux文件系统（二）块IO/" itemprop="commentCount"></span>
     </a>
   </span>
   
@@ -286,9 +287,10 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>系统中能够随机（不需要按顺序）访问固定大小数据片（chunks）的硬件设备称作块设备，这些固定大小的数据片就称作块。最常见的块设备是硬盘，除此以外，还有软盘驱动器、蓝光光驱和闪存等许多其他块设备。注意，它们都是以安装文件系统的方式使用的—一这也是块设备一般的访问方式。 另一种基本的设备类型是字符设备。字符设备按照字符流的方式被有序访问，像串口和键盘就属于字符设备。如果一个硬件设备是以字符流的方式被访问的话，那就应该将它归于字符设备：反过来，如果一个设备是随机（无序的）访问的，那么它就属于块设备。 对于这两种类型的设备，它们的区别在于是否可以随机访问数据—一换句话说，就是能否在访问设备时随意地从一个位置跳转到另一个位置。举个例子，键盘这种设备提供的就是一个数据流，当你输入“w01f”这个字符串时，键盘驱动程序会按照和输入完全相同的顺序返回这个由四个字符组成的数据流。如果让键盘驱动程序打乱顺序来读字符串，或读取其他字符，都是没有意义的。所以键盘就是一种典型的字符设备，它提供的就是用户从键盘输入的字符流。对键盘进行读操作会得到一个字符流，首先是“w”，然后是“o”，再是“l”，最后是“x”。当没人敲键盘时，字符流就是空的。硬盘设备的情况就不大一样了。硬盘设备的驱动可能要求读取磁盘上任意块的内容，然后又转去读取别的块的内容，而被读取的块在磁盘上位置不一定要连续。所以说硬盘的数据可以被随机访问，而不是以流的方式被访问，因此它是一个块设备。</p>
-<p>内核管理块设备要比管理字符设备细致得多，需要考虑的问题和完成的工作相对于字符设备来说要复杂许多。这是因为字符设备仅仅需要控制一个位置—一当前位置，而块设备访问的位置必须能够在介质的不同区间前后移动。所以事实上内核不必提供一个专门的子系统来管理字符设备，但是对块设备的管理却必须要有一个专门的提供服务的子系统。不仅仅是因为块设备的复杂性远远高于字符设备，更重要的原因是块设备对执行性能的要求很高；对硬盘每多一份利用都会对整个系统的性能带来提升，其效果要远远比键盘吞吐速度成倍的提高大得多。另外，我们将会看到，块设备的复杂性会为这种优化留下很大的施展空间。这一章的主题就是讨论内核如何对块设备和块设备的请求进行管理。该部分在内核中称作块/O层。有趣的是，改写块/O层正是2.5开发版内核的主要目标。本章涵盖了2.6版内核中所有新的块/0层。</p>
+        <p><img src="/picture/linux/brief/Linux文件系统-块I_O.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhZTkxMTA3OTEyOTA2ZjUxNDZjODg=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
+<p>系统中能够随机（不需要按顺序）访问固定大小数据片（chunks）的硬件设备称作块设备，这些固定大小的数据片就称作块。最常见的块设备是硬盘，除此以外，还有软盘驱动器、蓝光光驱和闪存等许多其他块设备。注意，它们都是以安装文件系统的方式使用的—一这也是块设备一般的访问方式。 另一种基本的设备类型是字符设备。字符设备按照字符流的方式被有序访问，像串口和键盘就属于字符设备。如果一个硬件设备是以字符流的方式被访问的话，那就应该将它归于字符设备：反过来，如果一个设备是随机（无序的）访问的，那么它就属于块设备。 对于这两种类型的设备，它们的区别在于是否可以随机访问数据—一换句话说，就是能否在访问设备时随意地从一个位置跳转到另一个位置。举个例子，键盘这种设备提供的就是一个数据流，当你输入“w01f”这个字符串时，键盘驱动程序会按照和输入完全相同的顺序返回这个由四个字符组成的数据流。如果让键盘驱动程序打乱顺序来读字符串，或读取其他字符，都是没有意义的。所以键盘就是一种典型的字符设备，它提供的就是用户从键盘输入的字符流。对键盘进行读操作会得到一个字符流，首先是“w”，然后是“o”，再是“l”，最后是“x”。当没人敲键盘时，字符流就是空的。硬盘设备的情况就不大一样了。硬盘设备的驱动可能要求读取磁盘上任意块的内容，然后又转去读取别的块的内容，而被读取的块在磁盘上位置不一定要连续。所以说硬盘的数据可以被随机访问，而不是以流的方式被访问，因此它是一个块设备。</p>
+<p>内核管理块设备要比管理字符设备细致得多，需要考虑的问题和完成的工作相对于字符设备来说要复杂许多。这是因为字符设备仅仅需要控制一个位置—一当前位置，而块设备访问的位置必须能够在介质的不同区间前后移动。所以事实上内核不必提供一个专门的子系统来管理字符设备，但是对块设备的管理却必须要有一个专门的提供服务的子系统。不仅仅是因为块设备的复杂性远远高于字符设备，更重要的原因是块设备对执行性能的要求很高；对硬盘每多一份利用都会对整个系统的性能带来提升，其效果要远远比键盘吞吐速度成倍的提高大得多。另外，我们将会看到，块设备的复杂性会为这种优化留下很大的施展空间。这一章的主题就是讨论内核如何对块设备和块设备的请求进行管理。该部分在内核中称作块/O层。有趣的是，改写块/O层正是2.5开发版内核的主要目标。本章涵盖了2.6版内核中所有新的块/0层。</p>
 <h2 id="剖析一个块设备">1. 剖析一个块设备</h2>
 <p>块设备中最小的可寻址单元是扇区。扇区大小一般是2的整数倍，而最常见的是512字节。扇区的大小是设备的物理属性，扇区是所有块设备的基本单元—一块设备无法对比它还小的单元进行寻址和操作，尽管许多块设备能够一次对多个扇区进行操作。虽然大多数块设备的扇区大小都是512字节，不过其他大小的扇区也很常见。比如，很多CD-ROM盘的扇区都是2KB大小。 因为各种软件的用途不同，所以它们都会用到自己的最小逻辑可寻址单元一块。块是文件系统的一种抽象一只能基于块来访问文件系统。虽然物理磁盘寻址是按照扇区级进行的，但是内核执行的所有磁盘操作都是按照块进行的。由于扇区是设备的最小可寻址单元，所以块不能比扇区还小，只能数倍于扇区大小。另外，内核（对有扇区的硬件设备）还要求块大小是2的整数倍，而且不能超过一个页的长度（请看第12章和第19章）。所以，对块大小的最终要求是，必须是扇区大小的2的整数倍，并且要小于页面大小。所以通常块大小是512字节、1KB或4KB。扇区和块还有一些不同的叫法，为了不引起混淆，我们在这里简要介绍一下它们的其他名称。扇区——设备的最小寻址单元，有时会称作“硬扇区”或“设备块”；同样的，块——文件系统的最小寻址单元，有时会称作“文件块”或“/块”。在这一章里，会一直使用“扇区”和“块”这两个术语，但你还是应该记住它们的这些别名。图1-1是扇区和缓冲区之间的关系图。 至少相对于硬盘而言，另外一些术语更通用一如簇、柱面以及磁头。这些表示是针对某些特定的块设备的，大多数情况下，对用户空间的软件是不可见的。扇区这一术语之所以对内核重要，是因为所有设备的/必须以扇区为单位进行操作。以此类推，内核所使用的“块”这一高级概念就是建立在扇区之上的。 <img src="/picture/linux/kernel/io/io1.png" /></p>
 <h2 id="缓冲区和缓冲区头">2. 缓冲区和缓冲区头</h2>
@@ -349,7 +351,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://carlyleliu.github.io/2021/Linux%E5%9D%97I-O/" title="Linux块I&#x2F;O">http://carlyleliu.github.io/2021/Linux块I-O/</a>
+    <a href="http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/" title="Linux文件系统（二）块I&#x2F;O">http://carlyleliu.github.io/2021/Linux文件系统（二）块I/Linux文件系统（二）块IO/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
@@ -374,8 +376,8 @@
       <i class="fa fa-chevron-left"></i> 基于反作用轮的3D倒立摆的非线性分析与控制
     </a></div>
       <div class="post-nav-item">
-    <a href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89VFS/" rel="next" title="Linux文件系统（二）VFS">
-      Linux文件系统（二）VFS <i class="fa fa-chevron-right"></i>
+    <a href="/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%89%EF%BC%89VFS/" rel="next" title="Linux文件系统（三）VFS">
+      Linux文件系统（三）VFS <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -692,9 +694,9 @@ window.addEventListener('pjax:success', () => {
 </script>
 <script>
   var disqus_config = function() {
-    this.page.url = "http://carlyleliu.github.io/2021/Linux%E5%9D%97I-O/";
-    this.page.identifier = "2021/Linux块I-O/";
-    this.page.title = "Linux块I/O";
+    this.page.url = "http://carlyleliu.github.io/2021/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97I/Linux%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%9D%97IO/";
+    this.page.identifier = "2021/Linux文件系统（二）块I/Linux文件系统（二）块IO/";
+    this.page.title = "Linux文件系统（二）块I/O";
     };
   NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
     if (window.DISQUS) {

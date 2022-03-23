@@ -24,23 +24,24 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述 之前我们在介绍进程调度时都是假设系统只有一个CPU,现在绝大多数设备都是多核处理器。在多核处理器中，以SMP类型的多核形态最常见。SMP（Symmetrical MultiProcessing）的全称是“对称多处理”技术，是指在一台计算机上汇集了一组处理器，这些处理器都是对等的，它们之间共享内存子系统和系统总线。 下图所示为4核的SMP处理器架构，在4核处理器中，每个物理CPU核心拥有">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux进程管理（七）多核调度">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E5%A4%9A%E6%A0%B8%E8%B0%83%E5%BA%A6/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 概述 之前我们在介绍进程调度时都是假设系统只有一个CPU,现在绝大多数设备都是多核处理器。在多核处理器中，以SMP类型的多核形态最常见。SMP（Symmetrical MultiProcessing）的全称是“对称多处理”技术，是指在一台计算机上汇集了一组处理器，这些处理器都是对等的，它们之间共享内存子系统和系统总线。 下图所示为4核的SMP处理器架构，在4核处理器中，每个物理CPU核心拥有">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/程管理-多核调度.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/smp.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/sched_domain.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/queue_cpu.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_load.png">
 <meta property="article:published_time" content="2021-10-31T07:53:38.000Z">
-<meta property="article:modified_time" content="2022-03-20T06:43:25.492Z">
+<meta property="article:modified_time" content="2022-03-23T13:38:01.464Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="smp sched">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/smp.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/程管理-多核调度.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E5%A4%9A%E6%A0%B8%E8%B0%83%E5%BA%A6/">
 
@@ -287,10 +288,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概述">1. 概述</h2>
+        <p><img src="/picture/linux/brief/程管理-多核调度.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2YjhlYzFlZmFkNDA3NTI1MTE2NDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="概述">1. 概述</h2>
 <p>之前我们在介绍进程调度时都是假设系统只有一个CPU,现在绝大多数设备都是多核处理器。在多核处理器中，以SMP类型的多核形态最常见。SMP（Symmetrical MultiProcessing）的全称是“对称多处理”技术，是指在一台计算机上汇集了一组处理器，这些处理器都是对等的，它们之间共享内存子系统和系统总线。</p>
 <p>下图所示为4核的SMP处理器架构，在4核处理器中，每个物理CPU核心拥有独立的L1缓存且不支持超线程技术，分成两个簇（cluster）簇0和簇1，每个簇包含两个物理CPU核，簇中的CPU核共享L2缓存。 <img src="/picture/linux/kernel/task/smp.png" /></p>
-<span id="more"></span>
 <h2 id="调度域和调度组">2. 调度域和调度组</h2>
 <p>根据处理器的实际物理属性，CPU和Linux内核的分类如下所示。</p>
 <ul>

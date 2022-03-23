@@ -280,9 +280,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="cfs算法概述">1. CFS算法概述</h2>
-<p>CFS抛弃了以前使用固定时间片和固定调度周期的算法，而采用进程权重值的比重来量化和计算实际运行时间。另外，引入虚拟时间（vruntime）的概念，也称为虚拟运行时间；作为对照，还引入真实时间（real runtime）的概念，也称为真实运行时间，也就是进程在物理时钟下实际运行的时间。每个进程的虚拟时间是实际运行时间与nice值0对应的权重的比值。进程按照各自不同的速率比在物理时钟节拍内前进。nice值小的进程优先级高，权重大，由于虚拟时间比真实时间过得慢，因此可以获得比较长的运行时间；nice值大的进程优先级低，权重小，虚拟时间比真实时间过得快，因此可以获得比较短的运行时间。CFS总是选择虚拟时间最小的进程（即选择vruntime最短的进程），它就像一个多级变速箱，nice值为0的进程是基准齿轮，其他各个进程在不同的变速比下相互追赶，从而达到公正公平。 如图所示，假设系统中只有3个进程A、B和C，它们的nice值都为0，也就是权重值都是1024。它们分配到的运行时间相同，都应该分配到1/3的运行时间。如果A、B、C三个进程的权重值不同呢？当进程的nice值不等于0时，它们的虚拟时间过得和真实时间就不一样了。nice值小的进程，优先级高，虚拟时间比真实时间过得慢；反之，nice值大的进程，优先级低，虚拟时间比真实时间过得快。 <img src="/picture/linux/kernel/task/vruntime.png" /></p>
-<p>所以，CFS的核心是计算进程的vruntime以及选择下一个运行的进程。</p>
+          <p><img src="/picture/linux/brief/进程管理-CFS调度器.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2OTgxMzBlM2U3NDA3NGNmMGU2NGU=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%BA%94%EF%BC%89CFS%E8%B0%83%E5%BA%A6%E5%99%A8/#more" rel="contents">
@@ -384,11 +382,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p>本文转载自<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L3NjaGVkdWxlci1oaXN0b3J5Lmh0bWw=">窝窝科技的O(n)、O(1)和CFS调度器一文<i class="fa fa-external-link-alt"></i></span></p>
-</blockquote>
-<h2 id="前言">1. 前言</h2>
-<p>本文就是从2.4时代的任务调度器开始，详细描述其实现并慢慢向前递进。当然，为了更好的理解Linux调度器设计和实现，我们在第二章给出了一些通用的概念。之后，我们会在第四章讲述O（1）调度器如何改进并提升调度器性能。真正有划时代意义的是CFS调度器，在2.6.23版本的内核中并入主线。它的设计思想是那么的眩目，即便是目前最新的内核中，完全公平的设计思想仍然没有太大变化，这些我们会在第六章描述。第五章是关于公平调度思想的引入，通过这一章可以了解Con Kolivas的RSDL调度器，它是开启公平调度的先锋，通过这一章的铺垫，我们可以更顺畅的理解CFS。</p>
+          <p><img src="/picture/linux/brief/进程管理-调度算法的演变.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2MDJmYTYzNzY4OTA3MTA1OWI5Mjk=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%E7%9A%84%E6%BC%94%E5%8F%98/#more" rel="contents">
@@ -490,12 +484,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述">1. 概述</h2>
-<p>最新版本的POSIX标准中定义了进程创建和终止的操作系统层面的原语。进程创建包括fork()和execve()函数族，进程终止包括wait()、waitpid()、kill()以及exit()函数族。Linux在实现过程中为了提高效率，把POSIX标准的fork原语扩展成了vfork和clone两个原语。</p>
-<p>当你使用GCC将一个最简单的程序（比如hello world程序）编译成ELF可执行文件后，在shell提示符下输入该可执行文件并且按Enter键，这个程序就开始执行了。其实在这里shell会通过调用fork()来创建一个新的进程，然后调用execve()来执行这个新的进程。Linux进程的创建和执行通常是由两个单独的函数（即fork()和execve()）完成的。fork()通过写时复制技术复制当前进程的相关信息来创建一个全新的子进程。这时子进程和父进程运行在各自的进程地址空间中，但是共享相同的内容。另外，它们有各自的PID。execve()函数负责读取可执行文件，将其装入子进程的地址空间并开始运行，这时父进程和子进程才开始分道扬镳。</p>
-<p>POSIX标准中还规定了posix_spawn()函数，它把fork()和exec()的功能结合了起来，形成单一的spawn操作创建一个新进程并且执行程序。Linux的glibc函数库实现了该函数。</p>
-<p>我们最常见的一种场景是在shell界面中输入命令，然后等待命令返回。若从进程创和终止的角度看，经历的过程如下。shell读取命今、解析命令、创建子进程并执行命令，然后父进程等待子进程终止，如图所示。 <img src="/picture/linux/kernel/task/shell_exec.png" /></p>
-<p>Linux内核提供了相应的系统调用，比如sys_fork、sys_exec、 sys_vfork以及sys_clone 等。另外，C函数库提供了这些系统调用的封装函数。 在Linux内核中，fork()、vfork()、clone()以及创建内核线程的函数接口都是通过调用kernel_clone()函数来完成的，只是调用的参数不一样。</p>
+          <p><img src="/picture/linux/brief/进程管理-进程的创建和终止.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZmQxYmYzNDZmYjA3MjVmNjhhYjg=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%BA%8C%EF%BC%89%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA%E5%92%8C%E7%BB%88%E6%AD%A2/#more" rel="contents">
@@ -597,8 +586,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="进程调度的基本概念">1. 进程调度的基本概念</h2>
-<p>进程调度的概念比较简单。假设在只有单核处理器的系统中，同一时刻只有一个进程可以拥有处理器资源，那么其他的进程只能在就绪队列（runqueue）中等待，等到处理器空闲之后才有机会获取处理器资源并运行。在这种场景下，操作系统就需要从众多的就绪进程中选择一个最合适的进程来运行，这就是进程调度器（scheduler）。进程调度器产生的最大原因是为了提高处理器的利用率。一个进程在运行的过程中有可能需要等待某些资源，比如等待磁盘操作的完成、等待键盘输入、等待物理页面的分配等。如果处理器和进程一起等待，那么明显会浪费处理器资源，所以一个进程在睡眠等待时，调度器可以调度其他进程来运行，这样就提高了处理器的利用率。</p>
+          <p><img src="/picture/linux/brief/进程管理-进程调度相关概念.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2OWUzYzBlM2U3NDA3NGNmMGYxOWI=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5/#more" rel="contents">
@@ -700,14 +688,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="进程的概念">1. 进程的概念</h2>
-<p>进程就是处于执行期的程序（目标码存放在某种存储介质上）。但进程并不仅仅局限于一段可执行程序代码（Unix称其为代码段，text section）。通常进程还要包含其他资源，像打开的文件，挂起的信号，内核内部数据，处理器状态，一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution），当然还包括用来存放全局变量的数据段等。实际上，进程就是正在执行的程序代码的实时结果。内核需要有效而又透明地管理所有细节。</p>
-<p>执行线程，简称线程（thread），是在进程中活动的对象。每个线程都拥有一个独立的程序计数器、进程栈和一组进程寄存器。内核调度的对象是线程，而不是进程。在传统的Unix系统中，一个进程只包含一个线程，但现在的系统中，包含多个线程的多线程程序司空见惯。稍后你会看到，Linux系统的线程实现非常特别：它对线程和进程并不特别区分。对Linux而言，线程只不过是一种特殊的进程罢了。</p>
-<p>在现代操作系统中，进程提供两种虚拟机制：虚拟处理器和虚拟内存。虽然实际上可能是许多进程正在分享一个处理器，但虚拟处理器给进程一种假象，让这些进程觉得自己在独享处理器。第4章将详细描述这种虚拟机制。而虚拟内存让进程在分配和管理内存时觉得自己拥有整个系统的所有内存资源。</p>
-<p>程序本身并不是进程，进程是处于执行期的程序以及相关的资源的总称。实际上，完全可能存在两个或多个不同的进程执行的是同一个程序。并且两个或两个以上并存的进程还可以共享许多诸如打开的文件、地址空间之类的资源。</p>
-<p>无疑，进程在创建它的时刻开始存活。在Linux系统中，这通常是调用fork()系统的结果，该系统调用通过复制一个现有进程来创建一个全新的进程。调用fork()的进程称为父进程，新产生的进程称为子进程。在该调用结束时，在返回点这个相同位置上，父进程恢复执行，子进程开始执行。fork()系统调用从内核返回两次：一次回到父进程，另一次回到新产生的子进程。</p>
-<p>通常，创建新的进程都是为了立即执行新的、不同的程序，而接着调用exec()这组函数就可以创建新的地址空间，并把新的程序载入其中。在现代Linux内核中，fork()实际上是由clone()系统调用实现的，后者将在后面讨论。</p>
-<p>最终，程序通过exit()系统调用退出执行。这个函数会终结进程并将其占用的资源释放掉。父进程可以通过wait()系统调用查询子进程是否终结，这其实使得进程拥有了等待特定进程执行完毕的能力。进程退出执行后被设置为僵死状态，直到它的父进程调用wait()或waitpid()为止。</p>
+          <p><img src="/picture/linux/brief/进程管理-概述.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZDg4NDFlMDg1MzA2ZjhjMzUxZjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%80%EF%BC%89%E6%A6%82%E8%BF%B0/#more" rel="contents">
@@ -809,18 +790,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述">1. 概述</h2>
-<p>在现代操作系统中，内核提供了用户进程与内核进行交互的一组接口。这些接口让应用程序受限地访问硬件设备，提供了创建新进程并与已有进程进行通信的机制，也提供了申请操作系统其他资源的能力。这些接口在应用程序和内核之间扮演了使者的角色，应用程序发出各种请求，而内核负责满足这些请求（或者无法满足时返回一个错误）。</p>
-<h3 id="系统调用的作用">1.1 系统调用的作用</h3>
-<ul>
-<li>为用户空间程序提供一层硬件抽象接口。这能够让应用程序编程者从学习硬件设备底层编程中解脱出来。例如，当需要读写文件时，应用程序编写者不用去关心磁盘类型和介质，以及文件存储在磁盘哪个扇区等底层硬件信息。</li>
-<li>保证系统稳定和安全。应用程序要访问内核就必须通过系统调用层，内核可以在系统调用层对应用程序的访问权限、用户类型和其他一些规则进行讨滤、这样可以避免应用程序不正确地访问内核。</li>
-<li>可移植性。可以让应用程序在不修改源代码的情况下，在不同的操作系统或者拥有不同硬件架构的系统中重新编译并且运行。</li>
-</ul>
-<h3 id="系统调用和posix标准">1.2 系统调用和POSIX标准</h3>
-<p>对于应用编程接口（API）和系统调用之间的关系，有的读者可能有点糊涂了。一般来说，应用程序调用用户空间实现的应用编程接口来编程，而不是直接执行系统调用。一个接口函数可以由一个系统调用实现，也可以由多个系统调用实现，甚至完全不使用任何系统调用。因此，一个接口函数没有必要对应一个特定的系统调用。</p>
-<p>UNIX系统在设计的早期就出现了操作系统的API层。在UNIX的世界里，最通用的系统调用层接口是POSIX （Portable Operating System Interface of UNIX）标准。POSIX的诞生和UNIX的发展密不可分。UNIX系统诞生于20世纪70年代的贝尔实验室，很多商业厂商基于UNIX系统发展自己的UNIX系统，但是标准不统一。后来IEEE制定了POSIX标准，但需要注意的是，POSIX标准针对的是API而不是系统调用。判断一个系统是否与POSIX兼容时，要看它是否提供一组合适的应用编程接口，而不是看它的系统调用是如何定义和实现的。</p>
-<p>Linux操作系统的API通常是以C标准库的方式提供的，比如Linux中的libc库。C标准库提供了POSIX的绝大部分API的实现，同时也为内核提供的每个系统调用封装了相应的函数，并且系统调用和C标准库封装的函数名称通常是相同的。例如，open系统调用在C标准库中对应的函数是open函数。另外，有几个接口函数可能调用封装了不同功能的同一个系统调用，例如libc库中实现的malloc()、calloc()和free()等函数，这几个函数用来分配和释放虚拟内存（堆上的虚拟内存），它们都是利用brk系统调用来实现的。</p>
+          <p><img src="/picture/linux/brief/Linux系统调用.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZDQxYjdkOWMwODA3MGU1MGY0ZGI=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8/#more" rel="contents">
@@ -922,17 +892,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="arm64架构介绍">1. ARM64架构介绍</h2>
-<h3 id="armv8-a架构介绍">1.1 ARMv8-A架构介绍</h3>
-<p>ARMv8-A是ARM公司发布的第一代支持64位处理器的指令集和架构。它在扩充64位寄存器的同时提供对上一代架构指令集的兼容，因而能同时提供运行32位和64位应用移序的执行环境。ARMv8-A架构除了提高了处理能力外，还引入了很多吸引人的新特性。</p>
-<ul>
-<li>通过超大物理地址空间，提供超过4GB物理内存的访问。</li>
-<li>具有64位宽的虚拟地址空间。32位处理器中只能提供4GB大小的虚拟地址空间，这极大限制了桌面系统和服务器等应用的发挥。64位宽的虚拟地址空间可以提供超大的访问空间。</li>
-<li>提供31个64位宽的通用寄存器，可以减少对栈的访问，从而提高性能。</li>
-<li>提供16KB和64KB的页面，有助于降低TLB的未命中率（miss rate）。</li>
-<li>具有全新的异常处理模型，有助于降低操作系统和虚拟化的实现复杂度。</li>
-<li>具有全新的加载-获取、存储-释放指令（load-acquire，store-release instruction），专为C++11、C11以及Java内存模型而设计。</li>
-</ul>
+          <p><img src="/picture/linux/brief/ARM64架构基础.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OTNjNzU2NTNiYjA3MWU2ZTllYjE=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/#more" rel="contents">
@@ -1034,9 +994,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述">1. 概述</h2>
-<p>工作队列（work queue）是使用内核线程异步执行函数的通用机制。工作队列机制是中断处理程序的一种下半部机制，中断处理程序可以把耗时比较长并且可能睡眠的函数交给工作队列执行。</p>
-<p>工作队列不完全是中断处理程序的下半部。内核的很多模块需要异步执行函数，这些模也可以创建一个内核线程来异步执行函数。但是，如果每个模块都创建自己的内核线程，会造成内核线程的数量过多，内存消耗比较大，影响系统性能。所以，最好的方法是提供一种通用机制，让这些模块把需要异步执行的函数交给工作队列执行，共享内核线程，节省资源。</p>
+          <p><img src="/picture/linux/brief/中断子系统-WorkQueue.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OTA4ZTA3OTEyOTA2ZjUwODBjYjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/#more" rel="contents">
@@ -1138,13 +1096,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="为什么有tasklet">1. 为什么有tasklet</h2>
-<p>linux kernel已经把中断处理分成了top half和bottom half，看起来已经不错了，那为何还要提供softirq、tasklet和workqueue这些bottom half机制。实际上，在早期的linux kernel还真是只有一个bottom half机制，简称BH，简单好用，但是性能不佳。后来，linux kernel的开发者开发了task queue机制，试图来替代BH，当然，最后task queue也消失在内核代码中了。现在的linux kernel提供了三种bottom half的机制，来应对不同的需求。</p>
-<p>workqueue和softirq、tasklet有本质的区别：workqueue运行在process context，而softirq和tasklet运行在interrupt context。因此，出现workqueue是不奇怪的，在有sleep需求的场景中，defering task必须延迟到kernel thread中执行，也就是说必须使用workqueue机制。softirq和tasklet是怎么回事呢？从本质上将，bottom half机制的设计有两方面的需求，一个是性能，一个是易用性。设计一个通用的bottom half机制来满足这两个需求非常的困难，因此，内核提供了softirq和tasklet两种机制。softirq更倾向于性能，而tasklet更倾向于易用性。</p>
-<ol type="1">
-<li>软中断的种类是编译时静态定义的，在运行时不能添加或删除；Tasklet可以在运行时添加或删除。</li>
-<li>同一种软中断的处理函数可以在多个处理器上同时执行，处理函数必须是可以重入的，需要使用锁保护临界区；一个Tasklet同一时刻只能在一个处理器上执行，不要求处理函数是可以重入的。</li>
-</ol>
+          <p><img src="/picture/linux/brief/中断子系统-Tasklet.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OGVlMzA3OTEyOTA2ZjUwODA4YWM=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E5%85%AD%EF%BC%89Tasklet/#more" rel="contents">
@@ -1246,11 +1198,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="软中断的定义">1. 软中断的定义</h2>
-<p>软中断（softirq）是中断处理程序在开启中断的情况下执行的部分，可以被硬中断抢占内核定义了一张软中断向量表，每种软中断有一个唯一的编号，对应一个softirq_actior实例，softirq_action实例的成员action是处理函数.</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/softirq.c&gt;</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">softirq_action</span> <span class="title">softirq_vec</span>[<span class="title">NR_SOFTIRQS</span>] __<span class="title">cacheline_aligned_in_smp</span>;</span></span><br><span class="line">...</span><br><span class="line"><span class="class"><span class="keyword">enum</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  HI_SOFTIRQ=<span class="number">0</span>,</span><br><span class="line">  TIMER_SOFTIRQ,</span><br><span class="line">  NET_TX_SOFTIRQ,</span><br><span class="line">  NET_RX_SOFTIRQ,</span><br><span class="line">  BLOCK_SOFTIRQ,</span><br><span class="line">  IRQ_POLL_SOFTIRQ,</span><br><span class="line">  TASKLET_SOFTIRQ,</span><br><span class="line">  SCHED_SOFTIRQ,</span><br><span class="line">  HRTIMER_SOFTIRQ,</span><br><span class="line">  RCU_SOFTIRQ,    <span class="comment">/* Preferable RCU should always be the last softirq */</span></span><br><span class="line"></span><br><span class="line">  NR_SOFTIRQS</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/interrupt.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">softirq_action</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="keyword">void</span>	(*action)(struct softirq_action *);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>softirq_action该结构体非常简单就是一个函数指针，用于指向具体定义的函数。</p>
+          <p><img src="/picture/linux/brief/中断子系统-SoftIRQ.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OGNkN2U0MDFmZDA3MGJiMGNkYmI=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%94%EF%BC%89%C2%A0SoftIRQ/#more" rel="contents">

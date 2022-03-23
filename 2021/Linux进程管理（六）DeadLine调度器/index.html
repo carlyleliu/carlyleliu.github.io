@@ -24,13 +24,14 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="本文转自wowo科技的deadline调度器之（一）：原理和Deadline调度器之（二）：细节和使用方法  1. 概述 实时系统是这样的一种计算系统：当事件发生后，它必须在确定的时间范围内做出响应。在实时系统中，产生正确的结果不仅依赖于系统正确的逻辑动作，而且依赖于逻辑动作的时序。换句话说，当系统收到某个请求，会做出相应的动作以响应该请求，想要保证正确地响应该请求，一方面逻辑结果要正确，更重要">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux进程管理（六）DeadLine调度器">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AD%EF%BC%89DeadLine%E8%B0%83%E5%BA%A6%E5%99%A8/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="本文转自wowo科技的deadline调度器之（一）：原理和Deadline调度器之（二）：细节和使用方法  1. 概述 实时系统是这样的一种计算系统：当事件发生后，它必须在确定的时间范围内做出响应。在实时系统中，产生正确的结果不仅依赖于系统正确的逻辑动作，而且依赖于逻辑动作的时序。换句话说，当系统收到某个请求，会做出相应的动作以响应该请求，想要保证正确地响应该请求，一方面逻辑结果要正确，更重要">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-DeadLine调度器.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/deadline_table.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/edf.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/edf2.png">
@@ -39,11 +40,11 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/big_deadline.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/big_deadline2.png">
 <meta property="article:published_time" content="2021-10-31T02:49:26.000Z">
-<meta property="article:modified_time" content="2022-03-20T02:57:04.397Z">
+<meta property="article:modified_time" content="2022-03-23T13:35:21.243Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="scheduler">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/deadline_table.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-DeadLine调度器.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AD%EF%BC%89DeadLine%E8%B0%83%E5%BA%A6%E5%99%A8/">
 
@@ -290,13 +291,14 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <blockquote>
+        <p><img src="/picture/linux/brief/进程管理-DeadLine调度器.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2YWY0MDdkOWMwODA3MGU1MWJhNTk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<blockquote>
 <p>本文转自<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L2RlYWRsaW5lLXNjaGVkdWxlci0xLmh0bWw=">wowo科技的deadline调度器之（一）：原理<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L2RsLXNjaGVkdWxlci0yLmh0bWw=">Deadline调度器之（二）：细节和使用方法<i class="fa fa-external-link-alt"></i></span></p>
 </blockquote>
 <h2 id="概述">1. 概述</h2>
 <p>实时系统是这样的一种计算系统：当事件发生后，它必须在确定的时间范围内做出响应。在实时系统中，产生正确的结果不仅依赖于系统正确的逻辑动作，而且依赖于逻辑动作的时序。换句话说，当系统收到某个请求，会做出相应的动作以响应该请求，想要保证正确地响应该请求，一方面逻辑结果要正确，更重要的是需要在最后期限（deadline）内作出响应。如果系统未能在最后期限内进行响应，那么该系统就会产生错误或者缺陷。在多任务操作系统中（如Linux），实时调度器（realtime scheduler）负责协调实时任务对CPU的访问，以确保系统中的所有的实时任务在其deadline内完成。</p>
 <p>如果对实时任务进行抽象，那么它需要三个元素：周期（period），运行时间（runtime）和最后期限（deadline）。Deadline调度器正是利用了这一点（指对实时任务完美的抽象），允许用户来指定该任务的具体需求，从而使系统能够做出最好的调度决策，即使在负载很高的系统中也能保证实时任务的调度。</p>
-<span id="more"></span>
 <h2 id="linux系统中的实时调度器">2. Linux系统中的实时调度器</h2>
 <p>实时任务和非实时任务（或者普通任务）的区别是什么？实时任务有deadline，超过deadline，将不能产生正确的逻辑结果，非实时任务则没有这个限制。为了满足实时任务的调度需求，Linux提供了两种实时调度器：POSIX realtime scheduler（后文简称RT调度器）和deadline scheduler（后文简称DL调度器）。</p>
 <p>RT调度器有两种调度策略：FIFO（first-in-first-out）和RR（round-robin）。无论FIFO还是RR，RT调度器都是根据任务的实时优先级（Linux进程描述符中的rt_priority成员）进行调度。最高优先级的任务将最先获得CPU资源。在实时理论中，这种调度器被归类为固定优先级调度器（fixed-priority scheduler，即每一个rt任务都固定分配一个优先级）。当实时优先级不同的时候，FIFO和RR没有什么不同，只有在两个任务具有相同优先级的时候，我们才可以看出FIFO和RR之间的区别。对于FIFO调度器，最先进入runnable状态的任务将首先获取CPU资源，并且一直占用该资源，直到该进程进入睡眠状态。而对于RR调度器，具有相同优先级的任务将以轮流执行的方式共享处理器资源。当某个RR任务开始运行后，如果该任务不会阻塞，那么它将一直运行，直到分配给该任务的时间片到期。当时间片用完，调度器将把该任务放在任务链表的末端（注意，只有相同优先级的任务才会放到一个链表中，不同优先级在不同的链表中），并从任务链表中选择下一个任务去执行。</p>

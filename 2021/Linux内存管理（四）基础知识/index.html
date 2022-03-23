@@ -24,13 +24,14 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 从硬件角度看内存管理 1.1 内存管理的“远古时代” 在操作系统还没有出现之前，程序存放在纸带上，计算机读取一张纸带就运行一条指令这种从外部存储介质上直接运行指令的方法效率很低。后来出现了内存存储器，也就是说程序要运行，首先要加载，然后执行，这就是所谓的“存储的程序”这一概念开启了操作系快速发展的通道，直至后来出现了分页机制。在这个演变的历史过程中，出现了不少内存管理机制。 在分页机制出现之">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存管理（四）基础知识">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 从硬件角度看内存管理 1.1 内存管理的“远古时代” 在操作系统还没有出现之前，程序存放在纸带上，计算机读取一张纸带就运行一条指令这种从外部存储介质上直接运行指令的方法效率很低。后来出现了内存存储器，也就是说程序要运行，首先要加载，然后执行，这就是所谓的“存储的程序”这一概念开启了操作系快速发展的通道，直至后来出现了分页机制。在这个演变的历史过程中，出现了不少内存管理机制。 在分页机制出现之">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-基础知识.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/Dynamic_partition.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/ELF.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/test_process.png">
@@ -45,11 +46,11 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vir_liner.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/order.png">
 <meta property="article:published_time" content="2021-11-14T08:05:15.000Z">
-<meta property="article:modified_time" content="2022-03-20T13:18:30.719Z">
+<meta property="article:modified_time" content="2022-03-23T13:43:46.743Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Memory">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/Dynamic_partition.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-基础知识.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/">
 
@@ -296,7 +297,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="从硬件角度看内存管理">1. 从硬件角度看内存管理</h2>
+        <p><img src="/picture/linux/brief/内存管理-基础知识.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MjRjNTU2NTNiYjA3MWU3MGVjMmY=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="从硬件角度看内存管理">1. 从硬件角度看内存管理</h2>
 <h3 id="内存管理的远古时代">1.1 内存管理的“远古时代”</h3>
 <p>在操作系统还没有出现之前，程序存放在纸带上，计算机读取一张纸带就运行一条指令这种从外部存储介质上直接运行指令的方法效率很低。后来出现了内存存储器，也就是说程序要运行，首先要加载，然后执行，这就是所谓的“存储的程序”这一概念开启了操作系快速发展的通道，直至后来出现了分页机制。在这个演变的历史过程中，出现了不少内存管理机制。 在分页机制出现之前，操作系统有很多不同的内存管理机制，如动态分区法。假设现在有一块32MB大小的内存，一开始操作系统使用了最小的一块-4MB大小剩余的内存要留给4个进程使用，如图（a）所示。进程A使用了操作系统往上的10MB内存，进程B使用了进程A往上的6MB内存，进程C使用了进程B往上的8MB内存。剩余的4MB内存不足以装载进程D，如图（b）所示，因为进程D需要5MB内存，这个内存末尾就成了第一个空洞（内存碎片）。假设某个时刻，操作系统需要运行进程D，因为系统中没有足够的内存，所以需要选择一个进程来换出，为进程D腾出足够的空间。假设操作系统选择进程B来换出，这样进程D就装载到了原来进程B的地址空间里，于是产生了第二个空洞，如图（c）所示。假设操作系统某个时刻需要运行进程B，也需要选择一个进程来换出，假设进程A被换出，那么操作系统中又产生了第三个空洞，如图（d）所示。 <img src="/picture/linux/kernel/mem/Dynamic_partition.png" /></p>
 <p>这种动态分区法在开始时是很好的，但是随着时间的推移会出现很多内存空洞，内存的利用率随之下降，这些内存空洞便是我们常说的内存碎片。为了解决碎片化的问题，操作系统需要动态地移动进程，使得进程占用的空间是连续的，并且所有的空闲空间也是连续的。整个进程的迁移是一个非常耗时的过程。 总之，动态分区法依然存在以下问题。</p>
@@ -306,7 +309,6 @@
 <li>程序运行地址重定位问题。从上图中看到，进程在每次换出、换入时使用的地址都是不固定的，这给程序的编写带来一定的麻烦，因为访问数据和指令跳转时的目标地址通常是固定的，这就需要重定位技术。</li>
 </ul>
 <p>由此可见，上述3个重大问题需要一个全新的解决方案，单纯靠基于操作系统的软件层面的方案是不足以解决这些问题的，必须要基于处理器层面来解决，因此产生了分段机制和分页机制。</p>
-<span id="more"></span>
 <h3 id="分段机制">1.2 分段机制</h3>
 <p>人们最早想到的一种解决方案是分段（segmentation）机制，其基本思想是把程序所需的内存空间的虚拟地址映射到某个物理地址空间中。 分段机制可以解决地址空间保护问题，进程A和进程B会被映射到不同的物理地址空间中，它们在物理地址空间是不会有重叠的。因为进程看到的是虚拟地址空间，不关心它实际映射到了哪个物理地址。如果一个进程访问了没有映射的虚拟地址空间，或者访问了不属于该进程的虚拟地址空间，那么CPU会捕捉这个越界访问，并且拒绝该次访问。同时CPU会发送一个异常给操作系统，由操作系统处理这些异常，这就是我们常说的缺页异常。另外，对于进程来说它不再需要关心物理地址的布局，它访问的地址是虚拟地址，只需要按照原来的地址编写程序和访问地址，这样程序就可以无缝地迁移到不同的操作系统中了。 分段机制解决问题的思路可以总结为增加一个虚拟内存（virtual memory）。进程运行时看到的地址是虚拟地址，因此需要通过CPU提供的地址映射方法，把虚拟地址转换成实际的物理地址。这样多个进程同时运行时，就可以保证每个进程的虚拟内存空间是相互隔离的，操作系统只需要维护虚拟地址到物理地址的映射关系即可。</p>
 <p>另外，分段机制把进程分成若干段，每个段的大小是不固定的。如果一个进程可以分成代码段、数据段栈段与堆段等。分段机制有点类似于动态分区法，这些段的物理地址可以不连续这样可以解决内存碎片问题，但是会产生外部碎片。程序员需要为每个进程的各个段合理分物理地址空间，否则容易发生问题。 分段机制是一个比较明显的改进，但是它的内存使用效率依然比较低。分段机制对虚拟内存到物理内存的映射依然以进程为单位。也就是说，当物理内存不足时，通常做法是把这个进程的所有段都换出到磁盘，因此会导致大量的磁盘访问，从而影响系统性能。站在进程的角来看，把整个进程进行换出/换入的方法还很麻烦。进程在运行时，根据局部性原理，只有一部分数据是一直在使用的，若把那些不常用的数据交换出磁盘，就可以节省很多系统带宽，而那些常用的数据驻留在物理内存中，因此可以得到比较好的性能。于是，人们在分段机制的实之后又发明了新的机制，这就是分页（paging）机制。</p>

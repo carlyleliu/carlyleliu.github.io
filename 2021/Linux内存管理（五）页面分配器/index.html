@@ -24,20 +24,21 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="前面提到伙伴系统是 Linux 内核中基本的内存分配系统。伙伴系统的概念不难理解，但是一直以来，分配物理页面是内存管理中最复杂的部分，它涉及页面回收、内存规整、直接回收 内存等相当错综复杂的机制。本节关注在内存充足的情况下如何分配连续物理内存。读者可以思考在最糟糕情况下页面分配器是如何分配连续物理页面的。 1. page数据结构 Linux内核内存管理的实现以page数据结构为核心，page数据结">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存管理（五）页面分配器">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%BA%94%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="前面提到伙伴系统是 Linux 内核中基本的内存分配系统。伙伴系统的概念不难理解，但是一直以来，分配物理页面是内存管理中最复杂的部分，它涉及页面回收、内存规整、直接回收 内存等相当错综复杂的机制。本节关注在内存充足的情况下如何分配连续物理内存。读者可以思考在最糟糕情况下页面分配器是如何分配连续物理页面的。 1. page数据结构 Linux内核内存管理的实现以page数据结构为核心，page数据结">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-页面分配器.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/alloc_pages.png">
 <meta property="article:published_time" content="2021-11-20T17:47:50.000Z">
-<meta property="article:modified_time" content="2022-03-20T15:21:53.728Z">
+<meta property="article:modified_time" content="2022-03-23T13:45:15.090Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="page">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/alloc_pages.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-页面分配器.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%BA%94%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8/">
 
@@ -284,7 +285,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>前面提到伙伴系统是 Linux 内核中基本的内存分配系统。伙伴系统的概念不难理解，但是一直以来，分配物理页面是内存管理中最复杂的部分，它涉及页面回收、内存规整、直接回收 内存等相当错综复杂的机制。本节关注在内存充足的情况下如何分配连续物理内存。读者可以思考在最糟糕情况下页面分配器是如何分配连续物理页面的。</p>
+        <p><img src="/picture/linux/brief/内存管理-页面分配器.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MmRhZDA3OTEyOTA2ZjUwYTdmYWI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<p>前面提到伙伴系统是 Linux 内核中基本的内存分配系统。伙伴系统的概念不难理解，但是一直以来，分配物理页面是内存管理中最复杂的部分，它涉及页面回收、内存规整、直接回收 内存等相当错综复杂的机制。本节关注在内存充足的情况下如何分配连续物理内存。读者可以思考在最糟糕情况下页面分配器是如何分配连续物理页面的。</p>
 <h2 id="page数据结构">1. page数据结构</h2>
 <p>Linux内核内存管理的实现以page数据结构为核心，page数据结构类似于城市地标，其他的内存管理设施都基于page数据结构，如VMA管理、缺页中断、RMAP、页面分配与回收等。page数据结构定义在include/linux/mm_types.h头文件中，大量使用了c语言的联合体（union）来优化其数据结构的大小，因为每个物理页面都需要一个page数据结构来跟踪和管理这些物理页面的使用情况，所以管理成本很高。</p>
 <h3 id="refcount">1.1 _refcount</h3>
@@ -294,7 +297,6 @@
 <li>当_refcount 的值大于0时，表示该页面已经分配给内核正在使用，暂时不会被释放。</li>
 </ul>
 <p>内核中提供加/减_refcount的接口函数，读者应该使用这些接口的数来使用_refcount计数。</p>
-<span id="more"></span>
 <p>这两个接口函数实现在include/linux/mm.h文件中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mm.h&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">get_page</span><span class="params">(struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  page = compound_head(page);</span><br><span class="line"></span><br><span class="line">  VM_BUG_ON_PAGE(page_ref_zero_or_close_to_overflow(page), page);</span><br><span class="line">  page_ref_inc(page);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">put_page</span><span class="params">(struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  page = compound_head(page);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (page_is_devmap_managed(page)) &#123;</span><br><span class="line">    put_devmap_managed_page(page);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (put_page_testzero(page))</span><br><span class="line">    __put_page(page);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>get_page()函数调用page_ref_inc()来增加引用计数，最后使用atomic_inc()函数原子地增加引用计数。 put_page()首先使用put_page_testzero()函数来使_refcount减1并目判断其是否为0,_refcount减1之后等于0，就会调用put_page()来释放这个页面。</p>

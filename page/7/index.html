@@ -280,8 +280,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="数据结构">1. 数据结构</h2>
-<p>理解一个软件架构最重要的是要理清楚里面的数据结构的内容以及数据结构之间的关系，在本文中列出数据结构之前先来说明几个问题。首先是中断控制器 irq controller 这个在arm上一般是gic，有可能会出现irq controller 集联的情况，但是一般情况下是一个controller，一个controller上有很多中断线，irq line一般就是连接到gpio控制器上的，在一个中断线上可能有多个设备（共享中断）action，那么就涉及到这几种数据结构，描述中断控制器的数据结构可以组成链表，描述中断线 irq line的数据结构可以组成链表，挂在中断线上的中断设备可以组成链表关系。 除此之外硬件中断号于linux中断号之间有一个映射关系，也需要抽象出数据结构来描述。下面看下linux内核下对中断的抽象出的数据结构，如下： <img src="/picture/linux/kernel/IRQ_Struct.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9kaWFncmFtaW5nLzYxNDg3ODJiMDc5MTI5NDNjMDVhYzg4MA==">原图<i class="fa fa-external-link-alt"></i></span></p>
+          <p><img src="/picture/linux/brief/中断子系统-中断驱动实现.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ODljMjYzNzY4OTA3MTA1ODk3YjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E5%9B%9B%EF%BC%89%E4%B8%AD%E6%96%AD%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6/#more" rel="contents">
@@ -383,8 +382,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="中断控制器">1. 中断控制器</h2>
-<p>外围设备不是把中断请求直接发给处理器，而是发给中断控制器，由中断控制器转给处理器。ARM公司提供了一种标准的中断控制器，称为通用中断控制器（Generic IntermurController，GIC）。目前GIC架构规范有4个版本：v1~v4。GICv2最多支持8个处理器。GIC v3最多支持128个处理器，GICv3和GICv4只支持ARM64处理器。</p>
+          <p><img src="/picture/linux/brief/中断子系统-中断处理过程.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ODFjZDU2NTNiYjA3MWU2ZTZkYmU=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%89%EF%BC%89%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86%E8%BF%87%E7%A8%8B/#more" rel="contents">
@@ -486,14 +484,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p>声明本文以linux5.x arm64为参考进行分析</p>
-</blockquote>
-<h2 id="异常级别">1. 异常级别</h2>
-<p><img src="/picture/linux/kernel/ARM64_ELEVEL.png" /></p>
-<p>通常ARM64的进程执行在EL0级别,内核执行在EL1级别。</p>
-<p>虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统，运行虚拟机的操作系统是宿主操作系统，虚拟机里运行的操作系统是客户操作系统，常用的开源虚拟机管理软件是QEMU,QEMU支持基于内核的虚拟机KVM，KVM的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。</p>
-<p>ARM64架构的安全扩展定义了两种安全状态，正常世界和安全世界，两个世界只能通过异常级别3的安全监视器切换</p>
+          <p><img src="/picture/linux/brief/中断子系统-ARM的异常处理过程.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1Nzk2NjA3OTEyOTA2ZjUwN2QxMDg=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89ARM%E7%9A%84%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86%E8%BF%87%E7%A8%8B/#more" rel="contents">
@@ -595,14 +586,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="硬件相关描述">1. 硬件相关描述</h2>
-<p><img src="/picture/linux_driver/irq/HW_IRQ.png" /></p>
-<p>在上图中主要分为三部分，产生中断的外部设备、用于管理中断的中断控制器以及处理中断信号的cpu。</p>
-<ul>
-<li>产生中断的设备没什么好说的，很多外部设备都支持中断事件，对于soc而言其实也就是一个电信号，外部设备可以产生一个中断信号接到soc上。</li>
-<li>中断控制器用于管理中断，例如屏蔽某些中断，设置中断优先级等。</li>
-<li>cpu连接中断控制器，cpu开启中断总开关后就可以接收来自中断控制器的中断信号了，然后调度程序处理中断事物。</li>
-</ul>
+          <p><img src="/picture/linux/brief/中断子系统-综述.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1NzIyNWYzNDZmYjA3MjVmNTU0YjU=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89%E7%BB%BC%E8%BF%B0/#more" rel="contents">

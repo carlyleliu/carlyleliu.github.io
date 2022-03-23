@@ -24,18 +24,20 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 内存管理调优参数 对服务器或者嵌入式产品做性能调优的过程中，避免不了需要深入了解和使用 Linux内内存管理模块提供的调优参数。Linx内核支持的内存管理调优参数都在&#x2F;proc&#x2F;sys&#x2F;vm目录下面，共有40多个调优参数，如下所示： 123456789root@liushuai:&#x2F;proc&#x2F;sys&#x2F;vm# lsadmin_reserve_kbytes         dirty_ratio">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存管理（十二）内存调优">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%8D%81%E4%BA%8C%EF%BC%89%E5%86%85%E5%AD%98%E8%B0%83%E4%BC%98/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 内存管理调优参数 对服务器或者嵌入式产品做性能调优的过程中，避免不了需要深入了解和使用 Linux内内存管理模块提供的调优参数。Linx内核支持的内存管理调优参数都在&#x2F;proc&#x2F;sys&#x2F;vm目录下面，共有40多个调优参数，如下所示： 123456789root@liushuai:&#x2F;proc&#x2F;sys&#x2F;vm# lsadmin_reserve_kbytes         dirty_ratio">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-内存调优.png">
 <meta property="article:published_time" content="2021-12-05T06:56:25.000Z">
-<meta property="article:modified_time" content="2022-01-20T16:10:10.633Z">
+<meta property="article:modified_time" content="2022-03-23T13:51:41.233Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="debug">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-内存调优.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%8D%81%E4%BA%8C%EF%BC%89%E5%86%85%E5%AD%98%E8%B0%83%E4%BC%98/">
 
@@ -282,7 +284,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="内存管理调优参数">1. 内存管理调优参数</h2>
+        <p><img src="/picture/linux/brief/内存管理-内存调优.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4OTk5NWU0MDFmZDA3MGJiNzI0OGI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="内存管理调优参数">1. 内存管理调优参数</h2>
 <p>对服务器或者嵌入式产品做性能调优的过程中，避免不了需要深入了解和使用 Linux内内存管理模块提供的调优参数。Linx内核支持的内存管理调优参数都在/proc/sys/vm目录下面，共有40多个调优参数，如下所示：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@liushuai:/proc/sys/vm<span class="comment"># ls</span></span><br><span class="line">admin_reserve_kbytes         dirty_ratio                lowmem_reserve_ratio       mmap_rnd_bits            oom_kill_allocating_task  stat_refresh</span><br><span class="line">block_dump                   dirtytime_expire_seconds   max_map_count              mmap_rnd_compat_bits     overcommit_kbytes         swappiness</span><br><span class="line">compact_memory               dirty_writeback_centisecs  memory_failure_early_kill  nr_hugepages             overcommit_memory         unprivileged_userfaultfd</span><br><span class="line">compact_unevictable_allowed  drop_caches                memory_failure_recovery    nr_hugepages_mempolicy   overcommit_ratio          user_reserve_kbytes</span><br><span class="line">dirty_background_bytes       extfrag_threshold          min_free_kbytes            nr_overcommit_hugepages  page-cluster              vfs_cache_pressure</span><br><span class="line">dirty_background_ratio       hugetlb_shm_group          min_slab_ratio             numa_stat                panic_on_oom              watermark_boost_factor</span><br><span class="line">dirty_bytes                  laptop_mode                min_unmapped_ratio         numa_zonelist_order      percpu_pagelist_fraction  watermark_scale_factor</span><br><span class="line">dirty_expire_centisecs       legacy_va_layout           mmap_min_addr              oom_dump_tasks           stat_interval             zone_reclaim_mode</span><br></pre></td></tr></table></figure>
 <p>内存管理的调优参数定义在 kerne.c 文件中，通过proc文件系统机制来实现。</p>
@@ -296,7 +300,6 @@
 <li>extral：表示这个参数的最小值。</li>
 <li>exra2：表示这个参数的最大值，如。 overcommit_memory 调优参数的最大值为2，最小值为0</li>
 </ul>
-<span id="more"></span>
 <h3 id="影响内存管理区水位的调优参数-min_free_kbytes">1.1 影响内存管理区水位的调优参数 min_free_kbytes</h3>
 <p>Linux内核为了防止内存被恶意进程占用，在每个内存管理区设置了一部分预留内存，即最低警戒水位（watermark[WMARK_MIN]）。进程分配内存的行为是有优先级的，对于普通优先级的分配行为，是不能访问预留内存的，只有对于高优先级的分配行为，才能访问，如高优先级的进程可以通过设置 __GFP_HIGH、__GFP_ATOMIC甚至 __GFP_MEMALLOC来访问预留内存。若系统预留内存小于1024KB，那么可能会导致系统出问题，具有高优先级分配行为的进程没办法得到内存。 系统初始化时通过 init_per_zone_wmark_min()函数来计算 min_free_kbytes 的大小，然后计算每个内存管理区的水位。 min_free_kbytes的计算公式如下</p>
 <pre><code>min_free_bytes = 4 sqrt(lowmem_kbytes)</code></pre>

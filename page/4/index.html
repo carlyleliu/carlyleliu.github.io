@@ -280,10 +280,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述">1. 概述</h2>
-<p>在 Linux内核中，除信号量以外，还有一个类似的实现叫作互斥锁（mutex）。信号量是在并行处理环境中对多个处理器访问某个公共资源进行保护的机制，互斥锁用于互斥操作。</p>
-<p>信号量根据初始 count的大小，可以分为计数信号量和互斥信号量。根据著名的洗手间理论，信号量相当于一个可以同时容纳N个人的洗手间，只要洗手间人不满，其他人就可以进去， 如果人满了，其他人就要在外面等待。互斥锁类似于街边的移动洗手间，每次只能进去一个人里面的人出来后才能让排队中的下ー个人进去。既然互斥锁类似于 count值等于1的信号量，为什么内核社区要重新开发互斥锁，而不是复用信号量的机制呢？</p>
-<p>互斥锁最早是在 Linux2.6.16内核中由 Red Hat Enterprise Linux的资深内核专家Ingo Molnar设计和实现的。信号量的 count成员可以初始化为1，并且 down()和up()函数也可以实现类似于互斥锁的功能，那为什么要单独实现互斥锁机制呢？ Ingo Molnar认为，在设计之初，信号量在 Linux内核中的实现没有任何问题，但是互斥锁相对于信号量要简单轻便一些。在锁争用激烈的测试场景下，互斥锁比信号量执行速度更快，可扩展性更好。另外， mutex数据结构的定义比信号量小。这些都是在互斥锁设计之初 Ingo Molnar提到的优点。互斥锁上的一些优化方案（如自旋等待）已经移植到了读写信号量中。</p>
+          <p><img src="/picture/linux/brief/并发与同步-互斥锁.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YTdkMzA3OTEyOTA2ZjUxMGZiNDA=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E5%9B%9B%EF%BC%89%E4%BA%92%E6%96%A5%E9%94%81/#more" rel="contents">
@@ -385,8 +382,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="信号量">1. 信号量</h2>
-<p>信号量（ semaphore）是操作系统中最常用的同步原语之一。自旋锁是一种实现忙等待的锁，而信号量则允许进程进入睡眠状态。简单来说，信号量是一个计数器，它支持两个操作原语，即P和V操作。P和V原指荷兰语中的两个单词，分别表示减少和增加，后来美国人把它改成down和up，现在 Linux内核中也叫这两个名字。 信号量中经典的例子莫过于生产者和消费者问题，它是操作系统发展历史上经典的进程同步问题，最早由 Dijkstra提出。假设生产者生产商品，消费者购买商品，通常消费者需要到实体商店或者网上商城购买商品。用计算机来模拟这个场景，一个线程代表生产者，另外一个线程代表消费者，缓冲区代表商店。生产者生产的商品被放置到缓冲区中以供应给消费者线程消费，消费者线程从缓冲区中获取物品，然后释放缓冲区。若生产者线程生产商品时发现没有空闲缓冲区可用，那么生产者必须等待消费者线程释放出一个空闲缓冲区。若消费者线程购买商时发现商店没货了，那么消费者必须等待，直到新的商品生产出来。如果采用自旋锁机制，那么当消费者发现商品没货时，他就搬个凳子坐在商店门口一直等送货员送货过来；如果采用信号量机制，那么商店服务员会记录消费者的电话，等到货了通知消费者来购买。显然，在现实生活中，如果是面包这类很快可以做好的商品，大家愿意在商店里等；如果是家电等商品，大家肯定不会在商店里等。</p>
+          <p><img src="/picture/linux/brief/并发与同步-信号量.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5OTFiYzYzNzY4OTA3MTA2MTQ3N2M=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%89%EF%BC%89%E4%BF%A1%E5%8F%B7%E9%87%8F/#more" rel="contents">
@@ -488,15 +484,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="经典自旋锁">1. 经典自旋锁</h2>
-<p>如果临界区中只有一个変量，那么原子变量可以解決问题，但是大多数情况下临界区有一个数据操作的集合。例如，先从一个数据结构中移出数据，对其进行数据解析，然后写回该数据结构或者其他数据结构中，类似于read-modify-write操作。另外一个常见的例子是临界区里有链表的相关操作。整个执行过程需要保证原子性，在数据更新完毕前，不能从其他内核代码路径访问和改写这些数据。这个过程使用原子变量不合适，需要使用锁机制来完成，自旋锁（ spinlock）是 Linux内核中最常见的锁机制。</p>
-<p>自旋锁在同一时刻只能被一个内核代码路径持有。如果另外一个内核代码路径试图获取一个已经被持有的自旋锁，那么该内核代码路径需要一直忙等待，直到自旋锁持有者释放该锁如果该锁没有被其他内核代码路径持有（或者称为锁争用），那么可以立即获得该锁。自旋锁的特性如下。</p>
-<ul>
-<li>忙等待的锁机制。操作系统中锁的机制分为两类，一类是忙等待，另一类是睡眠等待。自旋锁属于前者，当无法获取自旋锁时会不断尝试，直到获取锁为止。</li>
-<li>同一时刻只能有一个内核代码路径可以获得该锁。</li>
-<li>要求自旋锁持有者尽快完成临界区的执行任务。如果临界区中的执行时间过长，在锁外面忙等待的CPU比较浪费，特别是自旋锁临界区里不能睡眠。</li>
-<li>自旋锁可以在中断上下文中使用。</li>
-</ul>
+          <p><img src="/picture/linux/brief/并发与同步-自旋锁.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5ODMzMDFlZmFkNDA3NTI1N2M2ZDA=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%BA%8C%EF%BC%89%E8%87%AA%E6%97%8B%E9%94%81/#more" rel="contents">
@@ -598,27 +586,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="原子操作">1. 原子操作</h2>
-<p>原子操作是指保证指令以原子的方式执行・执行过程不会被打断。在如下代码片段中，假设 thread_A_func和 thread_B_fumc都尝试进行i++操作，请间 thread_A_func和 thread_B_func执行完后，i的值是多少？</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> i =<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程A函数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">thread_A_func</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    i++;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//线程B函数</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">thread_B_func</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    i++;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>有的读者可能认为是2，但也可能不是2，代码的执行过程如下：</p>
-<pre><code>----------------------------------------------
-    CPUO                    CPU1
-----------------------------------------------
-    read_A_func             thread_B_func
-    load i = 0              load i = 0
-    i++                     i++
-    store i (i = 1)         store i (i = 1)
-----------------------------------------------</code></pre>
-<p>从上面的代码执行过程来看，最终结果可能等于1。因为变量是临界区的一个，CPUO和CPU1可能同时访间，发生并发访间。从CPU角度来看，变量i是一个静态全局变量，存储在数据段中,首先读取变量的值并存储到通用寄存器中，然后在通用寄存器里做i++运算・最后把寄存器的数值写回变量i所在的内存中。在多处理器架构中，上述动作可能同时进行。如果thread_B_func在某个中断处理函数中执行，在单处理器架构上依然可能会发生并发访问. 针对上述例子，有的读者认为可以使用加锁的方式，如使用自旋锁来保证i++操作的原子性，但是加锁操作会导致比较大的开销，用在这里有些浪费。 Linux内核提供了 atomic_t类型的原子変量，它的实现依赖于不同的架构。 atomic_t类型的具体定义为如下.</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/types.h&gt;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">  <span class="keyword">int</span> counter;</span><br><span class="line">&#125; <span class="keyword">atomic_t</span>;</span><br></pre></td></tr></table></figure>
-<p>atomic_t类型的原子操作函数可以保证一个操作的原子性和完整性在内核看来，原子操作函数就像一条汇编指令，保证了操作时不会被打断，如上述的i++语句就可能被打断，要保证操作的完整性和原子性，通常需要“原子地”（不间断地）完成“读一修改-回写”机制，中间不能被打断。在下述过程中，如果其他CPU同时对该原子变量进行写操作，则会 影响数据完整性</p>
-<ul>
-<li>读取原子变量的值。</li>
-<li>修改原子变量的值。</li>
-<li>把新值写回内存中。</li>
-</ul>
-<p>在读取原子变量的值、修改原子变量的值、把新值写入内存的过程中，处理器必须提供原子操作的汇编指令来完成上述操作，如ARM64处理器提供cas指令，x86处理器提供 cmpxchg指令。</p>
+          <p><img src="/picture/linux/brief/并发与同步-原子操作.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5NzdhMTYzNzY4OTA3MTA2MDk1ZDE=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E5%8E%9F%E5%AD%90%E6%93%8D%E4%BD%9C/#more" rel="contents">
@@ -720,20 +688,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="内存管理调优参数">1. 内存管理调优参数</h2>
-<p>对服务器或者嵌入式产品做性能调优的过程中，避免不了需要深入了解和使用 Linux内内存管理模块提供的调优参数。Linx内核支持的内存管理调优参数都在/proc/sys/vm目录下面，共有40多个调优参数，如下所示：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@liushuai:/proc/sys/vm<span class="comment"># ls</span></span><br><span class="line">admin_reserve_kbytes         dirty_ratio                lowmem_reserve_ratio       mmap_rnd_bits            oom_kill_allocating_task  stat_refresh</span><br><span class="line">block_dump                   dirtytime_expire_seconds   max_map_count              mmap_rnd_compat_bits     overcommit_kbytes         swappiness</span><br><span class="line">compact_memory               dirty_writeback_centisecs  memory_failure_early_kill  nr_hugepages             overcommit_memory         unprivileged_userfaultfd</span><br><span class="line">compact_unevictable_allowed  drop_caches                memory_failure_recovery    nr_hugepages_mempolicy   overcommit_ratio          user_reserve_kbytes</span><br><span class="line">dirty_background_bytes       extfrag_threshold          min_free_kbytes            nr_overcommit_hugepages  page-cluster              vfs_cache_pressure</span><br><span class="line">dirty_background_ratio       hugetlb_shm_group          min_slab_ratio             numa_stat                panic_on_oom              watermark_boost_factor</span><br><span class="line">dirty_bytes                  laptop_mode                min_unmapped_ratio         numa_zonelist_order      percpu_pagelist_fraction  watermark_scale_factor</span><br><span class="line">dirty_expire_centisecs       legacy_va_layout           mmap_min_addr              oom_dump_tasks           stat_interval             zone_reclaim_mode</span><br></pre></td></tr></table></figure>
-<p>内存管理的调优参数定义在 kerne.c 文件中，通过proc文件系统机制来实现。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">ctl_table</span> <span class="title">vm_table</span>[] =</span> &#123;</span><br><span class="line">  &#123;</span><br><span class="line">    .procname	= <span class="string">&quot;overcommit_memory&quot;</span>,</span><br><span class="line">    .data		= &amp;sysctl_overcommit_memory,</span><br><span class="line">    .maxlen		= <span class="keyword">sizeof</span>(sysctl_overcommit_memory),</span><br><span class="line">    .mode		= <span class="number">0644</span>,</span><br><span class="line">    .proc_handler	= overcommit_policy_handler,</span><br><span class="line">    .extra1		= SYSCTL_ZERO,</span><br><span class="line">    .extra2		= &amp;two,</span><br><span class="line">  &#125;,</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<ul>
-<li>procname：表示这个节点的名称，显示在proc/sys/vm目录下面</li>
-<li>data：传递的数据，通常是某个全局变量，如 sysctl_overcommit_memory</li>
-<li>maxlen：参数data的长度。</li>
-<li>mode节点的文件权限。0644表示用户具有读写权限，组用户和其他用户具有只读权</li>
-<li>proc_handler：该节点在内核中的回调函数</li>
-<li>extral：表示这个参数的最小值。</li>
-<li>exra2：表示这个参数的最大值，如。 overcommit_memory 调优参数的最大值为2，最小值为0</li>
-</ul>
+          <p><img src="/picture/linux/brief/内存管理-内存调优.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4OTk5NWU0MDFmZDA3MGJiNzI0OGI=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%8D%81%E4%BA%8C%EF%BC%89%E5%86%85%E5%AD%98%E8%B0%83%E4%BC%98/#more" rel="contents">
@@ -835,10 +790,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="procmeminfo">1. /proc/meminfo</h2>
-<p>在Linux系统中查看内存信息最准确的方法是查看/proc/meminfo节点信息，他包含当前时刻系统的所有的物理页面信息：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~/workspace/blog$ cat /proc/meminfo</span><br><span class="line">MemTotal:       32766544 kB</span><br><span class="line">MemFree:        18617392 kB</span><br><span class="line">MemAvailable:   31598252 kB</span><br><span class="line">Buffers:          829808 kB</span><br><span class="line">Cached:         11869936 kB</span><br><span class="line">SwapCached:            0 kB</span><br><span class="line">Active:          7991876 kB</span><br><span class="line">Inactive:        4838568 kB</span><br><span class="line">Active(anon):     125680 kB</span><br><span class="line">Inactive(anon):      628 kB</span><br><span class="line">Active(file):    7866196 kB</span><br><span class="line">Inactive(file):  4837940 kB</span><br><span class="line">Unevictable:           0 kB</span><br><span class="line">Mlocked:               0 kB</span><br><span class="line">SwapTotal:      92274680 kB</span><br><span class="line">SwapFree:       92274680 kB</span><br><span class="line">Dirty:               248 kB</span><br><span class="line">Writeback:             0 kB</span><br><span class="line">AnonPages:        130960 kB</span><br><span class="line">Mapped:           164660 kB</span><br><span class="line">Shmem:              5180 kB</span><br><span class="line">KReclaimable:     746412 kB</span><br><span class="line">Slab:            1116388 kB</span><br><span class="line">SReclaimable:     746412 kB</span><br><span class="line">SUnreclaim:       369976 kB</span><br><span class="line">KernelStack:       11840 kB</span><br><span class="line">PageTables:         3800 kB</span><br><span class="line">NFS_Unstable:          0 kB</span><br><span class="line">Bounce:                0 kB</span><br><span class="line">WritebackTmp:          0 kB</span><br><span class="line">CommitLimit:    108657952 kB</span><br><span class="line">Committed_AS:    1769632 kB</span><br><span class="line">VmallocTotal:   34359738367 kB</span><br><span class="line">VmallocUsed:       56828 kB</span><br><span class="line">VmallocChunk:          0 kB</span><br><span class="line">Percpu:            58368 kB</span><br><span class="line">HardwareCorrupted:     0 kB</span><br><span class="line">AnonHugePages:         0 kB</span><br><span class="line">ShmemHugePages:        0 kB</span><br><span class="line">ShmemPmdMapped:        0 kB</span><br><span class="line">FileHugePages:         0 kB</span><br><span class="line">FilePmdMapped:         0 kB</span><br><span class="line">CmaTotal:              0 kB</span><br><span class="line">CmaFree:               0 kB</span><br><span class="line">HugePages_Total:       0</span><br><span class="line">HugePages_Free:        0</span><br><span class="line">HugePages_Rsvd:        0</span><br><span class="line">HugePages_Surp:        0</span><br><span class="line">Hugepagesize:       2048 kB</span><br><span class="line">Hugetlb:               0 kB</span><br><span class="line">DirectMap4k:      722824 kB</span><br><span class="line">DirectMap2M:    16992256 kB</span><br><span class="line">DirectMap1G:    17825792 kB</span><br></pre></td></tr></table></figure>
-<p>meminfo节点实现在meminfo_proc_show()函数里，该函数在fs/proc/meminfo.c文件里。</p>
+          <p><img src="/picture/linux/brief/内存管理-调试信息.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4OTE1MGYzNDZmYjA3MjVmYmIzZjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%8D%81%E4%B8%80%EF%BC%89%E8%B0%83%E8%AF%95%E4%BF%A1%E6%81%AF/#more" rel="contents">
@@ -940,10 +892,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述">1. 概述</h2>
-<p>内存资源是计算机中比较宝贵的资源，系统中的物理页面时刻处于分配和释放的过程，那么是否会有一些内存页面在他们生命周期里某个瞬间的内容完全一致呢？ 现在的计算机业界中，虚拟化成为云服务或者计算中心的标配，那么在一台服务器中运行多个相同的虚拟机机。主机（host）的内存中是否会有不少的页面的内容是样的？ KSM指Kernel SamePage Merging，即内核同页合并，用于合并内容相同的页面。KSM的出现是为了优化虚拟化中产生的冗余页面，因为虚拟化的实际应用中在同一台主机上会有许多相同的操作系统和应用程序，许多内存页面的内容可能是相同的，所以它们可以合并，从而释放内存供其他应用程序使用。 KSM允许合并同一个进程或不同进程之间内容相同的匿名页面，这对应用程序来说是不可见的。把这些相同的页面合并成一个只读的页面，从而释放出多余的物理页面，当应用程序需要改变页面内容时，会发生写时复制。</p>
-<h2 id="使能ksm">2. 使能KSM</h2>
-<p>KSM只会处理通过madvise系统调用显式指定的用户进程地址空间，因此用户程序想使用这个功能就必须在分配地址空间时显式地调用madvise（addr，length，MADV_MERGEA BLE）。如果用户想在KSM中取消某一个用户进程地址空间的合并功能，也需要显式地调用madvise（addr，length,MADV_UNMERGEABLE)。 下面是测试KSM的test.c程序的代码片段，使用mmap()：来创建一个文件的私有映射，并且调用memset()写入这些私有映射的内容缓存页面中。</p>
+          <p><img src="/picture/linux/brief/内存管理-KSM.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjUyOGYzNDZmYjA3MjVmYjQ1YmI=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%8D%81%EF%BC%89KSM/#more" rel="contents">
@@ -1045,20 +994,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <blockquote>
-<p>声明本文转载自知乎<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yNzAzNjY4Mjc=">Linux内存管理：页面迁移<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmJzbWF4LmNvbS9BL1pPSlByUWdvZHYv">Linux内存管理 (16)内存规整<i class="fa fa-external-link-alt"></i></span>内存相关文章</p>
-</blockquote>
-<h2 id="页面迁移">1. 页面迁移</h2>
-<h3 id="概述">1.1 概述</h3>
-<p>页面迁移(migrate)是内存管理中很多功能实现的基础，比方说内存规整、NUMA balance、内存热插拔、CMA、HugeTLB、内存气球等等，本文主要讲一下页面迁移的主要流程和应用。</p>
-<h3 id="页面迁移的api">1.2 页面迁移的API</h3>
-<p>migrate_pages( ) 这是页面迁移在内核态的主要接口，内核中涉及到页面迁移的功能大都会调到它。当然，在用户空间也存在着内存迁移相关的系统调用，最终也会调到它。这里我们通过migrate_pages( )的几个形参展开全文。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* </span></span><br><span class="line"><span class="comment"> * migrate_pages - migrate the pages specified in a list, to the free pages</span></span><br><span class="line"><span class="comment"> *                 supplied as the target for the page migration</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @from:               The list of pages to be migrated.</span></span><br><span class="line"><span class="comment"> * @get_new_page:       The function used to allocate free pages to be used</span></span><br><span class="line"><span class="comment"> *                      as the target of the page migration.</span></span><br><span class="line"><span class="comment"> * @put_new_page:       The function used to free target pages if migration</span></span><br><span class="line"><span class="comment"> *                      fails, or NULL if no special handling is necessary.</span></span><br><span class="line"><span class="comment"> * @private:            Private data to be passed on to get_new_page()</span></span><br><span class="line"><span class="comment"> * @mode:               The migration mode that specifies the constraints for</span></span><br><span class="line"><span class="comment"> *                      page migration, if any.</span></span><br><span class="line"><span class="comment"> * @reason:             The reason for page migration.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">migrate_pages</span><span class="params">(struct list_head *from, <span class="keyword">new_page_t</span> get_new_page,</span></span></span><br><span class="line"><span class="params"><span class="function">                <span class="keyword">free_page_t</span> put_new_page, <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="keyword">private</span>,</span></span></span><br><span class="line"><span class="params"><span class="function">                <span class="keyword">enum</span> migrate_mode mode, <span class="keyword">int</span> reason)</span></span></span><br></pre></td></tr></table></figure>
-<p>形参含义根据上面的注释很好理解，我们单独说下mode和reason，他们分别表示迁移模式和迁移原因。</p>
-<h3 id="迁移模式">1.3 迁移模式</h3>
-<p>迁移模式主要会影响迁移过程中对一些行为的过滤：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MIGRATE_ASYNC        <span class="comment">//异步迁移，过程中不会发生阻塞，</span></span><br><span class="line">MIGRATE_SYNC_LIGHT   <span class="comment">//轻度同步迁移，允许大部分的阻塞操作，唯独不允许脏页的回写操作</span></span><br><span class="line">MIGRATE_SYNC         <span class="comment">//同步迁移，迁移过程会发生阻塞，若需要迁移的某个page正在writeback或被locked会等待它完成</span></span><br><span class="line">MIGRATE_SYNC_NO_COPY <span class="comment">//同步迁移，但不等待页面的拷贝过程。页面的拷贝通过回调migratepage()，过程可能会涉及DMA</span></span><br></pre></td></tr></table></figure>
-<p>举例：内存规整(compact)中会调用migrate_pages()，同时也会设置迁移模式(位于compact_control-&gt;mode)。若是sysfs主动触发的内存规整会用MIGRATE_SYNC模式；若是kcompactd触发的规整会用MIGRATE_SYNC_LIGHT模式；若是内存分配slowpath中触发的会根据compact prior去设置用MIGRATE_ASYNC或MIGRATE_SYNC_LIGHT模式。</p>
+          <p><img src="/picture/linux/brief/内存管理-页面迁移和内存规整.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjE3MTYzNzY4OTA3MTA1ZTU2Mzk=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/#more" rel="contents">
@@ -1160,17 +1096,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>在Linux操作系统中，当内存充足时，内核会尽量多地使用内存作为文件缓存（page cache），从而提高系统的性能。文件缓存页面会添加到文件类型的LRU链表中当内存紧张时，文件缓存页面会被丢弃，或者把修改的文件缓存页面回写到存储设备中，写块设备同步之后便可释放出物理内存。现在的应用程序转向内存密集型，无论系统中有多少物理内存都是不够用的，因此Linux操作系统会使用存储设备作为交换分区，内核将很少使用的内存换出到交换分区，以便释放出物理内存，这个机制称为页交换（swapping），这些处理机制统称为页面回收（pagereclaim)。</p>
-<h2 id="lru链表">1. LRU链表</h2>
-<p>在最近几十年操作系统的发展过程中，出现了很多页面交换算法，其中每个算法都有各自的优点和缺点。Linux内核中采用的页交换算法主要是经典LRU链表算法和第二次机会（secondchance）法。 LRU是Least Recently Used的缩写，意为最近最少使用。根据局部性原理，LRU假定最近不使用的页面在较短的时间内也不会频繁使用。在内存不足时，这些页面将成为被换出的候选者。内核使用双向链表来定义LRU链表，并且根据页面的类型将LRU链表分为LRU_ANON和LRU_FILE。每种类型根据页面的活跃性分为活跃LRU链表和不活跃LRU链表，所以内核 中一共有如下5个LRU链表。</p>
-<ul>
-<li>不活跃匿名页面链表LRU_INACTIVE_ANON。</li>
-<li>活跃匿名页面链表LRU_ACTIVE_ANON。</li>
-<li>不活跃文件映射页面链表LRU_INACTIVE_FILE。</li>
-<li>活跃文件映射页面链表LRU_ACTIVE_FILE。</li>
-<li>不可回收页面链表LRU_UNEVICTABLE。</li>
-</ul>
-<p>LRU链表之所以要分成这样，是因为当内存紧缺时总是优先换出文件映射的文件缓存页面（LRU FILE链表中的页面），而不是匿名页面。因为大多数情况下，文件缓存页面不需要被回写到磁盘，除非页面内容修改了（称为脏页），而匿名页面总是要在写入交换分区之后，才能被换出。LRU链表按照内存节点配置①，也就是说，每个内存节点中都有一整套LRU链表，因此内存节点的描述符数据结构（pglist_data）中有一个成员lruvec指向这些链表。枚举类型变量lru_list列举出上述各种LRU链表的类型，lruvec数据结构中定义了上述各种LRU类型的链表。</p>
+          <p><img src="/picture/linux/brief/内存管理-页面回收.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NTkyMDFlMDg1MzA2ZjhjODBhY2Q=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AB%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6/#more" rel="contents">
@@ -1272,10 +1198,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述">1. 概述</h2>
-<p>在64位系统中，每个用户进程最多可以拥有256TB的虚拟地址空间，这个数值通常要远大于物理内存，那么如何管理这些虚拟地址空间呢？用户进程通常会多次调用malloc()或使用mmap()映射文件到用户空间进行读写等操作，这些操作都会要求在虚拟地址空间中分配内块，这些内存块基本上都是离散的。malloc()是用户态下常用于分配内存的接口函数，后面会详细介绍了其内核实现机制；mmap()是用户态下常用于建立文件映射或匿名映射的函数，后面会详细介绍了其内核实现机制。这些进程地址空间在内核中使用vm_area_struct数据结构来描述简称VMA，表示进程地址空间或进程线性区。由于这些地址空间属于各个用户进程，因此在用户进程的mm_struct数据结构中有相应的成员，用于对这些VMA进行管理。</p>
-<h2 id="进程地址空间">2. 进程地址空间</h2>
-<p>进程地址空间（process address space）是指进程可寻址的虚拟地址空间。在64位的处理器中，进程可以寻址256B的用户态地址空间，但是进程没有权限去寻址内核空间的虚拟地址只能通过系统调用的方式间接访问。而用户空间的进程地址空间则可以被合法访问，地址空间称为内存区域（memory area）。进程可以通过内核的内存管理机制动态地添加和删除这些内存区域，这些内存区域在Linux内核采用VMA数据结构来抽象描述。 每个内存区域具有相关的权限，如可读、可写或者可执行权限。若一个进程访问了不在有效范围的内存区域，或者非法访问了内存区域，或者以不正确的方式访问了内存区域，那么处理器会报告缺页异常。在Linux内核的缺页异常处理中会处理这些情况，严重的会报告“SegmentFault'”并终止该进程。</p>
+          <p><img src="/picture/linux/brief/内存管理-进程地址空间.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3NDZmYzU2NTNiYjA3MWU3MTM0NTc=">原图<i class="fa fa-external-link-alt"></i></span></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E8%BF%9B%E7%A8%8B%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/#more" rel="contents">

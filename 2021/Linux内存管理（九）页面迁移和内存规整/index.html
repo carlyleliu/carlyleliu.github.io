@@ -24,24 +24,25 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="声明本文转载自知乎Linux内存管理：页面迁移和Linux内存管理 (16)内存规整内存相关文章  1. 页面迁移 1.1 概述 页面迁移(migrate)是内存管理中很多功能实现的基础，比方说内存规整、NUMA balance、内存热插拔、CMA、HugeTLB、内存气球等等，本文主要讲一下页面迁移的主要流程和应用。 1.2 页面迁移的API migrate_pages( ) 这是页面迁移在内">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux内存管理（九）页面迁移和内存规整">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="声明本文转载自知乎Linux内存管理：页面迁移和Linux内存管理 (16)内存规整内存相关文章  1. 页面迁移 1.1 概述 页面迁移(migrate)是内存管理中很多功能实现的基础，比方说内存规整、NUMA balance、内存热插拔、CMA、HugeTLB、内存气球等等，本文主要讲一下页面迁移的主要流程和应用。 1.2 页面迁移的API migrate_pages( ) 这是页面迁移在内">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-页面迁移和内存规整.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate1.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate2.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate3.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate4.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate5.jpg">
 <meta property="article:published_time" content="2021-12-01T05:57:14.000Z">
-<meta property="article:modified_time" content="2022-01-20T16:00:52.627Z">
+<meta property="article:modified_time" content="2022-03-23T13:48:31.459Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="page memory">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate1.jpg">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-页面迁移和内存规整.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/">
 
@@ -288,7 +289,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <blockquote>
+        <p><img src="/picture/linux/brief/内存管理-页面迁移和内存规整.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjE3MTYzNzY4OTA3MTA1ZTU2Mzk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<blockquote>
 <p>声明本文转载自知乎<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yNzAzNjY4Mjc=">Linux内存管理：页面迁移<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly93d3cuYmJzbWF4LmNvbS9BL1pPSlByUWdvZHYv">Linux内存管理 (16)内存规整<i class="fa fa-external-link-alt"></i></span>内存相关文章</p>
 </blockquote>
 <h2 id="页面迁移">1. 页面迁移</h2>
@@ -302,7 +305,6 @@
 <p>迁移模式主要会影响迁移过程中对一些行为的过滤：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MIGRATE_ASYNC        <span class="comment">//异步迁移，过程中不会发生阻塞，</span></span><br><span class="line">MIGRATE_SYNC_LIGHT   <span class="comment">//轻度同步迁移，允许大部分的阻塞操作，唯独不允许脏页的回写操作</span></span><br><span class="line">MIGRATE_SYNC         <span class="comment">//同步迁移，迁移过程会发生阻塞，若需要迁移的某个page正在writeback或被locked会等待它完成</span></span><br><span class="line">MIGRATE_SYNC_NO_COPY <span class="comment">//同步迁移，但不等待页面的拷贝过程。页面的拷贝通过回调migratepage()，过程可能会涉及DMA</span></span><br></pre></td></tr></table></figure>
 <p>举例：内存规整(compact)中会调用migrate_pages()，同时也会设置迁移模式(位于compact_control-&gt;mode)。若是sysfs主动触发的内存规整会用MIGRATE_SYNC模式；若是kcompactd触发的规整会用MIGRATE_SYNC_LIGHT模式；若是内存分配slowpath中触发的会根据compact prior去设置用MIGRATE_ASYNC或MIGRATE_SYNC_LIGHT模式。</p>
-<span id="more"></span>
 <h3 id="迁移原因">1.4 迁移原因</h3>
 <p>迁移原因主要使用来记录是什么功能触发了迁移的行为，毕竟页面迁移对系统本身是个不小的overhead，所以知道迁移的原因很有必。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">MR_COMPACTION      <span class="comment">//内存规整导致的迁移</span></span><br><span class="line">MR_MEMORY_FAILURE  <span class="comment">//当内存出现硬件问题(ECC校验失败等)时触发的页面迁移。 参考memory-failure.c</span></span><br><span class="line">MR_MEMORY_HOTPLUG  <span class="comment">//内存热插拔导致的迁移</span></span><br><span class="line">MR_SYSCALL         <span class="comment">//应用层主动调用migrate_pages()或move_pages()触发的迁移。</span></span><br><span class="line">MR_MEMPOLICY_MBIND <span class="comment">//调用mbind系统调用设置memory policy时触发的迁移</span></span><br><span class="line">MR_NUMA_MISPLACED  <span class="comment">//numa balance触发的页面迁移(node之间)</span></span><br><span class="line">MR_CONTIG_RANGE    <span class="comment">//调用alloc_contig_range()为CMA或HugeTLB分配连续内存时触发的迁移(和compact相关)。</span></span><br></pre></td></tr></table></figure>

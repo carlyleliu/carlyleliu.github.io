@@ -24,13 +24,14 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 一个例子 下面给出一个综合案例，在一个双核处理器的系统中，在Shell界面下运行test程序。CPUO的就绪队列中有4个进程，而CPU1的就绪缓队列中有1个进程。test程序和这5个进程的nice值都为0。 123456789#include &lt;stdio.h&gt;int main() &amp;#123;    unsigned long i &#x3D; O    while(1)&amp;#123;">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux进程管理（九）总结">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E6%80%BB%E7%BB%93/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 一个例子 下面给出一个综合案例，在一个双核处理器的系统中，在Shell界面下运行test程序。CPUO的就绪队列中有4个进程，而CPU1的就绪缓队列中有1个进程。test程序和这5个进程的nice值都为0。 123456789#include &lt;stdio.h&gt;int main() &amp;#123;    unsigned long i &#x3D; O    while(1)&amp;#123;">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-总结.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/test.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/prio.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/thread_example.png">
@@ -40,11 +41,11 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/thread1.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/thread1_stk.png">
 <meta property="article:published_time" content="2021-11-07T00:16:16.000Z">
-<meta property="article:modified_time" content="2022-01-19T13:21:41.645Z">
+<meta property="article:modified_time" content="2022-03-23T13:38:52.794Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="scheduler">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/test.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-总结.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89%E6%80%BB%E7%BB%93/">
 
@@ -291,11 +292,12 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="一个例子">1. 一个例子</h2>
+        <p><img src="/picture/linux/brief/进程管理-总结.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2ZDNiYzYzNzY4OTA3MTA1YTYyZTE=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="一个例子">1. 一个例子</h2>
 <p>下面给出一个综合案例，在一个双核处理器的系统中，在Shell界面下运行test程序。CPUO的就绪队列中有4个进程，而CPU1的就绪缓队列中有1个进程。test程序和这5个进程的nice值都为0。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> i = O</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">        i++;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">return</span> O;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>站在用户空间的角度，在Shell界面运行test程序，Shell程序会调用fork()系统调用函数来创建一个新进程，然后调用exec()系统调用函数来装载test程序，因此新进程便开始运行test程序。站在用户空间的角度看问题，我们只能看到test程序被运行了，但是我们看不到新进程是如何创建的、它会添加到哪个CPU里、它是如何运行的，以及CPU0和CPU1之间如何做负载均衡等。 <img src="/picture/linux/kernel/task/test.png" /></p>
-<span id="more"></span>
 <p>其中的操作步骤如下。</p>
 <ul>
 <li>调用系统调用fork()来创建一个新进程。</li>

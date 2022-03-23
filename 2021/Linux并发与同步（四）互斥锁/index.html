@@ -24,21 +24,22 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述 在 Linux内核中，除信号量以外，还有一个类似的实现叫作互斥锁（mutex）。信号量是在并行处理环境中对多个处理器访问某个公共资源进行保护的机制，互斥锁用于互斥操作。 信号量根据初始 count的大小，可以分为计数信号量和互斥信号量。根据著名的洗手间理论，信号量相当于一个可以同时容纳N个人的洗手间，只要洗手间人不满，其他人就可以进去， 如果人满了，其他人就要在外面等待。互斥锁类似于街">
+  <meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux并发与同步（四）互斥锁">
 <meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E5%9B%9B%EF%BC%89%E4%BA%92%E6%96%A5%E9%94%81/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 概述 在 Linux内核中，除信号量以外，还有一个类似的实现叫作互斥锁（mutex）。信号量是在并行处理环境中对多个处理器访问某个公共资源进行保护的机制，互斥锁用于互斥操作。 信号量根据初始 count的大小，可以分为计数信号量和互斥信号量。根据著名的洗手间理论，信号量相当于一个可以同时容纳N个人的洗手间，只要洗手间人不满，其他人就可以进去， 如果人满了，其他人就要在外面等待。互斥锁类似于街">
+<meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-互斥锁.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/mutex.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/optimistic_lock.png">
 <meta property="article:published_time" content="2021-12-11T07:55:05.000Z">
-<meta property="article:modified_time" content="2022-01-21T14:29:16.021Z">
+<meta property="article:modified_time" content="2022-03-23T13:59:58.919Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="mutex">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/mutex.png">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-互斥锁.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E5%9B%9B%EF%BC%89%E4%BA%92%E6%96%A5%E9%94%81/">
 
@@ -285,11 +286,12 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概述">1. 概述</h2>
+        <p><img src="/picture/linux/brief/并发与同步-互斥锁.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YTdkMzA3OTEyOTA2ZjUxMGZiNDA=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="概述">1. 概述</h2>
 <p>在 Linux内核中，除信号量以外，还有一个类似的实现叫作互斥锁（mutex）。信号量是在并行处理环境中对多个处理器访问某个公共资源进行保护的机制，互斥锁用于互斥操作。</p>
 <p>信号量根据初始 count的大小，可以分为计数信号量和互斥信号量。根据著名的洗手间理论，信号量相当于一个可以同时容纳N个人的洗手间，只要洗手间人不满，其他人就可以进去， 如果人满了，其他人就要在外面等待。互斥锁类似于街边的移动洗手间，每次只能进去一个人里面的人出来后才能让排队中的下ー个人进去。既然互斥锁类似于 count值等于1的信号量，为什么内核社区要重新开发互斥锁，而不是复用信号量的机制呢？</p>
 <p>互斥锁最早是在 Linux2.6.16内核中由 Red Hat Enterprise Linux的资深内核专家Ingo Molnar设计和实现的。信号量的 count成员可以初始化为1，并且 down()和up()函数也可以实现类似于互斥锁的功能，那为什么要单独实现互斥锁机制呢？ Ingo Molnar认为，在设计之初，信号量在 Linux内核中的实现没有任何问题，但是互斥锁相对于信号量要简单轻便一些。在锁争用激烈的测试场景下，互斥锁比信号量执行速度更快，可扩展性更好。另外， mutex数据结构的定义比信号量小。这些都是在互斥锁设计之初 Ingo Molnar提到的优点。互斥锁上的一些优化方案（如自旋等待）已经移植到了读写信号量中。</p>
-<span id="more"></span>
 <h2 id="mutex数据结构">2. mutex数据结构</h2>
 <p>下面来看 mutex数据结构的定义。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mutex.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mutex</span> &#123;</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span>		owner;</span><br><span class="line">  <span class="keyword">raw_spinlock_t</span>		wait_lock;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MUTEX_SPIN_ON_OWNER</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">optimistic_spin_queue</span> <span class="title">osq</span>;</span> <span class="comment">/* Spinner MCS lock */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>	<span class="title">wait_list</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_MUTEXES</span></span><br><span class="line">  <span class="keyword">void</span>			*magic;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span>	<span class="title">dep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
