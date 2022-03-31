@@ -205,6 +205,337 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMMC%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Flash%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMMC%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Flash%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/" class="post-title-link" itemprop="url">Linux驱动之MMC子系统（一）Flash设备基础</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-08 14:18:40" itemprop="dateCreated datePublished" datetime="2020-10-08T14:18:40+08:00">2020-10-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMMC%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Flash%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之MMC子系统（一）Flash设备基础/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>22k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>20 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="flash-memory-简介">1. Flash Memory 简介</h2>
+<p>Flash Memory 是一种非易失性的存储器。在嵌入式系统中通常用于存放系统、应用和数据等。在 PC 系统中，则主要用在固态硬盘以及主板 BIOS 中。另外，绝大部分的 U 盘、SDCard 等移动存储设备也都是使用 Flash Memory 作为存储介质。</p>
+<h3 id="flash-memory-的主要特性">1.1 Flash Memory 的主要特性</h3>
+<p>与传统的硬盘存储器相比，Flash Memory 具有质量轻、能耗低、体积小、抗震能力强等的优点，但也有不少局限性，主要如下：</p>
+<ul>
+<li><p>需要先擦除再写入<br />
+Flash Memory 写入数据时有一定的限制。它只能将当前为 1 的比特改写为 0，而无法将已经为 0 的比特改写为 1，只有在擦除的操作中，才能把整块的比特改写为 1。</p></li>
+<li><p>块擦除次数有限<br />
+Flash Memory 的每个数据块都有擦除次数的限制（十万到百万次不等），擦写超过一定次数后，该数据块将无法可靠存储数据，成为坏块。为了最大化的延长 Flash Memory 的寿命，在软件上需要做擦写均衡（Wear Leveling），通过分散写入、动态映射等手段均衡使用各个数据块。同时，软件还需要进行坏块管理（Bad Block Management，BBM），标识坏块，不让坏块参与数据存储。（注：除了擦写导致的坏块外，Flash Memory 在生产过程也会产生坏块，即固有坏块。）</p></li>
+<li><p>读写干扰<br />
+由于硬件实现上的物理特性，Flash Memory 在进行读写操作时，有可能会导致邻近的其他比特发生位翻转，导致数据异常。这种异常可以通过重新擦除来恢复。Flash Memory 应用中通常会使用 ECC 等算法进行错误检测和数据修正。</p></li>
+<li><p>电荷泄漏<br />
+存储在 Flash Memory 存储单元的电荷，如果长期没有使用，会发生电荷泄漏，导致数据错误。不过这个时间比较长，一般十年左右。此种异常是非永久性的，重新擦除可以恢复。</p></li>
+</ul>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMMC%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Flash%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/" class="post-title-link" itemprop="url">Linux驱动之MTD子系统（二）实现分析</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-07 10:55:47" itemprop="dateCreated datePublished" datetime="2020-10-07T10:55:47+08:00">2020-10-07</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之MTD子系统（二）实现分析/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>4.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>4 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="概述">1. 概述</h2>
+<p>mtd驱动模型则通过对nor flash、nandflash等闪存设备进行抽象，对上层模块抽象成统一成设备模型（mtd_info），对下则通过mtd_info完成与具体闪存设备驱动的绑定，从而完成对闪存设备的访问操作。此处mtd的抽象，就和vfs抽象类似。<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDlhMzIxZTA4NTMzYTAzMDM4MzUx">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/mtd/MTD_Framework.png" /></p>
+<p>其中mtd block、mtd char均属于mtd驱动模型的部分，而FTL、NFTL则不属于mtd驱动模型部分 ，由具体的文件系统来实现，如ubi文件系统挂载时，则是通过设备文件/dev/ubiX_Y进行挂载；而针对yaffs2文件系统，其可以直接使用/dev/mtdblockX进行挂载（当然其也可以不借助mtdblock）。</p>
+<p>其中mtd char当我们想在文件系统下实现对bootloader、kernel、文件系统镜像的升级操作时，则可以通过读写/dev/mtdX（mtd 字符设备），实现针对bootloader、kernel、filesystem的升级操作。</p>
+<p>而mtd_info则代表一个flash芯片或一个flash芯片的分区，当flash设备（nandflash设备、nor flash设备）的驱动初始化时，则会根据分区划分，创建对应的mtd_info，并完成mtd_info与该芯片驱动的绑定操作。而在mtd_info的创建过程中，则会创建对应的mtd char、mtd block，从而完成与vfs的关联。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%BA%8C%EF%BC%89%E5%AE%9E%E7%8E%B0%E5%88%86%E6%9E%90/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="量子范式">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/" class="post-title-link" itemprop="url">Linux驱动之MTD子系统（一）Block设备基础</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2020-10-06 17:15:40" itemprop="dateCreated datePublished" datetime="2020-10-06T17:15:40+08:00">2020-10-06</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
+                </span>
+            </span>
+
+          
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之MTD子系统（一）Block设备基础/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>17k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>16 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="blk_mq介绍">1. blk_mq介绍</h2>
+<h3 id="background">1.1 Background</h3>
+<p>从内核开发之初，磁硬盘一直是事实上的标准。 Block IO 子系统旨在为那些在进行随机访问时具有高阻塞的设备实现最佳性能，而机械运动部件是瓶颈，比存储堆栈上的任何层慢得多。这种优化技术的一个例子涉及根据硬盘磁头的当前位置对读/写请求进行排序。</p>
+<p>然而，随着固态驱动器和非易失性存储器的发展，没有机械部件，也没有随机访问阻塞，能够执行高并行访问，堆栈的瓶颈已经从存储设备转移到了操作系统。为了利用这些设备设计中的并行性，引入了多队列机制。</p>
+<p>前一种设计有一个单独的队列来存储带有单个 Block IO 请求。由于缓存中的脏数据和多个处理器的单一锁的瓶颈，这在 SMP 系统中不能很好地扩展。当不同的进程（或同一进程，移动到不同的 CPU）想要执行Block IO 时，这种设置也会遇到拥塞。取而代之的是blk-mq API 会生成多个队列，这些队列具有 CPU 本地的各个入口点，从而无需锁定。</p>
+<h3 id="operation">1.2 Operation</h3>
+<p>当用户空间对Block设备执行 IO（例如读取或写入文件）时，blk-mq 会采取行动：它将存储和管理对Block设备的 IO 请求。</p>
+<p>blk-mq 有两组队列：软件暂存队列和硬件调度队列。当请求到达Block层时，它会尝试尽可能最短的路径：直接将其发送到硬件队列。但是，有两种情况它可能不会这样做：如果在该层附加了 IO 调度程序，或者如果我们想尝试合并请求。在这两种情况下，请求都会被发送到软件队列。</p>
+<p>然后，在软件队列处理完请求后，它们将被放置在硬件队列中，第二阶段队列是硬件可以直接访问以处理这些请求。但是，如果硬件没有足够的资源来接受更多的请求，blk-mq 会将请求放置在一个临时队列中，以便将来在硬件有能力时发送。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMTD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Block%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRTC/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -977,335 +1308,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRegmap%E5%AD%90%E7%B3%BB%E7%BB%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="刘帅">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="量子范式">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRegmap%E5%AD%90%E7%B3%BB%E7%BB%9F/" class="post-title-link" itemprop="url">Linux驱动之Regmap子系统</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-09-12 02:20:00" itemprop="dateCreated datePublished" datetime="2020-09-12T02:20:00+08:00">2020-09-12</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Disqus：</span>
-    
-    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRegmap%E5%AD%90%E7%B3%BB%E7%BB%9F/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之Regmap子系统/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="概述">1. 概述</h2>
-<p>内核版本3.1中引入了Regmap API，用于统一内核开发人员访问SPI/IIC设备的方式，无论是SPI设备还是IIC设备，只需要初始化，配置Regmap就可以通过Regmap读写设备。Regmap子系统主要提供如下两种功能:</p>
-<ul>
-<li>第一是为IIC/SPI/MMIO等提供统一的访问接口，linux中大量的iic和spi设备就可以通过统一的接口进行访问尤其对于那些同时支持iic和spi接口的设备。</li>
-<li>第二是提供缓存访问机制用于加速设备访问设备，对于支持缓存的设备这将大大加快设备的当问速度。</li>
-</ul>
-<p>下面看一下Regmapz子系统在驱动中的位置，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTVhMzg1NjUzYmI2NDkzMGMxYzAz">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/Regmap/Regmap.png" /></p>
-<p>通过Regmap子系统后对于具体的设备驱动程序开发就可以使用统一的api接口来操作了，并且也不需要自己去实现具体的寄存器操作权限管理，缓存和页等操作，全部交给Regmap子系统去完成吧，而我们需要做的就是配置Regmap子系统。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRegmap%E5%AD%90%E7%B3%BB%E7%BB%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BPinctrl%E5%AD%90%E7%B3%BB%E7%BB%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="刘帅">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="量子范式">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BPinctrl%E5%AD%90%E7%B3%BB%E7%BB%9F/" class="post-title-link" itemprop="url">Linux驱动之Pinctrl子系统</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-09-08 16:55:52" itemprop="dateCreated datePublished" datetime="2020-09-08T16:55:52+08:00">2020-09-08</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Disqus：</span>
-    
-    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BPinctrl%E5%AD%90%E7%B3%BB%E7%BB%9F/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之Pinctrl子系统/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>6.1k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>6 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="pinctrl概述">1. Pinctrl概述</h2>
-<p>gpio引脚除了作为普通输入输出端口之外还具有接入其他控制器的功能，例如gpio的pin可以作为uart、iic、spi等其他控制器的功能引脚，同时gpio还有上拉下拉，驱动能力以及速率等配置信息。一个soc里有几百个引脚，这些引脚的功能分配和特性配置是个繁琐的工作而且容易出现管脚复用冲突等问题还不容易查找到问题，而pinctrl正好是为了统一管理pin的功能分配的。 <img src="/picture/linux_driver/gpio/pinctrl_hardware_block.png" /></p>
-<p>关于pinctrl主要可以归结为两类设置，其中一类是功能选择，即一组gpio是用于iic还是uart还是就作为普通gpio来用，另一类是gpio的特性配置，即上拉、下拉、驱动能力和速率的配置。而pinctrl主要负责这两类配置的管理工作。总结起来pinctrl主要完成以下三种功能：</p>
-<ul>
-<li>引脚枚举与命名(Enumerating and naming)。</li>
-<li>引脚复用(Multiplexing)：比如用作GPIO、I2C或其他功能。</li>
-<li>引脚配置(Configuration)：比如上拉、下来、open drain、驱动强度等。</li>
-</ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BPinctrl%E5%AD%90%E7%B3%BB%E7%BB%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BGPIO%E5%AD%90%E7%B3%BB%E7%BB%9F/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="刘帅">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="量子范式">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BGPIO%E5%AD%90%E7%B3%BB%E7%BB%9F/" class="post-title-link" itemprop="url">Linux驱动之GPIO子系统</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2020-09-05 16:22:26" itemprop="dateCreated datePublished" datetime="2020-09-05T16:22:26+08:00">2020-09-05</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">分类于</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Linux-Driver/" itemprop="url" rel="index"><span itemprop="name">Linux Driver</span></a>
-                </span>
-            </span>
-
-          
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Disqus：</span>
-    
-    <a title="disqus" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BGPIO%E5%AD%90%E7%B3%BB%E7%BB%9F/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Linux驱动之GPIO子系统/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  <br>
-            <span class="post-meta-item" title="本文字数">
-              <span class="post-meta-item-icon">
-                <i class="far fa-file-word"></i>
-              </span>
-                <span class="post-meta-item-text">本文字数：</span>
-              <span>2.9k</span>
-            </span>
-            <span class="post-meta-item" title="阅读时长">
-              <span class="post-meta-item-icon">
-                <i class="far fa-clock"></i>
-              </span>
-                <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
-            </span>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="gpio概述">1. GPIO概述</h2>
-<p>以前学习stm32的时候看到手册里有关于gpio的电路图，如下： <img src="/picture/linux_driver/gpio/gpio.png" /></p>
-<ul>
-<li><p>保护二极体：<br />
-IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。</p></li>
-<li><p>P-MOS管和N-MOS管：<br />
-由P-MOS管和N-MOS管组成的单元电路使得GPIO具有“推挽输出”和“开漏输出”的模式。这里的电路会在下面很详细地分析到。</p></li>
-<li><p>TTL肖特基触发器：<br />
-信号经过触发器后，模拟信号转化为0和1的数字信号。但是，当GPIO引脚作为ADC采集电压的输入通道时，用其“模拟输入”功能，此时信号不再经过触发器进行TTL电平转换。ADC外设要采集到的原始的模拟信号。</p></li>
-</ul>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BGPIO%E5%AD%90%E7%B3%BB%E7%BB%9F/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1375,7 +1377,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">104</span>
+          <span class="site-state-item-count">107</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -1388,7 +1390,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">75</span>
+        <span class="site-state-item-count">78</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -1446,7 +1448,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">980k</span>
+    <span title="站点总字数">987k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
