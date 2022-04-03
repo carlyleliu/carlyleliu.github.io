@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述ASoC—ALSA System on Chip ，是建立在标准ALSA驱动层上，为了更好地支持嵌入式处理器和移动设备中的音频Codec的一套软件体系。在ASoc出现之前，内核对于SoC中的音频已经有部分的支持，不过会有一些局限性：  Codec驱动与SoC CPU的底层耦合过于紧密，这种不理想会导致代码的重复，例如，仅是wm8731的驱动，当时Linux中有分别针对4个平台的驱动代码。">
+  <meta name="description" content="1. 概述 ASoC--ALSA System on Chip ，是建立在标准ALSA驱动层上，为了更好地支持嵌入式处理器和移动设备中的音频Codec的一套软件体系。在ASoc出现之前，内核对于SoC中的音频已经有部分的支持，不过会有一些局限性：  Codec驱动与SoC CPU的底层耦合过于紧密，这种不理想会导致代码的重复，例如，仅是wm8731的驱动，当时Linux中有分别针对4个平台的驱动代">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之ALSA（四）ASOC驱动实现">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E5%9B%9B%EF%BC%89ASOC%E9%A9%B1%E5%8A%A8%E5%AE%9E%E7%8E%B0/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 概述ASoC—ALSA System on Chip ，是建立在标准ALSA驱动层上，为了更好地支持嵌入式处理器和移动设备中的音频Codec的一套软件体系。在ASoc出现之前，内核对于SoC中的音频已经有部分的支持，不过会有一些局限性：  Codec驱动与SoC CPU的底层耦合过于紧密，这种不理想会导致代码的重复，例如，仅是wm8731的驱动，当时Linux中有分别针对4个平台的驱动代码。">
+<meta property="og:description" content="1. 概述 ASoC--ALSA System on Chip ，是建立在标准ALSA驱动层上，为了更好地支持嵌入式处理器和移动设备中的音频Codec的一套软件体系。在ASoc出现之前，内核对于SoC中的音频已经有部分的支持，不过会有一些局限性：  Codec驱动与SoC CPU的底层耦合过于紧密，这种不理想会导致代码的重复，例如，仅是wm8731的驱动，当时Linux中有分别针对4个平台的驱动代">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/asoc_codec.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/asoc_hw.png">
@@ -286,7 +286,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h2><p>ASoC—ALSA System on Chip ，是建立在标准ALSA驱动层上，为了更好地支持嵌入式处理器和移动设备中的音频Codec的一套软件体系。在ASoc出现之前，内核对于SoC中的音频已经有部分的支持，不过会有一些局限性：</p>
+        <h2 id="概述">1. 概述</h2>
+<p>ASoC--ALSA System on Chip ，是建立在标准ALSA驱动层上，为了更好地支持嵌入式处理器和移动设备中的音频Codec的一套软件体系。在ASoc出现之前，内核对于SoC中的音频已经有部分的支持，不过会有一些局限性：</p>
 <ul>
 <li>Codec驱动与SoC CPU的底层耦合过于紧密，这种不理想会导致代码的重复，例如，仅是wm8731的驱动，当时Linux中有分别针对4个平台的驱动代码。</li>
 <li>音频事件没有标准的方法来通知用户，例如耳机、麦克风的插拔和检测，这些事件在移动设备中是非常普通的，而且通常都需要特定于机器的代码进行重新对音频路劲进行配置。</li>
@@ -294,42 +295,46 @@
 </ul>
 <p>ASoC正是为了解决上述种种问题而提出的，目前已经被整合至内核的代码树中：sound/soc。ASoC不能单独存在，他只是建立在标准ALSA驱动上的一个它必须和标准的ALSA驱动框架相结合才能工作。</p>
 <span id="more"></span>
-<h3 id="1-1-硬件连接"><a href="#1-1-硬件连接" class="headerlink" title="1.1 硬件连接"></a>1.1 硬件连接</h3><p>首先我们来看看，我们实际的开发板上的硬件接口，一般由一个cpu和一个codec组成，其大致的框图为<br><img src="/picture/linux_driver/ALSA/asoc_codec.png" alt=""></p>
-<p>对于音频的应用主要有播放和录音的功能，数据流通过I2S的接口来传输，而I2c/l3接口主要完成的控制接口，例如控制声音的大小，功放的增益等操作。对于回放/录音的情形，PCM 数据流向大致是：<br><img src="/picture/linux_driver/ALSA/asoc_hw.png" alt=""></p>
-<h3 id="1-2-软件架构"><a href="#1-2-软件架构" class="headerlink" title="1.2 软件架构"></a>1.2 软件架构</h3><p>Linux框架中，ASOC状态可以划分为硬件Machine Driver、Platform Driver、Codec Driver三大部分组成。由上图可以看出Machine是指我们的开发板，Platform是指Soc,包括开发Soc上的Audio DMA和CPU DAIs接口，而Codec是指编解码器。</p>
+<h3 id="硬件连接">1.1 硬件连接</h3>
+<p>首先我们来看看，我们实际的开发板上的硬件接口，一般由一个cpu和一个codec组成，其大致的框图为 <img src="/picture/linux_driver/ALSA/asoc_codec.png" /></p>
+<p>对于音频的应用主要有播放和录音的功能，数据流通过I2S的接口来传输，而I2c/l3接口主要完成的控制接口，例如控制声音的大小，功放的增益等操作。对于回放/录音的情形，PCM 数据流向大致是： <img src="/picture/linux_driver/ALSA/asoc_hw.png" /></p>
+<h3 id="软件架构">1.2 软件架构</h3>
+<p>Linux框架中，ASOC状态可以划分为硬件Machine Driver、Platform Driver、Codec Driver三大部分组成。由上图可以看出Machine是指我们的开发板，Platform是指Soc,包括开发Soc上的Audio DMA和CPU DAIs接口，而Codec是指编解码器。</p>
 <ul>
-<li><p>machine:是指某一款机器，可以是某款设备，某款开发板，又或者是某款智能手机，由此可以看出Machine几乎是不可重用的，每个Machine上的硬件实现可能都不一样，CPU不一样，Codec不一样，音频的输入、输出设备也不一样，Machine为CPU、Codec、输入输出设备提供了一个载体。Machine驱动负责处理机器特有的一些控件和音频事件（例如，当播放音频时，需要先行打开一个放大器）；单独的Platform和Codec驱动是不能工作的，它必须由Machine驱动把它们结合在一起才能完成整个设备的音频处理工作。</p>
-</li>
-<li><p>platform:平台相关内容。通常需要包含Soc中的时钟、PCM、IIS（DAI）（设置接口）和DMA（传输数据）等。只要指定了Soc，那么我们就认为对应一个platform，与Machine无关，使得该Soc可以在不同的Machine做兼容。它包含了该SoC平台的音频DMA和音频接口的配置和控制（I2S，PCM，AC97等等）；它也不能包含任何与板子或机器相关的代码。</p>
-</li>
+<li><p>machine:是指某一款机器，可以是某款设备，某款开发板，又或者是某款智能手机，由此可以看出Machine几乎是不可重用的，每个Machine上的硬件实现可能都不一样，CPU不一样，Codec不一样，音频的输入、输出设备也不一样，Machine为CPU、Codec、输入输出设备提供了一个载体。Machine驱动负责处理机器特有的一些控件和音频事件（例如，当播放音频时，需要先行打开一个放大器）；单独的Platform和Codec驱动是不能工作的，它必须由Machine驱动把它们结合在一起才能完成整个设备的音频处理工作。</p></li>
+<li><p>platform:平台相关内容。通常需要包含Soc中的时钟、PCM、IIS（DAI）（设置接口）和DMA（传输数据）等。只要指定了Soc，那么我们就认为对应一个platform，与Machine无关，使得该Soc可以在不同的Machine做兼容。它包含了该SoC平台的音频DMA和音频接口的配置和控制（I2S，PCM，AC97等等）；它也不能包含任何与板子或机器相关的代码。</p></li>
 <li><p>codec:Codec里面包含了I2S接口、D/A、A/D、Mixer、PA（功放），通常包含多种输入（Mic、Line-in、I2S、PCM）和多个输出（耳机、喇叭、听筒，Line-out），Codec和Platform一样，是可重用的部件，同一个Codec可以被不同的Machine使用。嵌入式Codec通常通过I2C对内部的寄存器进行控制。 ASoC中的一个重要设计原则就是要求Codec驱动是平台无关的，它包含了一些音频的控件（Controls），音频接口，DAMP（动态音频电源管理）的定义和某些Codec IO功能。为了保证硬件无关性，任何特定于平台和机器的代码都要移到Platform和Machine驱动中。所有的Codec驱动都要提供以下特性：</p>
 <ul>
-<li>Codec DAI 和 PCM的配置信息；/<em> dai:数字音频接口:如 iis </em>/</li>
+<li>Codec DAI 和 PCM的配置信息；/* dai:数字音频接口:如 iis */</li>
 <li>Codec的IO控制方式（I2C，SPI等）；</li>
 <li>Mixer和其他的音频控件；</li>
 <li>Codec的ALSA音频操作接口；</li>
+</ul></li>
 </ul>
-</li>
-</ul>
-<h2 id="2-数据结构"><a href="#2-数据结构" class="headerlink" title="2. 数据结构"></a>2. 数据结构</h2><p>ASOC的实现非常复杂，各种数据结构非常绕，本人目前还未完全分析清楚里面的数据结构，这里先放一张较为杂乱的图<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE3MDQ0NDllMGIzNGQyYTYwOTExNjFj">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/ALSA/ALSA_ASOC.png" alt=""></p>
+<h2 id="数据结构">2. 数据结构</h2>
+<p>ASOC的实现非常复杂，各种数据结构非常绕，本人目前还未完全分析清楚里面的数据结构，这里先放一张较为杂乱的图<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE3MDQ0NDllMGIzNGQyYTYwOTExNjFj">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/ALSA/ALSA_ASOC.png" /></p>
 <ul>
-<li><p>snd_soc_card<br>  ASOC最核心的数据结构，dai_link结构体用于链接该asoc里的所有snd_soc_dai_link结构体，rtd_list用于连接asoc中所有的snd_soc_pcm_runtime结构体，paths结构体用于链接该ASOC中snd_soc_dapm_path结构体。而上述这几个链表所连接的数据结构都是ASOC中最重要的数据结构。</p>
-</li>
-<li><p>snd_pcm_ops<br>  ASOC框架中的操作函数集，这个我们已经见到太多了，很多数据结构都是采用这种结构，一个描述设备的结构体里面包含操作该数据结构的ops操作集。</p>
-</li>
-<li><p>snd_soc_pcm_runtime<br>  这个数据结构是音频子系统中运行时的各组件之间的连接结构，运行时的snd_soc_dai_link、snd_soc_dai、snd_soc_component等结构体都是通过该结构体进行连接的。</p>
-</li>
-<li><p>snd_soc_component<br>  该结构体是platform、codec、machine等结构会包含的数据结构，用于抽象组件的结构体，提供组件的基本功能同时嵌入到其他数据结构中提供公共基础功能。系统中所有的组件都会连接到一个全局链表中component_list，而针对不同组件的不同功能通过snd_soc_component_driver结构体来实现，snd_soc_component_driver结构体是snd_soc_component的驱动实现。</p>
-</li>
-<li><p>snd_soc_dai<br>  用于抽象soc端的音频通信接口。</p>
-</li>
-<li><p>snd_soc_dai_link<br>  将soc端的dai与codec端的dai进行bind连接。</p>
-</li>
-<li><p>snd_soc_dapm_widget<br>  用于实现动态电源管理相关功能。</p>
-</li>
+<li><p>snd_soc_card<br />
+ASOC最核心的数据结构，dai_link结构体用于链接该asoc里的所有snd_soc_dai_link结构体，rtd_list用于连接asoc中所有的snd_soc_pcm_runtime结构体，paths结构体用于链接该ASOC中snd_soc_dapm_path结构体。而上述这几个链表所连接的数据结构都是ASOC中最重要的数据结构。</p></li>
+<li><p>snd_pcm_ops<br />
+ASOC框架中的操作函数集，这个我们已经见到太多了，很多数据结构都是采用这种结构，一个描述设备的结构体里面包含操作该数据结构的ops操作集。</p></li>
+<li><p>snd_soc_pcm_runtime<br />
+这个数据结构是音频子系统中运行时的各组件之间的连接结构，运行时的snd_soc_dai_link、snd_soc_dai、snd_soc_component等结构体都是通过该结构体进行连接的。</p></li>
+<li><p>snd_soc_component<br />
+该结构体是platform、codec、machine等结构会包含的数据结构，用于抽象组件的结构体，提供组件的基本功能同时嵌入到其他数据结构中提供公共基础功能。系统中所有的组件都会连接到一个全局链表中component_list，而针对不同组件的不同功能通过snd_soc_component_driver结构体来实现，snd_soc_component_driver结构体是snd_soc_component的驱动实现。</p></li>
+<li><p>snd_soc_dai<br />
+用于抽象soc端的音频通信接口。</p></li>
+<li><p>snd_soc_dai_link<br />
+将soc端的dai与codec端的dai进行bind连接。</p></li>
+<li><p>snd_soc_dapm_widget<br />
+用于实现动态电源管理相关功能。</p></li>
 </ul>
-<h2 id="3-实现"><a href="#3-实现" class="headerlink" title="3. 实现"></a>3. 实现</h2><p>待续。。。</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L21vb25saW51eDIwNzA0L2FydGljbGUvZGV0YWlscy84ODU0OTk5ND9zcG09MTAwMS4yMDE0LjMwMDEuNTUwMQ==">https://blog.csdn.net/moonlinux20704/article/details/88549994?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L21vb25saW51eDIwNzA0L2FydGljbGUvZGV0YWlscy84ODQxNzM2MT9zcG09MTAwMS4yMDE0LjMwMDEuNTUwMQ==">https://blog.csdn.net/moonlinux20704/article/details/88417361?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vYmxvZ3Mtb2YtbHhsL3AvNjUzODc2OS5odG1s">https://www.cnblogs.com/blogs-of-lxl/p/6538769.html<i class="fa fa-external-link-alt"></i></span>   </p>
+<h2 id="实现">3. 实现</h2>
+<p>待续。。。</p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L21vb25saW51eDIwNzA0L2FydGljbGUvZGV0YWlscy84ODU0OTk5ND9zcG09MTAwMS4yMDE0LjMwMDEuNTUwMQ==">https://blog.csdn.net/moonlinux20704/article/details/88549994?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L21vb25saW51eDIwNzA0L2FydGljbGUvZGV0YWlscy84ODQxNzM2MT9zcG09MTAwMS4yMDE0LjMwMDEuNTUwMQ==">https://blog.csdn.net/moonlinux20704/article/details/88417361?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vYmxvZ3Mtb2YtbHhsL3AvNjUzODc2OS5odG1s">https://www.cnblogs.com/blogs-of-lxl/p/6538769.html<i class="fa fa-external-link-alt"></i></span></p>
 
     </div>
 
@@ -438,7 +443,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E7%A1%AC%E4%BB%B6%E8%BF%9E%E6%8E%A5"><span class="nav-text">1.1 硬件连接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E8%BD%AF%E4%BB%B6%E6%9E%B6%E6%9E%84"><span class="nav-text">1.2 软件架构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2. 数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%AE%9E%E7%8E%B0"><span class="nav-text">3. 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E8%BF%9E%E6%8E%A5"><span class="nav-text">1.1 硬件连接</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E6%9E%B6%E6%9E%84"><span class="nav-text">1.2 软件架构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2. 数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">3. 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -523,7 +528,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">958k</span>
+    <span title="站点总字数">987k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

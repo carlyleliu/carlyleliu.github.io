@@ -292,59 +292,59 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/linux/brief/进程管理-总结.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2ZDNiYzYzNzY4OTA3MTA1YTYyZTE=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/linux/brief/进程管理-总结.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2ZDNiYzYzNzY4OTA3MTA1YTYyZTE=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="1-一个例子"><a href="#1-一个例子" class="headerlink" title="1. 一个例子"></a>1. 一个例子</h2><p>下面给出一个综合案例，在一个双核处理器的系统中，在Shell界面下运行test程序。CPUO的就绪队列中有4个进程，而CPU1的就绪缓队列中有1个进程。test程序和这5个进程的nice值都为0。</p>
+<h2 id="一个例子">1. 一个例子</h2>
+<p>下面给出一个综合案例，在一个双核处理器的系统中，在Shell界面下运行test程序。CPUO的就绪队列中有4个进程，而CPU1的就绪缓队列中有1个进程。test程序和这5个进程的nice值都为0。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> i = O</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)&#123;</span><br><span class="line">        i++;</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">return</span> O;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>站在用户空间的角度，在Shell界面运行test程序，Shell程序会调用fork()系统调用函数来创建一个新进程，然后调用exec()系统调用函数来装载test程序，因此新进程便开始运行test程序。站在用户空间的角度看问题，我们只能看到test程序被运行了，但是我们看不到新进程是如何创建的、它会添加到哪个CPU里、它是如何运行的，以及CPU0和CPU1之间如何做负载均衡等。<br><img src="/picture/linux/kernel/task/test.png" alt=""></p>
+<p>站在用户空间的角度，在Shell界面运行test程序，Shell程序会调用fork()系统调用函数来创建一个新进程，然后调用exec()系统调用函数来装载test程序，因此新进程便开始运行test程序。站在用户空间的角度看问题，我们只能看到test程序被运行了，但是我们看不到新进程是如何创建的、它会添加到哪个CPU里、它是如何运行的，以及CPU0和CPU1之间如何做负载均衡等。 <img src="/picture/linux/kernel/task/test.png" /></p>
 <p>其中的操作步骤如下。</p>
 <ul>
 <li>调用系统调用fork()来创建一个新进程。</li>
-<li><p>使用do_fork()创建新进程。</p>
+<li>使用do_fork()创建新进程。
 <ul>
 <li>创建新进程的task_struct数据结构。</li>
 <li>复制父进程的task_struct数据结构到新进程。</li>
 <li>复制父进程相关的页表项到新进程。</li>
 <li>设置新进程的内核栈。</li>
-</ul>
-</li>
-<li><p>父进程调用wake_up_new_task()尝试去唤醒新进程。</p>
+</ul></li>
+<li>父进程调用wake_up_new_task()尝试去唤醒新进程。
 <ul>
 <li>调用调度类的select_taskrq()，为新进程寻找一个负载最轻的CPU，这里选择CPU1。</li>
 <li>调用调度类的enqueue_task()把新进程添加到CPU1的就绪队列里。</li>
-</ul>
-</li>
-<li><p>CPU1重新选择一个合适的进程来运行。</p>
+</ul></li>
+<li>CPU1重新选择一个合适的进程来运行。
 <ul>
 <li>每次时钟节拍到来时，scheduler_tick()会调用调度类的task_tick()检查是否需要重新调度。check_preempt_tick()会做检查，当需要重新调度时会设置当前进程的thread_info中的TIF_NEED_RESCHED标志位。假设这时CPU1准备调度新进程，就会设置当前进程的thread_info 中的TIF_NEED_RESCHED标志位。</li>
 <li>在中断返回前会检查当前进程是否需要调度。如果需要调度，调用preempt_schedule_irq() 来切换进程运行。</li>
 <li>调度器的schedule()函数会调用调度类的pick_next_task()来选择下一个最合适运行的进程。在该场景中，选择新进程。</li>
 <li>switch_mm()切换父进程和新进程的页表。</li>
 <li>在CPU1上，switch_to()切换新进程来运行。</li>
-</ul>
-</li>
-<li><p>运行新进程。</p>
+</ul></li>
+<li>运行新进程。
 <ul>
 <li>新进程第一次运行时会调用ret_from_fork()函数。</li>
 <li>返回用户空间运行Shell程序。</li>
-<li>Shell程序调用exec()来运行test程序，最终新进程变成了test进程。 </li>
-</ul>
-</li>
-<li><p>实现负载均衡。</p>
+<li>Shell程序调用exec()来运行test程序，最终新进程变成了test进程。</li>
+</ul></li>
+<li>实现负载均衡。
 <ul>
 <li>在每个时钟节拍到来时，检查是否需要触发软中断来实现SMP负载均衡，即调用scheduler_tick()-&gt; trigger_load_balance()。下一次实现负载均衡的时间点存放在就绪队列的next_balance 成员里。</li>
 <li>触发SCHED_SOFTIRQ软中断。</li>
 <li>在软中断处理函数run_rebalance_domains()里，从当前CPU开始遍历CPU拓扑关系，从调度域的低层往高层遍历调度域，并寻找有负载不均匀的调度组。本例子中的CPU拓扑关系很简单，只有一层MC层级的调度域。</li>
-<li>CPU0对应的调度域是domain_mc_0，对应的调度组是group_mc_0；CPU1对应的调度域是domain_mc_1，对应的调度组是group_mc_1。CPU0的调度域domain_mc_0管辖CPU0和 CPU1，其中group_mc_0和group_mc_1这两个调度组会被链接到domain_mc_0的一个链表中。同理，CPU1的调度域domain_mc_1管理着group_mc_1和group_mc_0这两个调度组。 </li>
+<li>CPU0对应的调度域是domain_mc_0，对应的调度组是group_mc_0；CPU1对应的调度域是domain_mc_1，对应的调度组是group_mc_1。CPU0的调度域domain_mc_0管辖CPU0和 CPU1，其中group_mc_0和group_mc_1这两个调度组会被链接到domain_mc_0的一个链表中。同理，CPU1的调度域domain_mc_1管理着group_mc_1和group_mc_0这两个调度组。</li>
 <li>假设当前运行的CPU是CPU1，也就是说，运行run_rebalance_domains()函数的CPU为CPU1，那么在当前MC的调度域（domain_mc_1）里找哪个调度组是最繁忙的。很容易发现CPU0的调度组（group_mc_0）是最繁忙的，然后计算需要迁移多少负载到CPU1上才能保持两个调度组负载平衡。</li>
 <li>从CPU0迁移部分进程到CPU1。</li>
+</ul></li>
 </ul>
-</li>
-</ul>
-<h2 id="2-进程管理"><a href="#2-进程管理" class="headerlink" title="2. 进程管理"></a>2. 进程管理</h2><h3 id="2-1-进程的本质"><a href="#2-1-进程的本质" class="headerlink" title="2.1 进程的本质"></a>2.1 进程的本质</h3><p>从操作系统定义来讲，进程是运行中的程序。若操作系统中有且只有一个进程，那就简单多了，不需要有优先级和调度等概念了，因为整个CPU都是这个进程的。<br>操作系统中不能只有一个进程，而要有成千上万个进程。这些进程为操作系统提供各种不同的服务，如播放MP3文件，用Word写文档，用Vim编辑代码，使用邮件客户端在后台收邮件等。一个CPU服务多个进程，那么如何为多个进程提供公平的服务呢？这关系到进程的本质，也就是说，进程（线程）是用于分配CPU时间（CPU资源）的基本单位。<br>计算机技术从单核处理器发展到多核处理器，从SMP架构发展到HMP架构以及NUMA架构。从进程的调度看，SMP负载均衡算法为了尽快给进程提供服务，提高系统的吞吐量。在大/小核架构下的ARM系统中，绿色节能调度算法则在满足进程基本服务需求的前提下，追求系统的最低功耗。</p>
-<h3 id="2-2逃离不掉的进程优先级"><a href="#2-2逃离不掉的进程优先级" class="headerlink" title="2.2逃离不掉的进程优先级"></a>2.2逃离不掉的进程优先级</h3><p>有一条纽带一直贯穿着进程的整个生命周期，那就是进程的优先级，如下图所示。根据优先级把进程分成了三六九等，优先级高的进程理应获得更多的CPU资源（CPU运行时间），而优先级低的进程获得的CPU资源就相对少一些。<br><img src="/picture/linux/kernel/task/prio.png" alt=""></p>
-<p>Linux内核发展了三代的调度器，从早期的O（n）调度器到Linux2.6内核的O（1）调度器，以及当今使用的CFS，变化的是具体算法的逻辑，不变的是一直都没有抛弃进程的优先级这一概念。<br>UNIX系统最早使用nice值来表示进程优先级，但是nice值的取值范围为-20~19。为了计算方便，Linux内核使用权重（weight）这个概念，权重是直接和优先级相关的。优先级越高，权重越大。<br>CFS与进程优先级和权重密切相关。CFS就绪队列的总调度周期是相对固定的，具体和就绪队列的进程数目有关。那么进程在这个调度周期里能分配到多少时间呢？这个和进程的权重与就绪队列总权重的比值有关。<br>CFS使用的虚拟时间也是和进程的优先级有关的。进程的优先级越高，虚拟时间过得越慢，得到的CPU资源就越多；反之，进程的优先级越低，虚拟时间过得越快，得到的CPU资源就越少。这非常符合优先级的语义。<br>SMP负载均衡也没有脱离进程优先级。早期的SMP负载均衡算法统计每个CPU上就绪队列的总权重。最近的Linux内核提出了量化负载的概念。它把历史负载的贡献也考虑进去，如果一个CPU一直满负荷运行很长时间，那么这个CPU的量仪负载就无限接近于就绪队列的总权重。早期的负载计算方法相当于现在量化负载方法的一个子集。总之，“万变不离其宗始终没有脱离进程优先级的概念。</p>
-<h3 id="2-3-调度器的选择"><a href="#2-3-调度器的选择" class="headerlink" title="2.3 调度器的选择"></a>2.3 调度器的选择</h3><p>本章的重点之一是调度，包括进程调度、SMP负载调度以及绿色节能调度器。调度器的出在现是因为需求总是大于供应，所以需要进行调度。如果在单核处理器的系统中运行了n个进程，那么需求方是n个进程，而供应方只有一个处理器。显然，这是供不应求的局面。在操作系统的发展历史中出现了很多调度算法。</p>
+<h2 id="进程管理">2. 进程管理</h2>
+<h3 id="进程的本质">2.1 进程的本质</h3>
+<p>从操作系统定义来讲，进程是运行中的程序。若操作系统中有且只有一个进程，那就简单多了，不需要有优先级和调度等概念了，因为整个CPU都是这个进程的。 操作系统中不能只有一个进程，而要有成千上万个进程。这些进程为操作系统提供各种不同的服务，如播放MP3文件，用Word写文档，用Vim编辑代码，使用邮件客户端在后台收邮件等。一个CPU服务多个进程，那么如何为多个进程提供公平的服务呢？这关系到进程的本质，也就是说，进程（线程）是用于分配CPU时间（CPU资源）的基本单位。 计算机技术从单核处理器发展到多核处理器，从SMP架构发展到HMP架构以及NUMA架构。从进程的调度看，SMP负载均衡算法为了尽快给进程提供服务，提高系统的吞吐量。在大/小核架构下的ARM系统中，绿色节能调度算法则在满足进程基本服务需求的前提下，追求系统的最低功耗。</p>
+<h3 id="逃离不掉的进程优先级">2.2逃离不掉的进程优先级</h3>
+<p>有一条纽带一直贯穿着进程的整个生命周期，那就是进程的优先级，如下图所示。根据优先级把进程分成了三六九等，优先级高的进程理应获得更多的CPU资源（CPU运行时间），而优先级低的进程获得的CPU资源就相对少一些。 <img src="/picture/linux/kernel/task/prio.png" /></p>
+<p>Linux内核发展了三代的调度器，从早期的O（n）调度器到Linux2.6内核的O（1）调度器，以及当今使用的CFS，变化的是具体算法的逻辑，不变的是一直都没有抛弃进程的优先级这一概念。 UNIX系统最早使用nice值来表示进程优先级，但是nice值的取值范围为-20~19。为了计算方便，Linux内核使用权重（weight）这个概念，权重是直接和优先级相关的。优先级越高，权重越大。 CFS与进程优先级和权重密切相关。CFS就绪队列的总调度周期是相对固定的，具体和就绪队列的进程数目有关。那么进程在这个调度周期里能分配到多少时间呢？这个和进程的权重与就绪队列总权重的比值有关。 CFS使用的虚拟时间也是和进程的优先级有关的。进程的优先级越高，虚拟时间过得越慢，得到的CPU资源就越多；反之，进程的优先级越低，虚拟时间过得越快，得到的CPU资源就越少。这非常符合优先级的语义。 SMP负载均衡也没有脱离进程优先级。早期的SMP负载均衡算法统计每个CPU上就绪队列的总权重。最近的Linux内核提出了量化负载的概念。它把历史负载的贡献也考虑进去，如果一个CPU一直满负荷运行很长时间，那么这个CPU的量仪负载就无限接近于就绪队列的总权重。早期的负载计算方法相当于现在量化负载方法的一个子集。总之，“万变不离其宗始终没有脱离进程优先级的概念。</p>
+<h3 id="调度器的选择">2.3 调度器的选择</h3>
+<p>本章的重点之一是调度，包括进程调度、SMP负载调度以及绿色节能调度器。调度器的出在现是因为需求总是大于供应，所以需要进行调度。如果在单核处理器的系统中运行了n个进程，那么需求方是n个进程，而供应方只有一个处理器。显然，这是供不应求的局面。在操作系统的发展历史中出现了很多调度算法。</p>
 <ul>
 <li>先进先出调度算法。</li>
 <li>最短任务优先调度算法。</li>
@@ -354,38 +354,42 @@
 <li>多级队列反馈算法。</li>
 <li>彩票算法。</li>
 </ul>
-<p>多级队列反馈算法体现了优先级调度的思想，而彩票算法体现了比例份额的思想，具有分享（share）的语义。Linux内核发展历史中出现了3种截然不同的调度算法，其中O（n）调度器算法是最简单的优先级调度，0（1）调度器算法是多级队列反馈算法的延伸，而CFS算法更像彩票算法的延伸，它同时吸收了优先级调度和比例份额的调度思想。<br>调度器在设计和选择过程中面临了很多挑战。</p>
+<p>多级队列反馈算法体现了优先级调度的思想，而彩票算法体现了比例份额的思想，具有分享（share）的语义。Linux内核发展历史中出现了3种截然不同的调度算法，其中O（n）调度器算法是最简单的优先级调度，0（1）调度器算法是多级队列反馈算法的延伸，而CFS算法更像彩票算法的延伸，它同时吸收了优先级调度和比例份额的调度思想。 调度器在设计和选择过程中面临了很多挑战。</p>
 <ul>
 <li>调度器设计目标根据不同的应用场景而不同，如在服务器领域追求高吞吐量，在个人计算机领域追求低延时和交互性，在移动设备中追求低功耗，在工业应用领域追求实时性等。因此，很难用一个调度器来满足所有的应用场景。如在40Gbits的智能高速网卡场景下，假设网络报文大小是64字节，那么每秒需要处理5950万个报文，这种场景下任何调度器都很难满足需求。目前流行的数据平面开发工具包（Data Plane Development Kit，DPDK）的做法是，采用一个专门的CPU来处理网络报文，这个CPU 不参与Linux内核的CFS和SMP负载均衡，相当于把调度器抛弃了。</li>
 <li>开销导致的高吞吐和低时延之间的矛盾。直接影响调度开销的因素包括中断延时、调度器选择下一个进程的延时、上下文切换延时等。间接影响因素包括进程切换刷新TLB带来的性能影响、刷新高速缓存带来的性能影响等。</li>
 <li>高性能和低功耗直接存在天然矛盾。如对于手机设备，有用户需要高性能，如玩大型游戏，有的用户需要待机时间长。目前Android操作系统中默认使用绿色节能调度器来消除性能和功耗之间的矛盾。</li>
 </ul>
 <p>综上所述，没有一种调度器能适用所有的场景，Linux内核采用的CFS和SMP负载均衡算法或者CFS和绿色节能调度器的组合，也只是尽可能地适用大多数场景，它是一种取舍和折中的艺术。</p>
-<h3 id="2-4-用四维空间来理解负载"><a href="#2-4-用四维空间来理解负载" class="headerlink" title="2.4 用四维空间来理解负载"></a>2.4 用四维空间来理解负载</h3><p>进程的负载是一个比较难理解的概念，而且在学术上没有一个明确的计算公式来计算进程的负载。在Linux内核的发展历史中，出现了两次截然不同的负载计算方法。在早期的Linux内核中，直接将进程的权重当作负载，于是CPU的负载就等于就绪队列中所有进程的权重总和而在Linux3.8内核之后的PELT算法中引入了量化负载。如果从四维空间的角度来思考，权重是一个静态值，只要系统管理员不修改进程优先级，权重就一直是一个静态不变的值，它可以被视为零维空间中一个静态的点；而量化负载带来了四维空间的时间概念，它相当于四维空间中一个变化的物体。<br>在物理学中，零维空间是一个点，两个点可以连成一条直线，形成了一维空间。两条相交的直线可以组成一个面，形成二维空间，二维空间有长度和宽度。如果把一个面卷起来形成了一个曲面，就产生了三维空间，有了长度、宽度以及深度。而四维空间多了时间这个轴，我们就生活在一个匀速地、连续地以及变化地四维空间里。从四维空间的角度来看进程，进程是一个随时间变化的物体，它可能一直占用CPU，也可能间歇性运行，因此，直接采用零维空间的权重来表示进程的负载显然不合适。负载是一个随时间变化而变化的值，我们应当考虑历史使用情况来评估负载的影响，这就是PETL算法的核心思想。<br>量化负载还考虑了另一个因素，就是进程在可运行状态下的时间占比，这个时间占比类似于CPU使用率的概念。在采样时间里，进程的可运行状态的时间占比越高，它的负载越重。从下式可知，若一个进程一直待在就绪队列里，那么它的量化负载就无限接近它的权重，这样对不同类型的进程就有了一个可比较的标准。时间占比也考虑了四维空间中的时间因素。<br>当然，量化负载的计算也有缺点，它通过计算过去一段时间内的时间占比来推测当前时间点的负载，在某些场景下这是不准确的，这好比通过后视镜来推测前面的车况。</p>
-<h2 id="3-案例分析为何不能调度"><a href="#3-案例分析为何不能调度" class="headerlink" title="3 案例分析为何不能调度"></a>3 案例分析为何不能调度</h2><p>假设Linux内核只有3个线程，线程0创建了线程1和线程2，它们永远不会退出。当系统时钟中断到来时，时钟中断处理函数会检查是否有进程需要调度。当有进程需要调度时，调度器会选择运行线程1或者线程2。<br><img src="/picture/linux/kernel/task/thread_example.png" alt=""></p>
-<p>假设线程0先运行，那么在这个场景下会发生什么情况？<br>这是一个有意思的问题，涉及调度器的实现机制、中断处理、内核抢占、新建进程如何被调度、进程切换等知识点。我们只有把这些知识点都弄明白了，才能真正搞明白这个问题</p>
-<h3 id="3-1-场景分析"><a href="#3-1-场景分析" class="headerlink" title="3.1.场景分析"></a>3.1.场景分析</h3><p>这个场景中的主要操作步骤如下。</p>
+<h3 id="用四维空间来理解负载">2.4 用四维空间来理解负载</h3>
+<p>进程的负载是一个比较难理解的概念，而且在学术上没有一个明确的计算公式来计算进程的负载。在Linux内核的发展历史中，出现了两次截然不同的负载计算方法。在早期的Linux内核中，直接将进程的权重当作负载，于是CPU的负载就等于就绪队列中所有进程的权重总和而在Linux3.8内核之后的PELT算法中引入了量化负载。如果从四维空间的角度来思考，权重是一个静态值，只要系统管理员不修改进程优先级，权重就一直是一个静态不变的值，它可以被视为零维空间中一个静态的点；而量化负载带来了四维空间的时间概念，它相当于四维空间中一个变化的物体。 在物理学中，零维空间是一个点，两个点可以连成一条直线，形成了一维空间。两条相交的直线可以组成一个面，形成二维空间，二维空间有长度和宽度。如果把一个面卷起来形成了一个曲面，就产生了三维空间，有了长度、宽度以及深度。而四维空间多了时间这个轴，我们就生活在一个匀速地、连续地以及变化地四维空间里。从四维空间的角度来看进程，进程是一个随时间变化的物体，它可能一直占用CPU，也可能间歇性运行，因此，直接采用零维空间的权重来表示进程的负载显然不合适。负载是一个随时间变化而变化的值，我们应当考虑历史使用情况来评估负载的影响，这就是PETL算法的核心思想。 量化负载还考虑了另一个因素，就是进程在可运行状态下的时间占比，这个时间占比类似于CPU使用率的概念。在采样时间里，进程的可运行状态的时间占比越高，它的负载越重。从下式可知，若一个进程一直待在就绪队列里，那么它的量化负载就无限接近它的权重，这样对不同类型的进程就有了一个可比较的标准。时间占比也考虑了四维空间中的时间因素。 当然，量化负载的计算也有缺点，它通过计算过去一段时间内的时间占比来推测当前时间点的负载，在某些场景下这是不准确的，这好比通过后视镜来推测前面的车况。</p>
+<h2 id="案例分析为何不能调度">3 案例分析为何不能调度</h2>
+<p>假设Linux内核只有3个线程，线程0创建了线程1和线程2，它们永远不会退出。当系统时钟中断到来时，时钟中断处理函数会检查是否有进程需要调度。当有进程需要调度时，调度器会选择运行线程1或者线程2。 <img src="/picture/linux/kernel/task/thread_example.png" /></p>
+<p>假设线程0先运行，那么在这个场景下会发生什么情况？ 这是一个有意思的问题，涉及调度器的实现机制、中断处理、内核抢占、新建进程如何被调度、进程切换等知识点。我们只有把这些知识点都弄明白了，才能真正搞明白这个问题</p>
+<h3 id="场景分析">3.1.场景分析</h3>
+<p>这个场景中的主要操作步骤如下。</p>
 <ul>
 <li>start_kernel()运行在线程0里。线程0创建了线程1和线程2。函数调用关系是start_kernel()-&gt;kerne_thread()-&gt;_do_fork()。在_do_fortk()函数会创建新线程，并且把新线程添加到调度器的就绪队列中。线程0创建线程1和线程2后，进入while死循环，线程0不会退出，它正在等待被调度出去。</li>
-<li>产生时钟中断。处理器采用时钟定时器来周期性地提供系统脉搏。时钟中断是普通外设中断的一种。调度器利用时钟中断来定时检测当前正在运行的线程是否需要调度 </li>
+<li>产生时钟中断。处理器采用时钟定时器来周期性地提供系统脉搏。时钟中断是普通外设中断的一种。调度器利用时钟中断来定时检测当前正在运行的线程是否需要调度</li>
 <li>当时钟中断检测到当前线程需要调度时，设置need_resched标志位。</li>
-<li>当时钟中断返回时，根据Linux内核是否支持内核抢占来确定是否需要调度，下面分两种情况来讨论。<ul>
+<li>当时钟中断返回时，根据Linux内核是否支持内核抢占来确定是否需要调度，下面分两种情况来讨论。
+<ul>
 <li>支持内核抢占的内核：发生在内核态的中断返回时，检查当前线程的need_resched标志位是否置位，如果置位，说明当前线程需要调度.</li>
 <li>不支持内核抢占的内核：发生在内核态的中断在返回时不会检查是否需要调度。</li>
+</ul></li>
 </ul>
-</li>
-</ul>
-<p>在不支持内核抢占功能的Linux内核里，即使线程0的need_resched标志位置位置位了，Linux内核也不会调度线程1或者线程2。只有发生在用户态的中断返回或者系统调用返回用户空间时，才会检查是否需要调度。<br>在不支持抢占的Linux内核中，判断与调度的流程如下图所示。<br><img src="/picture/linux/kernel/task/sched_example1.png" alt=""></p>
+<p>在不支持内核抢占功能的Linux内核里，即使线程0的need_resched标志位置位置位了，Linux内核也不会调度线程1或者线程2。只有发生在用户态的中断返回或者系统调用返回用户空间时，才会检查是否需要调度。 在不支持抢占的Linux内核中，判断与调度的流程如下图所示。 <img src="/picture/linux/kernel/task/sched_example1.png" /></p>
 <ul>
-<li>发生时钟中断。触发时钟中断时当前进程（线程）有可能在用户态执行，也可能在内核态执行。如果进程运行在用户态时发生了中断，那么会进入异常向量表的el0irq汇编函数：如果进程运行在内核态时发生了中断，那么会进入异常向量表的ellirq汇编函数中。在本场景中，因为3个线程都是内核线程，所以时钟中断只能跳转到ellirq汇编函数里。当进入中断时 CPU会自动关闭中断。 </li>
+<li>发生时钟中断。触发时钟中断时当前进程（线程）有可能在用户态执行，也可能在内核态执行。如果进程运行在用户态时发生了中断，那么会进入异常向量表的el0irq汇编函数：如果进程运行在内核态时发生了中断，那么会进入异常向量表的ellirq汇编函数中。在本场景中，因为3个线程都是内核线程，所以时钟中断只能跳转到ellirq汇编函数里。当进入中断时 CPU会自动关闭中断。</li>
 <li>在ell_irq汇编函数里，首先会保存中断现场（也称为中断上下文）到当前进程的栈中，Linux内核使用pt regs数据结构来实现ptregs栈框，用来保存中断现场</li>
 <li>中断处理过程包括切换到Linux内核的中断栈、硬件中断号的查询、中断服务程序的处理等，详细分析可以参考本书卷2</li>
 <li>当确定当前中断源是时钟中断后，scheduler tick()函数会取检查当前进程的是否需要调度。如果需要调度，则设置当前进程的need_resched标志位（thread_info中的TIF_NEED_RESCHED标志位）。</li>
 <li>中断返回。这里需要给中断控制器返回一个中断结束（End Of Interrupt，EOI）信号。</li>
 <li>在ell_irq汇编函数直接恢复中断现场，这里会使用线程0的ptregs来恢复中断现场在不支持内核抢占的系统里，ell irq汇编函数不会检查是否需要调度。在中断返回时，CPU打开中断，然后从中断的地方开始继续执行进程0。</li>
 </ul>
-<p>在支持内核抢占功能的Linux内核中，中断返回时会检查当前进程是否设置了need resched标志位置位。如果置位，那么调用preempt schedule_irq0函数以调度其他进程（线程）并运行。如下图所示，在支持内核抢占的Linux内核中，中断与调度的流程和下图略有不一样。在ell_irq汇编函数即将返回中断现场时，判断当前进程是否需要调度。如果需要调度，调度器会选择下一个进程，并且进行进程的切换。如果选择了线程1，则从线程1的pt_regs中恢复中断现场并打开中断，然后继续执行内核线程1的代码。<br><img src="/picture/linux/kernel/task/sched_example2.png" alt=""></p>
-<h3 id="3-2-如何让新进程执行"><a href="#3-2-如何让新进程执行" class="headerlink" title="3.2. 如何让新进程执行"></a>3.2. 如何让新进程执行</h3><p>可能读者会有如下疑问：</p>
+<p>在支持内核抢占功能的Linux内核中，中断返回时会检查当前进程是否设置了need resched标志位置位。如果置位，那么调用preempt schedule_irq0函数以调度其他进程（线程）并运行。如下图所示，在支持内核抢占的Linux内核中，中断与调度的流程和下图略有不一样。在ell_irq汇编函数即将返回中断现场时，判断当前进程是否需要调度。如果需要调度，调度器会选择下一个进程，并且进行进程的切换。如果选择了线程1，则从线程1的pt_regs中恢复中断现场并打开中断，然后继续执行内核线程1的代码。 <img src="/picture/linux/kernel/task/sched_example2.png" /></p>
+<h3 id="如何让新进程执行">3.2. 如何让新进程执行</h3>
+<p>可能读者会有如下疑问：</p>
 <ul>
 <li>如果线程1是新创建的，它的栈应该是空的，那它第一次运行时如何恢复中断现场呢？</li>
 <li>如果不能从线程1的栈中恢复中断现场，那是不是线程1一直在关闭中断的状态下运行？</li>
@@ -397,36 +401,39 @@
 </ul>
 <p>上述操作是在copy_thread()函数里实现的。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/kernel/process.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">copy_thread</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    childregs-&gt;pstate = PSR_MODE_EL1h;</span><br><span class="line">    p-&gt;thread.cpu_context.x19 = stack_start; </span><br><span class="line">    p-&gt;thread.cpu_context.x20 = stk sz;</span><br><span class="line">    p-&gt;thread.cpu context.pc = (<span class="keyword">unsigned</span> <span class="keyword">long</span>)ret_from_fork;</span><br><span class="line">    p-&gt;thread.cpu_context.sp = (<span class="keyword">unsigned</span> <span class="keyword">long</span>)childregs;</span><br><span class="line">    ...</span><br></pre></td></tr></table></figure>
-<p>stack_stat指向内核线程的回调函数，而x20指向回调函数的参数。<br>在进程切换时，switch_to()函数会完成进程硬件上下文的切换，即把下一个进程(next进程)的cpu_context数据结构保存的内容恢复到处理器的寄存器中，从而完成进程的切换。此时，处理器开始运行next进程了。根据PC寄存器的值、外理器会从ret_from_fork汇编函数里开始执行，新进程的执行过程如下图所示。<br><img src="/picture/linux/kernel/task/sched_context.png" alt=""></p>
+<p>stack_stat指向内核线程的回调函数，而x20指向回调函数的参数。 在进程切换时，switch_to()函数会完成进程硬件上下文的切换，即把下一个进程(next进程)的cpu_context数据结构保存的内容恢复到处理器的寄存器中，从而完成进程的切换。此时，处理器开始运行next进程了。根据PC寄存器的值、外理器会从ret_from_fork汇编函数里开始执行，新进程的执行过程如下图所示。 <img src="/picture/linux/kernel/task/sched_context.png" /></p>
 <p>ret_from_fork汇编函数实现在arch/arm64/kernel/entry.S文件中。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">SYM_CODE_START(ret_from_fork)</span><br><span class="line">  bl	schedule_tail</span><br><span class="line">  cbz	x19, 1f				// not a kernel thread</span><br><span class="line">  mov	x0, x20</span><br><span class="line">  blr	x19</span><br><span class="line">1:	get_current_task tsk</span><br><span class="line">  mov	x0, sp</span><br><span class="line">  bl	asm_exit_to_user_mode</span><br><span class="line">  b	ret_to_user</span><br><span class="line">SYM_CODE_END(ret_from_fork)</span><br><span class="line">NOKPROBE(ret_from_fork)</span><br></pre></td></tr></table></figure>
-<p>在第2行中，调用schedule_tail()函数来对prev进程做收尾工作。在finish_lock_switch()函数里会调用raw_spin_unlock_irq()函数来打开本地中断。因此，next进程是运行在打开中断的环境下的。<br>在第3行中，判断next线程是否为内核线程。如果next进程是内核线程，在创建时会设置X19寄存器指向stack_start。如果X19寄存器的值为0，说明这个next进程是用户进程，直接跳转到第6行，调用ret_to_user汇编函数，返回用户空间<br>在第4~5行中，如果next进程是内核线程，那么直接跳转到内核线程的回调函数里。<br>综上所述，当处理器切换到内核线程1时，它从ret_from_fork汇编函数开始执行Schedule_tail()函数会打开中断，因此，不用担心内核线程1在关闭中断的状态下运行。另外，此时，线程1不会从中断现场返回，因为到目前为止，线程1还没有触发任何一个中断。那么对于线程0触发的中断现场怎么处理呢？中断现场保存在中断进程的栈里，只有当调度器再、次调度该进程时，它才会从栈中恢复中断现场，然后继续运行该进程。</p>
-<h3 id="3-3-调度的本质"><a href="#3-3-调度的本质" class="headerlink" title="3.3. 调度的本质"></a>3.3. 调度的本质</h3><p>下面是一个常见的思考题</p>
+<p>在第2行中，调用schedule_tail()函数来对prev进程做收尾工作。在finish_lock_switch()函数里会调用raw_spin_unlock_irq()函数来打开本地中断。因此，next进程是运行在打开中断的环境下的。 在第3行中，判断next线程是否为内核线程。如果next进程是内核线程，在创建时会设置X19寄存器指向stack_start。如果X19寄存器的值为0，说明这个next进程是用户进程，直接跳转到第6行，调用ret_to_user汇编函数，返回用户空间 在第4~5行中，如果next进程是内核线程，那么直接跳转到内核线程的回调函数里。 综上所述，当处理器切换到内核线程1时，它从ret_from_fork汇编函数开始执行Schedule_tail()函数会打开中断，因此，不用担心内核线程1在关闭中断的状态下运行。另外，此时，线程1不会从中断现场返回，因为到目前为止，线程1还没有触发任何一个中断。那么对于线程0触发的中断现场怎么处理呢？中断现场保存在中断进程的栈里，只有当调度器再、次调度该进程时，它才会从栈中恢复中断现场，然后继续运行该进程。</p>
+<h3 id="调度的本质">3.3. 调度的本质</h3>
+<p>下面是一个常见的思考题</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">raw_local_irq_disable()<span class="comment">//关闭本地中断</span></span><br><span class="line">schedule()<span class="comment">//调用schedule()函数来切换进程</span></span><br><span class="line">raw_local_irq_enable() <span class="comment">//打开本地中断</span></span><br></pre></td></tr></table></figure>
-<p>有读者这么认为，假设进程A在关闭本地中断的情况下切换到进程B来运行，进程B会在关闭中断的情况下运行，如果进程B一直占用CPU，那么系统会一直没有办法响应时钟中断，系统就处于瘫痪状态。<br>显然，上述分析是不正确的。因为进程B切换执行时会打开本地中断，以防止系统瘫痪我们接下来详细分析这个问题。<br>调度与中断密不可分，而调度的本质是选择下一个进程来运行。理解调度有如下几个关键点。</p>
+<p>有读者这么认为，假设进程A在关闭本地中断的情况下切换到进程B来运行，进程B会在关闭中断的情况下运行，如果进程B一直占用CPU，那么系统会一直没有办法响应时钟中断，系统就处于瘫痪状态。 显然，上述分析是不正确的。因为进程B切换执行时会打开本地中断，以防止系统瘫痪我们接下来详细分析这个问题。 调度与中断密不可分，而调度的本质是选择下一个进程来运行。理解调度有如下几个关键点。</p>
 <ul>
 <li>什么情况下会触发调度？</li>
 <li>如何合理和高效选择下一个进程？</li>
 <li>如何切换到下一个进程来执行？</li>
 <li>下一个进程如何返回上一次暂停的地方？</li>
 </ul>
-<p>我们以一个场景为例，假设系统中只有一个用户进程A和一个内核线程B，在不考虑自愿调度和系统调用的情况下，请描述这两个进程（线程）是如何相互切换并运行的。<br>如图所示，用户进程A切换到内核线程B的过程如下。</p>
+<p>我们以一个场景为例，假设系统中只有一个用户进程A和一个内核线程B，在不考虑自愿调度和系统调用的情况下，请描述这两个进程（线程）是如何相互切换并运行的。 如图所示，用户进程A切换到内核线程B的过程如下。</p>
 <ul>
 <li>假设在T0时刻之前，用户进程A正在用户空间运行。</li>
 <li>在T0时刻，时钟中断发生。</li>
 <li>CPU打断正在运行的用户进程A，处于异常模式。CPU会跳转到异常向量表中的 el0 irq里。在el0_irq汇编函数里，首先把中断现场保存到进程A的ptregs栈框中。 （4）处理中断。</li>
 <li>调度滴答处理函数。在调度滴答处理中，检查当前进程是否需要调度。如果需要调度，则设置当前进程的need _resched标志位（thread_info中的TIF NEED RESCHED标志位）。</li>
 <li>中断处理完成之后，返回el0irq汇编函数里。在即将返回中断现场前，ret to user汇编函数会检查当前进程是否需要调度。</li>
-<li>若当前进程序需要调度，则调用schedule（函数来选择下一个进程并进行进程切换。 </li>
+<li>若当前进程序需要调度，则调用schedule（函数来选择下一个进程并进行进程切换。</li>
 <li>在switch_to()函数里进行进程切换。</li>
 <li>T1时刻，switch_to()函数返回时，CPU开始运行内核线程B了。</li>
 <li>CPU沿着内核线程B保存的栈帧回溯，一直返回。返回路径为finish_task_switch()-&gt;el1_preempt()-&gt;el1_irq。</li>
 <li>在el1_irq汇编函数里把上一次发生中断时保存在栈里的中断现场讲行恢复，最后从上一次中断的地方开始执行内核线程B的代码。</li>
 </ul>
-<p><img src="/picture/linux/kernel/task/thread1.png" alt=""></p>
-<p>从栈帧的角度来观察，进程调度的栈帧变化情况如下图所示。<br><img src="/picture/linux/kernel/task/thread1_stk.png" alt=""></p>
-<p>首先，对于用户进程A，从中断触发到进程切换这段时间内，内核栈的变化情况如图9.20左边视图所示，栈的最高地址位于pt_regs栈框，用来保存中断现场。<br>然后，依次保存el0_irq汇编函数、ret_to_user汇编函数、_schedule()函数、context_switch()函数以及switch_to()函数的栈帧，此时SP寄存器指向switch_to()函数栈帧，这个过程称为压栈。<br>接下来，切换进程。<br>switch_to()函数返回之后，即完成了进程切换。此时，CPU的SP寄存器指向了内核线程B的内核栈中的switch_to()函数栈帧。CPU沿着栈帧一直返回，并且恢复了上一次保存在pt_regs栈框的中断现场，最后跳转到内核线程B中断的地方并开始执行，这个过程称为出栈。</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p>《奔跑吧Linux内核》<br>《Linux内核设计与实现》   </p>
+<p><img src="/picture/linux/kernel/task/thread1.png" /></p>
+<p>从栈帧的角度来观察，进程调度的栈帧变化情况如下图所示。 <img src="/picture/linux/kernel/task/thread1_stk.png" /></p>
+<p>首先，对于用户进程A，从中断触发到进程切换这段时间内，内核栈的变化情况如图9.20左边视图所示，栈的最高地址位于pt_regs栈框，用来保存中断现场。 然后，依次保存el0_irq汇编函数、ret_to_user汇编函数、_schedule()函数、context_switch()函数以及switch_to()函数的栈帧，此时SP寄存器指向switch_to()函数栈帧，这个过程称为压栈。 接下来，切换进程。 switch_to()函数返回之后，即完成了进程切换。此时，CPU的SP寄存器指向了内核线程B的内核栈中的switch_to()函数栈帧。CPU沿着栈帧一直返回，并且恢复了上一次保存在pt_regs栈框的中断现场，最后跳转到内核线程B中断的地方并开始执行，这个过程称为出栈。</p>
+<h3 id="参考文献">参考文献</h3>
+<p>《奔跑吧Linux内核》<br />
+《Linux内核设计与实现》</p>
 
     </div>
 
@@ -535,7 +542,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-text">1. 一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-text">2. 进程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-text">2.1 进程的本质</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2%E9%80%83%E7%A6%BB%E4%B8%8D%E6%8E%89%E7%9A%84%E8%BF%9B%E7%A8%8B%E4%BC%98%E5%85%88%E7%BA%A7"><span class="nav-text">2.2逃离不掉的进程优先级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E8%B0%83%E5%BA%A6%E5%99%A8%E7%9A%84%E9%80%89%E6%8B%A9"><span class="nav-text">2.3 调度器的选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E7%94%A8%E5%9B%9B%E7%BB%B4%E7%A9%BA%E9%97%B4%E6%9D%A5%E7%90%86%E8%A7%A3%E8%B4%9F%E8%BD%BD"><span class="nav-text">2.4 用四维空间来理解负载</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90%E4%B8%BA%E4%BD%95%E4%B8%8D%E8%83%BD%E8%B0%83%E5%BA%A6"><span class="nav-text">3 案例分析为何不能调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E5%9C%BA%E6%99%AF%E5%88%86%E6%9E%90"><span class="nav-text">3.1.场景分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E5%A6%82%E4%BD%95%E8%AE%A9%E6%96%B0%E8%BF%9B%E7%A8%8B%E6%89%A7%E8%A1%8C"><span class="nav-text">3.2. 如何让新进程执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E8%B0%83%E5%BA%A6%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-text">3.3. 调度的本质</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E4%BE%8B%E5%AD%90"><span class="nav-text">1. 一个例子</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86"><span class="nav-text">2. 进程管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-text">2.1 进程的本质</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%80%83%E7%A6%BB%E4%B8%8D%E6%8E%89%E7%9A%84%E8%BF%9B%E7%A8%8B%E4%BC%98%E5%85%88%E7%BA%A7"><span class="nav-text">2.2逃离不掉的进程优先级</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E5%99%A8%E7%9A%84%E9%80%89%E6%8B%A9"><span class="nav-text">2.3 调度器的选择</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E5%9B%9B%E7%BB%B4%E7%A9%BA%E9%97%B4%E6%9D%A5%E7%90%86%E8%A7%A3%E8%B4%9F%E8%BD%BD"><span class="nav-text">2.4 用四维空间来理解负载</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90%E4%B8%BA%E4%BD%95%E4%B8%8D%E8%83%BD%E8%B0%83%E5%BA%A6"><span class="nav-text">3 案例分析为何不能调度</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF%E5%88%86%E6%9E%90"><span class="nav-text">3.1.场景分析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AE%A9%E6%96%B0%E8%BF%9B%E7%A8%8B%E6%89%A7%E8%A1%8C"><span class="nav-text">3.2. 如何让新进程执行</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-text">3.3. 调度的本质</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -620,7 +627,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">958k</span>
+    <span title="站点总字数">987k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

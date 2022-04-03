@@ -285,10 +285,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/linux/brief/中断子系统-综述.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1NzIyNWYzNDZmYjA3MjVmNTU0YjU=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/linux/brief/中断子系统-综述.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1NzIyNWYzNDZmYjA3MjVmNTU0YjU=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="1-硬件相关描述"><a href="#1-硬件相关描述" class="headerlink" title="1. 硬件相关描述"></a>1. 硬件相关描述</h2><p><img src="/picture/linux_driver/irq/HW_IRQ.png" alt=""></p>
-<p>在上图中主要分为三部分，产生中断的外部设备、用于管理中断的中断控制器以及处理中断信号的cpu。    </p>
+<h2 id="硬件相关描述">1. 硬件相关描述</h2>
+<p><img src="/picture/linux_driver/irq/HW_IRQ.png" /></p>
+<p>在上图中主要分为三部分，产生中断的外部设备、用于管理中断的中断控制器以及处理中断信号的cpu。</p>
 <ul>
 <li>产生中断的设备没什么好说的，很多外部设备都支持中断事件，对于soc而言其实也就是一个电信号，外部设备可以产生一个中断信号接到soc上。</li>
 <li>中断控制器用于管理中断，例如屏蔽某些中断，设置中断优先级等。</li>
@@ -296,13 +297,13 @@
 </ul>
 <p>在上图中存在几个问题，第一是多核cpu该由哪个cpu来处理中断信号，第二是多个中断控制器之间的级联方式。</p>
 <ul>
-<li><p>第一个问题多核cpu的问题这个一般中断控制器可以绑定某个中断到某个cpu上或某个中断绑定到多个cpu上，对于绑定到一个cpu上这种情况很简单就由该cpu处理该中断，对于绑定到多cpu的情况实际上也只能有一个cpu处理，这里应该有一些负载均衡算法去分配到具体的cpu而当该中断被分配到具体cpu后其他cpu就不再处理当前中断了，具体细节我还没有去了解。</p>
-</li>
-<li><p>第二个问题，中断控制器的级联方式有两种，一种是并行结构，即多个中断控制器都接入到cpu上，对每一个中断控制器分配处理的cpu即可，第二种是串联结构，一个中断控制器接入另一个中断控制器，由另一个中断控制器接入cpu，这样其中一个中断控制器将作为另一个中断控制器的一个中断信号源。中断控制器的级联方式其实在嵌入式系统中通常只有一个中断控制器在soc内部也不需要考虑这么复杂的问题。</p>
-</li>
+<li><p>第一个问题多核cpu的问题这个一般中断控制器可以绑定某个中断到某个cpu上或某个中断绑定到多个cpu上，对于绑定到一个cpu上这种情况很简单就由该cpu处理该中断，对于绑定到多cpu的情况实际上也只能有一个cpu处理，这里应该有一些负载均衡算法去分配到具体的cpu而当该中断被分配到具体cpu后其他cpu就不再处理当前中断了，具体细节我还没有去了解。</p></li>
+<li><p>第二个问题，中断控制器的级联方式有两种，一种是并行结构，即多个中断控制器都接入到cpu上，对每一个中断控制器分配处理的cpu即可，第二种是串联结构，一个中断控制器接入另一个中断控制器，由另一个中断控制器接入cpu，这样其中一个中断控制器将作为另一个中断控制器的一个中断信号源。中断控制器的级联方式其实在嵌入式系统中通常只有一个中断控制器在soc内部也不需要考虑这么复杂的问题。</p></li>
 </ul>
-<h2 id="2-中断处理流程"><a href="#2-中断处理流程" class="headerlink" title="2. 中断处理流程"></a>2. 中断处理流程</h2><p>在ARM处理器上会有一个中断向量的连续地址，一般是零地址开始，之后地址每增加1的地址上存放一条跳转指令，用于处理不同的中断信号，当有不同的中断发生时就到对应的地址执行跳转指令，而具体不同的中断信号就在不同中断标号位置进行处理。cpu运行一般就是跟内存和寄存器打交道，内存一般较大可以存放很多内容但是寄存器却很少，不可能装下所有程序的运行环境和中断程序的，那么中断以及任务调度都需要做的一件事就是为每一程序保存其寄存器数据，在中断处理过程中，当中断发生时跳转到相应代码位置处首先应该先将当前寄存器中的值保存起来，然后运行中断处理程序，在中断处理程序运行完成以后再恢复原寄存器的内容然后接着中断发生前对任务继续运行。</p>
-<h2 id="3-Linux系统对中断处理的方式"><a href="#3-Linux系统对中断处理的方式" class="headerlink" title="3. Linux系统对中断处理的方式"></a>3. Linux系统对中断处理的方式</h2><p>首先需要先明确几个问题：  </p>
+<h2 id="中断处理流程">2. 中断处理流程</h2>
+<p>在ARM处理器上会有一个中断向量的连续地址，一般是零地址开始，之后地址每增加1的地址上存放一条跳转指令，用于处理不同的中断信号，当有不同的中断发生时就到对应的地址执行跳转指令，而具体不同的中断信号就在不同中断标号位置进行处理。cpu运行一般就是跟内存和寄存器打交道，内存一般较大可以存放很多内容但是寄存器却很少，不可能装下所有程序的运行环境和中断程序的，那么中断以及任务调度都需要做的一件事就是为每一程序保存其寄存器数据，在中断处理过程中，当中断发生时跳转到相应代码位置处首先应该先将当前寄存器中的值保存起来，然后运行中断处理程序，在中断处理程序运行完成以后再恢复原寄存器的内容然后接着中断发生前对任务继续运行。</p>
+<h2 id="linux系统对中断处理的方式">3. Linux系统对中断处理的方式</h2>
+<p>首先需要先明确几个问题：</p>
 <ul>
 <li>中断处理过程中是关全局中断的，也就是中断程序处理期间不能响应新的中断</li>
 <li>基于第一点，Linux内核不允许中断嵌套，其实第一点就已经决定了中断不能嵌套，中断处理期间不会有新的中断响应</li>
@@ -315,8 +316,9 @@
 <li>不能休眠，这个比较好理解吧，休眠会引发系统任务调度，而在中断状态下任务调度是关闭的，这个一定不能休眠</li>
 </ul>
 <p>中断下半部内核提供了多种处理机制，下面挨个介绍中断下半部处理方式</p>
-<h3 id="3-1-softirq"><a href="#3-1-softirq" class="headerlink" title="3.1 softirq"></a>3.1 softirq</h3><p>在普通的驱动中一般是不会用到softirq，softirq不能动态分配，都是静态定义的。内核已经定义了若干种softirq number，例如网络数据的收发、block设备的数据访问（数据量大，通信带宽高），timer的deferable task（时间方面要求高）。</p>
-<p>softirq的一些特性：  </p>
+<h3 id="softirq">3.1 softirq</h3>
+<p>在普通的驱动中一般是不会用到softirq，softirq不能动态分配，都是静态定义的。内核已经定义了若干种softirq number，例如网络数据的收发、block设备的数据访问（数据量大，通信带宽高），timer的deferable task（时间方面要求高）。</p>
+<p>softirq的一些特性：</p>
 <ul>
 <li>软中断是在编译期间静态分配的。</li>
 <li>产生后并不是马上可以执行，必须要等待内核的调度才能执行。软中断不会抢占另外一个软中断，唯一可以抢占软中断的是中断处理程序。</li>
@@ -324,12 +326,17 @@
 <li>软中断运行在中断上下文，软中断处理函数中不能睡眠。</li>
 <li>在Linux内核中，用softirq_action结构体表征一个软中断，这个结构体 包含软中断处理函数指针和传递给该函数的指针的参数。使用open_softirq()函数可以注册软中断对应的处理函数，而raise_softirq()函数可以触发一个软中断。</li>
 </ul>
-<p>softirq中断源：<br>中断的来源很多，所以softirq的种类也不少。内核的限制是不能超过32个，目前实际用到的有9个：  </p>
-<p>其中两个用来实现tasklet(HI_SOFTIRQ和TASKLET_SOFTIRQ)。<br>两个用于网络的发送和接收操作(NET_TX_SOFTIRQ和NET_RX_SOFTIRQ)。<br>一个用于调度器(SCHED_SOFTIRQ)，实现SMP系统上周期性的负载均衡。<br>在启用高分辨率定时器时，还需要一个HRTIMER_SOFTIRQ。    </p>
-<h3 id="3-2-tasklet"><a href="#3-2-tasklet" class="headerlink" title="3.2 tasklet"></a>3.2 tasklet</h3><p>tasklet是使用软件中断来实现。他们在内核中表示为struct tasklet_struct结构体，如下：</p>
+<p>softirq中断源： 中断的来源很多，所以softirq的种类也不少。内核的限制是不能超过32个，目前实际用到的有9个：</p>
+<p>其中两个用来实现tasklet(HI_SOFTIRQ和TASKLET_SOFTIRQ)。<br />
+两个用于网络的发送和接收操作(NET_TX_SOFTIRQ和NET_RX_SOFTIRQ)。<br />
+一个用于调度器(SCHED_SOFTIRQ)，实现SMP系统上周期性的负载均衡。<br />
+在启用高分辨率定时器时，还需要一个HRTIMER_SOFTIRQ。</p>
+<h3 id="tasklet">3.2 tasklet</h3>
+<p>tasklet是使用软件中断来实现。他们在内核中表示为struct tasklet_struct结构体，如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">tasklet_struct</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">tasklet_struct</span> *<span class="title">next</span>;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> state;</span><br><span class="line">  <span class="keyword">atomic_t</span> count;</span><br><span class="line">  <span class="keyword">bool</span> use_callback;</span><br><span class="line">  <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">    <span class="keyword">void</span> (*func)(<span class="keyword">unsigned</span> <span class="keyword">long</span> data);</span><br><span class="line">    <span class="keyword">void</span> (*callback)(struct tasklet_struct *t);</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> data;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>Tasklet本质上是不可再重入的，如果代码执行期间可随处中断，并且之后能够被再次安全的调用，就称其为可重入。这样设计Tasklet使其只能运行在一个cpu上（即使在SMP系统里），也就是调度它的cpu上。不同的Tasklet可以同时运行在不同的cpu上。</p>
-<h4 id="3-2-1-Tasklet的API"><a href="#3-2-1-Tasklet的API" class="headerlink" title="3.2.1 Tasklet的API"></a>3.2.1 Tasklet的API</h4><ul>
+<h4 id="tasklet的api">3.2.1 Tasklet的API</h4>
+<ul>
 <li>动态声明</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">tasklet_init</span><span class="params">(struct tasklet_struct *t,</span></span></span><br><span class="line"><span class="params"><span class="function">		<span class="keyword">void</span> (*func)(<span class="keyword">unsigned</span> <span class="keyword">long</span>), <span class="keyword">unsigned</span> <span class="keyword">long</span> data)</span></span>;</span><br></pre></td></tr></table></figure>
@@ -337,22 +344,25 @@
 <li>静态声明</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DECLARE_TASKLET(name, _callback)		\</span></span><br><span class="line"><span class="meta">struct tasklet_struct name = &#123;				\</span></span><br><span class="line"><span class="meta">	.count = ATOMIC_INIT(0),			\</span></span><br><span class="line"><span class="meta">	.callback = _callback,				\</span></span><br><span class="line"><span class="meta">	.use_callback = true,				\</span></span><br><span class="line"><span class="meta">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DECLARE_TASKLET_DISABLED(name, _callback)	\</span></span><br><span class="line"><span class="meta">struct tasklet_struct name = &#123;				\</span></span><br><span class="line"><span class="meta">	.count = ATOMIC_INIT(1),			\</span></span><br><span class="line"><span class="meta">	.callback = _callback,				\</span></span><br><span class="line"><span class="meta">	.use_callback = true,				\</span></span><br><span class="line"><span class="meta">&#125;</span></span><br></pre></td></tr></table></figure>
-<p>DECLARE_TASKLET声明的tasklet已经启用，已经准备好被调用在不需要调用其他函数的情况下，这是通过将count字段设置为0来实现的；而DECLARE_TASKLET_DISABLED声明的tasklet处于禁用状态，通过将count字段设置为1实现的，必须在其上调用tasklet_enable()之后才会启用调度。<br>tasklet_enable()的实现如下：</p>
+<p>DECLARE_TASKLET声明的tasklet已经启用，已经准备好被调用在不需要调用其他函数的情况下，这是通过将count字段设置为0来实现的；而DECLARE_TASKLET_DISABLED声明的tasklet处于禁用状态，通过将count字段设置为1实现的，必须在其上调用tasklet_enable()之后才会启用调度。 tasklet_enable()的实现如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">tasklet_enable</span><span class="params">(struct tasklet_struct *t)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  smp_mb__before_atomic();</span><br><span class="line">  atomic_dec(&amp;t-&gt;count);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>要失能tasklet需要调用tasklet_disable函数,其实现如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">tasklet_disable</span><span class="params">(struct tasklet_struct *t)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  tasklet_disable_nosync(t);</span><br><span class="line">  tasklet_unlock_wait(t);</span><br><span class="line">  smp_mb();</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">tasklet_disable_nosync</span><span class="params">(struct tasklet_struct *t)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  atomic_inc(&amp;t-&gt;count);</span><br><span class="line">  smp_mb__after_atomic();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h4 id="3-2-2-Tasklet的调度"><a href="#3-2-2-Tasklet的调度" class="headerlink" title="3.2.2 Tasklet的调度"></a>3.2.2 Tasklet的调度</h4><p>tasklet的调度是通过如下两个函数实现的：</p>
+<h4 id="tasklet的调度">3.2.2 Tasklet的调度</h4>
+<p>tasklet的调度是通过如下两个函数实现的：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">tasklet_schedule</span><span class="params">(struct tasklet_struct *t)</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="keyword">void</span> <span class="title">tasklet_hi_schedule</span><span class="params">(struct tasklet_struct *t)</span></span></span><br></pre></td></tr></table></figure>
 <p>内核把普通优先级和高优先级的tasklet维护在两个不同的链表中。tasklet_schedule将tasklet添加到普通优先级链表中，用TASKLET_SOFTIRQ来标志调度相关的softirq。tasklet_hi_schedule将tasklet添加到高优先级链表中，用HI_SOFTIRQ来标志调度相关的softirq。</p>
-<p>下面是tasklet的一些特点：   </p>
+<p>下面是tasklet的一些特点：</p>
 <ul>
 <li>在已经被调度但还未开始执行的tasklet上调用tasklet_schedule将不会执行任何操作，该tasklet最终也只执行一次。</li>
 <li>可以在tasklet中调用tasklet_schedule，意味着tasklet可以调度自己。</li>
 <li>高优先级的tasklet总是在普通优先级的tasklet之前执行，滥用高优先级的tasklet会导致系统延时增加。</li>
 </ul>
 <p>调用tasklet_kill可以停止tasklet（等待当前执行完毕后再杀掉）。</p>
-<h3 id="3-3-workqueue"><a href="#3-3-workqueue" class="headerlink" title="3.3 workqueue"></a>3.3 workqueue</h3><p>与软中断和tasklet不同，他们运行在中断上下文，不可抢占，而workqueue运行在进程上下文中，可以抢占，可以调度当然最直接的就是可以睡眠。这里的睡眠是指可以执行导致线程睡眠的操作，比如持有互斥锁，调用usleep等操作。工作队列是构建在内核线程之上的，内核有两种方法处理工作队列。一种是默认的共享工作队列，由一组内核线程处理，每个内核线程运行在一个cpu上。一旦有工作任务需要调度，就让该工作到全局工作队列中排队，他将在合适的时候执行。另一种是专用内核线程内运行工作队列。这意味着无论何时需要执行工作队列处理程序，都会唤醒专用内核线程来处理它，而不是默认的预定义内核线程。</p>
-<h4 id="3-3-1-共享队列"><a href="#3-3-1-共享队列" class="headerlink" title="3.3.1 共享队列"></a>3.3.1 共享队列</h4><p>除非别无选择，或者需要关键性能，又或者需要控制从工作队列初始化到工作调度的每个细节，否则，如果只是偶尔提交任务，则应使用内核提供的共享工作队列。这队列被整个系统共享，可以但不应该长时间独占该队列。</p>
+<h3 id="workqueue">3.3 workqueue</h3>
+<p>与软中断和tasklet不同，他们运行在中断上下文，不可抢占，而workqueue运行在进程上下文中，可以抢占，可以调度当然最直接的就是可以睡眠。这里的睡眠是指可以执行导致线程睡眠的操作，比如持有互斥锁，调用usleep等操作。工作队列是构建在内核线程之上的，内核有两种方法处理工作队列。一种是默认的共享工作队列，由一组内核线程处理，每个内核线程运行在一个cpu上。一旦有工作任务需要调度，就让该工作到全局工作队列中排队，他将在合适的时候执行。另一种是专用内核线程内运行工作队列。这意味着无论何时需要执行工作队列处理程序，都会唤醒专用内核线程来处理它，而不是默认的预定义内核线程。</p>
+<h4 id="共享队列">3.3.1 共享队列</h4>
+<p>除非别无选择，或者需要关键性能，又或者需要控制从工作队列初始化到工作调度的每个细节，否则，如果只是偶尔提交任务，则应使用内核提供的共享工作队列。这队列被整个系统共享，可以但不应该长时间独占该队列。</p>
 <p>由于队列上挂起的任务在每个CPU上是串行执行的，因此任务不应该长时间睡。因为在它唤醒之前，该队列上的其他任务都无法运行，一个任务甚至不知道它和哪些任务共享工作队列，所以任务可能需要较长时间才能得到CPU。共享工作队列中的工作每个CPU上内核创建的events/n线程执行。</p>
 <p>在这种情况下，工作也必须用INIT_WORK宏来初始化。由于接下来要使用共享工作队列，因此不需要创建工作队列结构。只需要使用work_struct结构，并把它作参数传递。有4个函数可以调度共享工作队列上的工作。</p>
 <ul>
@@ -377,11 +387,12 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">cancel_delayed_work</span><span class="params">(struct delayed_work *dwork)</span></span></span><br></pre></td></tr></table></figure>
 <p>通过调用flush_scheduled_work刷新共享队列：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">flush_scheduled_work</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br></pre></td></tr></table></figure>
-<h4 id="3-3-2-专用工作队列"><a href="#3-3-2-专用工作队列" class="headerlink" title="3.3.2 专用工作队列"></a>3.3.2 专用工作队列</h4><p>这里，工作队列代表struct workqueue_struct的实例，在工作队列中排队的工作表示为struct work_struct的实例。在内核线程中调度工作之前需要执行以下4步。</p>
+<h4 id="专用工作队列">3.3.2 专用工作队列</h4>
+<p>这里，工作队列代表struct workqueue_struct的实例，在工作队列中排队的工作表示为struct work_struct的实例。在内核线程中调度工作之前需要执行以下4步。</p>
 <ul>
 <li>声明/初始化struct workqueue_struct.</li>
 <li>创建工作函数。</li>
-<li>创建struct work_strtuct，这样就可以把工作函数嵌入workstruct中。 </li>
+<li>创建struct work_strtuct，这样就可以把工作函数嵌入workstruct中。</li>
 <li>把工作函数嵌入work struct中。</li>
 </ul>
 <p>下面的函数定义在include/linux/workqueue.h内。</p>
@@ -426,17 +437,18 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">queue_work_on</span><span class="params">(<span class="keyword">int</span> cpu, struct workqueue_struct *wq,</span></span></span><br><span class="line"><span class="params"><span class="function">		   struct work_struct *work)</span></span></span><br></pre></td></tr></table></figure>
 <p>对延迟的工作，可以使用下面的函数：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">queue_delayed_work_on</span><span class="params">(<span class="keyword">int</span> cpu, struct workqueue_struct *wq,</span></span></span><br><span class="line"><span class="params"><span class="function">			   struct delayed_work *dwork, <span class="keyword">unsigned</span> <span class="keyword">long</span> delay)</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="3-4-threaded-irq"><a href="#3-4-threaded-irq" class="headerlink" title="3.4 threaded irq"></a>3.4 threaded irq</h3><p>线程化中断的主要目标是将中断禁用时间减少到最低限度。使用线程化中断，注册中断处理程序的方式将得到简化。甚至不必自己调度下半部，线程化核心会完成。下半部在专用内核线程中执行。这里使用request_threaded_irq()来替代request_irq();</p>
+<h3 id="threaded-irq">3.4 threaded irq</h3>
+<p>线程化中断的主要目标是将中断禁用时间减少到最低限度。使用线程化中断，注册中断处理程序的方式将得到简化。甚至不必自己调度下半部，线程化核心会完成。下半部在专用内核线程中执行。这里使用request_threaded_irq()来替代request_irq();</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">request_threaded_irq</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">int</span> irq, <span class="keyword">irq_handler_t</span> handler,</span></span></span><br><span class="line"><span class="params"><span class="function">			 <span class="keyword">irq_handler_t</span> thread_fn, <span class="keyword">unsigned</span> <span class="keyword">long</span> irqflags,</span></span></span><br><span class="line"><span class="params"><span class="function">			 <span class="keyword">const</span> <span class="keyword">char</span> *devname, <span class="keyword">void</span> *dev_id)</span></span></span><br></pre></td></tr></table></figure>
 <p>request_threaded_irq()函数在其参数中接收两个函数。</p>
 <ul>
-<li><p>@handler函数：这与使用request_irq()注册时使用的函数一样。它表示上半部函数，在原子上下文（或硬中断）中运行。如果它能更快地处理中断，就可以根本不用下半部，它应该返回IRQ_HANDLED。但是，如果中断处理需要100us以上，如前所述，则应该使用下半部。在这种情况下，它应该返回IRQ_WAKE_THREAD，从而导致调度thread_fn函数（必须提供）。</p>
-</li>
-<li><p>@thread_fn函数：这代表下半部，由上半部调度。当硬中断处理程序（handler函数）返回IRQ_WAKE_THREAD时，将调度与该下半部相关联的内核线程，在内核线程运行时调用thread_fn函数。thread_fn函数完成时必须返回 IRQ_HANDLED。执行后，再重新触发该中断，并且在硬中断返回IRQWAKE_THREAD之前，内核线程不会被再次调度。</p>
-</li>
+<li><p><span class="citation" data-cites="handler函数">@handler函数</span>：这与使用request_irq()注册时使用的函数一样。它表示上半部函数，在原子上下文（或硬中断）中运行。如果它能更快地处理中断，就可以根本不用下半部，它应该返回IRQ_HANDLED。但是，如果中断处理需要100us以上，如前所述，则应该使用下半部。在这种情况下，它应该返回IRQ_WAKE_THREAD，从而导致调度thread_fn函数（必须提供）。</p></li>
+<li><p><span class="citation" data-cites="thread_fn函数">@thread_fn函数</span>：这代表下半部，由上半部调度。当硬中断处理程序（handler函数）返回IRQ_WAKE_THREAD时，将调度与该下半部相关联的内核线程，在内核线程运行时调用thread_fn函数。thread_fn函数完成时必须返回 IRQ_HANDLED。执行后，再重新触发该中断，并且在硬中断返回IRQWAKE_THREAD之前，内核线程不会被再次调度。</p></li>
 </ul>
 <p>在任何能够使用工作队列调度下半部的地方，都可以使用线程化中断。真正的线程化中断必须定义handler 和thread_fn。如果handler 为NULL，而thread_fn不为NULL），则内核将安装默认的硬中断处理程序，它将简单地返回IRQ_WAKE_THREAD来调度下半部。handler总是在中断上下文中调用，无论是开发人员定义还是由内核默认提供：</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvaXJxX3N1YnN5c3RlbS9pbnRlcnJ1cHRfc3Vic3lzdGVtX2FyY2hpdGVjdHVyZS5odG1s">http://www.wowotech.net/irq_subsystem/interrupt_subsystem_architecture.html<i class="fa fa-external-link-alt"></i></span><br>《linux设备驱动开发》   </p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvaXJxX3N1YnN5c3RlbS9pbnRlcnJ1cHRfc3Vic3lzdGVtX2FyY2hpdGVjdHVyZS5odG1s">http://www.wowotech.net/irq_subsystem/interrupt_subsystem_architecture.html<i class="fa fa-external-link-alt"></i></span><br />
+《linux设备驱动开发》</p>
 
     </div>
 
@@ -545,7 +557,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E7%A1%AC%E4%BB%B6%E7%9B%B8%E5%85%B3%E6%8F%8F%E8%BF%B0"><span class="nav-text">1. 硬件相关描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-text">2. 中断处理流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Linux%E7%B3%BB%E7%BB%9F%E5%AF%B9%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-text">3. Linux系统对中断处理的方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-softirq"><span class="nav-text">3.1 softirq</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-tasklet"><span class="nav-text">3.2 tasklet</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-1-Tasklet%E7%9A%84API"><span class="nav-text">3.2.1 Tasklet的API</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-2-Tasklet%E7%9A%84%E8%B0%83%E5%BA%A6"><span class="nav-text">3.2.2 Tasklet的调度</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-workqueue"><span class="nav-text">3.3 workqueue</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-1-%E5%85%B1%E4%BA%AB%E9%98%9F%E5%88%97"><span class="nav-text">3.3.1 共享队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-2-%E4%B8%93%E7%94%A8%E5%B7%A5%E4%BD%9C%E9%98%9F%E5%88%97"><span class="nav-text">3.3.2 专用工作队列</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-threaded-irq"><span class="nav-text">3.4 threaded irq</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E7%9B%B8%E5%85%B3%E6%8F%8F%E8%BF%B0"><span class="nav-text">1. 硬件相关描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86%E6%B5%81%E7%A8%8B"><span class="nav-text">2. 中断处理流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E7%B3%BB%E7%BB%9F%E5%AF%B9%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-text">3. Linux系统对中断处理的方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#softirq"><span class="nav-text">3.1 softirq</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tasklet"><span class="nav-text">3.2 tasklet</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#tasklet%E7%9A%84api"><span class="nav-text">3.2.1 Tasklet的API</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tasklet%E7%9A%84%E8%B0%83%E5%BA%A6"><span class="nav-text">3.2.2 Tasklet的调度</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#workqueue"><span class="nav-text">3.3 workqueue</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E9%98%9F%E5%88%97"><span class="nav-text">3.3.1 共享队列</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%93%E7%94%A8%E5%B7%A5%E4%BD%9C%E9%98%9F%E5%88%97"><span class="nav-text">3.3.2 专用工作队列</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#threaded-irq"><span class="nav-text">3.4 threaded irq</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -630,7 +642,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">958k</span>
+    <span title="站点总字数">987k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
