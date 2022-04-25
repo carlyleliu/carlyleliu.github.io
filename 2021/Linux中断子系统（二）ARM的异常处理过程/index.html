@@ -35,7 +35,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/ARM64_ELEVEL.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/armv8_vector.png">
 <meta property="article:published_time" content="2021-09-14T08:03:15.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:21:56.726Z">
+<meta property="article:modified_time" content="2022-04-25T07:56:58.829Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="IRQ">
 <meta name="twitter:card" content="summary">
@@ -295,7 +295,7 @@
 <p>ARM64架构的安全扩展定义了两种安全状态，正常世界和安全世界，两个世界只能通过异常级别3的安全监视器切换</p>
 <h2 id="异常类型">2. 异常类型</h2>
 <h3 id="中断">2.1. 中断</h3>
-<p>在ARM处理器中，FIQ（FastInterruptreQuest）的优先级要高于IRQ（Interrupt ReQuest）。在芯片内部，分别由IRQ和FIQ两根中断线连接到处理器内部。通常，SoC内部会有一个中断控制器，众多外部设备的中断引脚会连接到中断控制器，由中断控制器负责中断优先级调度，然后发送中断信号给处理器。</p>
+<p>在ARM处理器中，FIQ（Fast Interruptre Quest）的优先级要高于IRQ（Interrupt ReQuest）。在芯片内部，分别由IRQ和FIQ两根中断线连接到处理器内部。通常，SoC内部会有一个中断控制器，众多外部设备的中断引脚会连接到中断控制器，由中断控制器负责中断优先级调度，然后发送中断信号给处理器。</p>
 <p>当外部设备发生重要的事情时需要通知处理器，中断发生的时刻和当前正在执行的指令无关，因此中断的发生时间点是异步的。对于处理器来说，中断常常猝不及防，但是又不得不停止当前执行的代码来处理中断。在ARMv8架构中，中断属于异步模式的异常。</p>
 <h3 id="中止">2.2. 中止</h3>
 <p>中止（abort）主要有指令中止（instruction abort）和数据中止（data abort）两种，通常是因为访问外部存储单元时发生了错误，处理器内部的MMU（Memory Management Unit）能捕获这些错误并且报告给处理器。指令中止是指当处理器尝试执行某条指令时发生了错误，而数据中止是指使用加载或存储指令读写外部存储单元时发生了错误。</p>
@@ -304,39 +304,47 @@
 <h3 id="软件产生的异常">2.4. 软件产生的异常</h3>
 <p>ARMv8加构提供了3种软件产生的异常。发生这些异常通常是因为软件想尝试进入高的异常等级。</p>
 <ul>
-<li>SVC指令：允许用户模式下的程序请求操作系统服务。</li>
-<li>HVC指令：允许客户机（guestOS）请求主机服务。</li>
-<li>SMC指令：允许普通世界（normal world）中的程序请求安全监控服务。</li>
+<li>SVC指令：允许用户模式下的程序请求操作系统服务</li>
+<li>HVC指令：允许客户机（guestOS）请求主机服务</li>
+<li>SMC指令：允许普通世界（normal world）中的程序请求安全监控服务</li>
 </ul>
 <h2 id="同步异常和异步异常">3. 同步异常和异步异常</h2>
 <p>ARMv8架构把异常分成同步异常和异步异常两种。同步异常是指处理器需要等待异常处理的结果，然后再继续执行后面的指令，比如数据中止发生时我们知道发生数据异常的地址，因而可以在异常处理函数中修复这个地址。常见的同步异常如下。</p>
 <ul>
-<li>尝试访问异常等级不恰当的寄存器。</li>
-<li>尝试执行被关闭或没有定义（UNDEFINED）的指令。</li>
-<li>使用没有对齐的SP。</li>
-<li>尝试执行PC没有对齐的指令。</li>
-<li>软件产生的异常，比如执行系统调用（SVC）、HVC或SMC指令。</li>
-<li>因地址翻译或权限等导致的数据异常。</li>
-<li>因地址翻译或权限等导致的指令异常。</li>
-<li>调试导致的异常，比如断点异常、观察点异常、软件单步异常等。</li>
+<li>尝试访问异常等级不恰当的寄存器</li>
+<li>尝试执行被关闭或没有定义（UNDEFINED）的指令</li>
+<li>使用没有对齐的SP</li>
+<li>尝试执行PC没有对齐的指令</li>
+<li>软件产生的异常，比如执行系统调用（SVC）、HVC或SMC指令</li>
+<li>因地址翻译或权限等导致的数据异常</li>
+<li>因地址翻译或权限等导致的指令异常</li>
+<li>调试导致的异常，比如断点异常、观察点异常、软件单步异常等</li>
 </ul>
-<p>中断发生时，处理器正在处理的指令和中断是完全没有关系的，它们之间没有依赖关系因此，指令异常和数据异常称为同步异常，而中断称为异步异常。常见的异步异常包括物理中断和虚拟中断。 物理中断分为系统错误、IRQ、FIQ。 虚拟中断分为vSError、 vIRQ、vFIQ。</p>
+<p>中断发生时，处理器正在处理的指令和中断是完全没有关系的，它们之间没有依赖关系因此，指令异常和数据异常称为同步异常，而中断称为异步异常。常见的异步异常包括物理中断和虚拟中断。</p>
+<ul>
+<li>物理中断分为系统错误、IRQ、FIQ。</li>
+<li>虚拟中断分为vSError、 vIRQ、vFIQ。</li>
+</ul>
 <h2 id="异常的发生和退出">4. 异常的发生和退出</h2>
 <p>当异常发生时，CPU核心能感知到异常发生，而且对应有目标异常等级（target excentior level）。CPU会自动做如下一些事情。</p>
 <ul>
-<li>将处理器状态寄存器PSTATE保存到对应目标异常等级的SPSR_ELx中。</li>
-<li>将返回地址保存在对应目标异常等级的ELRELx中。</li>
-<li>把PSTATE寄存器里的DAIF域都设置为1，这相当于把调试异常、系统错误 （SError）、IRQ以及FIQ都关闭了。PSTATE寄存器是ARMv8里新增的寄存器。如果出现同步异常，那么究竟是什么原因导致的呢？具体原因需要查看ESR_ELx。</li>
-<li>设置栈指针，指向对应目标异常等级下的栈，自动切换SP到SP_ELx。</li>
-<li>CPU处理器会从异常发生现场的异常等级切换到对应目标异常等级，然后跳转到异常向量表并执行。</li>
+<li>将处理器状态寄存器PSTATE保存到对应目标异常等级的SPSR_ELx中</li>
+<li>将返回地址保存在对应目标异常等级的ELRELx中</li>
+<li>把PSTATE寄存器里的DAIF域都设置为1，这相当于把调试异常、系统错误 （SError）、IRQ以及FIQ都关闭了。PSTATE寄存器是ARMv8里新增的寄存器。如果出现同步异常，那么究竟是什么原因导致的呢？具体原因需要查看ESR_ELx</li>
+<li>设置栈指针，指向对应目标异常等级下的栈，自动切换SP到SP_ELx</li>
+<li>CPU处理器会从异常发生现场的异常等级切换到对应目标异常等级，然后跳转到异常向量表并执行</li>
 </ul>
 <p>上述是ARMv8处理器检测到异常发生后自动做的事情。操作系统需要做的事情是从中断向量表开始，根据异常发生的类型，跳转到合适的异常向量表。异常向量表中的每项会保存一个异常处理的跳转函数，然后跳转到恰当的异常处理函数并处理异常。</p>
 <p>当操作系统的异常处理完成后，执行一条eret指令即可从异常返回。这条指令会自动完成如下工作</p>
 <ul>
-<li>从ELR_ELx中恢复PC指针。</li>
-<li>从SPSR_ELx恢复处理器的状态。</li>
+<li>从ELR_ELx中恢复PC指针</li>
+<li>从SPSR_ELx恢复处理器的状态</li>
 </ul>
-<p>中断处理过程是在中断关闭的情况下进行的，那么中断处理完成后，应该在什么时候把中断打开呢？ 当中断发生时，CPU会把PSTATE寄存器中的值保存到对应目标异常等级的SPSRELx中，并且把PSTATE寄存器里的DAIF域都设置为1，这相当于把本地CPU的中断关闭了。 当中断完成后，操作系统调用eret指令以返回中断现场，此时会把SPSRELx恢复到PSTATE寄存器中，这就相当于把中断打开了。</p>
+<p>中断处理过程是在中断关闭的情况下进行的，那么中断处理完成后，应该在什么时候把中断打开呢？</p>
+<ul>
+<li>当中断发生时，CPU会把PSTATE寄存器中的值保存到对应目标异常等级的SPSRELx中，并且把PSTATE寄存器里的DAIF域都设置为1，这相当于把本地CPU的中断关闭了。</li>
+<li>当中断完成后，操作系统调用eret指令以返回中断现场，此时会把SPSRELx恢复到PSTATE寄存器中，这就相当于把中断打开了。</li>
+</ul>
 <h2 id="异常向量表">5. 异常向量表</h2>
 <p>ARMv7架构的异常向量表比较简单，每个表项占用4字节，并且每个表项里存放了一条跳转指令。但是ARMv8架构的异常向量表发生了变化。每一个表项需要128字节，这样可以存放32条指令。注意，ARMv8指令集支持64位指令集，但是每一条指令的位宽是32位宽而不是64位宽。</p>
 <p>在下表中，异常向量表存放的基地址可以通过VBAR （Vector Base Address Register）来设置。VBAR是异常向量表的基地址寄存器。见《ARM Architecture Reference Manual，ARMv8，for ARMv8-A architecture profile v8.4》的D.1.10节。 <img src="/picture/linux/kernel/armv8_vector.png" /></p>
@@ -378,7 +386,7 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">  .altmacro</span><br><span class="line">  .macro label l</span><br><span class="line">l&amp;:</span><br><span class="line">  .endm</span><br></pre></td></tr></table></figure>
 <p>正确识别伪操作的字符串参数的这个问题也适用于 .irp和 .irpc中使用的标识符。</p>
 <p>.endm 标记宏定义的结尾。</p>
-<h3 id="源码解读">6.2. 源码解读</h3>
+<h3 id="源码解读">6.2 源码解读</h3>
 <p>下面看下Linux中arm64的异常向量表，在arch/arm64/kernel/entry.S文件中有：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Exception vectors.</span><br><span class="line"> */</span><br><span class="line">  .pushsection &quot;.entry.text&quot;, &quot;ax&quot;</span><br><span class="line"></span><br><span class="line">  .align	11</span><br><span class="line">SYM_CODE_START(vectors)</span><br><span class="line">    # 使用SP0寄存器的当前的异常类型的异常向量表</span><br><span class="line">  kernel_ventry	1, t, 64, sync		// Synchronous EL1t</span><br><span class="line">  kernel_ventry	1, t, 64, irq		// IRQ EL1t</span><br><span class="line">  kernel_ventry	1, t, 64, fiq		// FIQ EL1h</span><br><span class="line">  kernel_ventry	1, t, 64, error		// Error EL1t</span><br><span class="line"></span><br><span class="line">    # 使用SPx寄存器的当前异常类型的异常向量表</span><br><span class="line">  kernel_ventry	1, h, 64, sync		// Synchronous EL1h</span><br><span class="line">  kernel_ventry	1, h, 64, irq		// IRQ EL1h</span><br><span class="line">  kernel_ventry	1, h, 64, fiq		// FIQ EL1h</span><br><span class="line">  kernel_ventry	1, h, 64, error		// Error EL1h</span><br><span class="line"></span><br><span class="line">    # AArch64下低异常等级的异常向量表</span><br><span class="line">  kernel_ventry	0, t, 64, sync		// Synchronous 64-bit EL0</span><br><span class="line">  kernel_ventry	0, t, 64, irq		// IRQ 64-bit EL0</span><br><span class="line">  kernel_ventry	0, t, 64, fiq		// FIQ 64-bit EL0</span><br><span class="line">  kernel_ventry	0, t, 64, error		// Error 64-bit EL0</span><br><span class="line"></span><br><span class="line">    # AArch32下低异常等级的异常向量表</span><br><span class="line">  kernel_ventry	0, t, 32, sync		// Synchronous 32-bit EL0</span><br><span class="line">  kernel_ventry	0, t, 32, irq		// IRQ 32-bit EL0</span><br><span class="line">  kernel_ventry	0, t, 32, fiq		// FIQ 32-bit EL0</span><br><span class="line">  kernel_ventry	0, t, 32, error		// Error 32-bit EL0</span><br><span class="line">SYM_CODE_END(vectors)</span><br></pre></td></tr></table></figure>
 <p>上述异常向量表的定义和前面那张图是一致的，其中kernel_ventry是一个宏，他的实现如下：</p>
@@ -521,7 +529,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%BA%A7%E5%88%AB"><span class="nav-text">1. 异常级别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%B1%BB%E5%9E%8B"><span class="nav-text">2. 异常类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD"><span class="nav-text">2.1. 中断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%AD%A2"><span class="nav-text">2.2. 中止</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E4%BD%8D"><span class="nav-text">2.3. 复位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E4%BA%A7%E7%94%9F%E7%9A%84%E5%BC%82%E5%B8%B8"><span class="nav-text">2.4. 软件产生的异常</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%BC%82%E5%B8%B8%E5%92%8C%E5%BC%82%E6%AD%A5%E5%BC%82%E5%B8%B8"><span class="nav-text">3. 同步异常和异步异常</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%9A%84%E5%8F%91%E7%94%9F%E5%92%8C%E9%80%80%E5%87%BA"><span class="nav-text">4. 异常的发生和退出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8"><span class="nav-text">5. 异常向量表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%9E%AF%E7%87%A5"><span class="nav-text">6. Linux中的实现（枯燥）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E5%AE%8F%E5%AE%9A%E4%B9%89"><span class="nav-text">6.1. 汇编宏定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB"><span class="nav-text">6.2. 源码解读</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%BA%A7%E5%88%AB"><span class="nav-text">1. 异常级别</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%B1%BB%E5%9E%8B"><span class="nav-text">2. 异常类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD"><span class="nav-text">2.1. 中断</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%AD%A2"><span class="nav-text">2.2. 中止</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%8D%E4%BD%8D"><span class="nav-text">2.3. 复位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E4%BA%A7%E7%94%9F%E7%9A%84%E5%BC%82%E5%B8%B8"><span class="nav-text">2.4. 软件产生的异常</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%BC%82%E5%B8%B8%E5%92%8C%E5%BC%82%E6%AD%A5%E5%BC%82%E5%B8%B8"><span class="nav-text">3. 同步异常和异步异常</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%9A%84%E5%8F%91%E7%94%9F%E5%92%8C%E9%80%80%E5%87%BA"><span class="nav-text">4. 异常的发生和退出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8"><span class="nav-text">5. 异常向量表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%9E%AF%E7%87%A5"><span class="nav-text">6. Linux中的实现（枯燥）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E5%AE%8F%E5%AE%9A%E4%B9%89"><span class="nav-text">6.1. 汇编宏定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E8%A7%A3%E8%AF%BB"><span class="nav-text">6.2 源码解读</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -606,7 +614,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">987k</span>
+    <span title="站点总字数">984k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
