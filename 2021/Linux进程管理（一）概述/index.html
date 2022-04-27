@@ -36,7 +36,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_status.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_current.png">
 <meta property="article:published_time" content="2021-10-30T18:41:22.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:30:55.803Z">
+<meta property="article:modified_time" content="2022-04-26T02:53:58.124Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="task">
 <meta name="twitter:card" content="summary">
@@ -268,14 +268,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>9.7k</span>
+              <span>5.3k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>9 分钟</span>
+              <span>5 分钟</span>
             </span>
 
         </div>
@@ -290,119 +290,100 @@
         <p><img src="/picture/linux/brief/进程管理-概述.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZDg4NDFlMDg1MzA2ZjhjMzUxZjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <h2 id="进程的概念">1. 进程的概念</h2>
-<p>进程就是处于执行期的程序（目标码存放在某种存储介质上）。但进程并不仅仅局限于一段可执行程序代码（Unix称其为代码段，text section）。通常进程还要包含其他资源，像打开的文件，挂起的信号，内核内部数据，处理器状态，一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution），当然还包括用来存放全局变量的数据段等。实际上，进程就是正在执行的程序代码的实时结果。内核需要有效而又透明地管理所有细节。</p>
-<p>执行线程，简称线程（thread），是在进程中活动的对象。每个线程都拥有一个独立的程序计数器、进程栈和一组进程寄存器。内核调度的对象是线程，而不是进程。在传统的Unix系统中，一个进程只包含一个线程，但现在的系统中，包含多个线程的多线程程序司空见惯。稍后你会看到，Linux系统的线程实现非常特别：它对线程和进程并不特别区分。对Linux而言，线程只不过是一种特殊的进程罢了。</p>
-<p>在现代操作系统中，进程提供两种虚拟机制：虚拟处理器和虚拟内存。虽然实际上可能是许多进程正在分享一个处理器，但虚拟处理器给进程一种假象，让这些进程觉得自己在独享处理器。第4章将详细描述这种虚拟机制。而虚拟内存让进程在分配和管理内存时觉得自己拥有整个系统的所有内存资源。</p>
-<p>程序本身并不是进程，进程是处于执行期的程序以及相关的资源的总称。实际上，完全可能存在两个或多个不同的进程执行的是同一个程序。并且两个或两个以上并存的进程还可以共享许多诸如打开的文件、地址空间之类的资源。</p>
-<p>无疑，进程在创建它的时刻开始存活。在Linux系统中，这通常是调用fork()系统的结果，该系统调用通过复制一个现有进程来创建一个全新的进程。调用fork()的进程称为父进程，新产生的进程称为子进程。在该调用结束时，在返回点这个相同位置上，父进程恢复执行，子进程开始执行。fork()系统调用从内核返回两次：一次回到父进程，另一次回到新产生的子进程。</p>
-<p>通常，创建新的进程都是为了立即执行新的、不同的程序，而接着调用exec()这组函数就可以创建新的地址空间，并把新的程序载入其中。在现代Linux内核中，fork()实际上是由clone()系统调用实现的，后者将在后面讨论。</p>
-<p>最终，程序通过exit()系统调用退出执行。这个函数会终结进程并将其占用的资源释放掉。父进程可以通过wait()系统调用查询子进程是否终结，这其实使得进程拥有了等待特定进程执行完毕的能力。进程退出执行后被设置为僵死状态，直到它的父进程调用wait()或waitpid()为止。</p>
-<h2 id="进程描述符">2. 进程描述符</h2>
-<p>进程是操作系统中调度的实体，需要对进程所必须拥有的资源做抽象描述，这种批象描述称为讲程控制块（Process Control Block，PCB）。进程控制块需要描述如下几类信息。</p>
+<p>进程就是正在执行的程序代码的实时结果。但进程并不仅仅局限于一段可执行程序代码（Unix称其为代码段，text section）。通常进程还要包含其他资源，像打开的文件，挂起的信号，内核内部数据，处理器状态，一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution），当然还包括用来存放全局变量的数据段等。</p>
+<p>线程（thread），是在进程中活动的对象。每个线程都拥有一个独立的程序计数器、进程栈和一组进程寄存器。内核调度的对象是线程，而不是进程。对Linux而言，线程只不过是一种特殊的进程罢了。</p>
+<p>在现代操作系统中，进程提供两种虚拟机制：虚拟处理器和虚拟内存。</p>
 <ul>
-<li>进程的运行状态：包括就绪、运行、等待阻塞、僵尸等状态。</li>
-<li>程序计数器：记录当前进程运行到哪条指令了。</li>
-<li>CPU寄存器：主要保存当前运行的上下文，记录CPU所有必须保存下来的寄存器信息，以便当前进程调度出去之后还能调度回来并接着运行。</li>
-<li>CPU调度信息：包括进程优先级、调度队列和调度等相关信息。</li>
-<li>内存管理信息：进程使用的内存信息，比如进程的页表等。</li>
-<li>统计信息：包含进程运行时间等相关的统计信息。</li>
-<li>文件相关信息：包括进程打开的文件等。</li>
+<li>虚拟处理器给进程一种假象，让这些进程觉得自己在独享处理器</li>
+<li>虚拟内存让进程在分配和管理内存时觉得自己拥有整个系统的所有内存资源</li>
 </ul>
-<p>因此，进程控制块用来描述进程运行状况以及控制进程运行所需要的全部信息，它是操作系统用来感知进程存在的一种非常重要的数据结构。在任何操作系统的实现中，都需要用数据结构来描述进程控制块，所以在Linux内核里面采用名为task_struct的数据结构来描述。 task_struct数据结构很大，里面包含进程的所有相关的属性和信息。在进程的生命周期内，进程要和内核的很多模块进行交互，比如内存管理模块、进程调度模块以及文件系统等模块。因此，进程还包含了内存管理、进程调度、文件管理等方面的信息和状态。Linux内核利用链表task_list来存放所有进程描述符，task_struct数据结构定义在include/inux/sched.h文件中。 <img src="/picture/linux/kernel/task/task_list.png" /></p>
+<p>程序本身并不是进程，进程是处于执行期的程序以及相关的资源的总称。 ## 2. 进程描述符</p>
+<p>进程是操作系统中调度的实体，需要对进程所必须拥有的资源做抽象描述，这种对象描述称为进程控制块（Process Control Block，PCB）。进程控制块需要描述如下几类信息：</p>
+<ul>
+<li>进程的运行状态：包括就绪、运行、等待阻塞、僵尸等状态</li>
+<li>程序计数器：记录当前进程运行到哪条指令了</li>
+<li>CPU寄存器：主要保存当前运行的上下文，记录CPU所有必须保存下来的寄存器信息，以便当前进程调度出去之后还能调度回来并接着运行</li>
+<li>CPU调度信息：包括进程优先级、调度队列和调度等相关信息</li>
+<li>内存管理信息：进程使用的内存信息，比如进程的页表等</li>
+<li>统计信息：包含进程运行时间等相关的统计信息</li>
+<li>文件相关信息：包括进程打开的文件等</li>
+</ul>
+<p>在Linux内核里面采用名为task_struct的数据结构来描述，Linux内核利用链表task_list来存放所有进程描述符，task_struct数据结构定义在include/inux/sched.h文件中。 <img src="/picture/linux/kernel/task/task_list.png" /></p>
 <p>task_struct数据结构很大，里面包含的内容很多，可以简单归纳成如下几类。</p>
 <ul>
-<li>进程属性的相关信息。</li>
-<li>进程间的关系。</li>
-<li>进程调度的相关信息。</li>
-<li>内存管理的相关信息。</li>
-<li>文件管理的相关信息。</li>
-<li>信号的相关信息。</li>
-<li>资源限制的相关信息。</li>
+<li>进程属性的相关信息</li>
+<li>进程间的关系</li>
+<li>进程调度的相关信息</li>
+<li>内存管理的相关信息</li>
+<li>文件管理的相关信息</li>
+<li>信号的相关信息</li>
+<li>资源限制的相关信息</li>
 </ul>
 <h3 id="进程属性的相关信息">2.1. 进程属性的相关信息</h3>
 <p>进程属性相关信息主要包括和进程状态相关的信息，比如进程状态、进程的PID等信息。其中重要的成员如下。</p>
 <ul>
-<li>state成员：用来记录进程的状态，包括TASK_RUNNING、 TASK_INTERRUPTIBLE、 TASK_UNINTERRUPTIBLE、 EXIT_ZOMBIE、 TASK_DEAD等。</li>
-<li>pid成员：进程唯一的标识符（identifer）。pid被定义为整数类型，pid的默认最大值见/proc/sys/kernel/pid_max节点。</li>
-<li>flag成员：用来描述进程属性的一些标志位，这些标志位是在include/linux/sched.h中定义的。例如，进程退出时会设置PF_EXITING；fork完成之后不执行exec命令时，会设置PF_FORKNOEXEC等。</li>
-<li>exit _code和exit_signal成员：用来存放进程的退出值和终止信号，这样父进程就可以知道子进程的退出原因。</li>
-<li>pdeath_signal成员：父进程消亡时发出的信号。</li>
-<li>comm成员：存放可执行程序的名称。</li>
-<li>real_cred和cred成员：用来存放进程的一些认证信息，cred数据结构里包含了uid、 gid等信息。</li>
+<li>state成员：用来记录进程的状态，包括TASK_RUNNING、 TASK_INTERRUPTIBLE、 TASK_UNINTERRUPTIBLE、 EXIT_ZOMBIE、 TASK_DEAD等</li>
+<li>pid成员：进程唯一的标识符（identifer），pid被定义为整数类型，pid的默认最大值见/proc/sys/kernel/pid_max节点</li>
+<li>flag成员：用来描述进程属性的一些标志位，这些标志位是在include/linux/sched.h中定义的。例如，进程退出时会设置PF_EXITING；fork完成之后不执行exec命令时，会设置PF_FORKNOEXEC等</li>
+<li>exit _code和exit_signal成员：用来存放进程的退出值和终止信号，这样父进程就可以知道子进程的退出原因</li>
+<li>pdeath_signal成员：父进程消亡时发出的信号</li>
+<li>comm成员：存放可执行程序的名称</li>
+<li>real_cred和cred成员：用来存放进程的一些认证信息，cred数据结构里包含了uid、 gid等信息</li>
 </ul>
 <h3 id="进程调度的相关信息">2.2. 进程调度的相关信息</h3>
-<p>进程担负的一个很重要的角色是作为调度实体参与操作系统里的调度，这样就可以实现CPU的虚拟化，也就是每个进程都感觉直接拥有了CPU。宏观上看，各个进程都是并行执行的，但是微观上看，每个进程都是串行执行的。</p>
 <p>进程调度是操作系统中一个很热门的核心功能，这里先暂时列出Linux内核的task_struct数据结构中关于进程调度的一些重要成员。</p>
 <ul>
-<li>prio成员：保存着进程的动态优先级，是调度类考虑的优先级。</li>
-<li>static_prio成员：静态优先级，在进程启动时分配。内核不存储nice值，取而代之的是static_prio。</li>
-<li>normal_prio成员：基于static_prio和调度策略计算出来的优先级。</li>
-<li>rt_priority成员：实时进程的优先级。</li>
-<li>sched_class成员：调度类。</li>
-<li>se成员：普通进程调度实体。</li>
-<li>rt成员：实时进程调度实体。</li>
-<li>dl成员：deadline进程调度实体。</li>
-<li>policy成员：用来确定进程的类型，比如是普通进程还是实时进程。</li>
-<li>cpusallowed成员：进程可以在哪几个CPU上运行。</li>
+<li>prio成员：保存着进程的动态优先级，是调度类考虑的优先级</li>
+<li>static_prio成员：静态优先级，在进程启动时分配，内核不存储nice值，取而代之的是static_prio</li>
+<li>normal_prio成员：基于static_prio和调度策略计算出来的优先级</li>
+<li>rt_priority成员：实时进程的优先级</li>
+<li>sched_class成员：调度类</li>
+<li>se成员：普通进程调度实体</li>
+<li>rt成员：实时进程调度实体</li>
+<li>dl成员：deadline进程调度实体</li>
+<li>policy成员：用来确定进程的类型，比如是普通进程还是实时进程</li>
+<li>cpusallowed成员：进程可以在哪几个CPU上运行</li>
 </ul>
 <h3 id="进程间的关系">2.3 进程间的关系</h3>
 <p>系统中最初的第一个进程是idle进程（或者叫作进程0），此后的每个进程都有一个创建它的父讲程，进程本身也可以创建其他的进程，父进程可以创建多个进程，在进程的家族中，有父进程、子进程，还有兄弟进程。其中重要的成员如下。</p>
 <ul>
-<li>real_parent成员：指向当前进程的父进程的task_struct数据结构，real_parent是fork他的那个进程。</li>
-<li>parent成员：parent所指向的是跟踪（trace）自己的进程，如果进程没有被跟踪，将有parent 等于 real_parent。</li>
-<li>children成员：指向当前进程的子进程的链表。</li>
+<li>real_parent成员：指向当前进程的父进程的task_struct数据结构，real_parent是fork他的那个进程</li>
+<li>parent成员：parent所指向的是跟踪（trace）自己的进程，如果进程没有被跟踪，将有parent 等于 real_parent</li>
+<li>children成员：指向当前进程的子进程的链表</li>
 <li>sibling成员：指向当前进程的兄弟进程的链表</li>
-<li>group_leader成员：进程组的组长。</li>
+<li>group_leader成员：进程组的组长</li>
 </ul>
 <h3 id="内存管理和文件管理的相关信息">2.4. 内存管理和文件管理的相关信息</h3>
-<p>进程在加载运行之前需要加载到内存中，因此进程描述符必须包含与抽象描述内存相关的信息，还有一个指向mm_struct数据结构的指针mm。此外，进程在生命周期内总是需要通过打开文件、读写文件等操作来完成一些任务，这就和文件系统密切相关了。其中重要的成员如下。</p>
 <ul>
-<li>mm成员：指向进程所管理内存的总的抽象的数据结构mm_struct.</li>
-<li>fs成员：保存一个指向文件系统信息的指针</li>
-<li>files成员：保存一个指向进程的文件描述符表的指针。</li>
+<li>mm成员：指向进程所管理内存的总的抽象的数据结构mm_struct</li>
+<li>fs成员：保存一个指向文件系统信息的指</li>
+<li>files成员：保存一个指向进程的文件描述符表的指针</li>
 </ul>
 <h2 id="进程的生命周期">3. 进程的生命周期</h2>
-<p>虽然每个进程都是独立的个体，但是进程间经常需要做相关沟通和交流，典型的例子是文本进程需要等待键盘的输入。典型的操作系统中的进程如图3.3所示，其中包含如下状态: <img src="/picture/linux/kernel/task/task_status.png" /></p>
+<p>典型的操作系统中的进程如图3.3所示，其中包含如下状态: <img src="/picture/linux/kernel/task/task_status.png" /></p>
 <ul>
-<li>TASK_RUNNING（可运行态或就绪态）：这种状态的英文描述是正在运行的意思，可是在Linux内核里不一定是指进程正在运行，所以很容易让人混淆。它是指进程处于可执行状态，或许正在执行，或许在就绪队列中等待执行。因此，Linux内核对当前正在执行的进程没有给出明确的状态，不像典型操作系统里给出两个很明确的状态，比如就绪态和运行态。这种状态是运行态和就绪态的集合，所以读者需要额外注意。</li>
-<li>TASK_INTERRUPTIBLE（可中断睡眠态）：进程进入睡眠状态（被阻塞）以等待一旦条件达成或者资源就位，Linux内核就某些条件的达成或者某些资源的就位，可以把进程的状态设置成可运行态（TASK_RUNNING）并加入就绪队列。也有人将这种状态称为浅睡眠状态。</li>
-<li>TASK_UNINTERRUPTIBLE（不可中断态）：这种状态和上面的TASK_INTERRUPTIBLE状态类似，唯一不同的是，进程在睡眠等待时不受干扰，对信号不做任何反应，所以这种状态又称为不可中断态。通常，使用ps命令看到的被标记为D状态的进程就是处于不可中断态的进程，不可以发送SIGKILL信号终止它们，因为它们不响应信号。也有人把这种状态称为深度睡眠状态。</li>
-<li>TASK_STOPPED（终止态）：进程停止运行了。</li>
-<li>EXIT_ZOMBIE （僵尸态），进程已经消亡，但是task_struct数据结构还没有释放这种状态叫作僵尸状态，每个进程在自己的生命周期中都要经历这种状态。子进程退出时，父进程可以通过wait()或waitpid()来获取子进程消亡的原因。上述5种状态在某种条件下是可以相互转换的,也就是说，进程可以从一种状态转换到另外一种状太，比如进程在等待某些条件或资源时从可运行态转换到可中断态。 对于进程状态的设置，虽然可以通过简单的赋值语句来设置，比如： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">p-&gt;state = TASK_RUNNING;</span><br></pre></td></tr></table></figure> 但是建议读者采用Linux内核提供的两个常用的接口函数来设置进程的状态。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> set_current_state(state_value)          \</span></span><br><span class="line"><span class="meta">do&#123;                                             \</span></span><br><span class="line"><span class="meta">    smp_store_mb(current-&gt;state, (state_value));\</span></span><br><span class="line"><span class="meta">&#125; while(0)</span></span><br></pre></td></tr></table></figure> set_current_state()在设置进程状态时会考虑SMP多核环境下的高速缓存一致性问题</li>
+<li>TASK_RUNNING（可运行态或就绪态）：这种状态的英文描述是正在运行的意思，可是在Linux内核里不一定是指进程正在运行，所以很容易让人混淆。它是指进程处于可执行状态，或许正在执行，或许在就绪队列中等待执行</li>
+<li>TASK_INTERRUPTIBLE（可中断睡眠态）：进程进入睡眠状态（被阻塞）以等待，一旦条件达成或者资源就位，Linux内核就某些条件的达成或者某些资源的就位，可以把进程的状态设置成可运行态（TASK_RUNNING）并加入就绪队列。也有人将这种状态称为浅睡眠状态</li>
+<li>TASK_UNINTERRUPTIBLE（不可中断态）：这种状态和上面的TASK_INTERRUPTIBLE状态类似，唯一不同的是，进程在睡眠等待时不受干扰，对信号不做任何反应，所以这种状态又称为不可中断态。通常，使用ps命令看到的被标记为D状态的进程就是处于不可中断态的进程，不可以发送SIGKILL信号终止它们，因为它们不响应信号。也有人把这种状态称为深度睡眠状态</li>
+<li>TASK_STOPPED（终止态）：进程停止运行了</li>
+<li>EXIT_ZOMBIE （僵尸态），进程已经消亡，但是task_struct数据结构还没有释放这种状态叫作僵尸状态，每个进程在自己的生命周期中都要经历这种状态。子进程退出时，父进程可以通过wait()或waitpid()来获取子进程消亡的原因</li>
 </ul>
+<p>对于进程状态的设置，虽然可以通过简单的赋值语句来设置，比如：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">p-&gt;state = TASK_RUNNING;</span><br></pre></td></tr></table></figure>
+<p>但是建议读者采用Linux内核提供的两个常用的接口函数来设置进程的状态。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> set_current_state(state_value)          \</span></span><br><span class="line"><span class="meta">do&#123;                                             \</span></span><br><span class="line"><span class="meta">    smp_store_mb(current-&gt;state, (state_value));\</span></span><br><span class="line"><span class="meta">&#125; while(0)</span></span><br></pre></td></tr></table></figure>
+<p>set_current_state()在设置进程状态时会考虑SMP多核环境下的高速缓存一致性问题</p>
 <h2 id="进程标识">4. 进程标识</h2>
-<p>在创建时会为进程分配唯一的号码来标识，这个号码就是进程标识符（Process Identife PID）。PID存放在进程描述符的pid字段中，PID是int类型。为了循环使用PID，内核使用bitmap机制来管理当前已经分配的PID和空闲的PID，bitmap机制可以保证每个进程在创建时都能分配到唯一的号码。</p>
+<p>在创建时会为进程分配唯一的号码来标识，这个号码就是进程标识符（Process Identife PID）。为了循环使用PID，内核使用bitmap机制来管理当前已经分配的PID和空闲的PID，bitmap机制可以保证每个进程在创建时都能分配到唯一的号码。</p>
 <p>除了PID之外，Linux内核还引入了线程组的概念。一个线程组中的所有线程都使用和该线程组中主线程相同的PID，即该线程组中第一个线程的PID，它会被存入task_stuct数据结构的tgid成员中。这与POSIX 1003.1c标准里的规定有关，一个多线程应用程序中的所有线程都必须有相同的PID，这样就可以通过PID把信号发送给线程组里所有的线程。比如一个进程在创建之后，这时只有这个进程自己，它的PID和TGID是一样的。当这个进程创建一个新的线程之后，新线程有属于自己的PID，但是它的TGID还是指父进程的TGID，因为它和父进程同属一个线程组。</p>
 <p>getpid系统调用会返回当前进程的TGID而不是线程的PID，因为多线程应用程序中的所有线程都共享相同的PID。系统调用gettid会返回线程的PID。</p>
-<h3 id="real-user-id-和-real-group-id">4.1 real user ID 和 real group ID</h3>
-<p>real user ID 和 real group ID标识了该进程属于哪一个用户（哪一个组）。Swapper和init进程的real user ID 和 real group ID都被设定为root（ID=0），用户登陆后，其对应的shell进程的real user ID 和 real group ID会被设定为登录用户。这是login进程调用setuid函数设定的。在fork进程的时候，子进程的credentials是继承自其父进程。</p>
-<h3 id="effective-user-id-和-effective-group-id">4.2 effective user ID 和 effective group ID</h3>
-<p>就如同其命名，真正去检查一个进程是否有权限进行某些动作（例如访问IPC对象、通过系统调用请求内核服务等）的是effective user ID 和 effective group ID。一般而言，effective user ID（effective group ID）是和real user ID（real group ID）一样的，但是如果可执行文件设定了Set-User-ID（Set-Group-ID），那么在进程创建的时候，其effective user ID 和 effective group ID则分别等于该可执行文件的user ID。</p>
-<h3 id="saved-set-user-id-和-saved-set-group-id">4.3 saved set-user-ID 和 saved set-group-ID</h3>
-<p>Linux kernel中的task_struct中定义了这些ID如下：</p>
-<p>uid_t uid,euid,suid,fsuid;</p>
-<p>gid_t gid,egid,sgid,fsgid;</p>
-<p>这里的suid（sgid）表示了saved set-user-ID（saved set-group-ID），这里的变量命名非常不友好，表面看起来是save了real ID，但实际上是save了effective ID。为何要save effective ID？其实这是和一个准则相关的：一个进程应该以尽可能小的权限运行。大部分的嵌入式软件工程师都会忽略这一点，因为嵌入式系统基本不是多用户的，开发者都是用root登录进入系统，全部掌管一切。此外，saved set-user-ID（saved set-group-ID）是和Set-User-ID（Set-Group-ID）相关的。例如张三启动一个owner是root的可执行程序，并且该程序设定了Set-User-ID bit，那么，当该程序执行的时候，real user ID是张三，effective user ID是root，saved set-user-ID由于是copy自effective user ID，因此也是root。该进程并不是总是需要root权限，因此，基于进程应该以尽可能小的权限运行的准则，在不需root权限的时候可以通过系统调用修改effective user ID为张三（对于unprivileged的用户，effective user ID只能在real user ID和saved set-user-ID之间切换）。而在需要root权限的时候，可以通过系统调用修改effective user ID回root。正因为如此，进程才需要一个saved set-user-ID来保存原始的effective user ID。</p>
-<p>同样的道理适用于saved set-group-ID。</p>
-<h3 id="file-system-user-id-和-file-system-group-id">4.4 file-system user ID 和 file-system group ID</h3>
-<p>这个ID是linux特有的，传统的unix并没有这个ID。对于传统的unix，访问文件、发送signal，打开IPC的object等等的权限都是依据effective ID判断。对于linux，其余的权限仍然依据effective ID判断，但是对于文件的访问则使用file-system user ID 和 file-system group ID（当然，需要配合supplementary group IDs）。</p>
-<p>在linux kernel中，file-system user ID（file-system group ID）都是跟随effective user ID（effective group ID）。例如，如果owner是root的可执行文件如果设定了Set-User-ID bit，那么，当该程序执行的时候， effective user ID是root，file-system user ID也跟随effective user ID被设定为root。如果通过系统调用修改effective user ID，file-system user ID也会随之修改。这样就保证了linux的权限判断和传统的unix是一样的。不一样的地方在于linux提供了两个特别的系统调用setfsuid() 和setfsgid()来设定进程的file-system user ID和file-system group ID。</p>
-<p>为何linux要引入file-system user ID 和 file-system group ID？这是和NFS (Network File System)相关的。考虑下面的场景：运行NFS server进程的A主机开放其文件系统，运行NFS client进程的B主机可以通过mount NFS file system象访问本地文件那样访问A主机的文件。在这样的场景下，NFS client进程访问A主机上的文件当然应该应用NFS client的effective ID，但是由于是网络文件系统，实际访问文件的是NFS server进程。如果修改NFS server的effective ID的话，用户空间的进程可以通过向NFS server发送signal来攻击。解决这个问题有两个思路：</p>
-<ul>
-<li>不修改effective ID，引入file-system user ID（file-system group ID）</li>
-<li>修改effective ID，改变信号发送的机制。也就是当A进程发送信号给B进程，该操作是否允许不再和B进程的effective ID相关。</li>
-</ul>
-<p>在linux kernel的早期版本采用了方案一，但是2.0之后的kernel版本采用了方案二。因此，file-system user ID 和 file-system group ID应该是被废弃的，但是，为了软件的兼容性，linux kernel仍然保留了这两个file-system ID。</p>
-<h3 id="supplementary-group-ids">4.5 supplementary group IDs</h3>
-<p>当一个用户登录后，loggin程序（其user ID是root）会根据/etc/passwd(还有/etc/shadow)中的信息来校验密码，并设定该登录用户的shell进程的user ID和第一个group ID。由于一个用户ID可能属于多个group，通过/etc/group文件，loggin程序可以知道该用户还属于哪些group，并设定该登录用户的shell进程的supplementary group IDs。</p>
-<p>当用户通过shell创建新的进程的时候，子进程的supplementary group IDs是继承自其父进程。supplementary group IDs会配合file-system ID和effective ID来进行进程是否有访问某些资源权限的判定。</p>
 <h2 id="进程间的家族关系">5. 进程间的家族关系</h2>
 <p>Linux内核维护了进程之间的家族关系，比如：</p>
 <ul>
-<li>Linux内核在启动时会有一个init_task进程，它是系统中所有进程的“鼻祖”，称为进程0或idle进程。当系统没有进程需要调度时，调度器就会执行idle进程。idle进程在内核启动（start_kernel()函数）时静态创建，所有的核心数据结构都预先静态赋值。</li>
-<li>系统初始化快完成时会创建一个init进程，也就是常说的进程1，它是所有用户进程的祖先，从这个进程开始，所有的进程都将参与调度。</li>
-<li>如果进程A创建了进程B，那么进程A称为父进程，进程B称为子进程。如果进程B创建了进程C，那么进程A和进程C之间的关系就是祖孙关系。</li>
-<li>如果进程A创建了Bi（1 &lt; i&lt; n）个进程，那么这些进程之间为兄弟关系。作为进程描述符的task_struct数据结构使用4个成员来描述进程间的关系，
+<li>Linux内核在启动时会有一个init_task进程，它是系统中所有进程的“鼻祖”，称为进程0或idle进程。当系统没有进程需要调度时，调度器就会执行idle进程。idle进程在内核启动（start_kernel()函数）时静态创建，所有的核心数据结构都预先静态赋值</li>
+<li>系统初始化快完成时会创建一个init进程，也就是常说的进程1，它是所有用户进程的祖先，从这个进程开始，所有的进程都将参与调度</li>
+<li>如果进程A创建了进程B，那么进程A称为父进程，进程B称为子进程。如果进程B创建了进程C，那么进程A和进程C之间的关系就是祖孙关系</li>
+<li>如果进程A创建了Bi（1 &lt; i&lt; n）个进程，那么这些进程之间为兄弟关系。作为进程描述符的task_struct数据结构使用4个成员来描述进程间的关系
 <ul>
 <li>real parent：指向创建了进程A的描述符，如果进程A的父进程不存在了，则指向进程1（init进程）的进程描述符</li>
 <li>parent：指向进程的当前父进程，通常和real_parent一致</li>
@@ -410,13 +391,22 @@
 <li>silbling：将所有的兄弟进程都链接成一个链表，链表头在父进程的sibling成员中</li>
 </ul></li>
 </ul>
-<p>init_task进程的task_struct数据结构在init/init_task.c文件中静态初始化。 &lt;init/init_task.c&gt; <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> <span class="title">init_task</span></span></span><br><span class="line"><span class="class">#<span class="title">ifdef</span> <span class="title">CONFIG_ARCH_TASK_STRUCT_ON_STACK</span></span></span><br><span class="line"><span class="class">	__<span class="title">init_task_data</span></span></span><br><span class="line"><span class="class">#<span class="title">endif</span></span></span><br><span class="line"><span class="class">	__<span class="title">aligned</span>(<span class="title">L1_CACHE_BYTES</span>)</span></span><br><span class="line"><span class="class">=</span> &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_THREAD_INFO_IN_TASK</span></span><br><span class="line">  .thread_info	= INIT_THREAD_INFO(init_task),</span><br><span class="line">  .stack_refcount	= REFCOUNT_INIT(<span class="number">1</span>),</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  .__state	= <span class="number">0</span>,</span><br><span class="line">  .<span class="built_in">stack</span>		= init_stack,</span><br><span class="line">  .usage		= REFCOUNT_INIT(<span class="number">2</span>),</span><br><span class="line">  .flags		= PF_KTHREAD,</span><br><span class="line">  .prio		= MAX_PRIO - <span class="number">20</span>,</span><br><span class="line">  .static_prio	= MAX_PRIO - <span class="number">20</span>,</span><br><span class="line">  .normal_prio	= MAX_PRIO - <span class="number">20</span>,</span><br><span class="line">  .policy		= SCHED_NORMAL,</span><br><span class="line">  .cpus_ptr	= &amp;init_task.cpus_mask,</span><br><span class="line">  .user_cpus_ptr	= <span class="literal">NULL</span>,</span><br><span class="line">  .cpus_mask	= CPU_MASK_ALL,</span><br><span class="line">  .nr_cpus_allowed= NR_CPUS,</span><br><span class="line">  .mm		= <span class="literal">NULL</span>,</span><br><span class="line">  .active_mm	= &amp;init_mm,</span><br><span class="line">  .restart_block	= &#123;</span><br><span class="line">    .fn = do_no_restart_syscall,</span><br><span class="line">  &#125;,</span><br><span class="line">  .se		= &#123;</span><br><span class="line">    .group_node 	= LIST_HEAD_INIT(init_task.se.group_node),</span><br><span class="line">  &#125;,</span><br><span class="line">  .rt		= &#123;</span><br><span class="line">    .run_list	= LIST_HEAD_INIT(init_task.rt.run_list),</span><br><span class="line">    .time_slice	= RR_TIMESLICE,</span><br><span class="line">  &#125;,</span><br><span class="line">  .tasks		= LIST_HEAD_INIT(init_task.tasks),</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SMP</span></span><br><span class="line">  .pushable_tasks	= PLIST_NODE_INIT(init_task.pushable_tasks, MAX_PRIO),</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line">EXPORT_SYMBOL(init_task);</span><br></pre></td></tr></table></figure> 此外，系统中所有进程的task_struct数据结构都通过list_head类型的双向链表链在一起因此每个进程的task_struct数据结构都包含一个list_head类型的tasks成员。这个进程链表的头是init_task进程，也就是所谓的进程0。init_task进程的tasks.prev字段指向链表中最后插入的那个进程的task_struct数据结构的tasks成员。另外，如果这个进程的下面有线程组（进程的pid==tgid），那么线程会加入线程组的thread_group链表中。</p>
-<p>next_task()宏用来遍历下一个进程的task_struct数据结构，next_thread()用来遍历线程组中下一个线程的task_struct数据结构。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> next_task(p) \</span></span><br><span class="line"><span class="meta">	list_entry_rcu((p)-&gt;tasks.next, struct task_struct, tasks)</span></span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> struct task_struct *<span class="title">next_thread</span><span class="params">(<span class="keyword">const</span> struct task_struct *p)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> list_entry_rcu(p-&gt;thread_group.next,</span><br><span class="line">            struct task_struct, thread_group);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>Linux内核提供了一个很常用的宏for_each_process（p），用来扫描系统中所有的进程。这个宏从init_task进程开始遍历，一直循环到init_task为止。另外，宏for_each_process_thread用来遍历系统中所有的线程。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> next_task(p) \</span></span><br><span class="line"><span class="meta">	list_entry_rcu((p)-&gt;tasks.next, struct task_struct, tasks)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> for_each_process(p) \</span></span><br><span class="line"><span class="meta">	for (p = &amp;init_task ; (p = next_task(p)) != &amp;init_task ; )</span></span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> for_each_process_thread(p, t)	\</span></span><br><span class="line"><span class="meta">	for_each_process(p) for_each_thread(p, t)</span></span><br></pre></td></tr></table></figure></p>
+<p>init_task进程的task_struct数据结构在init/init_task.c文件中静态初始化。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"> &lt;init/init_task.c&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> <span class="title">init_task</span></span></span><br><span class="line"><span class="class">#<span class="title">ifdef</span> <span class="title">CONFIG_ARCH_TASK_STRUCT_ON_STACK</span></span></span><br><span class="line"><span class="class">	__<span class="title">init_task_data</span></span></span><br><span class="line"><span class="class">#<span class="title">endif</span></span></span><br><span class="line"><span class="class">	__<span class="title">aligned</span>(<span class="title">L1_CACHE_BYTES</span>)</span></span><br><span class="line"><span class="class">=</span> &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_THREAD_INFO_IN_TASK</span></span><br><span class="line">  .thread_info	= INIT_THREAD_INFO(init_task),</span><br><span class="line">  .stack_refcount	= REFCOUNT_INIT(<span class="number">1</span>),</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  .__state	= <span class="number">0</span>,</span><br><span class="line">  .<span class="built_in">stack</span>		= init_stack,</span><br><span class="line">  .usage		= REFCOUNT_INIT(<span class="number">2</span>),</span><br><span class="line">  .flags		= PF_KTHREAD,</span><br><span class="line">  .prio		= MAX_PRIO - <span class="number">20</span>,</span><br><span class="line">  .static_prio	= MAX_PRIO - <span class="number">20</span>,</span><br><span class="line">  .normal_prio	= MAX_PRIO - <span class="number">20</span>,</span><br><span class="line">  .policy		= SCHED_NORMAL,</span><br><span class="line">  .cpus_ptr	= &amp;init_task.cpus_mask,</span><br><span class="line">  .user_cpus_ptr	= <span class="literal">NULL</span>,</span><br><span class="line">  .cpus_mask	= CPU_MASK_ALL,</span><br><span class="line">  .nr_cpus_allowed= NR_CPUS,</span><br><span class="line">  .mm		= <span class="literal">NULL</span>,</span><br><span class="line">  .active_mm	= &amp;init_mm,</span><br><span class="line">  .restart_block	= &#123;</span><br><span class="line">    .fn = do_no_restart_syscall,</span><br><span class="line">  &#125;,</span><br><span class="line">  .se		= &#123;</span><br><span class="line">    .group_node 	= LIST_HEAD_INIT(init_task.se.group_node),</span><br><span class="line">  &#125;,</span><br><span class="line">  .rt		= &#123;</span><br><span class="line">    .run_list	= LIST_HEAD_INIT(init_task.rt.run_list),</span><br><span class="line">    .time_slice	= RR_TIMESLICE,</span><br><span class="line">  &#125;,</span><br><span class="line">  .tasks		= LIST_HEAD_INIT(init_task.tasks),</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SMP</span></span><br><span class="line">  .pushable_tasks	= PLIST_NODE_INIT(init_task.pushable_tasks, MAX_PRIO),</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br><span class="line">EXPORT_SYMBOL(init_task);</span><br></pre></td></tr></table></figure>
+<p>此外，系统中所有进程的task_struct数据结构都通过list_head类型的双向链表链在一起因此每个进程的task_struct数据结构都包含一个list_head类型的tasks成员。这个进程链表的头是init_task进程，也就是所谓的进程0。</p>
+<p>next_task()宏用来遍历下一个进程的task_struct数据结构，next_thread()用来遍历线程组中下一个线程的task_struct数据结构。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> next_task(p) \</span></span><br><span class="line"><span class="meta">	list_entry_rcu((p)-&gt;tasks.next, struct task_struct, tasks)</span></span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> struct task_struct *<span class="title">next_thread</span><span class="params">(<span class="keyword">const</span> struct task_struct *p)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> list_entry_rcu(p-&gt;thread_group.next,</span><br><span class="line">            struct task_struct, thread_group);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Linux内核提供了一个很常用的宏for_each_process（p），用来扫描系统中所有的进程。这个宏从init_task进程开始遍历，一直循环到init_task为止。另外，宏for_each_process_thread用来遍历系统中所有的线程。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> next_task(p) \</span></span><br><span class="line"><span class="meta">	list_entry_rcu((p)-&gt;tasks.next, struct task_struct, tasks)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> for_each_process(p) \</span></span><br><span class="line"><span class="meta">	for (p = &amp;init_task ; (p = next_task(p)) != &amp;init_task ; )</span></span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> for_each_process_thread(p, t)	\</span></span><br><span class="line"><span class="meta">	for_each_process(p) for_each_thread(p, t)</span></span><br></pre></td></tr></table></figure>
 <h2 id="获取当前进程">6. 获取当前进程</h2>
 <p>在内核编程中，为了访问进程的相关信息，通常需要获取进程的task_struct数据结构的指针。Linux内核提供了current宏，用它可以很方便地找到当前正在运行的进程的task_stuct数据结构。current宏的实现和具体的系统架构相关。在有的系统架构中，使用专门的寄存器来存放指向当前进程的task_struct数据结构的指针。</p>
 <p>在Linux4.0内核中，以ARM32为例，进程的内核栈大小通常是8KB，也就是两个物理页面的大小。内核栈里存放了thread_union数据结构，内核栈的底部存放了thread_info数据结构，顶部往下的空间用于内核栈空间。current()宏首先通过ARM32的SP寄存器来获取当前内核栈的地址，对齐后可以获取thread_info数据结构的指针，最后通过thread_info-&gt;task成员获取task_struct数据结构，如图所示。 <img src="/picture/linux/kernel/task/task_current.png" /></p>
-<p>在Linux5.4内核中，获取当前进程的内核栈的方式已经发生了巨大的变化。系统新增加了一个配置选项CONFIG_THREAD_INFO_IN_TASK，目的是允许把thread_info数据结构存放在task_struct数据结构中。在ARM64代码中，CONFIG_THREAD_INFO_IN_TASK个配置默认是打开的。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_THREAD_INFO_IN_TASK</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * For reasons of header soup (see current_thread_info()), this</span></span><br><span class="line"><span class="comment">	 * must be the first element of task_struct.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">thread_info</span>		<span class="title">thread_info</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure> 在ARM64代码中，可以把thread_info数据结构从进程的内核栈搬移到task_struct数据结构里。这样做的目的有两个：一是，在某些栈溢出的情况下可以防止thread_info数据结构的内容被破坏；二是，如果栈的地址被泄露，这种方法可以防止被攻击或者使攻击变得困难。thread_info数据结构定义在arch/arm64/include/asm/thread_info.h头文件中。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * low level task data that entry.S needs immediate access to.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">thread_info</span> &#123;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		flags;		<span class="comment">/* low level flags */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ARM64_SW_TTBR0_PAN</span></span><br><span class="line">  u64			ttbr0;		<span class="comment">/* saved TTBR0_EL1 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">    u64		preempt_count;	<span class="comment">/* 0 =&gt; preemptible, &lt;0 =&gt; bug */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_CPU_BIG_ENDIAN</span></span><br><span class="line">      u32	need_resched;</span><br><span class="line">      u32	count;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">      u32	count;</span><br><span class="line">      u32	need_resched;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    &#125; preempt;</span><br><span class="line">  &#125;;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SHADOW_CALL_STACK</span></span><br><span class="line">  <span class="keyword">void</span>			*scs_base;</span><br><span class="line">  <span class="keyword">void</span>			*scs_sp;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> thread_info数据结构相比Linux4.0中的版本去掉了一些成员，比如指向进程描述符的task指针。获取 task_struct数据结构的方法也发生了变化。在内核态，ARM64处理器运行在EL1下，sp_el0寄存器在EL1上下文中没有使用。利用sp_el0寄存器来存放task_stuct数据结构的地址是一种简洁有效的办法。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * We don&#x27;t use read_sysreg() as we want the compiler to cache the value where</span></span><br><span class="line"><span class="comment"> * possible.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> __always_inline struct task_struct *<span class="title">get_current</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> sp_el0;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">asm</span> (<span class="string">&quot;mrs %0, sp_el0&quot;</span> : <span class="string">&quot;=r&quot;</span> (sp_el0));</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (struct task_struct *)sp_el0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>在Linux5.4内核中，获取当前进程的内核栈的方式已经发生了巨大的变化。系统新增加了一个配置选项CONFIG_THREAD_INFO_IN_TASK，目的是允许把thread_info数据结构存放在task_struct数据结构中。在ARM64代码中，CONFIG_THREAD_INFO_IN_TASK个配置默认是打开的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_THREAD_INFO_IN_TASK</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">thread_info</span>		<span class="title">thread_info</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
+<p>在ARM64代码中，可以把thread_info数据结构从进程的内核栈搬移到task_struct数据结构里。这样做的目的有两个：一是，在某些栈溢出的情况下可以防止thread_info数据结构的内容被破坏；二是，如果栈的地址被泄露，这种方法可以防止被攻击或者使攻击变得困难。thread_info数据结构定义在arch/arm64/include/asm/thread_info.h头文件中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">thread_info</span> &#123;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		flags;		<span class="comment">/* low level flags */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ARM64_SW_TTBR0_PAN</span></span><br><span class="line">  u64			ttbr0;		<span class="comment">/* saved TTBR0_EL1 */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">    u64		preempt_count;	<span class="comment">/* 0 =&gt; preemptible, &lt;0 =&gt; bug */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_CPU_BIG_ENDIAN</span></span><br><span class="line">      u32	need_resched;</span><br><span class="line">      u32	count;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">      u32	count;</span><br><span class="line">      u32	need_resched;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    &#125; preempt;</span><br><span class="line">  &#125;;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SHADOW_CALL_STACK</span></span><br><span class="line">  <span class="keyword">void</span>			*scs_base;</span><br><span class="line">  <span class="keyword">void</span>			*scs_sp;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>thread_info数据结构相比Linux4.0中的版本去掉了一些成员，比如指向进程描述符的task指针。获取 task_struct数据结构的方法也发生了变化。在内核态，ARM64处理器运行在EL1下，sp_el0寄存器在EL1上下文中没有使用。利用sp_el0寄存器来存放task_stuct数据结构的地址是一种简洁有效的办法。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> __always_inline struct task_struct *<span class="title">get_current</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> sp_el0;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">asm</span> (<span class="string">&quot;mrs %0, sp_el0&quot;</span> : <span class="string">&quot;=r&quot;</span> (sp_el0));</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (struct task_struct *)sp_el0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="参考文献">参考文献</h3>
 <p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50LzE5Lmh0bWw=">http://www.wowotech.net/process_management/19.html<i class="fa fa-external-link-alt"></i></span><br />
 《奔跑吧Linux内核》<br />
@@ -529,7 +519,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-text">1. 进程的概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">2. 进程描述符</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%B1%9E%E6%80%A7%E7%9A%84%E7%9B%B8%E5%85%B3%E4%BF%A1%E6%81%AF"><span class="nav-text">2.1. 进程属性的相关信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9A%84%E7%9B%B8%E5%85%B3%E4%BF%A1%E6%81%AF"><span class="nav-text">2.2. 进程调度的相关信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-text">2.3 进程间的关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%92%8C%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86%E7%9A%84%E7%9B%B8%E5%85%B3%E4%BF%A1%E6%81%AF"><span class="nav-text">2.4. 内存管理和文件管理的相关信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-text">3. 进程的生命周期</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86"><span class="nav-text">4. 进程标识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#real-user-id-%E5%92%8C-real-group-id"><span class="nav-text">4.1 real user ID 和 real group ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#effective-user-id-%E5%92%8C-effective-group-id"><span class="nav-text">4.2 effective user ID 和 effective group ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#saved-set-user-id-%E5%92%8C-saved-set-group-id"><span class="nav-text">4.3 saved set-user-ID 和 saved set-group-ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#file-system-user-id-%E5%92%8C-file-system-group-id"><span class="nav-text">4.4 file-system user ID 和 file-system group ID</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#supplementary-group-ids"><span class="nav-text">4.5 supplementary group IDs</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%97%B4%E7%9A%84%E5%AE%B6%E6%97%8F%E5%85%B3%E7%B3%BB"><span class="nav-text">5. 进程间的家族关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E5%BD%93%E5%89%8D%E8%BF%9B%E7%A8%8B"><span class="nav-text">6. 获取当前进程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-text">1. 进程的概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%B1%9E%E6%80%A7%E7%9A%84%E7%9B%B8%E5%85%B3%E4%BF%A1%E6%81%AF"><span class="nav-text">2.1. 进程属性的相关信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9A%84%E7%9B%B8%E5%85%B3%E4%BF%A1%E6%81%AF"><span class="nav-text">2.2. 进程调度的相关信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%97%B4%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-text">2.3 进程间的关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%92%8C%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86%E7%9A%84%E7%9B%B8%E5%85%B3%E4%BF%A1%E6%81%AF"><span class="nav-text">2.4. 内存管理和文件管理的相关信息</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-text">3. 进程的生命周期</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86"><span class="nav-text">4. 进程标识</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%97%B4%E7%9A%84%E5%AE%B6%E6%97%8F%E5%85%B3%E7%B3%BB"><span class="nav-text">5. 进程间的家族关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E5%BD%93%E5%89%8D%E8%BF%9B%E7%A8%8B"><span class="nav-text">6. 获取当前进程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -614,7 +604,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">982k</span>
+    <span title="站点总字数">976k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
