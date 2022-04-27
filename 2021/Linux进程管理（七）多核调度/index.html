@@ -37,7 +37,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/queue_cpu.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_load.png">
 <meta property="article:published_time" content="2021-10-31T07:53:38.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:38:01.464Z">
+<meta property="article:modified_time" content="2022-04-27T09:24:59.308Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="smp sched">
 <meta name="twitter:card" content="summary">
@@ -269,14 +269,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>9.1k</span>
+              <span>8k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
+              <span>7 分钟</span>
             </span>
 
         </div>
@@ -367,44 +367,46 @@ decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time
 <h2 id="负载均衡算法">4 负载均衡算法</h2>
 <p>SMP负载均衡机制从注册软中断开始，系统每次调度tick中断时，都会检查当前是否需要处理SMP负载均衡。rebalance_domains()函数是负载均衡的核心入口。load_balance()函数中的主要流程如下。</p>
 <ul>
-<li>负载均衡以当前CPU开始，由下至上地遍历调度域，从最底层的调度域开始做负载均衡。</li>
-<li>允许做负载均衡的首要条件是当前CPU是调度域中的第一个CPU，或者当前CPU是空闲CPU。详见should_we_balance()函数。</li>
-<li>在调度域中查找最繁忙的调度组，更新调度域和调度组的相关信息，最后计算出调度域的不均衡负载值。</li>
-<li>本最繁忙的调度组中找出最繁忙的CPU，然后把繁忙CPU中的进程迁移到当前CPU上，迁移的负载量为不均衡负载值。</li>
+<li>负载均衡以当前CPU开始，由下至上地遍历调度域，从最底层的调度域开始做负载均衡</li>
+<li>允许做负载均衡的首要条件是当前CPU是调度域中的第一个CPU，或者当前CPU是空闲CPU。详见should_we_balance()函数</li>
+<li>在调度域中查找最繁忙的调度组，更新调度域和调度组的相关信息，最后计算出调度域的不均衡负载值</li>
+<li>本最繁忙的调度组中找出最繁忙的CPU，然后把繁忙CPU中的进程迁移到当前CPU上，迁移的负载量为不均衡负载值</li>
 </ul>
 <h2 id="per-cpu变量">5. Per-CPU变量</h2>
 <p>Per-CPU变量是Linux内核中同步机制的一种。当系统中的所有CPU都访问共享的一个变量v时，如果CPUO修改了变量v的值，而CPU1也在同时修改变量v的值，就会导致变量v的值不正确。一种可行的办法就是在CPU0访问变量v时使用原子加锁指令，这样CPU1访问变量v时就只能等待了，但这样做有两个比较明显的缺点。</p>
 <ul>
-<li>原子操作是比较耗时的。</li>
-<li>在现代处理器中，每个CPU都有L1缓存，因而多个CPU同时访问同一个变量就会导致缓存一致性问题。当某个CPU对共享的数据变量v进行修改后，其他CPU上对应的缓存行需要做无效操作，这对性能是有损耗的。</li>
+<li>原子操作是比较耗时的</li>
+<li>在现代处理器中，每个CPU都有L1缓存，因而多个CPU同时访问同一个变量就会导致缓存一致性问题。当某个CPU对共享的数据变量v进行修改后，其他CPU上对应的缓存行需要做无效操作，这对性能是有损耗的</li>
 </ul>
 <p>Per-CPU变量是为了解决上述问题而出现的一种有趣的特性，它为系统中的每个处理器都分配自身的副本。这样在多处理器系统中，当处理器只能访问属于自己的那个变量副本时，不需要考虑与其他处理器的竞争问题，还能充分利用处理器本地的硬件缓存来提升性能。</p>
 <h3 id="per-cpu变量的定义和声明">5.1. Per-CPU变量的定义和声明</h3>
 <p>Per-CPU变量的定义和声明有两种方式。一种是静态声明，另一种是动态分配。 静态的Per-CPU变量可通过DEFINE_PER_CPU和DECLARE_PER_CPU宏来定义和声明。这类变量与普通变量的主要区别在于它们存放在一个特殊的段中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Variant on the per-CPU variable declaration/definition theme used for</span></span><br><span class="line"><span class="comment"> * ordinary per-CPU variables.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DECLARE_PER_CPU(type, name)					\</span></span><br><span class="line"><span class="meta">	DECLARE_PER_CPU_SECTION(type, name, <span class="meta-string">&quot;&quot;</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEFINE_PER_CPU(type, name)					\</span></span><br><span class="line"><span class="meta">	DEFINE_PER_CPU_SECTION(type, name, <span class="meta-string">&quot;&quot;</span>)</span></span><br></pre></td></tr></table></figure>
-<p>用于动态分配和释放per-cpu变量的API函数如下。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> alloc_percpu(type)						\</span></span><br><span class="line"><span class="meta">	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\</span></span><br><span class="line"><span class="meta">						__alignof__(type))</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">free_percpu</span><span class="params">(<span class="keyword">void</span> __percpu *__pdata)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>用于动态分配和释放per-cpu变量的API函数如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> alloc_percpu(type)						\</span></span><br><span class="line"><span class="meta">	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\</span></span><br><span class="line"><span class="meta">						__alignof__(type))</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">free_percpu</span><span class="params">(<span class="keyword">void</span> __percpu *__pdata)</span></span>;</span><br></pre></td></tr></table></figure>
 <h3 id="使用per-cpu变量">5.2. 使用Per-CPU变量</h3>
 <p>对于静态定义的Per-CPU变量，可以通过get_cpu_var()和put_cpu_var()函数来访问和修改，这两个函数内置了关闭和打开内核抢占的功能。另外需要注意的是，这两个函数需要配对使用。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Must be an lvalue. Since @var must be a simple identifier,</span></span><br><span class="line"><span class="comment"> * we force a syntax error here if it isn&#x27;t.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> get_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">(*(&#123;									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(&amp;var);						\</span></span><br><span class="line"><span class="meta">&#125;))</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * The weird &amp; is necessary because sparse considers (void)(var) to be</span></span><br><span class="line"><span class="comment"> * a direct dereference of percpu variable (var).</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> put_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">do &#123;									\</span></span><br><span class="line"><span class="meta">	(void)&amp;(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">&#125; while (0)</span></span><br></pre></td></tr></table></figure>
-<p>对于动态分配的Per-CPU变量，需要通过以下接口来访问： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> get_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">(&#123;									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(var);						\</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> put_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">do &#123;									\</span></span><br><span class="line"><span class="meta">	(void)(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">&#125; while (0)</span></span><br></pre></td></tr></table></figure></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> get_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">(*(&#123;									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(&amp;var);						\</span></span><br><span class="line"><span class="meta">&#125;))</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> put_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">do &#123;									\</span></span><br><span class="line"><span class="meta">	(void)&amp;(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">&#125; while (0)</span></span><br></pre></td></tr></table></figure>
+<p>对于动态分配的Per-CPU变量，需要通过以下接口来访问：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> get_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">(&#123;									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(var);						\</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> put_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">do &#123;									\</span></span><br><span class="line"><span class="meta">	(void)(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">&#125; while (0)</span></span><br></pre></td></tr></table></figure>
 <h2 id="tlb处理">6. TLB处理</h2>
 <h3 id="单核处理">6.1 单核处理</h3>
 <p>CPU上运行了若干的用户空间的进程和内核线程，为了加快性能，CPU中往往设计了TLB和Cache这样的HW block。Cache为了更快的访问main memory中的数据和指令，而TLB是为了更快的进行地址翻译而将部分的页表内容缓存到了Translation lookasid buffer中，避免了从main memory访问页表的过程。</p>
 <p>假如不做任何的处理，那么在进程A切换到进程B的时候，TLB和Cache中同时存在了A和B进程的数据。对于kernel space其实无所谓，因为所有的进程都是共享的，但是对于A和B进程，它们各种有自己的独立的用户地址空间，也就是说，同样的一个虚拟地址X，在A的地址空间中可以被翻译成Pa，而在B地址空间中会被翻译成Pb，如果在地址翻译过程中，TLB中同时存在A和B进程的数据，那么旧的A地址空间的缓存项会影响B进程地址空间的翻译，因此，在进程切换的时候，需要有tlb的操作，以便清除旧进程的影响，具体怎样做呢？我们下面一一讨论。</p>
 <ul>
 <li><p>绝对没有问题，但是性能不佳的方案<br />
-当系统发生进程切换，从进程A切换到进程B，从而导致地址空间也从A切换到B，这时候，我们可以认为在A进程执行过程中，所有TLB和Cache的数据都是for A进程的，一旦切换到B，整个地址空间都不一样了，因此需要全部flush掉（注意：我这里使用了linux内核的术语，flush就是意味着将TLB或者cache中的条目设置为无效，对于一个ARM平台上的嵌入式工程师，一般我们会更习惯使用invalidate这个术语，不管怎样，在本文中，flush等于invalidate）。 这种方案当然没有问题，当进程B被切入执行的时候，其面对的CPU是一个干干净净，从头开始的硬件环境，TLB和Cache中不会有任何的残留的A进程的数据来影响当前B进程的执行。当然，稍微有一点遗憾的就是在B进程开始执行的时候，TLB和Cache都是冰冷的（空空如也），因此，B进程刚开始执行的时候，TLB miss和Cache miss都非常严重，从而导致了性能的下降。</p></li>
+所有TLB和Cache的数据都全部flush掉。当然，稍微有一点遗憾的就是在B进程开始执行的时候，TLB和Cache都是冰冷的（空空如也），因此，B进程刚开始执行的时候，TLB miss和Cache miss都非常严重，从而导致了性能的下降。</p></li>
 <li><p>如何提高TLB的性能<br />
-对一个模块的优化往往需要对该模块的特性进行更细致的分析、归类，上一节，我们采用进程地址空间这样的术语，其实它可以被进一步细分为内核地址空间和用户地址空间。对于所有的进程（包括内核线程），内核地址空间是一样的，因此对于这部分地址翻译，无论进程如何切换，内核地址空间转换到物理地址的关系是永远不变的，其实在进程A切换到B的时候，不需要flush掉，因为B进程也可以继续使用这部分的TLB内容（上图中，橘色的block）。对于用户地址空间，各个进程都有自己独立的地址空间，在进程A切换到B的时候，TLB中的和A进程相关的entry（上图中，青色的block）对于B是完全没有任何意义的，需要flush掉。 在这样的思路指导下，我们其实需要区分global和local（其实就是process-specific的意思）这两种类型的地址翻译，因此，在页表描述符中往往有一个bit来标识该地址翻译是global还是local的，同样的，在TLB中，这个标识global还是local的flag也会被缓存起来。有了这样的设计之后，我们可以根据不同的场景而flush all或者只是flush local tlb entry。</p></li>
+对于所有的进程（包括内核线程），内核地址空间是一样的，因此对于这部分地址翻译，无论进程如何切换，内核地址空间转换到物理地址的关系是永远不变的，不需要flush TLB。对于用户地址空间，各个进程都有自己独立的地址空间，在进程A切换到B的时候，TLB中的和A进程相关的entry（上图中，青色的block）需要flush掉。 我们其实需要区分global和local这两种类型的地址翻译，因此，在页表描述符中往往有一个bit来标识该地址翻译是global还是local的，同样的，在TLB中，这个标识global还是local的flag也会被缓存起来。有了这样的设计之后，我们可以根据不同的场景而flush all或者只是flush local tlb entry。</p></li>
 <li><p>特殊情况的考量<br />
-我们考虑下面的场景：进程A切换到内核线程K之后，其实地址空间根本没有必要切换，线程K能访问的就是内核空间的那些地址，而这些地址也是和进程A共享的。既然没有切换地址空间，那么也就不需要flush 那些进程特定的tlb entry了，当从K切换会A进程后，那么所有TLB的数据都是有效的，从大大降低了tlb miss。此外，对于多线程环境，切换可能发生在一个进程中的两个线程，这时候，线程在同样的地址空间，也根本不需要flush tlb。</p></li>
+我们考虑下面的场景：进程A切换到内核线程K之后，其实地址空间根本没有必要切换，此外，对于多线程环境，切换可能发生在一个进程中的两个线程，这时候，线程在同样的地址空间，也根本不需要flush tlb。</p></li>
 <li><p>进一步提升TLB的性能<br />
-还有可能进一步提升TLB的性能吗？有没有可能根本不flush TLB？ 当然可以，不过这需要我们在设计TLB block的时候需要识别process specific的tlb entry，也就是说，TLB block需要感知到各个进程的地址空间。为了完成这样的设计，我们需要标识不同的address space，这里有一个术语叫做ASID（address space ID）。原来TLB查找是通过虚拟地址VA来判断是否TLB hit。有了ASID的支持后，TLB hit的判断标准修改为（虚拟地址＋ASID），ASID是每一个进程分配一个，标识自己的进程地址空间。TLB block如何知道一个tlb entry的ASID呢？一般会来自CPU的系统寄存器（对于ARM64平台，它来自TTBRx_EL1寄存器），这样在TLB block在缓存（VA-PA-Global flag）的同时，也就把当前的ASID缓存在了对应的TLB entry中，这样一个TLB entry中包括了（VA-PA-Global flag-ASID）。 有了ASID的支持后，A进程切换到B进程再也不需要flush tlb了，因为A进程执行时候缓存在TLB中的残留A地址空间相关的entry不会影响到B进程，虽然A和B可能有相同的VA，但是ASID保证了硬件可以区分A和B进程地址空间。</p></li>
+这里有一个术语叫做ASID（address space ID）。原来TLB查找是通过虚拟地址VA来判断是否TLB hit。有了ASID的支持后，TLB hit的判断标准修改为（虚拟地址＋ASID），ASID是每一个进程分配一个，标识自己的进程地址空间。TLB block如何知道一个tlb entry的ASID呢？一般会来自CPU的系统寄存器（对于ARM64平台，它来自TTBRx_EL1寄存器），这样在TLB block在缓存（VA-PA-Global flag）的同时，也就把当前的ASID缓存在了对应的TLB entry中，这样一个TLB entry中包括了（VA-PA-Global flag-ASID）。</p></li>
 </ul>
 <h3 id="多核处理">6.2 多核处理</h3>
-<p>在多核系统中，进程切换的时候，TLB的操作要复杂一些，主要原因有两点：其一是各个cpu core有各自的TLB，因此TLB的操作可以分成两类，一类是flush all，即将所有cpu core上的tlb flush掉，还有一类操作是flush local tlb，即仅仅flush本cpu core的tlb。另外一个原因是进程可以调度到任何一个cpu core上执行（当然具体和cpu affinity的设定相关），从而导致task处处留情（在各个cpu上留有残余的tlb entry）。</p>
-<p>根据上一节的描述，我们了解到地址翻译有global（各个进程共享）和local（进程特定的）的概念，因而tlb entry也有global和local的区分。如果不区分这两个概念，那么进程切换的时候，直接flush该cpu上的所有残余。这样，当进程A切出的时候，留给下一个进程B一个清爽的tlb，而当进程A在其他cpu上再次调度的时候，它面临的也是一个全空的TLB（其他cpu的tlb不会影响）。当然，如果区分global 和local，那么tlb操作也基本类似，只不过进程切换的时候，不是flush该cpu上的所有tlb entry，而是flush所有的tlb local entry就OK了。</p>
-<p>对local tlb entry还可以进一步细分，那就是了ASID（address space ID）或者PCID（process context ID）的概念了（global tlb entry不区分ASID）。如果支持ASID（或者PCID）的话，tlb操作变得简单一些，或者说我们没有必要执行tlb操作了，因为在TLB搜索的时候已经可以区分各个task上下文了，这样，各个cpu中残留的tlb不会影响其他任务的执行。在单核系统中，这样的操作可以获取很好的性能。比如A---B---&gt;A这样的场景中，如果TLB足够大，可以容纳2个task的tlb entry（现代cpu一般也可以做到这一点），那么A再次切回的时候，TLB是hot的，大大提升了性能。</p>
+<p>在多核系统中，进程切换的时候，TLB的操作要复杂一些，主要原因有两点：其一是各个cpu core有各自的TLB，因此TLB的操作可以分成两类，一类是flush all，即将所有cpu core上的tlb flush掉，还有一类操作是flush local tlb，即仅仅flush本cpu core的tlb。另外一个原因是进程可以调度到任何一个cpu core上执行（当然具体和cpu affinity的设定相关）。</p>
+<p>根据上一节的描述，我们了解到地址翻译有global（各个进程共享）和local（进程特定的）的概念，因而tlb entry也有global和local的区分。如果区分global 和local，那么tlb操作也基本类似，只不过进程切换的时候，不是flush该cpu上的所有tlb entry，而是flush所有的tlb local entry就OK了。</p>
+<p>对local tlb entry还可以进一步细分，那就是ASID（address space ID）或者PCID（process context ID）的概念了（global tlb entry不区分ASID）。如果支持ASID（或者PCID）的话，tlb操作变得简单一些，或者说我们没有必要执行tlb操作了，因为在TLB搜索的时候已经可以区分各个task上下文了，这样，各个cpu中残留的tlb不会影响其他任务的执行。</p>
 <p>不过，对于多核系统，这种情况有一点点的麻烦，其实也就是传说中的TLB shootdown带来的性能问题。在多核系统中，如果cpu支持PCID并且在进程切换的时候不flush tlb，那么系统中各个cpu中的tlb entry则保留各种task的tlb entry，当在某个cpu上，一个进程被销毁，或者修改了自己的页表（也就是修改了VA PA映射关系）的时候，我们必须将该task的相关tlb entry从系统中清除出去。这时候，你不仅仅需要flush本cpu上对应的TLB entry，还需要shootdown其他cpu上的和该task相关的tlb残余。而这个动作一般是通过IPI实现（例如X86），从而引入了开销。此外PCID的分配和管理也会带来额外的开销，因此，OS是否支持PCID（或者ASID）是由各个arch代码自己决定（对于linux而言，x86不支持，而ARM平台是支持的）。</p>
 <p><em>这里推荐<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9wcm9jZXNzX21hbmFnZW1lbnQ=">窝窝科技<i class="fa fa-external-link-alt"></i></span>的文章，都写的非常好。</em></p>
 <h3 id="参考文献">参考文献</h3>
@@ -604,7 +606,7 @@ decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">976k</span>
+    <span title="站点总字数">972k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
