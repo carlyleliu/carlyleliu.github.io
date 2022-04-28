@@ -33,7 +33,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-原子操作.png">
 <meta property="article:published_time" content="2021-12-06T07:17:39.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:53:52.343Z">
+<meta property="article:modified_time" content="2022-04-28T16:22:44.291Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="atomic">
 <meta name="twitter:card" content="summary">
@@ -300,11 +300,11 @@
 ----------------------------------------------</code></pre>
 <p>从上面的代码执行过程来看，最终结果可能等于1。因为变量是临界区的一个，CPUO和CPU1可能同时访间，发生并发访间。从CPU角度来看，变量i是一个静态全局变量，存储在数据段中,首先读取变量的值并存储到通用寄存器中，然后在通用寄存器里做i++运算・最后把寄存器的数值写回变量i所在的内存中。在多处理器架构中，上述动作可能同时进行。如果thread_B_func在某个中断处理函数中执行，在单处理器架构上依然可能会发生并发访问. 针对上述例子，有的读者认为可以使用加锁的方式，如使用自旋锁来保证i++操作的原子性，但是加锁操作会导致比较大的开销，用在这里有些浪费。 Linux内核提供了 atomic_t类型的原子変量，它的实现依赖于不同的架构。 atomic_t类型的具体定义为如下.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/types.h&gt;</span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">  <span class="keyword">int</span> counter;</span><br><span class="line">&#125; <span class="keyword">atomic_t</span>;</span><br></pre></td></tr></table></figure>
-<p>atomic_t类型的原子操作函数可以保证一个操作的原子性和完整性在内核看来，原子操作函数就像一条汇编指令，保证了操作时不会被打断，如上述的i++语句就可能被打断，要保证操作的完整性和原子性，通常需要“原子地”（不间断地）完成“读一修改-回写”机制，中间不能被打断。在下述过程中，如果其他CPU同时对该原子变量进行写操作，则会 影响数据完整性</p>
+<p>atomic_t类型的原子操作函数可以保证一个操作的原子性和完整性在内核看来，原子操作函数就像一条汇编指令，保证了操作时不会被打断，如上述的i++语句就可能被打断，要保证操作的完整性和原子性，通常需要“原子地”（不间断地）完成“读一修改-回写”机制，中间不能被打断。在下述过程中，如果其他CPU同时对该原子变量进行写操作，则会影响数据完整性</p>
 <ul>
-<li>读取原子变量的值。</li>
-<li>修改原子变量的值。</li>
-<li>把新值写回内存中。</li>
+<li>读取原子变量的值</li>
+<li>修改原子变量的值</li>
+<li>把新值写回内存中</li>
 </ul>
 <p>在读取原子变量的值、修改原子变量的值、把新值写入内存的过程中，处理器必须提供原子操作的汇编指令来完成上述操作，如ARM64处理器提供cas指令，x86处理器提供 cmpxchg指令。</p>
 <h2 id="api">2. API</h2>
@@ -316,9 +316,9 @@
 <p>不带返回值的原子操作函数如下:</p>
 <ul>
 <li>atomic_inc（v）：原子地给v加1</li>
-<li>atomic_dec（v）：原子地给ⅴ减1。</li>
-<li>atomic_add（i，v）：原子地给ⅴ加i。</li>
-<li>atomic_and（i，v）：原子地给v和i做“与”操作。</li>
+<li>atomic_dec（v）：原子地给ⅴ减1</li>
+<li>atomic_add（i，v）：原子地给ⅴ加i</li>
+<li>atomic_and（i，v）：原子地给v和i做“与”操作</li>
 <li>atomic_or（i，v）：原子地给ⅴ和i做“或”操作</li>
 <li>atomic_xor（i，v）：原子地给ⅴ和i做“异或”操作</li>
 </ul>
@@ -327,40 +327,40 @@
 <h3 id="带返回值的原子操作函数">2.3. 带返回值的原子操作函数</h3>
 <p>Linux内核提供了两类带返回值的原子操作函数，一类返回原子变量的新值，另一类返回原子变量的旧值。 返回原子变量新值的原子操作函数如下。</p>
 <ul>
-<li>atomic_add_return（int i， atomic_t* v）：原子地给v加i并且返回v的新值。</li>
-<li>atomic_sub_return（int i， atomic_t* v）：原子地给ⅴ减i并且返回的新值。</li>
-<li>atomic_inc_return（v）：原子地给ⅴ加1并且返回v的新值。</li>
-<li>atomic_dec_return（v）：原子地给v减1并且返回v的新值。</li>
+<li>atomic_add_return（int i， atomic_t* v）：原子地给v加i并且返回v的新值</li>
+<li>atomic_sub_return（int i， atomic_t* v）：原子地给ⅴ减i并且返回的新值</li>
+<li>atomic_inc_return（v）：原子地给ⅴ加1并且返回v的新值</li>
+<li>atomic_dec_return（v）：原子地给v减1并且返回v的新值</li>
 </ul>
 <p>返回原子变量旧值的原子操作函数如下。</p>
 <ul>
-<li>atomic_fetch_add（int i， atomic_t* v）：原子地给ⅴ加i并且返回v的旧值。</li>
-<li>atomic_fetch_sub（int i， atomic_t* v）：原子地给ⅴ减i并且返回v的旧值。</li>
-<li>atomic_fetch_and（int i， atomic_t* v）：原子地给v和i做与操作并且返回v的旧值。</li>
-<li>atomic_fetch_or（int i， atomic_t* v）：原子地给v和i做或操作并且返回v的旧值。</li>
-<li>atomic_fetch_xor(int i, atomic_t* v）：原子地给v和i做异或操作并且返回v的旧值。</li>
+<li>atomic_fetch_add（int i， atomic_t* v）：原子地给ⅴ加i并且返回v的旧值</li>
+<li>atomic_fetch_sub（int i， atomic_t* v）：原子地给ⅴ减i并且返回v的旧值</li>
+<li>atomic_fetch_and（int i， atomic_t* v）：原子地给v和i做与操作并且返回v的旧值</li>
+<li>atomic_fetch_or（int i， atomic_t* v）：原子地给v和i做或操作并且返回v的旧值</li>
+<li>atomic_fetch_xor(int i, atomic_t* v）：原子地给v和i做异或操作并且返回v的旧值</li>
 </ul>
 <p>上述两类原子操作函数都使用 cmpxchg指令来实现“读一修改一回写”机制。</p>
 <h3 id="原子交换函数">2.4. 原子交换函数</h3>
 <p>Linux内核提供了一类原子交换函数。</p>
 <ul>
-<li>atomic_cmpxchg（ptr，old，new）：原子地比较ptr的值是否与old的值相等，若相等，则把new的值设置到ptr地址中，返回old的值。</li>
+<li>atomic_cmpxchg（ptr，old，new）：原子地比较ptr的值是否与old的值相等，若相等，则把new的值设置到ptr地址中，返回old的值</li>
 <li>atomic_xchg（ptr，new）：原子地把new的值设置到ptr地址中并返回ptr的原值</li>
 <li>atomic_try_cmpxchg（ptr，old，new）：与 atomic_cmpxchg()函数类似，但是返回值发生变化，返回一个bool值，以判断 cmpxchg()函数的返回值是否和old的值相等</li>
 </ul>
 <h3 id="处理引用计数的原子操作函数">2.5. 处理引用计数的原子操作函数</h3>
 <p>Linux内核提供了一组处理引用计数原子操作函数</p>
 <ul>
-<li>atomic_add_unless（atomic_t* v，int a，int u）：比较v的值是否等于u。</li>
-<li>atomic_inc_not_zero（v）：比较v的值是否等于0。</li>
-<li>atomic_inc_and_test(v)：原子地给v加1，然后判断v的新值是否等于0。</li>
+<li>atomic_add_unless（atomic_t* v，int a，int u）：比较v的值是否等于u</li>
+<li>atomic_inc_not_zero（v）：比较v的值是否等于0</li>
+<li>atomic_inc_and_test(v)：原子地给v加1，然后判断v的新值是否等于0</li>
 <li>atomic_dec_and_test（v）：原子地给v減1，然后判断v的新值是否等于0</li>
 </ul>
 <p>上述原子操作函数在内核代码中很常见，特別是对一些引用计数进行操作，如page的_refcount和_mapcount.</p>
 <h3 id="内嵌内存屏障原语的原子操作函数">2.6. 内嵌内存屏障原语的原子操作函数</h3>
 <p>Linux内核提供了一组内嵌内存屏障原语的原子操作函数</p>
 <ul>
-<li>{}_relaxed：不内嵌内存屏障原语。</li>
+<li>{}_relaxed：不内嵌内存屏障原语</li>
 <li>{}_acquire: 内置了加载-获取内存屏障原语</li>
 <li>{}_release: 内置了存储-释放内存屏障原语</li>
 </ul>
@@ -368,7 +368,15 @@
 <h2 id="atomic_add函数分析">3. atomic_add()函数分析</h2>
 <p>atomic_add()函数通过调用 cmpxchg()函数来实现“读一修改-回写”机制，保证原子变量的完整性。这个函数在不同架构中会有相应的特殊优化。如有些架构的处理器实现了特殊的原子操作指令。Linux内核根据是否支持大系统扩展（LSE）有两种实现方式，一种是使用ldxr和stxr指令的组合，另外一种是使用原子加法指令stadd. 我们先看使用ldxr和stxr指令实现的方式。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/atomic_ll_sc.h&gt;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * AArch64 UP and SMP safe atomic ops.  We use load exclusive and</span></span><br><span class="line"><span class="comment"> * store exclusive to ensure that these are atomic.  We may loop</span></span><br><span class="line"><span class="comment"> * to ensure that the update happens.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATOMIC_OP(op, asm_op, constraint)				\</span></span><br><span class="line"><span class="meta">static inline void							\</span></span><br><span class="line"><span class="meta">__ll_sc_atomic_##op(int i, atomic_t *v)					\</span></span><br><span class="line"><span class="meta">&#123;									\</span></span><br><span class="line"><span class="meta">	unsigned long tmp;						\</span></span><br><span class="line"><span class="meta">	int result;							\</span></span><br><span class="line"><span class="meta">									\</span></span><br><span class="line"><span class="meta">	asm volatile(<span class="meta-string">&quot;// atomic_&quot;</span> #op <span class="meta-string">&quot;\n&quot;</span>				\</span></span><br><span class="line"><span class="meta">	__LL_SC_FALLBACK(						\</span></span><br><span class="line"><span class="meta"><span class="meta-string">&quot;	prfm	pstl1strm, %2\n&quot;</span>					\</span></span><br><span class="line"><span class="meta"><span class="meta-string">&quot;1:	ldxr	%w0, %2\n&quot;</span>						\</span></span><br><span class="line"><span class="meta"><span class="meta-string">&quot;	&quot;</span> #asm_op <span class="meta-string">&quot;	%w0, %w0, %w3\n&quot;</span>				\</span></span><br><span class="line"><span class="meta"><span class="meta-string">&quot;	stxr	%w1, %w0, %2\n&quot;</span>						\</span></span><br><span class="line"><span class="meta"><span class="meta-string">&quot;	cbnz	%w1, 1b\n&quot;</span>)						\</span></span><br><span class="line"><span class="meta">	: <span class="meta-string">&quot;=&amp;r&quot;</span> (result), <span class="meta-string">&quot;=&amp;r&quot;</span> (tmp), <span class="meta-string">&quot;+Q&quot;</span> (v-&gt;counter)		\</span></span><br><span class="line"><span class="meta">	: __stringify(constraint) <span class="meta-string">&quot;r&quot;</span> (i));				\</span></span><br><span class="line"><span class="meta">&#125;</span></span><br></pre></td></tr></table></figure>
-<p>通过内嵌汇编的方式来实现 atomic_add功能 通过prfm指令提前预取v-&gt;count 通过ldxr独占加载指令来加载v-&gt;counter 的值到 result变量中，该指令会标记v-&gt;counter的地址为独占。 通过add指令使v-&gt;counter的值加上变量i的值。 通过stxr独占存储指令来把最新的v-&gt;counter的值写入v-&gt;counter地址处 判断tmp的值。如果tmp的值为0，说明stxr指令存储成功：否则，存储失败。如果存储失败，那只能跳转到ldxr指令 有3个输出的变量，其中，变量 result和tmp具有可写属性，v-&gt;counter具有可读可写属性。</p>
+<ul>
+<li>通过内嵌汇编的方式来实现 atomic_add功能</li>
+<li>通过prfm指令提前预取v-&gt;count</li>
+<li>通过ldxr独占加载指令来加载v-&gt;counter 的值到 result变量中，该指令会标记v-&gt;counter的地址为独占</li>
+<li>通过add指令使v-&gt;counter的值加上变量i的值</li>
+<li>通过stxr独占存储指令来把最新的v-&gt;counter的值写入v-&gt;counter地址处</li>
+<li>判断tmp的值。如果tmp的值为0，说明stxr指令存储成功：否则，存储失败。如果存储失败，那只能跳转到ldxr指令</li>
+</ul>
+<p>有3个输出的变量，其中，变量 result和tmp具有可写属性，v-&gt;counter具有可读可写属性。</p>
 <p>下面来看在支持LSE的情况下 atomic_add()函数是如何实现的.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/atomic_lse.h&gt;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ATOMIC_OP(op, asm_op)						\</span></span><br><span class="line"><span class="meta">static inline void __lse_atomic_##op(int i, atomic_t *v)			\</span></span><br><span class="line"><span class="meta">&#123;									\</span></span><br><span class="line"><span class="meta">	asm volatile(							\</span></span><br><span class="line"><span class="meta">	__LSE_PREAMBLE							\</span></span><br><span class="line"><span class="meta"><span class="meta-string">&quot;	&quot;</span> #asm_op <span class="meta-string">&quot;	%w[i], %[v]\n&quot;</span>					\</span></span><br><span class="line"><span class="meta">	: [i] <span class="meta-string">&quot;+r&quot;</span> (i), [v] <span class="meta-string">&quot;+Q&quot;</span> (v-&gt;counter)				\</span></span><br><span class="line"><span class="meta">	: <span class="meta-string">&quot;r&quot;</span> (v));							\</span></span><br><span class="line"><span class="meta">&#125;</span></span><br></pre></td></tr></table></figure>
 <p>在ARMv8.1指令集中增加了原子加法指令stadd。在 Linux内核中使用 ONFIG_ARM64_LSE_ATOMICS宏来表示系统支持新增的指令。</p>
@@ -379,10 +387,10 @@
 <h3 id="cas指令">4.1. cas指令</h3>
 <p>ARM64处理器提供了比较并交换指令--cas指令。cas指令根据不同的内存屏障属性分成4类，如下所示</p>
 <ul>
-<li>隐含了加载-获取内存屏障原语。</li>
-<li>隐含了存储-释放内存屏障原语。</li>
-<li>同时隐含了加载-获取和存储-释放内存屏障原语。</li>
-<li>不隐含内存屏障原语。</li>
+<li>隐含了加载-获取内存屏障原语</li>
+<li>隐含了存储-释放内存屏障原语</li>
+<li>同时隐含了加载-获取和存储-释放内存屏障原语</li>
+<li>不隐含内存屏障原语</li>
 </ul>
 <h3 id="cmpxchg函数">4.2 cmpxchg()函数</h3>
 <p>Linux内核中常见的比较并交换函数是 cmpxchg()。由于 Linux内核最早是基于x86架构来实现的，x86指令集中对应的指令是 CMPXCHG指令，因此 Linux内核保留了该名字作为函数名。对于ARM64架构， cmpxchg()函数定义在arch/arm64/include/asm/cmpxchg.h头文件中.</p>
@@ -392,11 +400,11 @@
 <figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/asm/atomic lse h</span><br><span class="line">#define __CMPXCHG_CASE(w, sfx, name, sz, mb, cl...)			\</span><br><span class="line">static __always_inline u##sz						\</span><br><span class="line">__lse__cmpxchg_case_##name##sz(volatile void *ptr,			\</span><br><span class="line">                u##sz old,		\</span><br><span class="line">                u##sz new)		\</span><br><span class="line">&#123;									\</span><br><span class="line">  register unsigned long x0 asm (<span class="string">&quot;x0&quot;</span>) = (unsigned long)ptr;	\</span><br><span class="line">  register u##sz x1 asm (<span class="string">&quot;x1&quot;</span>) = old;				\</span><br><span class="line">  register u##sz x2 asm (<span class="string">&quot;x2&quot;</span>) = new;				\</span><br><span class="line">  unsigned long tmp;						\</span><br><span class="line">                  \</span><br><span class="line">  asm volatile(							\</span><br><span class="line">  __LSE_PREAMBLE							\</span><br><span class="line">  <span class="string">&quot;	mov	%&quot;</span> #w <span class="string">&quot;[tmp], %&quot;</span> #w <span class="string">&quot;[old]\n&quot;</span>			\</span><br><span class="line">  <span class="string">&quot;	cas&quot;</span> #mb #sfx <span class="string">&quot;\t%&quot;</span> #w <span class="string">&quot;[tmp], %&quot;</span> #w <span class="string">&quot;[new], %[v]\n&quot;</span>	\</span><br><span class="line">  <span class="string">&quot;	mov	%&quot;</span> #w <span class="string">&quot;[ret], %&quot;</span> #w <span class="string">&quot;[tmp]&quot;</span>			\</span><br><span class="line">  : [ret] <span class="string">&quot;+r&quot;</span> (x0), [v] <span class="string">&quot;+Q&quot;</span> (*(unsigned long *)ptr),		\</span><br><span class="line">    [tmp] <span class="string">&quot;=&amp;r&quot;</span> (tmp)						\</span><br><span class="line">  : [old] <span class="string">&quot;r&quot;</span> (x1), [new] <span class="string">&quot;r&quot;</span> (x2)				\</span><br><span class="line">  : cl);								\</span><br><span class="line">                  \</span><br><span class="line">  return x0;							\</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>__CMPXCHG_CASE()宏包含6个参数。</p>
 <ul>
-<li>w：表示位宽，支持8位、16位、32位以及64位。</li>
-<li>sfx：cas指令的位宽后缀，8位宽使用b后缀，16位宽使用h后缀。</li>
-<li>name表示内存屏障类型，如“acq_"”表示支持加载获取内存屏障原语，“rel_”表示支持存储-释放内存屏障原语，“mb_”表示同时支持加载一获取和存储-释放内存屏障原语。</li>
+<li>w：表示位宽，支持8位、16位、32位以及64位</li>
+<li>sfx：cas指令的位宽后缀，8位宽使用b后缀，16位宽使用h后缀</li>
+<li>name表示内存屏障类型，如“acq_"”表示支持加载获取内存屏障原语，“rel_”表示支持存储-释放内存屏障原语，“mb_”表示同时支持加载一获取和存储-释放内存屏障原语</li>
 <li>sz：位宽大小</li>
-<li>mb：组成cas指令的内存屏障后缀，“a”表示加载一获取内存屏障原语，“1”表示存储-释放内存屏障原语，“al'”表示同时支持加载一获取和存储一释放内存屏障原语。</li>
+<li>mb：组成cas指令的内存屏障后缀，“a”表示加载一获取内存屏障原语，“1”表示存储-释放内存屏障原语，“al'”表示同时支持加载一获取和存储一释放内存屏障原语</li>
 <li>cl：内嵌汇编的损坏部</li>
 </ul>
 <h3 id="xchg函数">4.3 xchg()函数</h3>
@@ -404,14 +412,14 @@
 <h2 id="内存屏障">5. 内存屏障</h2>
 <p>卷1已经介绍过ARM架构中如下3条内存屏障指令</p>
 <ul>
-<li>数据存储屏障（ Data Memory Barrier，，DMB）指令。</li>
+<li>数据存储屏障（ Data Memory Barrier，，DMB）指令</li>
 <li>数据同步屏障（ Data Synchronization Barrier，DSB）指令</li>
 <li>指令同步屏障（Instruction Synchronization Barrier，ISB）指令</li>
 </ul>
 <h3 id="经典内存屏障接口函数">5.1 经典内存屏障接口函数</h3>
 <p>下面介绍 Linux内核中的内存屏障接口函数，如下所示：</p>
 <ul>
-<li>barrier(): 编译优化指令，阻止编译器为了性能优化进行指令重排。</li>
+<li>barrier(): 编译优化指令，阻止编译器为了性能优化进行指令重排</li>
 <li>mb(): 内存屏障包括读和写，用于SMP和UP</li>
 <li>rmb(): 读内存屏障，用于SMP和UP</li>
 <li>mmb(): 写内存屏障，用于SMP和UP</li>
@@ -631,7 +639,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">969k</span>
+    <span title="站点总字数">967k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

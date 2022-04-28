@@ -35,7 +35,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/mutex.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/optimistic_lock.png">
 <meta property="article:published_time" content="2021-12-11T07:55:05.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:59:58.919Z">
+<meta property="article:modified_time" content="2022-04-28T16:47:07.053Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="mutex">
 <meta name="twitter:card" content="summary">
@@ -267,7 +267,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>3.3k</span>
+              <span>3.1k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -290,15 +290,15 @@
 <span id="more"></span>
 <h2 id="概述">1. 概述</h2>
 <p>在 Linux内核中，除信号量以外，还有一个类似的实现叫作互斥锁（mutex）。信号量是在并行处理环境中对多个处理器访问某个公共资源进行保护的机制，互斥锁用于互斥操作。</p>
-<p>信号量根据初始 count的大小，可以分为计数信号量和互斥信号量。根据著名的洗手间理论，信号量相当于一个可以同时容纳N个人的洗手间，只要洗手间人不满，其他人就可以进去， 如果人满了，其他人就要在外面等待。互斥锁类似于街边的移动洗手间，每次只能进去一个人里面的人出来后才能让排队中的下ー个人进去。既然互斥锁类似于 count值等于1的信号量，为什么内核社区要重新开发互斥锁，而不是复用信号量的机制呢？</p>
+<p>互斥锁类似于 count值等于1的信号量，为什么内核社区要重新开发互斥锁，而不是复用信号量的机制呢？</p>
 <p>互斥锁最早是在 Linux2.6.16内核中由 Red Hat Enterprise Linux的资深内核专家Ingo Molnar设计和实现的。信号量的 count成员可以初始化为1，并且 down()和up()函数也可以实现类似于互斥锁的功能，那为什么要单独实现互斥锁机制呢？ Ingo Molnar认为，在设计之初，信号量在 Linux内核中的实现没有任何问题，但是互斥锁相对于信号量要简单轻便一些。在锁争用激烈的测试场景下，互斥锁比信号量执行速度更快，可扩展性更好。另外， mutex数据结构的定义比信号量小。这些都是在互斥锁设计之初 Ingo Molnar提到的优点。互斥锁上的一些优化方案（如自旋等待）已经移植到了读写信号量中。</p>
 <h2 id="mutex数据结构">2. mutex数据结构</h2>
 <p>下面来看 mutex数据结构的定义。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mutex.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mutex</span> &#123;</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span>		owner;</span><br><span class="line">  <span class="keyword">raw_spinlock_t</span>		wait_lock;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MUTEX_SPIN_ON_OWNER</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">optimistic_spin_queue</span> <span class="title">osq</span>;</span> <span class="comment">/* Spinner MCS lock */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>	<span class="title">wait_list</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_MUTEXES</span></span><br><span class="line">  <span class="keyword">void</span>			*magic;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span>	<span class="title">dep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <ul>
-<li>wait_lock：自旋锁，用于保护 wait_list 睡眠等待队列。</li>
-<li>wait_list：用于管理所有在互斥锁上睡眠的进程，没有成功获取锁的进程会在此链表上睡眠。</li>
-<li>owner： Linux4.10内核把原来的 count成员和 owner成员合并成一个。原来的count是一个原子值，1表示锁没有被持有，0表示锁被持有，负数表示锁被持有且有等待者在排队。现在新版本的 owner中，0表示锁没有未被持有，非零值则表示锁持有者的task_struct指针的值。另外，最低3位有特殊的含义。</li>
+<li>wait_lock：自旋锁，用于保护 wait_list 睡眠等待队列</li>
+<li>wait_list：用于管理所有在互斥锁上睡眠的进程，没有成功获取锁的进程会在此链表上睡眠</li>
+<li>owner： Linux4.10内核把原来的 count成员和 owner成员合并成一个。原来的count是一个原子值，1表示锁没有被持有，0表示锁被持有，负数表示锁被持有且有等待者在排队。现在新版本的 owner中，0表示锁没有未被持有，非零值则表示锁持有者的task_struct指针的值。另外，最低3位有特殊的含义</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MUTEX_FLAG_WAITERS	0x01</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MUTEX_FLAG_HANDOFF	0x02</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MUTEX_FLAG_PICKUP	0x04</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MUTEX_FLAGS		0x07</span></span><br></pre></td></tr></table></figure>
 <ul>
@@ -326,35 +326,38 @@ MUTEX_FLAG_WAITERS：表示互斥锁的等待队列里有等待者，解锁的�
 <h2 id="读写锁">6. 读写锁</h2>
 <p>上述介绍的信号量有一个明显的缺点--没有区分临界区的读写属性。读写锁通常允许多个线程并发地读访问临界区，但是写访问只限制于一个线程。读写锁能有效地提高并发性，在多处理器系统中允许有多个读者同时访问共享资源，但写者是排他性的，读写锁具有如特性。</p>
 <ul>
-<li>允许多个读者同时进入临界区，但同一时刻写者不能进入。</li>
-<li>同一时刻只允许一个写者进入临界区。</li>
-<li>读者和写者不能同时进入临界区。</li>
+<li>允许多个读者同时进入临界区，但同一时刻写者不能进入</li>
+<li>同一时刻只允许一个写者进入临界区</li>
+<li>读者和写者不能同时进入临界区</li>
 </ul>
 <p>读写锁有两种，分别是读者自旋锁类型和读者信号量。自旋锁类型的读写锁数据结构定义在 include/linux/rwlock_types.h头文件中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/rwlock_types.h&gt;</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">  <span class="keyword">arch_rwlock_t</span> raw_lock;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_SPINLOCK</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> magic, owner_cpu;</span><br><span class="line">  <span class="keyword">void</span> *owner;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span> <span class="title">dep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125; <span class="keyword">rwlock_t</span>;</span><br><span class="line">...</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * The queue read/write lock data structure</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">qrwlock</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">    <span class="keyword">atomic_t</span> cnts;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __LITTLE_ENDIAN</span></span><br><span class="line">      u8 wlocked;	<span class="comment">/* Locked for write? */</span></span><br><span class="line">      u8 __lstate[<span class="number">3</span>];</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">      u8 __lstate[<span class="number">3</span>];</span><br><span class="line">      u8 wlocked;	<span class="comment">/* Locked for write? */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    &#125;;</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="keyword">arch_spinlock_t</span>		wait_lock;</span><br><span class="line">&#125; <span class="keyword">arch_rwlock_t</span>;</span><br></pre></td></tr></table></figure>
 <p>常用的函数如下:</p>
 <ul>
-<li>rwlock_init()：初始化 rwlock。</li>
-<li>write_lock()：申请写者锁。</li>
-<li>write_unlock()：释放写者锁。</li>
-<li>read_lock()：申请读者锁。</li>
-<li>read_unlock()：释放读者锁。</li>
-<li>read_lock_irq()：关闭中断并且申请读者锁。</li>
-<li>write_lock_irg()：关闭中断并且申请写者锁。</li>
-<li>write_unlock_irq()：打开中断并且释放写者锁。</li>
+<li>rwlock_init()：初始化 rwlock</li>
+<li>write_lock()：申请写者锁</li>
+<li>write_unlock()：释放写者锁</li>
+<li>read_lock()：申请读者锁</li>
+<li>read_unlock()：释放读者锁</li>
+<li>read_lock_irq()：关闭中断并且申请读者锁</li>
+<li>write_lock_irg()：关闭中断并且申请写者锁</li>
+<li>write_unlock_irq()：打开中断并且释放写者锁</li>
 </ul>
 <p>和自旋锁一样，读写锁有关闭中断和下半部的版本。自旋锁类型的读写锁实现比较简单。</p>
 <h2 id="总结">7. 总结</h2>
 <ul>
-<li><p>互斥锁最先实现自旋等待机制。</p></li>
-<li><p>互斥锁在睡眠之前尝试获取锁。</p></li>
-<li><p>互斥锁通过实现MCS锁来避免多个CPU争用锁而导致CPU高速缓存行颠簸现象，正是因为互斥锁的简洁性和高效性，所以互斥锁的使用场景比信号量要更严格， 使用互斥锁需要注意的约束条件如下：</p></li>
-<li><p>同ー时刻只有一个线程可以持有互下斥锁。</p></li>
-<li><p>只有锁持有者可以解锁。不能在一个进程中持有互斥锁，而在另外一个进程释放它。因此互斥锁不适合内核与用户空间复杂的同步场景，信号量和读写信号量则比较合适。</p></li>
-<li><p>不允许递归地加锁和解锁。</p></li>
-<li><p>当进程持有互斥锁时，进程不可以退出。</p></li>
-<li><p>互斥锁必须使用官方接口函数来初始化。</p></li>
-<li><p>互斥锁可以睡眠，所以不允许在中断处理程序或者中断下半部（如 tasklet、定时器）中使用。</p></li>
+<li>互斥锁最先实现自旋等待机制</li>
+<li>互斥锁在睡眠之前尝试获取锁</li>
+<li>互斥锁通过实现MCS锁来避免多个CPU争用锁而导致CPU高速缓存行颠簸现象，正是因为互斥锁的简洁性和高效性，所以互斥锁的使用场景比信号量要更严格</li>
+</ul>
+<p>使用互斥锁需要注意的约束条件如下：</p>
+<ul>
+<li>同ー时刻只有一个线程可以持有互下斥锁</li>
+<li>只有锁持有者可以解锁。不能在一个进程中持有互斥锁，而在另外一个进程释放它。因此互斥锁不适合内核与用户空间复杂的同步场景，信号量和读写信号量则比较合适</li>
+<li>不允许递归地加锁和解锁</li>
+<li>当进程持有互斥锁时，进程不可以退出</li>
+<li>互斥锁必须使用官方接口函数来初始化</li>
+<li>互斥锁可以睡眠，所以不允许在中断处理程序或者中断下半部（如 tasklet、定时器）中使用</li>
 </ul>
 <p>在实际项目中，该如何选择自旋锁、信号量和互斥锁呢？ 在中断上下文中可以毫不犹豫地使用自旋锁，如果临界区有睡眠、隐含睡眠的动作及内核接口函数，应避免选择自旋锁。在信号量和互斥锁中该如何选择呢？除非代码场景不符合上述互斥锁的约束中的某一条，否则可以优先使用互斥锁。</p>
 <h3 id="参考文献">参考文献</h3>
@@ -552,7 +555,7 @@ MUTEX_FLAG_WAITERS：表示互斥锁的等待队列里有等待者，解锁的�
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">969k</span>
+    <span title="站点总字数">967k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

@@ -33,7 +33,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-调试信息.png">
 <meta property="article:published_time" content="2021-12-05T02:10:23.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:50:52.477Z">
+<meta property="article:modified_time" content="2022-04-28T16:12:09.737Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="debug">
 <meta name="twitter:card" content="summary">
@@ -294,9 +294,9 @@
 <li>MemTotal：系统当前可用物理内存总量，通过读取全局变量 _totalram_pages来获得</li>
 <li>MemFree: 系统当前剩余空闲物理内存，通过读取全局变量wm_zone_stat[]数组中的 NR_FREE_PAGES来获得</li>
 <li>Memavailable: 系统中可使用页面的数量，由si_mem_available()函数计算而来，计算公式为 Available= memfree + pagecache + reclaimable - totalreserve_pages。这里包括了空闲页面（ memfree）、文件映射页面（ pagecache）、可回收的页面（ reclaimable），最后减去系统保留的页面</li>
-<li>Buffers：用于块层的缓存，由 nr_blockdev_pages()函数来计算.</li>
+<li>Buffers：用于块层的缓存，由 nr_blockdev_pages()函数来计算</li>
 <li>Cached: 用于页面高速缓存的页面。计算公式为 Cached= NR_FILE_PAGES - swap_cache - Buffers</li>
-<li>SwapCached: 这里统计交换缓存的数量，交换缓存类似于内容缓存，只不过它对应的是交换分区，而内容缓存对应的是文件。这里表示匿名页面曾经被交換出去，现在又被交換回来，但是页面内容还在交换缓存中。</li>
+<li>SwapCached: 这里统计交换缓存的数量，交换缓存类似于内容缓存，只不过它对应的是交换分区，而内容缓存对应的是文件。这里表示匿名页面曾经被交換出去，现在又被交換回来，但是页面内容还在交换缓存中</li>
 <li>Active：活跃的匿名页面（ LRU_ACTIVE_ANON）和活跃的文件映射页面（ LRU_ACTIVE_FILE）</li>
 <li>Inactive: 不活跃的匿名页面（ LRU_INACTIVE_ANON）和不活跃的文件映射页面（ LRU_INACTIVE_FILE）</li>
 <li>Active(anon): 活跃的匿名页面（ LRU_ACTIVE_ANON）</li>
@@ -336,8 +336,8 @@
 <p>读者可能会对上述内容感到疑惑，下面归纳常见的问题。</p>
 <h3 id="为什么-memtotal不等于qemu虚拟机中分配的内存大小">1.1 为什么 MemTotal不等于QEMU虚拟机中分配的内存大小？</h3>
 <p>读者可能会发现 MemTotal显示的总内存大小并不等于物理系统中真实的内存大小或者QEMU虚拟机中分配的内存大小，如在QEMU虚拟机启动参数中指定内存大小为1GB进入QEMU虚拟机后发现 MemTotal为“99984KB"。这是因为内核静态使用的内存（如内核代码等）在启动阶段需要用到，它没有计入 MemTotal统计项中，而是统计到 reserved 中。下面是一个计算机的内核启动日志信息:</p>
-<figure class="highlight mathematica"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">[</span><span class="number">0.000000</span><span class="punctuation">]</span> <span class="variable">Memory</span><span class="operator">:</span> <span class="number">929640</span><span class="built_in">K</span><span class="operator">/</span><span class="number">1048576</span><span class="built_in">K</span> <span class="variable">available</span><span class="punctuation">(</span><span class="number">23228</span><span class="built_in">K</span> <span class="variable">kernel</span> <span class="variable">code</span><span class="operator">,</span> <span class="number">1090</span><span class="built_in">K</span> <span class="variable">rwdata</span><span class="operator">,</span> <span class="number">3872</span><span class="built_in">K</span> <span class="variable">rodata</span><span class="operator">,</span> <span class="number">4608</span><span class="built_in">K</span> <span class="variable">init</span><span class="operator">,</span> <span class="number">503</span><span class="built_in">K</span> <span class="variable">bss</span><span class="operator">,</span> <span class="number">53400</span><span class="built_in">K</span> <span class="variable">reserved</span><span class="operator">,</span> <span class="number">65536</span><span class="built_in">K</span> <span class="variable">cma</span><span class="operator">-</span><span class="variable">reserved</span><span class="punctuation">)</span></span><br><span class="line"><span class="punctuation">[</span><span class="number">8.910031</span><span class="punctuation">]</span> <span class="variable">Freeing</span> <span class="variable">unused</span> <span class="variable">kernel</span> <span class="variable">memory</span><span class="operator">:</span> <span class="number">4608</span><span class="built_in">K</span></span><br></pre></td></tr></table></figure>
-<p>从上述内核日志可以看到，在启动初始化时有53400大小的内容被保留了，用于内核代吗等。在内核初始化完成之后，init段的内存会被释放，因此被保留的内存大小为53400KB-4608KB=48792KB，加上 MemTotal正好是1GB内存</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[0.000000] Memory: 929640K/1048576K available(23228K kernel code, 1090K rwdata, 3872K rodata, 4608K init, 503K bss, 53400K reserved, 65536K cma-reserved)</span><br><span class="line">[8.910031] Freeing unused kernel memory: 4608K</span><br></pre></td></tr></table></figure>
+<p>从上述内核日志可以看到，在启动初始化时有53400大小的内容被保留了，用于内核代码等。在内核初始化完成之后，init段的内存会被释放，因此被保留的内存大小为53400KB-4608KB=48792KB，加上 MemTotal正好是1GB内存</p>
 <h3 id="memavailable究竟是什么意思">1.2 MemAvailable究竟是什么意思？</h3>
 <p>在很早以前，Linux系统中的应用程序使用 MemFree来获取系统中有多少可用的空闲内在，并根据此来决定应用程序的某些行为，这是不恰当的，因为系统中常常会以空闲内存作为缓缓存来加速文件的访问。 MemavAilable表示系统中有多少可以利用的内存，这些内存不包括交换分区。 MemAvailable的计算和 MemFree、可回收的slab页面、内容页面以及每个内存管理区的最低水位等有密切关系。因此，在系统内存短缺的情况下，这些页面都是可以被回收以用作空闲内存的。</p>
 <h3 id="为什么sab分配器要区分-sreclaimable和-sunreclaim">1.3 为什么sab分配器要区分 SReclaimable和 SUnreclaim</h3>
@@ -639,7 +639,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">969k</span>
+    <span title="站点总字数">967k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

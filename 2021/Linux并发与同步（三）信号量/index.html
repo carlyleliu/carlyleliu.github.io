@@ -34,7 +34,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-信号量.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/read_lock.png">
 <meta property="article:published_time" content="2021-12-09T08:42:56.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:59:03.211Z">
+<meta property="article:modified_time" content="2022-04-28T16:41:28.915Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="semaphore">
 <meta name="twitter:card" content="summary">
@@ -294,10 +294,10 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/semaphore.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">semaphore</span> &#123;</span></span><br><span class="line">  <span class="keyword">raw_spinlock_t</span>		lock;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		count;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>	<span class="title">wait_list</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <ul>
 <li>lock是自旋锁变量，用于保护 semaphore数据结构里的 count 和 wait_list 成员</li>
-<li>count 用于表示允许进入临界区的内核执行路径个数。</li>
-<li>wait_list链表用于管理所有在该信号量上睡眠的进程，没有成功获取锁的进程会在这个链表上睡眠。</li>
+<li>count 用于表示允许进入临界区的内核执行路径个数</li>
+<li>wait_list链表用于管理所有在该信号量上睡眠的进程，没有成功获取锁的进程会在这个链表上睡眠</li>
 </ul>
-<p>通常通过sema_ini()函数进行信号量的初始化，其中 __SEMAPHORE_INITIALIZER()完成对 semaphore数椐结构的填充，val值通常设为1。</p>
+<p>通常通过sema_init()函数进行信号量的初始化，其中 __SEMAPHORE_INITIALIZER()完成对 semaphore数椐结构的填充，val值通常设为1。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __SEMAPHORE_INITIALIZER(name, n)				\</span></span><br><span class="line"><span class="meta">&#123;									\</span></span><br><span class="line"><span class="meta">	.lock		= __RAW_SPIN_LOCK_UNLOCKED((name).lock),	\</span></span><br><span class="line"><span class="meta">	.count		= n,						\</span></span><br><span class="line"><span class="meta">	.wait_list	= LIST_HEAD_INIT((name).wait_list),		\</span></span><br><span class="line"><span class="meta">&#125;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEFINE_SEMAPHORE(name)	\</span></span><br><span class="line"><span class="meta">	struct semaphore name = __SEMAPHORE_INITIALIZER(name, 1)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">sema_init</span><span class="params">(struct semaphore *sem, <span class="keyword">int</span> val)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">lock_class_key</span> __<span class="title">key</span>;</span></span><br><span class="line">  *sem = (struct semaphore) __SEMAPHORE_INITIALIZER(*sem, val);</span><br><span class="line">  lockdep_init_map(&amp;sem-&gt;lock.dep_map, <span class="string">&quot;semaphore-&gt;lock&quot;</span>, &amp;__key, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>下面来看 down()函数。down()函数有如下一些变体。其中 down()函数和 down_interruptible()函数的区别在于， down_interruptible()函数在争用信号量失败时进入可中断的睡眠状态，而down()函数进入不可中断的睡眠状态。若 down_trylock()函数返回0，表示成功获取锁：若返回1获取锁失败.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">down</span><span class="params">(struct semaphore *sem)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">int</span> __must_check <span class="title">down_interruptible</span><span class="params">(struct semaphore *sem)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">int</span> __must_check <span class="title">down_killable</span><span class="params">(struct semaphore *sem)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">int</span> __must_check <span class="title">down_trylock</span><span class="params">(struct semaphore *sem)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">int</span> __must_check <span class="title">down_timeout</span><span class="params">(struct semaphore *sem, <span class="keyword">long</span> jiffies)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">up</span><span class="params">(struct semaphore *sem)</span></span>;</span><br></pre></td></tr></table></figure>
@@ -319,23 +319,23 @@
 <p>rw_semaphore数据结构定义如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">rw_semaphore</span> &#123;</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span> count;</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Write owner or one of the read owners as well flags regarding</span></span><br><span class="line"><span class="comment">	 * the current state of the rwsem. Can be used as a speculative</span></span><br><span class="line"><span class="comment">	 * check to see if the write owner is running on the cpu.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span> owner;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_RWSEM_SPIN_ON_OWNER</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">optimistic_spin_queue</span> <span class="title">osq</span>;</span> <span class="comment">/* spinner MCS lock */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="keyword">raw_spinlock_t</span> wait_lock;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">wait_list</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_RWSEMS</span></span><br><span class="line">  <span class="keyword">void</span> *magic;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span>	<span class="title">dep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <ul>
-<li><p>count用于表示读写信号量的计数。以前读写信号量的实现用 activity来表示。若activity为0，表示没有读者和写者：若 activity为ー1，表示有写者，若 activity大于0，表示有读者。现在 count的计数方法已经发生了变化。</p></li>
-<li><p>wait_list 链表用于管理所有在该信号量上睡眠的进程，没有成功获取锁的进程会睡眠在这个链表上。</p></li>
-<li><p>wait_lock是一个自旋锁变量，用于实现对 rw_semaphore数据结构中 count成员的原子操作和保护。</p></li>
-<li><p>osq：MCS锁。</p></li>
-<li><p>owner：：当写者成功获取锁时， owner指向锁持有者的task_struct数据结构。</p></li>
-<li><p>若count初始化为0，表示没有读者也没有写者。</p></li>
-<li><p>若count为正数，表示有count个读者。</p></li>
-<li><p>当有写者申请锁时，count值要加上RWSEM_ACTIVE_WIRTE_BIAS.</p></li>
-<li><p>当有读者申请锁时，若 count值要加上RWSEM_ACTIVE_READ_BIAS，即count值加一。</p></li>
-<li><p>当有多个写者中请时，判断count值是否等于RWSEM_ACTIVE_WIRTE_BIAS（-65535）若不相等，说明已经有写者抢先持有锁，要自旋等待或者睡眠。</p></li>
-<li><p>当读者申请锁时，若 count值加上 RWSEM_ACTIVE_READ_BIAS（1）后还小于0，说明已经有个写者已经成功申请锁，只能等待写者释放锁。</p></li>
+<li><p>count用于表示读写信号量的计数。以前读写信号量的实现用 activity来表示。若activity为0，表示没有读者和写者：若 activity为ー1，表示有写者，若 activity大于0，表示有读者。现在 count的计数方法已经发生了变化</p></li>
+<li><p>wait_list 链表用于管理所有在该信号量上睡眠的进程，没有成功获取锁的进程会睡眠在这个链表上</p></li>
+<li><p>wait_lock是一个自旋锁变量，用于实现对 rw_semaphore数据结构中 count成员的原子操作和保护</p></li>
+<li><p>osq：MCS锁</p></li>
+<li><p>owner：：当写者成功获取锁时， owner指向锁持有者的task_struct数据结构</p></li>
+<li><p>若count初始化为0，表示没有读者也没有写者</p></li>
+<li><p>若count为正数，表示有count个读者</p></li>
+<li><p>当有写者申请锁时，count值要加上RWSEM_ACTIVE_WIRTE_BIAS</p></li>
+<li><p>当有读者申请锁时，若 count值要加上RWSEM_ACTIVE_READ_BIAS，即count值加一</p></li>
+<li><p>当有多个写者中请时，判断count值是否等于RWSEM_ACTIVE_WIRTE_BIAS（-65535）若不相等，说明已经有写者抢先持有锁，要自旋等待或者睡眠</p></li>
+<li><p>当读者申请锁时，若 count值加上 RWSEM_ACTIVE_READ_BIAS（1）后还小于0，说明已经有个写者已经成功申请锁，只能等待写者释放锁</p></li>
 </ul>
 <p>把 count值当作十六进制或者十进制数不是开发人员的原本设计意图，其实应该把 count值分成两个字段：Bit[0:31]为低字段，表示正在持有锁的读者或者写者的个数；Bit[32:63]为高字段，通常为负数，表示有一个正在持有或者处于 pending状态的写者，以及等待队列中有读写者在等待。因此 count值可以看作一个二元数，含义如下</p>
 <ul>
 <li>RWSEM_ACTIVE_READ_BIAS=0x000 0001 =[0，1]，表示有一个读者</li>
-<li>RWSEM_ACTIVE_WRITE_BIAS=0xFFFF 0000 =[-1，1]，表示当前只有一个活跃的写者。</li>
-<li>RWSEM_WAITING_BIAS=0xFFFF 0000=[-1，0]，表示睡眠等待队列中有读写者在睡眠等待.</li>
+<li>RWSEM_ACTIVE_WRITE_BIAS=0xFFFF 0000 =[-1，1]，表示当前只有一个活跃的写者</li>
+<li>RWSEM_WAITING_BIAS=0xFFFF 0000=[-1，0]，表示睡眠等待队列中有读写者在睡眠等待</li>
 </ul>
 <p>kernel/locking/rwsem-xadd.c代码中有如下一段关于 count值含义的比较全面的介绍。</p>
 <ul>
@@ -355,8 +355,8 @@
 <h3 id="小结">3.4 小结</h3>
 <p>读写信号量在内核中应用广泛，特别是在内存管理中，除了前面介绍的mm-&gt;mmap_sem还有RMAP系统中的的 anon_vma-&gt;rwsem、 address_space数据结构中的 i_mmap_rwsem等。 总结读写信号量的重要特性</p>
 <ul>
-<li>down_read()：如果一个进程持有读者锁，那么允许继续申请多个读者锁，申请的血者锁则要等待。</li>
-<li>down_write()：如果一个进程持有写者锁，那么第二个进程申请该写者锁要自旋等申请读者锁则要等待。</li>
+<li>down_read()：如果一个进程持有读者锁，那么允许继续申请多个读者锁，申请的写者锁则要等待</li>
+<li>down_write()：如果一个进程持有写者锁，那么第二个进程申请该写者锁要自旋等申请读者锁则要等待</li>
 <li>up_write() up_read()：如果等待队列中第一个成员是写者，那么唤醒该写者；否则唤醒排在等待队列中最前面连续的几个读者</li>
 </ul>
 <h2 id="总结">4. 总结</h2>
@@ -556,7 +556,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">969k</span>
+    <span title="站点总字数">967k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

@@ -33,7 +33,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/内存管理-内存调优.png">
 <meta property="article:published_time" content="2021-12-05T06:56:25.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:51:41.233Z">
+<meta property="article:modified_time" content="2022-04-28T16:15:16.295Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="debug">
 <meta name="twitter:card" content="summary">
@@ -265,7 +265,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>5.8k</span>
+              <span>5.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -297,7 +297,7 @@
 <li>maxlen：参数data的长度。</li>
 <li>mode节点的文件权限。0644表示用户具有读写权限，组用户和其他用户具有只读权</li>
 <li>proc_handler：该节点在内核中的回调函数</li>
-<li>extral：表示这个参数的最小值。</li>
+<li>extral：表示这个参数的最小值</li>
 <li>exra2：表示这个参数的最大值，如。 overcommit_memory 调优参数的最大值为2，最小值为0</li>
 </ul>
 <h3 id="影响内存管理区水位的调优参数-min_free_kbytes">1.1 影响内存管理区水位的调优参数 min_free_kbytes</h3>
@@ -313,8 +313,8 @@
 <p>Linux内核把内存节点分成了多个内存管理区，位于低地址的称为低端内存管理区，位于高地址的称为高端内存管理区。在一个x86_64计算机上，通常分成如下几个内存管理区</p>
 <ul>
 <li>ZONE_DMA</li>
-<li>ZONE_DMA32。</li>
-<li>ZONE_NORMAL。</li>
+<li>ZONE_DMA32</li>
+<li>ZONE_NORMAL</li>
 <li>ZONE_MOVAR</li>
 <li>ONE_DEVICBLE</li>
 </ul>
@@ -335,14 +335,14 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> struct page *</span></span><br><span class="line"><span class="function"><span class="title">get_page_from_freelist</span><span class="params">(<span class="keyword">gfp_t</span> gfp_mask, <span class="keyword">unsigned</span> <span class="keyword">int</span> order, <span class="keyword">int</span> alloc_flags,</span></span></span><br><span class="line"><span class="params"><span class="function">						<span class="keyword">const</span> struct alloc_context *ac)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">zoneref</span> *<span class="title">z</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">zone</span> *<span class="title">zone</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> *<span class="title">last_pgdat_dirty_limit</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">  <span class="keyword">bool</span> no_fallback;</span><br><span class="line"></span><br><span class="line">retry:</span><br><span class="line">  no_fallback = alloc_flags &amp; ALLOC_NOFRAGMENT;</span><br><span class="line">  z = ac-&gt;preferred_zoneref;</span><br><span class="line">  for_next_zone_zonelist_nodemask(zone, z, ac-&gt;highest_zoneidx,</span><br><span class="line">          ac-&gt;nodemask) &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">page</span>;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> mark;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (cpusets_enabled() &amp;&amp;</span><br><span class="line">      (alloc_flags &amp; ALLOC_CPUSET) &amp;&amp;</span><br><span class="line">      !__cpuset_zone_allowed(zone, gfp_mask))</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">    <span class="keyword">if</span> (ac-&gt;spread_dirty_pages) &#123;</span><br><span class="line">      <span class="keyword">if</span> (last_pgdat_dirty_limit == zone-&gt;zone_pgdat)</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (!node_dirty_ok(zone-&gt;zone_pgdat)) &#123;</span><br><span class="line">        last_pgdat_dirty_limit = zone-&gt;zone_pgdat;</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (no_fallback &amp;&amp; nr_online_nodes &gt; <span class="number">1</span> &amp;&amp;</span><br><span class="line">        zone != ac-&gt;preferred_zoneref-&gt;zone) &#123;</span><br><span class="line">      <span class="keyword">int</span> local_nid;</span><br><span class="line"></span><br><span class="line">      local_nid = zone_to_nid(ac-&gt;preferred_zoneref-&gt;zone);</span><br><span class="line">      <span class="keyword">if</span> (zone_to_nid(zone) != local_nid) &#123;</span><br><span class="line">        alloc_flags &amp;= ~ALLOC_NOFRAGMENT;</span><br><span class="line">        <span class="keyword">goto</span> retry;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    mark = wmark_pages(zone, alloc_flags &amp; ALLOC_WMARK_MASK);</span><br><span class="line">    <span class="keyword">if</span> (!zone_watermark_fast(zone, order, mark,</span><br><span class="line">               ac-&gt;highest_zoneidx, alloc_flags,</span><br><span class="line">               gfp_mask)) &#123;</span><br><span class="line">      <span class="keyword">int</span> ret;</span><br><span class="line"></span><br><span class="line">      BUILD_BUG_ON(ALLOC_NO_WATERMARKS &lt; NR_WMARK);</span><br><span class="line">      <span class="keyword">if</span> (alloc_flags &amp; ALLOC_NO_WATERMARKS)</span><br><span class="line">        <span class="keyword">goto</span> try_this_zone;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (!node_reclaim_enabled() ||</span><br><span class="line">          !zone_allows_reclaim(ac-&gt;preferred_zoneref-&gt;zone, zone))</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line"></span><br><span class="line">      ret = node_reclaim(zone-&gt;zone_pgdat, gfp_mask, order);</span><br><span class="line">      <span class="keyword">switch</span> (ret) &#123;</span><br><span class="line">      <span class="keyword">case</span> NODE_RECLAIM_NOSCAN:</span><br><span class="line">        <span class="comment">/* did not scan */</span></span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">      <span class="keyword">case</span> NODE_RECLAIM_FULL:</span><br><span class="line">        <span class="comment">/* scanned but unreclaimable */</span></span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">      <span class="keyword">default</span>:</span><br><span class="line">        <span class="comment">/* did we reclaim enough */</span></span><br><span class="line">        <span class="keyword">if</span> (zone_watermark_ok(zone, order, mark,</span><br><span class="line">          ac-&gt;highest_zoneidx, alloc_flags))</span><br><span class="line">          <span class="keyword">goto</span> try_this_zone;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">try_this_zone:</span><br><span class="line">    page = rmqueue(ac-&gt;preferred_zoneref-&gt;zone, zone, order,</span><br><span class="line">        gfp_mask, alloc_flags, ac-&gt;migratetype);</span><br><span class="line">    <span class="keyword">if</span> (page) &#123;</span><br><span class="line">      prep_new_page(page, order, gfp_mask, alloc_flags);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (unlikely(order &amp;&amp; (alloc_flags &amp; ALLOC_HARDER)))</span><br><span class="line">        reserve_highatomic_pageblock(page, zone, order);</span><br><span class="line"></span><br><span class="line">      <span class="keyword">return</span> page;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (no_fallback) &#123;</span><br><span class="line">    alloc_flags &amp;= ~ALLOC_NOFRAGMENT;</span><br><span class="line">    <span class="keyword">goto</span> retry;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>zone_reclaim_mode是一个按位或操作的数值，读者可以根据如下位来设置不同的组合。</p>
 <ul>
-<li>1(bit[0])：表示打开内存管理区回收模式・扫描该内存管理区的页面并进行页面回收。</li>
+<li>1(bit[0])：表示打开内存管理区回收模式・扫描该内存管理区的页面并进行页面回收</li>
 <li>2(bit[1]）：表示只回收该内存管理区的内容缓存页面，将脏的内容缓存页面回写到磁盘，从而回收页面</li>
-<li>4(bit[2]）：表示只回收该内存管理区的匿名页面。</li>
+<li>4(bit[2]）：表示只回收该内存管理区的匿名页面</li>
 </ul>
 <p>通常情况下， zone_reclaim_mode模式是关闭的。但是，读者可以根据不同的场景来选择打开或者关闭。</p>
 <ul>
-<li>打开的场景。如果应用场景对跨NUMA内存节点的访问延时比较敏感，可以打开zone_reclaim_mode模式，这样页面分配器会优先从本地内存节点回收内存并分配内存。</li>
-<li>关闭的场景。如文件服务器中，系统需要大量的内容来作为内容缓存，即使内容缓存在远端NUMA节点上，读其中的内容也比直接读磁盘中的内容要快。</li>
+<li>打开的场景。如果应用场景对跨NUMA内存节点的访问延时比较敏感，可以打开zone_reclaim_mode模式，这样页面分配器会优先从本地内存节点回收内存并分配内存</li>
+<li>关闭的场景。如文件服务器中，系统需要大量的内容来作为内容缓存，即使内容缓存在远端NUMA节点上，读其中的内容也比直接读磁盘中的内容要快</li>
 </ul>
 <h3 id="watermark_boost_factor">2.3 watermark_boost_factor</h3>
 <p>watermark_boost_factor用于优化内存外碎片化。它临时提高内存管理区的水位，即zone-&gt;watermark_boost从而提高内存管理区的高水位（ WMARK_HIGH），这样 kswapd可以回收更多内存，内存规整模块（ compactd内核线程）就比较容易合并大块的连续物理内存. watermark_boost_factor的默认值是15000，表示会临时把原来的高水位提升到150%。若把这个值设置为0，则关闭临时提高内存管理区水位的机制。临时提高zone-&gt;watermark_boost是在 boost_watermark()函数中实现的。</p>
@@ -352,13 +352,13 @@
 <h2 id="影响脏页回写的参数">3. 影响脏页回写的参数</h2>
 <p>内存的回收和胜页回写有密切的关系，尽管本节没有介绍文件系统的相关内容，但是对于系统调优来说，影响脏页回写的参数不可忽视。</p>
 <ul>
-<li><p>dirty_background_bytes：当脏页所占的内存数量（指所有可用内存，即空闲页面+可回收内存页面）超过 dirty_background_bytes时，内核回写线程（ writeback thread）开始回写脏页。</p></li>
+<li><p>dirty_background_bytes：当脏页所占的内存数量（指所有可用内存，即空闲页面+可回收内存页面）超过 dirty_background_bytes时，内核回写线程（ writeback thread）开始回写脏页</p></li>
 <li><p>dirty_background_ratio：当脏页所占的百分比达到 dirty_background_ratio时，内核回写线程开始回写脏页数据，直到脏页比例低于此值。注意，对于 dirty_backgound_byts和 dirty_background_ratio，我们只能设置其中一个。当设置其中一个时。另外一个立即变成0。 dirty_background_ratio的默认值为10</p></li>
-<li><p>diry_bytes：当系统的脏页总数达到 diry_bytes值时， wrte系统调用会被阻塞，并开始回写脏页数据，直到脏页总数低于此值。注意，该值不能设置为小于两个页面大小的字节数，否则，设置不生效并且系统会默认加载之前的旧值。</p></li>
-<li><p>dirty_ratio：当脏页所占的百分比（空闲内存页+可回收内存页）达到 dirty_ratio时，write系统调用被阻塞并开始回写脏页数据，直到脏页比例低于此值。 dirty_ratio的默认值为20。注意，对于 dirty_ratio和 dirty_bytes，我们只能设置其中一个.</p></li>
-<li><p>dirty_expire_centisecs：脏数据的过期时间。当内核回写线程被唤醒后会检査哪些数据的存在时间超过了这个时间，并将这些脏数据回写到磁盘，单位是百分之一秒，也就是10ms。该值默认是3000，即若脏数据的存在时间超过30s，那么内核回写线程唤醒之后优先回写这些脏数据。</p></li>
+<li><p>diry_bytes：当系统的脏页总数达到 diry_bytes值时， wrte系统调用会被阻塞，并开始回写脏页数据，直到脏页总数低于此值。注意，该值不能设置为小于两个页面大小的字节数，否则，设置不生效并且系统会默认加载之前的旧值</p></li>
+<li><p>dirty_ratio：当脏页所占的百分比（空闲内存页+可回收内存页）达到 dirty_ratio时，write系统调用被阻塞并开始回写脏页数据，直到脏页比例低于此值。 dirty_ratio的默认值为20。注意，对于 dirty_ratio和 dirty_bytes，我们只能设置其中一个</p></li>
+<li><p>dirty_expire_centisecs：脏数据的过期时间。当内核回写线程被唤醒后会检査哪些数据的存在时间超过了这个时间，并将这些脏数据回写到磁盘，单位是百分之一秒，也就是10ms。该值默认是3000，即若脏数据的存在时间超过30s，那么内核回写线程唤醒之后优先回写这些脏数据</p></li>
 <li><p>dirty_writeback_centisecs：内核回写线程周期性唤醒的时间间隔，默认是5</p></li>
-<li><p>drop_caches：用来回收干净的页面高速缓存和一些可以回收的sab对象，如文件系统中 inode、dentries等。其默认值的含义如下。</p>
+<li><p>drop_caches：用来回收干净的页面高速缓存和一些可以回收的sab对象，如文件系统中 inode、dentries等。其默认值的含义如下</p>
 <ul>
 <li>1、回收和释放内容缓存页面</li>
 <li>2、回收和释放可回收的sab对象。</li>
@@ -561,7 +561,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">969k</span>
+    <span title="站点总字数">967k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

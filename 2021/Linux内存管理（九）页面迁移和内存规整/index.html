@@ -38,7 +38,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate4.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate5.jpg">
 <meta property="article:published_time" content="2021-12-01T05:57:14.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:48:31.459Z">
+<meta property="article:modified_time" content="2022-04-28T14:43:45.730Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="page memory">
 <meta name="twitter:card" content="summary">
@@ -270,7 +270,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>3.7k</span>
+              <span>3.6k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -303,43 +303,43 @@
 <p>形参含义根据上面的注释很好理解，我们单独说下mode和reason，他们分别表示迁移模式和迁移原因。</p>
 <h3 id="迁移模式">1.3 迁移模式</h3>
 <p>迁移模式主要会影响迁移过程中对一些行为的过滤：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MIGRATE_ASYNC        <span class="comment">//异步迁移，过程中不会发生阻塞，</span></span><br><span class="line">MIGRATE_SYNC_LIGHT   <span class="comment">//轻度同步迁移，允许大部分的阻塞操作，唯独不允许脏页的回写操作</span></span><br><span class="line">MIGRATE_SYNC         <span class="comment">//同步迁移，迁移过程会发生阻塞，若需要迁移的某个page正在writeback或被locked会等待它完成</span></span><br><span class="line">MIGRATE_SYNC_NO_COPY <span class="comment">//同步迁移，但不等待页面的拷贝过程。页面的拷贝通过回调migratepage()，过程可能会涉及DMA</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MIGRATE_ASYNC        <span class="comment">//异步迁移，过程中不会发生阻塞</span></span><br><span class="line">MIGRATE_SYNC_LIGHT   <span class="comment">//轻度同步迁移，允许大部分的阻塞操作，唯独不允许脏页的回写操作</span></span><br><span class="line">MIGRATE_SYNC         <span class="comment">//同步迁移，迁移过程会发生阻塞，若需要迁移的某个page正在writeback或被locked会等待它完成</span></span><br><span class="line">MIGRATE_SYNC_NO_COPY <span class="comment">//同步迁移，但不等待页面的拷贝过程。页面的拷贝通过回调migratepage()，过程可能会涉及DMA</span></span><br></pre></td></tr></table></figure>
 <p>举例：内存规整(compact)中会调用migrate_pages()，同时也会设置迁移模式(位于compact_control-&gt;mode)。若是sysfs主动触发的内存规整会用MIGRATE_SYNC模式；若是kcompactd触发的规整会用MIGRATE_SYNC_LIGHT模式；若是内存分配slowpath中触发的会根据compact prior去设置用MIGRATE_ASYNC或MIGRATE_SYNC_LIGHT模式。</p>
 <h3 id="迁移原因">1.4 迁移原因</h3>
 <p>迁移原因主要使用来记录是什么功能触发了迁移的行为，毕竟页面迁移对系统本身是个不小的overhead，所以知道迁移的原因很有必。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">MR_COMPACTION      <span class="comment">//内存规整导致的迁移</span></span><br><span class="line">MR_MEMORY_FAILURE  <span class="comment">//当内存出现硬件问题(ECC校验失败等)时触发的页面迁移。 参考memory-failure.c</span></span><br><span class="line">MR_MEMORY_HOTPLUG  <span class="comment">//内存热插拔导致的迁移</span></span><br><span class="line">MR_SYSCALL         <span class="comment">//应用层主动调用migrate_pages()或move_pages()触发的迁移。</span></span><br><span class="line">MR_MEMPOLICY_MBIND <span class="comment">//调用mbind系统调用设置memory policy时触发的迁移</span></span><br><span class="line">MR_NUMA_MISPLACED  <span class="comment">//numa balance触发的页面迁移(node之间)</span></span><br><span class="line">MR_CONTIG_RANGE    <span class="comment">//调用alloc_contig_range()为CMA或HugeTLB分配连续内存时触发的迁移(和compact相关)。</span></span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">MR_COMPACTION      <span class="comment">//内存规整导致的迁移</span></span><br><span class="line">MR_MEMORY_FAILURE  <span class="comment">//当内存出现硬件问题(ECC校验失败等)时触发的页面迁移。 参考memory-failure.c</span></span><br><span class="line">MR_MEMORY_HOTPLUG  <span class="comment">//内存热插拔导致的迁移</span></span><br><span class="line">MR_SYSCALL         <span class="comment">//应用层主动调用migrate_pages()或move_pages()触发的迁移</span></span><br><span class="line">MR_MEMPOLICY_MBIND <span class="comment">//调用mbind系统调用设置memory policy时触发的迁移</span></span><br><span class="line">MR_NUMA_MISPLACED  <span class="comment">//numa balance触发的页面迁移(node之间)</span></span><br><span class="line">MR_CONTIG_RANGE    <span class="comment">//调用alloc_contig_range()为CMA或HugeTLB分配连续内存时触发的迁移(和compact相关)</span></span><br></pre></td></tr></table></figure>
 <p>延伸：对上面MR_SYSCALL迁移原因中提到的两个API(位于libnuma库)的简单介绍。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">migrate_pages()  <span class="comment">//和kernel中接口同名，别搞混了</span></span><br><span class="line">含义：把某pid进程的所有页面从源numa node迁移到目标numa nodes组中，对应系统调用sys_migrate_pages()         </span><br><span class="line">move_pages()  </span><br><span class="line">含义：把进程到部分页面迁移目标numa node中，对应系统调用sys_move_pages()</span><br></pre></td></tr></table></figure>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 含义：把某pid进程的所有页面从源numa node迁移到目标numa nodes组中，对应系统调用sys_migrate_pages()  </span></span><br><span class="line">migrate_pages()  <span class="comment">//和kernel中接口同名，别搞混了</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 含义：把进程到部分页面迁移目标numa node中，对应系统调用sys_move_pages()    </span></span><br><span class="line">move_pages()  </span><br></pre></td></tr></table></figure>
 <h3 id="migrate_pages介绍">1.5 migrate_pages()介绍</h3>
 <p>通过上面对迁移原因的介绍，我们知道了页面迁移的原因各种各样，这里我们通过内存规整(memory compact)这样一个实际的例子展开介绍，下图主要体现了内存规整和页面迁移的关系： <img src="/picture/linux/kernel/mem/migrate1.jpg" /></p>
 <p>通过上图，我们看出页面迁移在内存规整中举足轻重的地位。下面则是内存规整调用migrate_pages()的函数关系：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">compact_zone           <span class="comment">//内存规整</span></span><br><span class="line">  -&gt;migrate_pages      <span class="comment">//页面迁移的入口函数						</span></span><br><span class="line">    -&gt;unmap_and_move   <span class="comment">//页面迁移的核心实现 </span></span><br></pre></td></tr></table></figure>
 <p>现在切入重点，页面迁移(migrate)过程做了那些事情：</p>
 <h3 id="迁移前的准备">1.5 迁移前的准备</h3>
-<ol type="1">
-<li><p>获取old page的页面锁PG_locked (异步模式拿不到锁就直接跳过此页面)</p></li>
-<li><p>若是正在writeback的页面，则根据迁移模式判断是否等待页面wirteback（MIGRATE_SYNC_LIGHT和MIGRATE_ASYNC不等待）</p></li>
-<li><p>获取new page的页面锁PG_locked (new page正常情况下不会获取失败)</p></li>
-</ol>
+<ul>
+<li>获取old page的页面锁PG_locked (异步模式拿不到锁就直接跳过此页面)</li>
+<li>若是正在writeback的页面，则根据迁移模式判断是否等待页面wirteback（MIGRATE_SYNC_LIGHT和MIGRATE_ASYNC不等待）</li>
+<li>获取new page的页面锁PG_locked (new page正常情况下不会获取失败)</li>
+</ul>
 <p><img src="/picture/linux/kernel/mem/migrate2.jpg" /></p>
 <h3 id="解除old-page的页表映射">1.6 解除old page的页表映射</h3>
 <p>调用try_to_unmap()，通过反向映射机制解除old page所有相关的PTEs <img src="/picture/linux/kernel/mem/migrate3.jpg" /></p>
 <h3 id="设置new-page的页面内容元数据及映射关系">1.7 设置new page的页面内容、元数据及映射关系</h3>
 <p>调用move_to_new_page拷贝old page的内容和struct page元数据到new page，并通过反向映射机制建立new page的映射关系。 <img src="/picture/linux/kernel/mem/migrate4.jpg" /></p>
 <h3 id="页面迁移的收尾工作">1.6 页面迁移的收尾工作</h3>
-<ol type="1">
-<li><p>迁移完成释放新旧页面的PG_locked。</p></li>
-<li><p>设置迁移原因。</p></li>
-<li><p>调用put_page释放old page引用计数(_refcount减1)</p></li>
-</ol>
+<ul>
+<li>迁移完成释放新旧页面的PG_locked</li>
+<li>设置迁移原因</li>
+<li>调用put_page释放old page引用计数(_refcount减1)</li>
+</ul>
 <p><img src="/picture/linux/kernel/mem/migrate5.jpg" /></p>
-<p>补充：说到最后忽然想起来缺了点什么.....什么样的页面才支持迁移呢？</p>
-<ol type="1">
-<li><p>lru上的page，因为上面挂的是user spcace用的pages，都是从buddy分配器migrate type为movable或reclaim的pageblock上分来的。</p></li>
-<li><p>no-lru但是movable的页面。no-lru的页面通常是为kernel space分配的page，这种页面通常是unmovable的，但是下面这个commit使得驱动中用到的页面也可以支持迁移。但是在驱动实现的过程中需要置位page-&gt;mapping中的second bit，并且实现page-&gt;mapping-&gt;a_ops中的相关方法。(详细介绍看下面的这个commit，重点关注PageMovable()的实现)</p></li>
-</ol>
+<p>补充：什么样的页面才支持迁移呢？</p>
+<ul>
+<li>lru上的page，因为上面挂的是user spcace用的pages，都是从buddy分配器migrate type为movable或reclaim的pageblock上分来的</li>
+<li>no-lru但是movable的页面。no-lru的页面通常是为kernel space分配的page，这种页面通常是unmovable的，但是下面这个commit使得驱动中用到的页面也可以支持迁移。但是在驱动实现的过程中需要置位page-&gt;mapping中的second bit，并且实现page-&gt;mapping-&gt;a_ops中的相关方法</li>
+</ul>
 <h2 id="内存规整">2. 内存规整</h2>
-<p>内存碎片的产生：伙伴系统以页为单位进行管理，经过大量申请释放，造成大量离散且不连续的页面。这时就产生了很多碎片。 内存规整也即内存碎片整理，内存碎片也是以页面为单位的。实现基础是内存页面按照可移动性进行分组。内存规整的实现基础是页面迁移。 Linux内核以pageblock为单位来管理页的迁移属性。 为什么需要内存规整？ 有些情况下，物理设备需要大段连续物理内存。虽然此时空闲内存足够，但是哟与无法找到连续的物理内存，仍然造成内存分配失败。</p>
+<p>内存碎片的产生：伙伴系统以页为单位进行管理，经过大量申请释放，造成大量离散且不连续的页面。这时就产生了很多碎片。 内存规整也即内存碎片整理，内存碎片也是以页面为单位的。实现基础是内存页面按照可移动性进行分组。内存规整的实现基础是页面迁移。 Linux内核以pageblock为单位来管理页的迁移属性。 为什么需要内存规整？ 有些情况下，物理设备需要大段连续物理内存。虽然此时空闲内存足够，但是无法找到连续的物理内存，仍然造成内存分配失败。</p>
 <h3 id="内存规整的触发">2.1 内存规整的触发</h3>
 <p>下面是内存页面分配，以及分配失败之后采取的措施，以便促成分配成功。 可以看出采取的措施，越来越重。首先采用kswapd来进行页面回收，然后尝试页面规整、直接页面回收，最后是OOM杀死进程来获取更多内存空间</p>
 <figure class="highlight elm"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="title">alloc_pages</span><span class="comment">-------------------------------------页面分配的入口</span></span><br><span class="line">  -&gt;__alloc_pages_nodemask</span><br><span class="line">    -&gt;get_page_from_freelist<span class="comment">--------------------直接从zonelist的空闲列表中分配页面</span></span><br><span class="line">    -&gt;__alloc_pages_slowpath<span class="comment">--------------------在初次尝试分配失败后，进入slowpath路径分配页面</span></span><br><span class="line">      -&gt;wake_all_kswapds<span class="comment">------------------------唤醒kswapd内核线程进行页面回收</span></span><br><span class="line">      -&gt;get_page_from_freelist<span class="comment">------------------kswapd页面回收后再次进行页面分配</span></span><br><span class="line">      -&gt;__alloc_pages_direct_compact<span class="comment">------------进行页面规整，然后进行页面分配</span></span><br><span class="line">      -&gt;__alloc_pages_direct_reclaim<span class="comment">------------直接页面回收，然后进行页面分配</span></span><br><span class="line">      -&gt;__alloc_pages_may_oom<span class="comment">-------------------尝试触发OOM</span></span><br></pre></td></tr></table></figure>
@@ -580,7 +580,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">969k</span>
+    <span title="站点总字数">967k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
