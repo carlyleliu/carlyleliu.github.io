@@ -47,7 +47,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/mmu13.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/mmu14.jpg">
 <meta property="article:published_time" content="2021-11-12T07:10:44.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:41:59.893Z">
+<meta property="article:modified_time" content="2022-04-27T14:40:47.390Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="mmu">
 <meta name="twitter:card" content="summary">
@@ -330,10 +330,10 @@
 <p>为了解决这些问题，在现代32/64位处理器中，通常使用的都是多级页表，操作系统的实现中也提供了对多级页表的支持。</p>
 <h2 id="多级页表的查找方法">3. 多级页表的查找方法</h2>
 <p>MMU中的table walk unit使用虚拟地址中位域的子集做为index，顺着页表层次结构的各个级别往下查找。以一个虚拟地址为30位，第一级页表PD（Page Directory）占8 bits，第二级页表PT（Page Table）占10 bits，页大小为4KB（占12 bits）的系统为例， <img src="/picture/linux/kernel/task/mmu13.jpg" /></p>
-<ol type="1">
-<li>通过PTBP（Page Table Base Register）寄存器获得PD页表的起始物理地址（如果页表自己都用虚拟地址，那岂不是还得另外有个页表来转换，陷入死循环了……），然后从待转换的虚拟地址中取出高8位作为index找到对应的PD entry， 这个PD entry中存放的是它对应的PT页表的起始物理地址。</li>
-<li>从待转换的虚拟地址中取出中间10位作为index在PT表中找到对应的PT entry，这个PT entry中存放的是就是物理页面号（PPN, Physical Page Number）了。</li>
-</ol>
+<ul>
+<li>通过PTBP（Page Table Base Register）寄存器获得PD页表的起始物理地址（如果页表自己都用虚拟地址，那岂不是还得另外有个页表来转换，陷入死循环了……），然后从待转换的虚拟地址中取出高8位作为index找到对应的PD entry， 这个PD entry中存放的是它对应的PT页表的起始物理地址</li>
+<li>从待转换的虚拟地址中取出中间10位作为index在PT表中找到对应的PT entry，这个PT entry中存放的是就是物理页面号（PPN, Physical Page Number）了</li>
+</ul>
 <p>在多级页表系统中，其实每级页表都可以视为一种“虚拟地址”向“物理地址”的转换，只是这里的“虚拟地址”是待转换的虚拟地址的一个位域子集，而除了最后一级页表PTE是直接指向物理页面的，其他级别页表里的“物理地址”都是指向对应下一级页表的首地址。</p>
 <p>再举一个更加鲜活的带有实际地址的例子，为了便于演示，使用一个PD，PT，page offset分别占4 bits, 4bits, 12bits的系统。 <img src="/picture/linux/kernel/task/mmu14.jpg" /></p>
 <p>对于虚拟地址0x01ABC，其中“ABC”为page offset, 真正用来转换的只有高8位“0x01”。PD index为0，对应PFN为第一行的0x3，然后找到0x3对应的PT表，PT index为1，对应PFN为第二行的0x23，这样就得到了PPN为0x23，加上page offset就是最后的物理地址0x23ABC。另外两个虚拟地址0x00000和0xFEED0的查找过程也是一样的。</p>
@@ -535,7 +535,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">972k</span>
+    <span title="站点总字数">969k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

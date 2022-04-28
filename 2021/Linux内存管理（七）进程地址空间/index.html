@@ -39,7 +39,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/malloc.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/mmap.png">
 <meta property="article:published_time" content="2021-11-27T08:07:03.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:46:54.364Z">
+<meta property="article:modified_time" content="2022-04-28T03:16:10.501Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="vma">
 <meta name="twitter:card" content="summary">
@@ -271,14 +271,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>8.4k</span>
+              <span>8k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>8 分钟</span>
+              <span>7 分钟</span>
             </span>
 
         </div>
@@ -293,63 +293,63 @@
         <p><img src="/picture/linux/brief/内存管理-进程地址空间.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3NDZmYzU2NTNiYjA3MWU3MTM0NTc=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <h2 id="概述">1. 概述</h2>
-<p>在64位系统中，每个用户进程最多可以拥有256TB的虚拟地址空间，这个数值通常要远大于物理内存，那么如何管理这些虚拟地址空间呢？用户进程通常会多次调用malloc()或使用mmap()映射文件到用户空间进行读写等操作，这些操作都会要求在虚拟地址空间中分配内块，这些内存块基本上都是离散的。malloc()是用户态下常用于分配内存的接口函数，后面会详细介绍了其内核实现机制；mmap()是用户态下常用于建立文件映射或匿名映射的函数，后面会详细介绍了其内核实现机制。这些进程地址空间在内核中使用vm_area_struct数据结构来描述简称VMA，表示进程地址空间或进程线性区。由于这些地址空间属于各个用户进程，因此在用户进程的mm_struct数据结构中有相应的成员，用于对这些VMA进行管理。</p>
+<p>用户进程通常会多次调用malloc()或使用mmap()映射文件到用户空间进行读写等操作，这些操作都会要求在虚拟地址空间中分配内块，这些内存块基本上都是离散的。malloc()是用户态下常用于分配内存的接口函数，mmap()是用户态下常用于建立文件映射或匿名映射的函数。这些进程地址空间在内核中使用vm_area_struct数据结构来描述，简称VMA，表示进程地址空间或进程线性区。由于这些地址空间属于各个用户进程，因此在用户进程的mm_struct数据结构中有相应的成员，用于对这些VMA进行管理。</p>
 <h2 id="进程地址空间">2. 进程地址空间</h2>
 <p>进程地址空间（process address space）是指进程可寻址的虚拟地址空间。在64位的处理器中，进程可以寻址256B的用户态地址空间，但是进程没有权限去寻址内核空间的虚拟地址只能通过系统调用的方式间接访问。而用户空间的进程地址空间则可以被合法访问，地址空间称为内存区域（memory area）。进程可以通过内核的内存管理机制动态地添加和删除这些内存区域，这些内存区域在Linux内核采用VMA数据结构来抽象描述。 每个内存区域具有相关的权限，如可读、可写或者可执行权限。若一个进程访问了不在有效范围的内存区域，或者非法访问了内存区域，或者以不正确的方式访问了内存区域，那么处理器会报告缺页异常。在Linux内核的缺页异常处理中会处理这些情况，严重的会报告“SegmentFault'”并终止该进程。</p>
 <p>内存区域包含内容如下。</p>
 <ul>
-<li>代码段映射，可执行文件中包含只读并可执行的程序头，如代码段和init段等。</li>
-<li>数据段映射，可执行文件中包含可读/可写的程序头，如数据段和未初始化数据段等。</li>
-<li>用户进程栈。通常位于用户空间的最高地址，从上往下延伸。它包含栈帧，里面包含了局部变量和函数调用参数等。注意，不要和内核栈混淆，进程的内核栈独立存在并由内核维护，主要用于上下文切换</li>
-<li>mmap映射区域。位于用户进程栈下面，主要用于mmap系统调用，如映射一个文件的内容到进程地址空间等。</li>
-<li>堆映射区域。malloc()函数分配的进程虚拟地址就是这段区域</li>
+<li>代码段映射：可执行文件中包含只读并可执行的程序头，如代码段和init段等</li>
+<li>数据段映射：可执行文件中包含可读/可写的程序头，如数据段和未初始化数据段等</li>
+<li>用户进程栈：通常位于用户空间的最高地址，从上往下延伸。它包含栈帧，里面包含了局部变量和函数调用参数等</li>
+<li>mmap映射区域：位于用户进程栈下面，主要用于mmap系统调用，如映射一个文件的内容到进程地址空间等</li>
+<li>堆映射区域：malloc()函数分配的进程虚拟地址就是这段区域</li>
 </ul>
-<p>进程地址空间里的每个内存区域相互不能重叠。如果两个进程都使用malloc()函数来分配内存，分配的虚拟内存的地址是一样的，那是不是说明这两个内存区域重叠了呢？ 如果理解了进程地址空间的本质就不难回答这个问题了。进程地址空间是每个进程可以寻址的虚拟地址空间，每个进程在执行时都仿佛拥有了整个CPU资源，这就是所谓的“CPU虚拟化”。因此，每个进程都有一套页表，这样每个进程地址空间就是相互隔离的。即使它们的进程地址空间的虚拟地址是相同的，但是经过两套不同页表的转换之后，它们也会对应不同的物理地址。</p>
+<p>每个进程都有一套页表，这样每个进程地址空间就是相互隔离的。即使两个进程地址空间的虚拟地址是相同的，但是经过两套不同页表的转换之后，它们也会对应不同的物理地址。</p>
 <h2 id="mm_struct数据结构">2.2 mm_struct数据结构</h2>
 <p>Linux内核需要管理每个进程所有的内存区域以及它们对应的页表映射，所以必须抽象出一个数据结构，这就是mm_struct数据结构。进程控制块（Process Control Block，PCB）数据结构task_struct中有一个指针mm，该指针指向这个mm_struct数据结构。mm_struct数据结构定义在include/linux/mm_types.h文件中，下面是它的主要成员。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">vm_area_struct</span> *<span class="title">mmap</span>;</span>		<span class="comment">/* list of VMAs */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rb_root</span> <span class="title">mm_rb</span>;</span></span><br><span class="line">    u64 vmacache_seqnum;                   <span class="comment">/* per-thread vmacache */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MMU</span></span><br><span class="line">    <span class="function"><span class="keyword">unsigned</span> <span class="title">long</span> <span class="params">(*get_unmapped_area)</span> <span class="params">(struct file *filp,</span></span></span><br><span class="line"><span class="params"><span class="function">				<span class="keyword">unsigned</span> <span class="keyword">long</span> addr, <span class="keyword">unsigned</span> <span class="keyword">long</span> len,</span></span></span><br><span class="line"><span class="params"><span class="function">				<span class="keyword">unsigned</span> <span class="keyword">long</span> pgoff, <span class="keyword">unsigned</span> <span class="keyword">long</span> flags)</span></span>;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> mmap_base;	<span class="comment">/* base of mmap area */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> mmap_legacy_base;	<span class="comment">/* base of mmap area in bottom-up allocations */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_HAVE_ARCH_COMPAT_MMAP_BASES</span></span><br><span class="line">    <span class="comment">/* Base addresses for compatible mmap() */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> mmap_compat_base;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> mmap_compat_legacy_base;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> task_size;	<span class="comment">/* size of task vm space */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> highest_vm_end;	<span class="comment">/* highest vma end address */</span></span><br><span class="line">    <span class="keyword">pgd_t</span> * pgd;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MEMBARRIER</span></span><br><span class="line">    <span class="keyword">atomic_t</span> membarrier_state;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">atomic_t</span> mm_users;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">atomic_t</span> mm_count;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MMU</span></span><br><span class="line">    <span class="keyword">atomic_long_t</span> pgtables_bytes;	<span class="comment">/* PTE page table pages */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">int</span> map_count;			<span class="comment">/* number of VMAs */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">spinlock_t</span> page_table_lock; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rw_semaphore</span> <span class="title">mmap_lock</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">mmlist</span>;</span> </span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> hiwater_rss; <span class="comment">/* High-watermark of RSS usage */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> hiwater_vm;  <span class="comment">/* High-water virtual memory usage */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> total_vm;	   <span class="comment">/* Total pages mapped */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> locked_vm;   <span class="comment">/* Pages that have PG_mlocked set */</span></span><br><span class="line">    <span class="keyword">atomic64_t</span>    pinned_vm;   <span class="comment">/* Refcount permanently increased */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> data_vm;	   <span class="comment">/* VM_WRITE &amp; ~VM_SHARED &amp; ~VM_STACK */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> exec_vm;	   <span class="comment">/* VM_EXEC &amp; ~VM_WRITE &amp; ~VM_STACK */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> stack_vm;	   <span class="comment">/* VM_STACK */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> def_flags;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">seqcount_t</span> write_protect_seq;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">spinlock_t</span> arg_lock; <span class="comment">/* protect the below fields */</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> start_code, end_code, start_data, end_data;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> start_brk, brk, start_stack;</span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> arg_start, arg_end, env_start, env_end;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> saved_auxv[AT_VECTOR_SIZE]; <span class="comment">/* for /proc/PID/auxv */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mm_rss_stat</span> <span class="title">rss_stat</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">linux_binfmt</span> *<span class="title">binfmt</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Architecture-specific MM context */</span></span><br><span class="line">    <span class="keyword">mm_context_t</span> context;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> flags; <span class="comment">/* Must use atomic bitops to access */</span></span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">core_state</span> *<span class="title">core_state</span>;</span> <span class="comment">/* coredumping support */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_AIO</span></span><br><span class="line">    <span class="keyword">spinlock_t</span>			ioctx_lock;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">kioctx_table</span> __<span class="title">rcu</span>	*<span class="title">ioctx_table</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">user_namespace</span> *<span class="title">user_ns</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* store ref to file /proc/&lt;pid&gt;/exe symlink points to */</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">file</span> __<span class="title">rcu</span> *<span class="title">exe_file</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MMU_NOTIFIER</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">mmu_notifier_subscriptions</span> *<span class="title">notifier_subscriptions</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(CONFIG_TRANSPARENT_HUGEPAGE) &amp;&amp; !USE_SPLIT_PMD_PTLOCKS</span></span><br><span class="line">    <span class="keyword">pgtable_t</span> pmd_huge_pte; <span class="comment">/* protected by page_table_lock */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_NUMA_BALANCING</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> numa_next_scan;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* Restart point for scanning and setting pte_numa */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> numa_scan_offset;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* numa_scan_seq prevents two threads setting pte_numa */</span></span><br><span class="line">    <span class="keyword">int</span> numa_scan_seq;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="keyword">atomic_t</span> tlb_flush_pending;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ARCH_WANT_BATCHED_UNMAP_TLB_FLUSH</span></span><br><span class="line">    <span class="comment">/* See flush_tlb_batched_pending() */</span></span><br><span class="line">    <span class="keyword">bool</span> tlb_flush_batched;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">uprobes_state</span> <span class="title">uprobes_state</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_HUGETLB_PAGE</span></span><br><span class="line">    <span class="keyword">atomic_long_t</span> hugetlb_usage;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> <span class="title">async_put_work</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_IOMMU_SUPPORT</span></span><br><span class="line">    u32 pasid;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  &#125; __randomize_layout;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> cpu_bitmap[];</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>mm_struct数据结构中主要成员的含义如下。</p>
+<p>mm_struct数据结构中主要成员的含义如下：</p>
 <ul>
-<li>mmap：进程里所有的VMA形成一个单链表，这是该链表的头。</li>
-<li>mmrb：VMA红黑树的根节点。</li>
-<li>get_unmapped_area：用于判断虚拟内存空间是否有足够的空间，返回一段没有映射过的空间的起始地址，这个函数会使用具体的处理器架构的实现，如对于ARM架Linux内核就有相应的函数实现。</li>
-<li>mmap_base：指向mmap空间的起始地址。在32位处理器中，mmap空间的起始地是0x40000000。</li>
-<li>pgd：指向进程的PGD（一级页表）。</li>
-<li>mm_users：记录正在使用该进程地址空间的进程数目，如果两个线程共享该地址空间那么mm_users的值等于2。</li>
-<li>mm_count：mm_struct结构体的主引用计数。</li>
-<li>mmap_sem：保护VMA的一个读写信号量。</li>
-<li>mmlist：所有的mm_struct数据结构都连接到一个双向链表中，该链表的头是init_mm内存描述符，它是init进程的地址空间。</li>
-<li>start_code，end_code：代码段的起始地址和结束地址。</li>
-<li>start_data，end_data：数据段的起始地址和结束地址。</li>
-<li>start_brk：堆空间的起始地址。</li>
-<li>brk：表示当前堆中的VMA的结束地址。</li>
-<li>total_vm：已经使用的进程地址空间总和。</li>
+<li>mmap：进程里所有的VMA形成一个单链表，这是该链表的头</li>
+<li>mmrb：VMA红黑树的根节点</li>
+<li>get_unmapped_area：用于判断虚拟内存空间是否有足够的空间，返回一段没有映射过的空间的起始地址，这个函数会使用具体的处理器架构的实现，如对于ARM架Linux内核就有相应的函数实现</li>
+<li>mmap_base：指向mmap空间的起始地址。在32位处理器中，mmap空间的起始地是0x4000 0000</li>
+<li>pgd：指向进程的PGD（一级页表）</li>
+<li>mm_users：记录正在使用该进程地址空间的进程数目，如果两个线程共享该地址空间那么mm_users的值等于2</li>
+<li>mm_count：mm_struct结构体的主引用计数</li>
+<li>mmap_sem：保护VMA的一个读写信号量</li>
+<li>mmlist：所有的mm_struct数据结构都连接到一个双向链表中，该链表的头是init_mm内存描述符，它是init进程的地址空间</li>
+<li>start_code，end_code：代码段的起始地址和结束地址</li>
+<li>start_data，end_data：数据段的起始地址和结束地址</li>
+<li>start_brk：堆空间的起始地址</li>
+<li>brk：表示当前堆中的VMA的结束地址</li>
+<li>total_vm：已经使用的进程地址空间总和</li>
 </ul>
 <p>从进程的角度来观察内存管理，可以沿着mm_struct数据结构进行延伸和思考，如下图所示。 <img src="/picture/linux/kernel/mem/vma1.png" /></p>
 <h3 id="vma数据结构">2.3 VMA数据结构</h3>
 <p>VMA（vm_area_struct）数据结构定义在mm_types.h文件中，其主要成员如下。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">include/<span class="number">1</span>inux/mm_types.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">vm_area_struct</span> &#123;</span></span><br><span class="line">  <span class="comment">/* The first cache line has the info for VMA tree walking. */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> vm_start;		<span class="comment">/* Our start address within vm_mm. */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> vm_end;		<span class="comment">/* The first byte after our end address</span></span><br><span class="line"><span class="comment">					   within vm_mm. */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* linked list of VM areas per task, sorted by address */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">vm_area_struct</span> *<span class="title">vm_next</span>, *<span class="title">vm_prev</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span> <span class="title">vm_rb</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> rb_subtree_gap;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Second cache line starts here. */</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span> *<span class="title">vm_mm</span>;</span>	<span class="comment">/* The address space we belong to. */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">pgprot_t</span> vm_page_prot;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> vm_flags;		<span class="comment">/* Flags, see mm.h. */</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rb_node</span> <span class="title">rb</span>;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> rb_subtree_last;</span><br><span class="line">  &#125; shared;</span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">anon_vma_chain</span>;</span> <span class="comment">/* Serialized by mmap_lock &amp;</span></span><br><span class="line"><span class="comment">					  * page_table_lock */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">anon_vma</span> *<span class="title">anon_vma</span>;</span>	<span class="comment">/* Serialized by page_table_lock */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Function pointers to deal with this struct. */</span></span><br><span class="line">  <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">vm_operations_struct</span> *<span class="title">vm_ops</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Information about our backing store: */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> vm_pgoff;		<span class="comment">/* Offset (within vm_file) in PAGE_SIZE</span></span><br><span class="line"><span class="comment">					   units */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">file</span> * <span class="title">vm_file</span>;</span>		<span class="comment">/* File we map to (can be NULL). */</span></span><br><span class="line">  <span class="keyword">void</span> * vm_private_data;		<span class="comment">/* was vm_pte (shared mem) */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SWAP</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span> swap_readahead_info;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CONFIG_MMU</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">vm_region</span> *<span class="title">vm_region</span>;</span>	<span class="comment">/* NOMMU mapping region */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_NUMA</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">mempolicy</span> *<span class="title">vm_policy</span>;</span>	<span class="comment">/* NUMA policy for the VMA */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">vm_userfaultfd_ctx</span> <span class="title">vm_userfaultfd_ctx</span>;</span></span><br><span class="line">&#125; __randomize_layout;</span><br></pre></td></tr></table></figure>
-<p>VMA数据结构中各个成员的含义如下。</p>
+<p>VMA数据结构中各个成员的含义如下：</p>
 <ul>
-<li>vm_start和vm_end：指定VMA在进程地址空间的起始地址和结束地址。</li>
-<li>vm_next和vm_prev：进程的VMA都连接成一个链表。</li>
-<li>vmrb：VMA作为一个节点加入红黑树，每个进程的mm_struct数据结构中都有一棵红黑树mm-&gt;mm_rb。</li>
-<li>vm_mm：指向该VMA所属进程的mm_struct数据结构。</li>
-<li>vm_page_prot：VMA的访问权限。</li>
-<li>vm_flags：描述该VMA的一组标志位。</li>
-<li>anon_vma_chain和anon_vma：用于管理反向映射（Reverse Mapping，RMAP）。</li>
-<li>vm_ops：指向许多方法的集合，这些方法用于在VMA中执行各种操作，通常用于文件映射。</li>
-<li>vm_pgoff：指定文件映射的偏移量，这个变量的单位不是字节，而是页面的大小件映射。（PAGE SIZE）。对于匿名页面来说，它的值可以是0或者vm_addr/PAGE_SIZE。</li>
-<li>vm_file：指向file的实例，描述一个被映射的文件。</li>
+<li>vm_start和vm_end：指定VMA在进程地址空间的起始地址和结束地址</li>
+<li>vm_next和vm_prev：进程的VMA都连接成一个链表</li>
+<li>vmrb：VMA作为一个节点加入红黑树，每个进程的mm_struct数据结构中都有一棵红黑树mm-&gt;mm_rb</li>
+<li>vm_mm：指向该VMA所属进程的mm_struct数据结构</li>
+<li>vm_page_prot：VMA的访问权限</li>
+<li>vm_flags：描述该VMA的一组标志位</li>
+<li>anon_vma_chain和anon_vma：用于管理反向映射（Reverse Mapping，RMAP）</li>
+<li>vm_ops：指向许多方法的集合，这些方法用于在VMA中执行各种操作，通常用于文件映射</li>
+<li>vm_pgoff：指定文件映射的偏移量，这个变量的单位不是字节，而是页面的大小件映射。（PAGE SIZE）。对于匿名页面来说，它的值可以是0或者vm_addr/PAGE_SIZE</li>
+<li>vm_file：指向file的实例，描述一个被映射的文件</li>
 </ul>
 <p>mm_struct数据结构是描述进程内存管理的核心数据结构，该数据结构提供了管理VMA所需要的信息,每个VMA都要连接到mm_struct中的链表和红黑树，以方便查找。</p>
-<p>VMA按照起始地址以递增的方式插入mm_struct-&gt;mmp链表中。当进程拥有大量的VMA时，扫描链表和查找特定的VMA是非常低效的操作，如在云计算的机器中，所以内核中通常需要红黑树来协助，以便提高查找速度。 站在进程的角度来看，我们可以从进程控制块。task_struct3数据结构里顺藤摸瓜找到该进程所有的VMA，如图所示。 <img src="/picture/linux/kernel/mem/vma1.png" /></p>
+<p>VMA按照起始地址以递增的方式插入mm_struct-&gt;mmp链表中。当进程拥有大量的VMA时，扫描链表和查找特定的VMA是非常低效的操作，如在云计算的机器中，所以内核中通常需要红黑树来协助，以便提高查找速度。 站在进程的角度来看，我们可以从进程控制块。task_struct数据结构里顺藤摸瓜找到该进程所有的VMA，如图所示。 <img src="/picture/linux/kernel/mem/vma1.png" /></p>
 <ul>
-<li>task_struct结结构中有一个mm成员指向进程的内存管理描述符mm_struct数据结构。</li>
-<li>可以通过mm_struct数据结构中的mmap成员来遍历所有的VMA。</li>
-<li>也可以通过mm_struct数据结构中的mm_rb成员来遍历和查找VMA。</li>
+<li>task_struct结结构中有一个mm成员指向进程的内存管理描述符mm_struct数据结构</li>
+<li>可以通过mm_struct数据结构中的mmap成员来遍历所有的VMA</li>
+<li>也可以通过mm_struct数据结构中的mm_rb成员来遍历和查找VMA</li>
 <li>mm_struct数据结构的pgd成员指向进程的页表，每个进程都有一份独立的页表</li>
-<li>当CPU第一次访问虚拟地址空间时会触发缺页异常。在缺页异常处理中，分配物理页面，利用分配的物理页面来创建页表项并且填充页表，完成虚拟地址到物理地址的映 射关系的建立。</li>
+<li>当CPU第一次访问虚拟地址空间时会触发缺页异常。在缺页异常处理中，分配物理页面，利用分配的物理页面来创建页表项并且填充页表，完成虚拟地址到物理地址的映射关系的建立</li>
 </ul>
 <h3 id="vma的属性">2.4 VMA的属性</h3>
 <p>作为一个进程地址空间的区间，VMA是有属性的，如可读/可写、共享等属性。vm_flags成员描述这些属性，描述了该VMA的全部页面信息，包括如何映射页面、访问每个页面的权限等信息，VMA属性的标志位如下所示。</p>
@@ -397,22 +397,22 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> PAGE_READONLY		__pgprot(_PAGE_DEFAULT | PTE_USER | PTE_RDONLY | PTE_NG | PTE_PXN | PTE_UXN)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _PAGE_DEFAULT		(_PROT_DEFAULT | PTE_ATTRINDX(MT_NORMAL))</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _PROT_DEFAULT		(PTE_TYPE_PAGE | PTE_AF | PTE_SHARED)</span></span><br></pre></td></tr></table></figure>
 <p>把上述的宏全部展开，我们可以得到如下页表项的标志位。</p>
 <ul>
-<li>PTE_TYPE_PAGE：表示这是一个基于页面的页表项，即设置页表项的Bit[1:O]。</li>
-<li>PTE_AF：设置访问位。</li>
-<li>PTE_SHARED：设置内存共享属性。</li>
-<li>MT_NORMAL：设置内存属性为normal。</li>
-<li>PTE_USER：设置AP访问位，允许通过用户权限访问该内存。</li>
-<li>PTE_NG：设置该内存对应的TLB只属于该进程。</li>
-<li>PTE_PXN：表示该内存不能在特权模式下执行。</li>
-<li>PTE_UXN：表示该内存不能在用户模式下执行。</li>
-<li>PTE_RDONLY：表示只读属性。</li>
+<li>PTE_TYPE_PAGE：表示这是一个基于页面的页表项，即设置页表项的Bit[1:O]</li>
+<li>PTE_AF：设置访问位</li>
+<li>PTE_SHARED：设置内存共享属性</li>
+<li>MT_NORMAL：设置内存属性为normal</li>
+<li>PTE_USER：设置AP访问位，允许通过用户权限访问该内存</li>
+<li>PTE_NG：设置该内存对应的TLB只属于该进程</li>
+<li>PTE_PXN：表示该内存不能在特权模式下执行</li>
+<li>PTE_UXN：表示该内存不能在用户模式下执行</li>
+<li>PTE_RDONLY：表示只读属性</li>
 </ul>
 <h3 id="vma相关api">2.5 VMA相关API</h3>
 <h4 id="查找vma">查找VMA</h4>
 <p>通过虚拟地址来查找VMA是内核中常用的操作，内核提供一个接口函数来实现这个查找操作，find_vma()函数根据给定的addr查找满足条件之一的VMA</p>
 <ul>
-<li>addr在VMA空间范围内，即vma-&gt;vm_start ≤ addr &lt; vma-&gt;vm_end。</li>
-<li>距离addr最近并且VMA的结束地址大于addr的VMA。</li>
+<li>addr在VMA空间范围内，即vma-&gt;vm_start ≤ addr &lt; vma-&gt;vm_end</li>
+<li>距离addr最近并且VMA的结束地址大于addr的VMA</li>
 </ul>
 <p>find_vma()通过addr查找mm-&gt;mm_rb红黑树中的节点并找到最邻近的VMA。 在VMA空间范围内，如果最邻近地址B，那么找到VMA2。 距离addr最近并且小于VMA的结束地址内，如果最邻近地址A，那么找到VMA2。因此，该函数寻址第一个包含addr或者vma-&gt;vm_start大于addr的VMA，若没有找样的VMA，则返回NULL。因为返回的VMA的首地址可能大于addr，所以addr可能不包含在返回的VMA范围里。 find_vma()函数实现在mmap.c文件中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/mmap.c&gt;</span><br><span class="line"><span class="function">struct vm_area_struct *<span class="title">find_vma</span><span class="params">(struct mm_struct *mm, <span class="keyword">unsigned</span> <span class="keyword">long</span> addr)</span></span></span><br></pre></td></tr></table></figure>
@@ -431,29 +431,29 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_DEFINE1(brk, <span class="keyword">unsigned</span> <span class="keyword">long</span>, brk)</span><br></pre></td></tr></table></figure>
 <p>详细流程这里不一一列出来了，下面用一张图概括brk的流程，如下： <img src="/picture/linux/kernel/mem/brk.png" /></p>
 <h3 id="malloc流程">3.2 malloc流程</h3>
-<p>假设不考虑libc的因素，malloc()分配100字节，那么内核会分配多少字节呢？处理器的MMU的最小处理单元是页面，所以内核分配内存、建立虚拟地址和物理地址映射关系都以页 面为单位，PAGE_ALIGN（addr）宏让地址按页面大小对齐。 使用printf()输出的两个进程的malloc()：分配的虚拟地址是一样的，那么内核中这两个虚拟地址空间会冲突吗？其实每个用户进程有自己的一份页表，mm_struct数据结构中有一个pgd成员，该成员指向这个页表的基地址，在派生新进程时会初始化一份页表。每个进程有一个mm_struct数据结构，包含一个属于该进程的页表、一棵管理VMA的红黑树和一个链表。进程本身的VMA会挂入属于自己的红黑树和链表，所以即使进程A和进程B使用malloc()：分配内存时返回相同的虚拟地址，但其实它们是两个不同的VMA，分别被不同的两套页表管理。 下图所示为malloc()函数的实现流程。 <img src="/picture/linux/kernel/mem/malloc.png" /></p>
+<p>假设不考虑libc的因素，malloc()分配100字节，那么内核会分配多少字节呢？处理器的MMU的最小处理单元是页面，所以内核分配内存、建立虚拟地址和物理地址映射关系都以页面为单位，PAGE_ALIGN（addr）宏让地址按页面大小对齐。 使用printf()输出的两个进程的malloc()：分配的虚拟地址是一样的，那么内核中这两个虚拟地址空间会冲突吗？其实每个用户进程有自己的一份页表，mm_struct数据结构中有一个pgd成员，该成员指向这个页表的基地址，在派生新进程时会初始化一份页表。每个进程有一个mm_struct数据结构，包含一个属于该进程的页表、一棵管理VMA的红黑树和一个链表。进程本身的VMA会挂入属于自己的红黑树和链表，所以即使进程A和进程B使用malloc()：分配内存时返回相同的虚拟地址，但其实它们是两个不同的VMA，分别被不同的两套页表管理。 下图所示为malloc()函数的实现流程。 <img src="/picture/linux/kernel/mem/malloc.png" /></p>
 <h2 id="mmap函数">4. mmap函数</h2>
 <p>mmap/munmap函数是用户空间中常用的系统调用函数，无论是在用户程序中分配内存、读写大文件、链接动态库文件，还是多进程间共享内存，都可以看到mmp/munmap()函数的身影。mmp/munmap函数的声明如下。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mmap</span> <span class="params">(<span class="keyword">void</span> *addr,<span class="keyword">size_t</span> length,<span class="keyword">int</span> prot,<span class="keyword">int</span> flags,</span></span></span><br><span class="line"><span class="params"><span class="function">        <span class="keyword">int</span> fd,<span class="keyword">off_t</span> offset)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">munmap</span><span class="params">(<span class="keyword">void</span> *addr,<span class="keyword">size_t</span> length)</span></span>;</span><br></pre></td></tr></table></figure>
 <p>mmap/munmap函数的参数如下。</p>
 <ul>
-<li>addr：用于指定映射到进程地址空间的起始地址，为了提高应用程序的可移植性，一般设置为NULL，让内核来分配一个合适的地址。</li>
+<li>addr：用于指定映射到进程地址空间的起始地址，为了提高应用程序的可移植性，一般设置为NULL，让内核来分配一个合适的地址</li>
 <li>length：表示映射到进程地址空间的大小</li>
-<li>prot：用于设置内存映射区域的读写属性等。</li>
-<li>flags：用于设置内存映射的属性，如共享映射、私有映射等。</li>
-<li>fd：表示这是一个文件映射，fd是打开的文件的句柄。</li>
-<li>offset：在文件映射时，表示文件的偏移量。prot参数通常表示映射页面的读写权限，有如下参数组合。</li>
-<li>PROT_EXEC：表示映射的页面是可以执行的。</li>
-<li>PROT_READ：表示映射的页面是可以读取的。</li>
-<li>PROT_WRITE：表示映射的页面是可以写入的。</li>
-<li>PROT_NONE：表示映射的页面是不可访问的。</li>
+<li>prot：用于设置内存映射区域的读写属性等</li>
+<li>flags：用于设置内存映射的属性，如共享映射、私有映射等</li>
+<li>fd：表示这是一个文件映射，fd是打开的文件的句柄</li>
+<li>offset：在文件映射时，表示文件的偏移量。prot参数通常表示映射页面的读写权限，有如下参数组合</li>
+<li>PROT_EXEC：表示映射的页面是可以执行的</li>
+<li>PROT_READ：表示映射的页面是可以读取的</li>
+<li>PROT_WRITE：表示映射的页面是可以写入的</li>
+<li>PROT_NONE：表示映射的页面是不可访问的</li>
 </ul>
 <p>flags参数是一个很重要的参数，可以设置为以下值。</p>
 <ul>
-<li>MAP_SHARED：创建一个共享映射的区域。多个进程可以通过共享映射方式来映射一个文件，这样其他进程也可以看到映射内容的改变，修改后的内容会同步到磁盘文件中。</li>
-<li>MAP_PRIVATE：创建一个私有的写时复制的映射。多个进程可以通过私有映射的方式来映射一个文件，这样其他进程不会看到映射内容的改变，修改后的内容也不会同步到磁盘文件中。</li>
-<li>MAP_ANONYMOUS：创建一个匿名映射，即没有关联到文件的映射。</li>
-<li>MAP_FIXED：使用参数addr创建映射，如果在内核中无法映射指定的地址，那么mmap会返回失败，参数addr要求按页对齐。如果addr和length指定的进程地址空间和已有的VMA重叠，那么内核会调用do_munmapO函数把这段重叠区域销毁，然后重新映射新的内容。</li>
+<li>MAP_SHARED：创建一个共享映射的区域。多个进程可以通过共享映射方式来映射一个文件，这样其他进程也可以看到映射内容的改变，修改后的内容会同步到磁盘文件中</li>
+<li>MAP_PRIVATE：创建一个私有的写时复制的映射。多个进程可以通过私有映射的方式来映射一个文件，这样其他进程不会看到映射内容的改变，修改后的内容也不会同步到磁盘文件中</li>
+<li>MAP_ANONYMOUS：创建一个匿名映射，即没有关联到文件的映射</li>
+<li>MAP_FIXED：使用参数addr创建映射，如果在内核中无法映射指定的地址，那么mmap会返回失败，参数addr要求按页对齐。如果addr和length指定的进程地址空间和已有的VMA重叠，那么内核会调用do_munmapO函数把这段重叠区域销毁，然后重新映射新的内容</li>
 <li>MAP_POPULATE：对于文件映射来说，会提前预读文件内容到映射区域，该特性只支持私用映射</li>
 </ul>
 <p>通过参数fd可以看出mmap映射是否和文件相关联，因此在Linux内核中，映射可以分成匿名映射和文件映射。</p>
@@ -467,8 +467,8 @@
 <h3 id="共享匿名映射">4.2. 共享匿名映射</h3>
 <p>当使用参数fd=-1且flags = MAP_ANONYMOUS | MAP_SHARED时，创建的mmap映射是共享匿名映射。共享匿名映射让相关进程共享一块内存区域，通常用于父、子进程之间的通信创建共享匿名映射有如下两种方式。</p>
 <ul>
-<li>使fd=-1且flags = MAP_ANONYMOUS | MAP_SHARED。在这种情况下，do_mmap_pgoffO-&gt;mmap_region()函数最终会调用shmem_zero_setup()：来打开一个特殊的“/dev/zero”设备文件。</li>
-<li>直接打开“/dev/zero”设备文件，然后使用这个文件句柄来创建mmap。</li>
+<li>使fd=-1且flags = MAP_ANONYMOUS | MAP_SHARED。在这种情况下，do_mmap_pgoffO-&gt;mmap_region()函数最终会调用shmem_zero_setup()：来打开一个特殊的“/dev/zero”设备文件</li>
+<li>直接打开“/dev/zero”设备文件，然后使用这个文件句柄来创建mmap</li>
 </ul>
 <p>上述两种方式最终都调用shmem模块来创建共享匿名映射。</p>
 <h3 id="私有文件映射">4.3. 私有文件映射</h3>
@@ -476,11 +476,11 @@
 <h3 id="共享文件映射">4.4. 共享文件映射</h3>
 <p>创建文件映射时，如果flags设置为MAP_SHARED，就会创建共享文件映射。如果prot参数指定了PROT_WRITE，那么打开文件时需要指定O_RDWR标志位。共享文件映射通常有mmap如下两个常用的场景。</p>
 <ul>
-<li>读写文件。把文件内容映射到进程地址空间，同时对映射的内容做了修改，内核的回写（writeback）机制最终会把修改的内容同步到磁盘中。</li>
-<li>进程间通信。进程之间的进程地址空间相互隔离，一个进程不能访问另外一个进程的地址空间。如果多个进程同时映射到一个文件，就实现了多进程间的共享内存通信。如果一个进程对映射内容做了修改，那么另外的进程是可以看到的。</li>
+<li>读写文件。把文件内容映射到进程地址空间，同时对映射的内容做了修改，内核的回写（writeback）机制最终会把修改的内容同步到磁盘中</li>
+<li>进程间通信。进程之间的进程地址空间相互隔离，一个进程不能访问另外一个进程的地址空间。如果多个进程同时映射到一个文件，就实现了多进程间的共享内存通信。如果一个进程对映射内容做了修改，那么另外的进程是可以看到的</li>
 </ul>
 <h3 id="小结">4.5 小结</h3>
-<p>mmap机制在Linux内核中实现的代码框架和brk机制非常类似，其中有很多关于VMA的操作。mmap机制和缺页中断机制结合在一起会变得复杂很多。在2016年被发现的恐怖的内存漏洞Dirty COW就利用了mmap和缺页中断的相关漏洞，学习这个例子有助于加深对mmap和缺页中断机制的理解①。mmap机制在Linux内核中的实现流程如图所示。 <img src="/picture/linux/kernel/mem/mmap.png" /></p>
+<p>mmap机制在Linux内核中实现的代码框架和brk机制非常类似，其中有很多关于VMA的操作。mmap机制和缺页中断机制结合在一起会变得复杂很多。在2016年被发现的恐怖的内存漏洞Dirty COW就利用了mmap和缺页中断的相关漏洞，学习这个例子有助于加深对mmap和缺页中断机制的理解。mmap机制在Linux内核中的实现流程如图所示。 <img src="/picture/linux/kernel/mem/mmap.png" /></p>
 <h3 id="参考文献">参考文献</h3>
 <p>《奔跑吧Linux内核》</p>
 
@@ -523,8 +523,8 @@
       <i class="fa fa-chevron-left"></i> Linux内存管理（八）页面回收
     </a></div>
       <div class="post-nav-item">
-    <a href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AD%EF%BC%89slab%E5%88%86%E9%85%8D%E5%99%A8/" rel="next" title="Linux内存管理（六）slab分配器">
-      Linux内存管理（六）slab分配器 <i class="fa fa-chevron-right"></i>
+    <a href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AD%EF%BC%89slab%E5%88%86%E9%85%8D%E5%99%A8/" rel="next" title="Linux内存管理（六）伙伴系统和slab分配器">
+      Linux内存管理（六）伙伴系统和slab分配器 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
       </footer>
@@ -676,7 +676,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">972k</span>
+    <span title="站点总字数">969k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

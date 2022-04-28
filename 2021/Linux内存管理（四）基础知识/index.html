@@ -46,7 +46,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/vir_liner.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/order.png">
 <meta property="article:published_time" content="2021-11-14T08:05:15.000Z">
-<meta property="article:modified_time" content="2022-03-23T13:43:46.743Z">
+<meta property="article:modified_time" content="2022-04-27T15:27:00.334Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Memory">
 <meta name="twitter:card" content="summary">
@@ -285,7 +285,7 @@
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>16 分钟</span>
+              <span>15 分钟</span>
             </span>
 
         </div>
@@ -301,12 +301,12 @@
 <span id="more"></span>
 <h2 id="从硬件角度看内存管理">1. 从硬件角度看内存管理</h2>
 <h3 id="内存管理的远古时代">1.1 内存管理的“远古时代”</h3>
-<p>在操作系统还没有出现之前，程序存放在纸带上，计算机读取一张纸带就运行一条指令这种从外部存储介质上直接运行指令的方法效率很低。后来出现了内存存储器，也就是说程序要运行，首先要加载，然后执行，这就是所谓的“存储的程序”这一概念开启了操作系快速发展的通道，直至后来出现了分页机制。在这个演变的历史过程中，出现了不少内存管理机制。 在分页机制出现之前，操作系统有很多不同的内存管理机制，如动态分区法。假设现在有一块32MB大小的内存，一开始操作系统使用了最小的一块-4MB大小剩余的内存要留给4个进程使用，如图（a）所示。进程A使用了操作系统往上的10MB内存，进程B使用了进程A往上的6MB内存，进程C使用了进程B往上的8MB内存。剩余的4MB内存不足以装载进程D，如图（b）所示，因为进程D需要5MB内存，这个内存末尾就成了第一个空洞（内存碎片）。假设某个时刻，操作系统需要运行进程D，因为系统中没有足够的内存，所以需要选择一个进程来换出，为进程D腾出足够的空间。假设操作系统选择进程B来换出，这样进程D就装载到了原来进程B的地址空间里，于是产生了第二个空洞，如图（c）所示。假设操作系统某个时刻需要运行进程B，也需要选择一个进程来换出，假设进程A被换出，那么操作系统中又产生了第三个空洞，如图（d）所示。 <img src="/picture/linux/kernel/mem/Dynamic_partition.png" /></p>
+<p>在分页机制出现之前，操作系统有很多不同的内存管理机制，如动态分区法。假设现在有一块32MB大小的内存，一开始操作系统使用了最小的一块-4MB大小剩余的内存要留给4个进程使用，如图（a）所示。进程A使用了操作系统往上的10MB内存，进程B使用了进程A往上的6MB内存，进程C使用了进程B往上的8MB内存。剩余的4MB内存不足以装载进程D，如图（b）所示，因为进程D需要5MB内存，这个内存末尾就成了第一个空洞（内存碎片）。假设某个时刻，操作系统需要运行进程D，因为系统中没有足够的内存，所以需要选择一个进程来换出，为进程D腾出足够的空间。假设操作系统选择进程B来换出，这样进程D就装载到了原来进程B的地址空间里，于是产生了第二个空洞，如图（c）所示。假设操作系统某个时刻需要运行进程B，也需要选择一个进程来换出，假设进程A被换出，那么操作系统中又产生了第三个空洞，如图（d）所示。 <img src="/picture/linux/kernel/mem/Dynamic_partition.png" /></p>
 <p>这种动态分区法在开始时是很好的，但是随着时间的推移会出现很多内存空洞，内存的利用率随之下降，这些内存空洞便是我们常说的内存碎片。为了解决碎片化的问题，操作系统需要动态地移动进程，使得进程占用的空间是连续的，并且所有的空闲空间也是连续的。整个进程的迁移是一个非常耗时的过程。 总之，动态分区法依然存在以下问题。</p>
 <ul>
-<li>进程地址空间保护问题。所有的进程都可以访问全部的物理内存，所以恶意的程序可以修改其他程序的内存数据，这使进程一直处于危险的状态下。即使操作系统中所有的进程都不是恶意进程，但是进程A依然可能不小心修改了进程B的数据，从而导致进程B崩溃。这明显违背了“进程地址空间需要保护”的原则，即地址空间要相对独立。因此每个进程的地址空间都应该受到保护，以免被其他进程有意或者无意地修改。</li>
-<li>内存使用效率低。如果即将运行的进程所需要的内存空间不足，就需要选择一个进程以进行整体换出，这种机制导致大量的数据需要换出和换入，效率非常低下。</li>
-<li>程序运行地址重定位问题。从上图中看到，进程在每次换出、换入时使用的地址都是不固定的，这给程序的编写带来一定的麻烦，因为访问数据和指令跳转时的目标地址通常是固定的，这就需要重定位技术。</li>
+<li>进程地址空间保护问题。所有的进程都可以访问全部的物理内存，所以恶意的程序可以修改其他程序的内存数据，这使进程一直处于危险的状态下。即使操作系统中所有的进程都不是恶意进程，但是进程A依然可能不小心修改了进程B的数据，从而导致进程B崩溃。这明显违背了“进程地址空间需要保护”的原则，即地址空间要相对独立。因此每个进程的地址空间都应该受到保护，以免被其他进程有意或者无意地修改</li>
+<li>内存使用效率低。如果即将运行的进程所需要的内存空间不足，就需要选择一个进程以进行整体换出，这种机制导致大量的数据需要换出和换入，效率非常低下</li>
+<li>程序运行地址重定位问题。从上图中看到，进程在每次换出、换入时使用的地址都是不固定的，这给程序的编写带来一定的麻烦，因为访问数据和指令跳转时的目标地址通常是固定的，这就需要重定位技术</li>
 </ul>
 <p>由此可见，上述3个重大问题需要一个全新的解决方案，单纯靠基于操作系统的软件层面的方案是不足以解决这些问题的，必须要基于处理器层面来解决，因此产生了分段机制和分页机制。</p>
 <h3 id="分段机制">1.2 分段机制</h3>
@@ -321,12 +321,12 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ free -m</span><br><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:          31998         818        3798           4       27380       30716</span><br><span class="line">Swap:         90111           0       90111</span><br></pre></td></tr></table></figure>
 <p>可以看到，这台计算机上一共有31998MB物理内存。</p>
 <ul>
-<li>total：计算机中总的内存。这里有两种内存，一种是“Mem”，指的是物理内存；另一种是“Swap”，指的是交换分区。</li>
-<li>used：程序使用的内存大小。</li>
-<li>free：未分配的物理内存大小。</li>
-<li>shared：共享内存大小，主要用于进程间通信。</li>
-<li>buff/cache，buff指的是缓冲器，用于缓存输出到块设备的数据，而cache指的是高速缓存，用于缓存打开的文件，以提高访问文件的速度。</li>
-<li>available.这是free命令新加的一个选项。当内存短缺时，系统可以回收buff和cache。那么available = free + buff + cache对不对呢？其实在现在的Linux内核中，这个公不完全正确，因为并不是所有的buff和cache都可以回收，如共享内存段、tmpfs ramfs等都属于不可回收的。所以这个公式应该变成available = free + buff + cache - 不可回收部分。</li>
+<li>total：计算机中总的内存。这里有两种内存，一种是“Mem”，指的是物理内存；另一种是“Swap”，指的是交换分区</li>
+<li>used：程序使用的内存大小</li>
+<li>free：未分配的物理内存大小</li>
+<li>shared：共享内存大小，主要用于进程间通信</li>
+<li>buff/cache，buff指的是缓冲器，用于缓存输出到块设备的数据，而cache指的是高速缓存，用于缓存打开的文件，以提高访问文件的速度</li>
+<li>available.这是free命令新加的一个选项。当内存短缺时，系统可以回收buff和cache。那么available = free + buff + cache对不对呢？其实在现在的Linux内核中，这个公不完全正确，因为并不是所有的buff和cache都可以回收，如共享内存段、tmpfs ramfs等都属于不可回收的。所以这个公式应该变成available = free + buff + cache - 不可回收部分</li>
 </ul>
 <h3 id="从linux应用程序开发人员的角度看内存管理">2.2 从Linux应用程序开发人员的角度看内存管理</h3>
 <p>相信学习过C语言的读者都不会对malloc()函数感到陌生。malloc()函数是Linux应用程序开发中常用的虚拟内存分配函数。在C标准库里，常用的内存管理编程函数如下。</p>
@@ -340,9 +340,9 @@
 <p>操作系统是为进程服务的，从进程的角度看内存管理是一个不错的方式。在Linux系统中，应用程序常用的可执行文件格式是可执行与可链接格式（Executable Linkable Format，ELF），它是一种对象文件的格式，用于定义不同类型的对象文件中都放了什么东西，以及以什么格式存放这些东西。ELF结构如下图所示。ELF最开始的部分是ELF文件头（ELFHeader），它包含了描述整个文件的基本属性，如ELF文件版本、目标计算机型号、程序入口地址等信息。ELF文件头后面是程序的各个段，包括代码段、数据段、未初始化数据段等。后面是段头表，用于描述ELF文件中包含的所有段的信息，如每个段的名字、段的长度、在文件中的偏移量、读写权限以及段的其他属性等，后面紧跟着是字符串表和符号表等。 <img src="/picture/linux/kernel/mem/ELF.png" /></p>
 <p>下面介绍常见的几个段，这些段与内核映像中的段也是基本类似的。</p>
 <ul>
-<li>代码段：存放程序源代码编译后的机器指令。</li>
-<li>数据段：存放已初始化的全局变量和已初始化的局部静态变量。</li>
-<li>未初始化数据段：存放未初始化的全局变量以及未初始化的局部静态变量。下面编写一个简单的C程序。</li>
+<li>代码段：存放程序源代码编译后的机器指令</li>
+<li>数据段：存放已初始化的全局变量和已初始化的局部静态变量</li>
+<li>未初始化数据段：存放未初始化的全局变量以及未初始化的局部静态变量。下面编写一个简单的C程序</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SIZE (100*1024)</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> * buf = <span class="built_in">malloc</span>(SIZE);</span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0x58</span>, SIZE);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;malloc buffer 0x%p\n&quot;</span>, buf); </span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        sleep(<span class="number">100</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这个C程序很简单，首先通过malloc()函数来分配100KB的内存，然后通过memset()函写入这块内存，最后用while循环是为了不让这个程序退出。我们通过如下命令来把它编成ELF文件。</p>
@@ -376,24 +376,24 @@
 </ul>
 <p>在Linux操作系统中常见的内存管理区可以分为以下几种。</p>
 <ul>
-<li>ZONE_DMA：用于ISA设备的DMA操作，范围是0~16MB，只适用于Intel x86架构，ARM架构没有这个内存管理区。</li>
-<li>Z0NE_DMA32：用于最低4GB的内存访问的设备，如只支持32位的DMA设备。</li>
-<li>ZONE_NORMAL：4GB以后的物理内存，用于线性映射物理内存。若系统内存小于4GB，则没有这个内存管理区。</li>
-<li>ZONE_HIGHMEM：用于管理高端内存，这些高端内存是不能线性映射到内核地址空间的。注意，在64位Linux操作系统中没有这个内存管理区。</li>
+<li>ZONE_DMA：用于ISA设备的DMA操作，范围是0~16MB，只适用于Intel x86架构，ARM架构没有这个内存管理区</li>
+<li>ZONE_DMA32：用于最低4GB的内存访问的设备，如只支持32位的DMA设备</li>
+<li>ZONE_NORMAL：4GB以后的物理内存，用于线性映射物理内存。若系统内存小于4GB，则没有这个内存管理区</li>
+<li>ZONE_HIGHMEM：用于管理高端内存，这些高端内存是不能线性映射到内核地址空间的。注意，在64位Linux操作系统中没有这个内存管理区</li>
 </ul>
 <p>处理器按照数据位宽寻址，也就是字，但是处理器在处理物理内存时不是按照字来分配的，因为现在的处理器都采用分页机制来管理内存。在处理器内部有一个叫作MMU的硬件单元，它会处理虚拟内存到物理内存的映射关系，也就是做页表的翻译工作。站在处理器的角度来看管理物理内存的最小单位是页面。Linux内核中使用一个page数据结构来描述一个物理页面。一个物理页面的大小通常是4KB，但是有的架构的处理器可以支持大于4KB的页面，如支持8KB、16KB或者64KB的页面。目前Linux内核默认使用4KB的页面。 Linux内核为每个物理页面都分配了一个page数据结构，采用mem_map[]数组来存放这些page数据结构，并且它们和物理页面是一对一的映射关系，如下图所示 <img src="/picture/linux/kernel/mem/mem_map.png" /></p>
 <p>要理解内存管理，自然要理解处理器是如何进行内存管理的，这涉及架构的知识，如页表、MMU、TLB、高速缓存、一级页表、二级页表、页表项、页表项每个位的含义等内容。页表项在Linux内核中采用pte_t数据结构来定义，实际上就是u64类型变量，但是它隐含的内容远远多于一个u64类型变量。 和虚拟内存管理相关的数据结构有VMA、mm_struct、vaddr.</p>
 <p>每个node由一个或多个zone组成（我们可能经常在各种对虚拟内存和物理内存的描述中迷失，但以后你见到zone，就知道指的是物理内存），每个zone又由若干page frames组成（一般page frame都是指物理页面）。 <img src="/picture/linux/kernel/mem/framebuffer.jpg" /></p>
 <h4 id="page-frame">3.2.1 Page Frame</h4>
 <p>虽然内存访问的最小单位是byte或者word，但MMU是以page为单位来查找页表的，page也就成了Linux中内存管理的重要单位。包括换出（swap out）、回收（relcaim）、映射等操作，都是以page为粒度的。</p>
-<p>因此，描述page frame的struct page自然成为了内核中一个使用频率极高，非常重要的结构体，来看下它是怎样构成的（为了讲解需要，并非最新内核代码）：</p>
+<p>因此，描述page frame的struct page自然成为了内核中一个使用频率极高，非常重要的结构体，来看下它是怎样构成的：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">page</span> &#123;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> flags;</span><br><span class="line">    <span class="keyword">atomic_t</span> count;  </span><br><span class="line">    <span class="keyword">atomic_t</span> _mapcount; </span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">lru</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">address_space</span> *<span class="title">mapping</span>;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> index;         </span><br><span class="line">    ...  </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
 <ul>
-<li>flags表示page frame的状态或者属性，包括和内存回收相关的PG_active, PG_dirty, PG_writeback, PG_reserved, PG_locked, PG_highmem等。其实flags是身兼多职的，它还有其他用途，这将在下文中介绍到。</li>
-<li>count表示引用计数。当count值为0时，该page frame可被free掉；如果不为0，说明该page正在被某个进程或者内核使用，调用page_count()可获得count值。</li>
-<li>_mapcount表示该page frame被映射的个数，也就是多少个page table entry中含有这个page frame的PFN。</li>
-<li>lru是"least recently used"的缩写，根据page frame的活跃程度（使用频率），一个可回收的page frame要么挂在active_list双向链表上，要么挂在inactive_list双向链表上，以作为页面回收的选择依据，lru中包含的就是指向所在链表中前后节点的指针。</li>
-<li>如果一个page是属于某个文件的（也就是在page cache中），则mapping指向文件inode对应的address_space（这个结构体虽然叫address_space，但并不是进程地址空间里的那个address space），index表示该page在文件内的offset（以page size为单位）。</li>
+<li>flags表示page frame的状态或者属性，包括和内存回收相关的PG_active, PG_dirty, PG_writeback, PG_reserved, PG_locked, PG_highmem等。其实flags是身兼多职的，它还有其他用途，这将在下文中介绍到</li>
+<li>count表示引用计数。当count值为0时，该page frame可被free掉；如果不为0，说明该page正在被某个进程或者内核使用，调用page_count()可获得count值</li>
+<li>_mapcount表示该page frame被映射的个数，也就是多少个page table entry中含有这个page frame的PFN</li>
+<li>lru是"least recently used"的缩写，根据page frame的活跃程度（使用频率），一个可回收的page frame要么挂在active_list双向链表上，要么挂在inactive_list双向链表上，以作为页面回收的选择依据，lru中包含的就是指向所在链表中前后节点的指针</li>
+<li>如果一个page是属于某个文件的（也就是在page cache中），则mapping指向文件inode对应的address_space（这个结构体虽然叫address_space，但并不是进程地址空间里的那个address space），index表示该page在文件内的offset（以page size为单位）</li>
 </ul>
 <p>有了文件的inode和index，当这个page的内容需要和外部disk/flash上对应的部分同步时，才可以找到具体的文件位置。如果一个page是anonymous的，则mapping指向表示swap cache的swapper_space，此时index就是swapper_space内的offset。</p>
 <p>事实上，现在最新Linux版本的struct page实现中大量用到了union，也就是同一个元素在不同的场景下有不同的意义。这是因为每个page frame都需要一个struct page来描述，一个page frame占4KB，一个struct page占32字节，那所有的struct page需要消耗的内存占了整个系统内存的32/4096，不到1%的样子，说小也小，但一个拥有4GB物理内存的系统，光这一项的开销最大就可达30多MB。</p>
@@ -408,27 +408,27 @@
 <p>Zone虽然是用于管理物理内存的，但zone与zone之间并没有任何的物理分割，它只是Linux为了便于管理进行的一种逻辑意义上的划分。Zone在Linux中用struct zone表示（以下为了讲解需要，调整了结构体中元素的顺序）：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zone</span> &#123;</span></span><br><span class="line">     <span class="keyword">spinlock_t</span>         lock;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      spanned_pages;</span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      present_pages; </span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      nr_reserved_highatomic;    </span><br><span class="line">     <span class="keyword">atomic_long_t</span>      managed_pages;</span><br><span class="line"></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">free_area</span>   <span class="title">free_area</span>[<span class="title">MAX_ORDER</span>];</span></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      _watermark[NR_WMARK];</span><br><span class="line">     <span class="keyword">long</span>               lowmem_reserve[MAX_NR_ZONES];</span><br><span class="line">     <span class="keyword">atomic_long_t</span>      vm_stat[NR_VM_ZONE_STAT_ITEMS];</span><br><span class="line"></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span>      zone_start_pfn;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> *<span class="title">zone_pgdat</span>;</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">page</span>        *<span class="title">zone_mem_map</span>;</span></span><br><span class="line">     ...    </span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
 <ul>
-<li>lock是用来防止并行访问struct zone的spin lock，它只能保护struct zone这个结构体哈，可不能保护整个zone里的所有pages。</li>
-<li>spanned_pages是这个zone含有的总的page frames数目。在某些体系结构（比如Sparc）中，zone中可能存在没有物理页面的"holes"，spanned_pages减去这些holes里的absent pages就是present_pages。</li>
-<li>nr_reserved_highatomic是为某些场景预留的内存，managed_pages是由buddy内存分配系统管理的page frames数目，其实也就是present_pages减去reserved pages。</li>
-<li>free_area由free list空闲链表构成，表示zone中还有多少空余可供分配的page frames。_watermark有min(mininum), low, high三种，可作为启动内存回收的判断标准（详情请参考这篇文章）。</li>
-<li>lowmem_reserve是给更高位的zones预留的内存（更详细的介绍请参考这篇文章）。vm_stat作为zone的内存使用情况的统计信息，是“/proc/zoneinfo”的数据来源。</li>
-<li>zone_start_pfn是zone的起始物理页面号，zone_start_pfn+spanned_pages就是该zone的结束物理页面号。zone_pgdat是指向这个zone所属的node的。zone_mem_map指向由struct page构成的mem_map数组。</li>
+<li>lock是用来防止并行访问struct zone的spin lock，它只能保护struct zone这个结构体哈，可不能保护整个zone里的所有pages</li>
+<li>spanned_pages是这个zone含有的总的page frames数目。在某些体系结构（比如Sparc）中，zone中可能存在没有物理页面的"holes"，spanned_pages减去这些holes里的absent pages就是present_pages</li>
+<li>nr_reserved_highatomic是为某些场景预留的内存，managed_pages是由buddy内存分配系统管理的page frames数目，其实也就是present_pages减去reserved pages</li>
+<li>free_area由free list空闲链表构成，表示zone中还有多少空余可供分配的page frames。_watermark有min(mininum), low, high三种，可作为启动内存回收的判断标准（详情请参考这篇文章）</li>
+<li>lowmem_reserve是给更高位的zones预留的内存（更详细的介绍请参考这篇文章）。vm_stat作为zone的内存使用情况的统计信息，是“/proc/zoneinfo”的数据来源</li>
+<li>zone_start_pfn是zone的起始物理页面号，zone_start_pfn+spanned_pages就是该zone的结束物理页面号。zone_pgdat是指向这个zone所属的node的。zone_mem_map指向由struct page构成的mem_map数组</li>
 </ul>
 <p>因为内核对zone的访问是很频繁的，为了更好的利用硬件cache来提高访问速度，struct zone中还有一些填充位，用于帮助结构体元素的cache line对齐。这和struct page对内存精打细算的使用形成了鲜明的对比，因为zone的种类很有限，一个系统中一共也不会有多少个zones，struct zone这个结构体的体积大点也没有什么关系。</p>
 <h4 id="node">3.2.3 Node</h4>
 <p>介绍完了page和zone，沿着自底向上的顺序，最后就是表示node的结构体pglist_data了。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> &#123;</span></span><br><span class="line">     <span class="keyword">int</span> nr_zones;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">zone</span> <span class="title">node_zones</span>[<span class="title">MAX_NR_ZONES</span>];</span></span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">zonelist</span> <span class="title">node_zonelists</span>[<span class="title">MAX_ZONELIST</span>];</span></span><br><span class="line"></span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span> node_size;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">node_mem_map</span>;</span></span><br><span class="line"></span><br><span class="line">     <span class="keyword">int</span> node_id;</span><br><span class="line">     <span class="keyword">unsigned</span> <span class="keyword">long</span> node_start_paddr;</span><br><span class="line">     <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> *<span class="title">node_next</span>;</span></span><br><span class="line"></span><br><span class="line">     <span class="keyword">spinlock_t</span> lru_lock;</span><br><span class="line">     ...</span><br><span class="line">&#125; <span class="keyword">pg_data_t</span>; </span><br></pre></td></tr></table></figure>
 <ul>
-<li>nr_zones表示这个node含有多少个zones，node_zones[]则是一个包含各个zone结构体的数组。</li>
-<li>node_zonelists[]包含了2个zonelist，一个是由本node的zones组成，另一个是由从本node分配不到内存时可选的备用zones组成，相当于是选择了一个退路，所以叫fallback。</li>
+<li>nr_zones表示这个node含有多少个zones，node_zones[]则是一个包含各个zone结构体的数组</li>
+<li>node_zonelists[]包含了2个zonelist，一个是由本node的zones组成，另一个是由从本node分配不到内存时可选的备用zones组成，相当于是选择了一个退路，所以叫fallback</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">enum</span> &#123;</span></span><br><span class="line">  ZONELIST_FALLBACK,	<span class="comment">/* zonelist with fallback */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_NUMA</span></span><br><span class="line">  ZONELIST_NOFALLBACK,	<span class="comment">/* zonelist without fallback (__GFP_THISNODE) */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  MAX_ZONELISTS</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>如果能从指定的目标node获得内存，则为NUMA hit；只能从备选node中获取，则为NUMA miss，可通过"/sys/devices/system/node/node*/numastat"查看。</p>
 <ul>
-<li>node_size是指这个node含有多少个page frames，node_mem_map指向node中所有struct page构成的mem_map数组。</li>
-<li>node_id是这个node的逻辑ID，也就是在NUMA系统中的编号。现在Linux中的内存分配函数区分不同的node，靠的就是这个node_id，类似于文件描述符fd。</li>
-<li>node_start_paddr（在2.6内核中被换成了node_start_pfn）是该node的起始物理地址。node_next指向由多个node构成的NUMA单向链表pgdat_list中的下一个节点。如果是UMA系统，只有一个node，则node_start_pfn为0，node_next为NULL。</li>
+<li>node_size是指这个node含有多少个page frames，node_mem_map指向node中所有struct page构成的mem_map数组</li>
+<li>node_id是这个node的逻辑ID，也就是在NUMA系统中的编号。现在Linux中的内存分配函数区分不同的node，靠的就是这个node_id，类似于文件描述符fd</li>
+<li>node_start_paddr（在2.6内核中被换成了node_start_pfn）是该node的起始物理地址。node_next指向由多个node构成的NUMA单向链表pgdat_list中的下一个节点。如果是UMA系统，只有一个node，则node_start_pfn为0，node_next为NULL</li>
 </ul>
 <p>你看，表示node的结构体pglist_data通过"node_zones"包含了它的下一级，也就是表示zone的结构体zone_struct，zone_struct又通过"zone_pgdat"指向包含它的node。zone_struct中"zone_mem_map"指向它的下一级，也就是表示page frame的struct page，按理struct page中也应该有一个元素是指向包含它的zone，可是好像没看到对不对？</p>
 <p>并不是在那个省略号里，而是……就在struct page的"flags"里，它用flags的高8位存储了它所属的zone和node。这是通过page flags找到page所属的node的方法：</p>
@@ -447,24 +447,24 @@
 <p>在内核使用内存前，需要初始化内核的页表，初始化页表主要由paging_init()函数实现。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/mm/mmu.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">void</span> __init <span class="title">paging_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">pgd_t</span> *pgdp = pgd_set_fixmap(__pa_symbol(swapper_pg_dir)); </span><br><span class="line">    </span><br><span class="line">    map_kernel(pgdp);</span><br><span class="line">    map_mem(pgdp);</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>paging_init()函数主要做两次映射：一次是map_kernel()，映射内核映像到内核空间的虚拟地址；另外一次是map_mem()，做物理内存的线性映射。它们都建立物理内存到内核空间虚拟地址的线性映射，但是映射的地址不一样。</p>
-<ol type="1">
-<li>map_kernel()函数 该函数对内核映像的各个段分别进行映射，映射到内核空间的虚拟地址为vmalloc区域。vmalloc区域的范围从0xFFFF 0000 1000000到0xFFFF 7DFF BFFF0000这里分别映射如下段。</li>
-</ol>
+<ul>
+<li>map_kernel()函数 该函数对内核映像的各个段分别进行映射，映射到内核空间的虚拟地址为vmalloc区域。vmalloc区域的范围从0xFFFF 0000 1000000到0xFFFF 7DFF BFFF0000这里分别映射如下段。
 <ul>
 <li>代码段：从_text到_etexto</li>
-<li>只读数据段：从__start_rodata到__inittext_begin.</li>
-<li>初始化代码段：从__inittext_begin到__inittext_end.</li>
-<li>初始化数据段：从__initdata_begin到__initdata_end.</li>
-<li>数据段：从_data到_end。</li>
+<li>只读数据段：从__start_rodata到__inittext_begin</li>
+<li>初始化代码段：从__inittext_begin到__inittext_end</li>
+<li>初始化数据段：从__initdata_begin到__initdata_end</li>
+<li>数据段：从_data到_end</li>
+</ul></li>
 </ul>
 <p>映射关系如下图所示。 <img src="/picture/linux/kernel/mem/vir_kernel.png" /></p>
-<ol start="2" type="1">
-<li>map_mem()函数 这里会映射三段物理内存到线性映射区。线性映射区的范围从0xFFFF 8000 0000 0000到0x FFFF FFFF FFFF FFFF，大小为128TB，如下所示： <img src="/picture/linux/kernel/mem/vir_liner.png" /></li>
-</ol>
 <ul>
-<li>映射第一段物理内存：从0x4000 0000到0x4008 0000。</li>
-<li>映射第二段物理内存：从内核映像结束（_end）到物理内存结束。</li>
-<li>映射第三段物理内存：从内核映像开始（_start）到内核映像结束（_end）。</li>
+<li>map_mem()函数 这里会映射三段物理内存到线性映射区。线性映射区的范围从0xFFFF 8000 0000 0000到0x FFFF FFFF FFFF FFFF，大小为128TB，如下所示： <img src="/picture/linux/kernel/mem/vir_liner.png" />
+<ul>
+<li>映射第一段物理内存：从0x4000 0000到0x4008 0000</li>
+<li>映射第二段物理内存：从内核映像结束（_end）到物理内存结束</li>
+<li>映射第三段物理内存：从内核映像开始（_start）到内核映像结束（_end）</li>
+</ul></li>
 </ul>
 <p>为什么要把第三段物理内存单独拿出来映射呢？这三段物理内存都会映射到不可执行（non-executable）的属性，但是后续代码里会把第三段映射的属性设置成只读，这是在smp_cpus_done()-&gt;mark_linear_text_alias_ro()函数中设置的，防止后续的其他内核模块不经意地修改了代码，如CPU休眠（Hibermate）机制。另外，第一段和第二段映射启用了连续页表项属性（PTE_CONT），单独把第三段映射拎出来可以避免连续页表项特性影响第三段的映射。</p>
 <h3 id="zone初始化">3.5 zone初始化</h3>
@@ -472,19 +472,19 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mmzone.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zone</span> &#123;</span></span><br><span class="line">  <span class="comment">/* zone watermarks, access with *_wmark_pages(zone) macros */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> _watermark[NR_WMARK];</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> watermark_boost;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> nr_reserved_highatomic;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">long</span> lowmem_reserve[MAX_NR_ZONES];</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_NUMA</span></span><br><span class="line">  <span class="keyword">int</span> node;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span>	*<span class="title">zone_pgdat</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">per_cpu_pages</span>	__<span class="title">percpu</span> *<span class="title">per_cpu_pageset</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">per_cpu_zonestat</span>	__<span class="title">percpu</span> *<span class="title">per_cpu_zonestats</span>;</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * the high and batch values are copied to individual pagesets for</span></span><br><span class="line"><span class="comment">	 * faster access</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">int</span> pageset_high;</span><br><span class="line">  <span class="keyword">int</span> pageset_batch;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifndef</span> CONFIG_SPARSEMEM</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Flags for a pageblock_nr_pages block. See pageblock-flags.h.</span></span><br><span class="line"><span class="comment">	 * In SPARSEMEM, this map is stored in struct mem_section</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		*pageblock_flags;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* CONFIG_SPARSEMEM */</span></span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* zone_start_pfn == zone_start_paddr &gt;&gt; PAGE_SHIFT */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		zone_start_pfn;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">atomic_long_t</span>		managed_pages;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		spanned_pages;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		present_pages;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(CONFIG_MEMORY_HOTPLUG)</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		present_early_pages;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_CMA</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		cma_pages;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span>		*name;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MEMORY_HOTPLUG</span></span><br><span class="line">  <span class="comment">/* see spanned/present_pages for more description */</span></span><br><span class="line">  <span class="keyword">seqlock_t</span>		span_seqlock;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> initialized;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Write-intensive fields used from the page allocator */</span></span><br><span class="line">  ZONE_PADDING(_pad1_)</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* free areas of different sizes */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">free_area</span>	<span class="title">free_area</span>[<span class="title">MAX_ORDER</span>];</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* zone flags, see below */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		flags;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Primarily protects free_area */</span></span><br><span class="line">  <span class="keyword">spinlock_t</span>		lock;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Write-intensive fields used by compaction and vmstats. */</span></span><br><span class="line">  ZONE_PADDING(_pad2_)</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * When free pages are below this point, additional steps are taken</span></span><br><span class="line"><span class="comment">	 * when reading the number of free pages to avoid per-cpu counter</span></span><br><span class="line"><span class="comment">	 * drift allowing watermarks to be breached</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> percpu_drift_mark;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined CONFIG_COMPACTION || defined CONFIG_CMA</span></span><br><span class="line">  <span class="comment">/* pfn where compaction free scanner should start */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_cached_free_pfn;</span><br><span class="line">  <span class="comment">/* pfn where compaction migration scanner should start */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_cached_migrate_pfn[ASYNC_AND_SYNC];</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_init_migrate_pfn;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		compact_init_free_pfn;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_COMPACTION</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * On compaction failure, 1&lt;&lt;compact_defer_shift compactions</span></span><br><span class="line"><span class="comment">	 * are skipped before trying again. The number attempted since</span></span><br><span class="line"><span class="comment">	 * last failure is tracked with compact_considered.</span></span><br><span class="line"><span class="comment">	 * compact_order_failed is the minimum compaction failed order.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		compact_considered;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		compact_defer_shift;</span><br><span class="line">  <span class="keyword">int</span>			compact_order_failed;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined CONFIG_COMPACTION || defined CONFIG_CMA</span></span><br><span class="line">  <span class="comment">/* Set to true when the PG_migrate_skip bits should be cleared */</span></span><br><span class="line">  <span class="keyword">bool</span>			compact_blockskip_flush;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">bool</span>			contiguous;</span><br><span class="line"></span><br><span class="line">  ZONE_PADDING(_pad3_)</span><br><span class="line">  <span class="comment">/* Zone statistics */</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span>		vm_stat[NR_VM_ZONE_STAT_ITEMS];</span><br><span class="line">  <span class="keyword">atomic_long_t</span>		vm_numa_event[NR_VM_NUMA_EVENT_ITEMS];</span><br><span class="line">&#125; ____cacheline_internodealigned_in_smp;</span><br></pre></td></tr></table></figure>
 <p>zone经常会被访问到，因此这个数据结构要求以L1高速缓存对齐。另外，这里的ZONE_PADDING()让zone-&gt;lock和zone-&gt;lru_lock这两个很热门的锁可以分布在不同的高速缓存行中。一个内存节点最多有几个zone，因此zone数据结构不需要像page一样关注数据结构的大小，ZONE_PADDING()可以为了性能而浪费空间。在内存管理开发过程中，内核开发者逐步发现有一些自旋锁会竞争得非常厉害，很难获取。在稍微早期的Linux内核（如Linux4.0）中，zone-&gt;lock和zone-&gt;lru_lock这两个锁有时需要同时获取，因此保证它们使用不同的高速缓存行是内核常用的一种优化技巧。然而，在Linux5.0内核中，zone-&gt;lru_lock已经转移到内存节点的pglist_data数据结构中。关于部分数据成员的解释如下。</p>
 <ul>
-<li>watermark：每个zone在系统启动时会计算出3个水位，分别是最低警戒水位（WMARKMIN）、低水位（WMARK_LOW）和高水位（WMARK_HIGH），这在页面分配器和kswapd页面回收中会用到。</li>
-<li>lowmem_reserve：防止页面分配器过度使用低端zone的内存。</li>
-<li>zone_pgdat：指向内存节点。</li>
-<li>pageset：用于维护每个CPU上的一系列页面，以减少自旋锁的争用。</li>
-<li>zone_start_pfn：zone的起始页帧号。</li>
-<li>managed_pages：zone中被伙伴系统管理的页面数量。</li>
-<li>spanned_pages：zone包含的页面数量。</li>
-<li>resent_pages：zone里实际管理的页面数量。对于一此架构来说，其值和spanned_page 的值相等。</li>
+<li>watermark：每个zone在系统启动时会计算出3个水位，分别是最低警戒水位（WMARKMIN）、低水位（WMARK_LOW）和高水位（WMARK_HIGH），这在页面分配器和kswapd页面回收中会用到</li>
+<li>lowmem_reserve：防止页面分配器过度使用低端zone的内存</li>
+<li>zone_pgdat：指向内存节点</li>
+<li>pageset：用于维护每个CPU上的一系列页面，以减少自旋锁的争用</li>
+<li>zone_start_pfn：zone的起始页帧号</li>
+<li>managed_pages：zone中被伙伴系统管理的页面数量</li>
+<li>spanned_pages：zone包含的页面数量</li>
+<li>resent_pages：zone里实际管理的页面数量。对于一此架构来说，其值和spanned_page 的值相等</li>
 <li>free_area：伙伴系统的核心数据结构，管理空闲页块（page block）链表的数组。</li>
-<li>lock：并行访问时用于保护zone的自旋锁。</li>
-<li>lru_lock：并行访问时用于保护zone中LRU链表的自旋锁。在Linux5.0内核中，该成员已转移到pglist data中。</li>
-<li>lruvec： LRU链表集合。</li>
-<li>vm_stat：zone计数值。在Linux5.0内核中，该成员已转移到pglist_data中。</li>
+<li>lock：并行访问时用于保护zone的自旋锁</li>
+<li>lru_lock：并行访问时用于保护zone中LRU链表的自旋锁。在Linux5.0内核中，该成员已转移到pglist data中</li>
+<li>lruvec： LRU链表集合</li>
+<li>vm_stat：zone计数值。在Linux5.0内核中，该成员已转移到pglist_data中</li>
 </ul>
 <p>通常情况下，内核的zone分为ZONE_DMA、ZONE_DMA32、ZONE_NORMAL和ZONE_HIGHMEM。 zone类型定义在include/linux/mmzone.h文件中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mmzone.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">zone_type</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DMA</span></span><br><span class="line">  ZONE_DMA,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DMA32</span></span><br><span class="line">  ZONE_DMA32,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  ZONE_NORMAL,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_HIGHMEM</span></span><br><span class="line">  ZONE_HIGHMEM,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  ZONE_MOVABLE,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_ZONE_DEVICE</span></span><br><span class="line">  ZONE_DEVICE,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  __MAX_NR_ZONES</span><br><span class="line"></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
@@ -702,7 +702,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">972k</span>
+    <span title="站点总字数">969k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
