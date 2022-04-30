@@ -266,14 +266,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>9.4k</span>
+              <span>9.3k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>9 分钟</span>
+              <span>8 分钟</span>
             </span>
 
         </div>
@@ -285,13 +285,11 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/linux/brief/内存管理-页面分配器.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MmRhZDA3OTEyOTA2ZjUwYTdmYWI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/linux/brief/内存管理-页面分配器.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MmRhZDA3OTEyOTA2ZjUwYTdmYWI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <p>前面提到伙伴系统是 Linux 内核中基本的内存分配系统。伙伴系统的概念不难理解，但是一直以来，分配物理页面是内存管理中最复杂的部分，它涉及页面回收、内存规整、直接回收内存等相当错综复杂的机制。本节关注在内存充足的情况下如何分配连续物理内存。读者可以思考在最糟糕情况下页面分配器是如何分配连续物理页面的。</p>
-<h2 id="page数据结构">1. page数据结构</h2>
-<p>Linux内核内存管理的实现以page数据结构为核心，page数据结构类似于城市地标，其他的内存管理设施都基于page数据结构，如VMA管理、缺页中断、RMAP、页面分配与回收等。page数据结构定义在include/linux/mm_types.h头文件中，大量使用了c语言的联合体（union）来优化其数据结构的大小，因为每个物理页面都需要一个page数据结构来跟踪和管理这些物理页面的使用情况，所以管理成本很高。</p>
-<h3 id="refcount">1.1 _refcount</h3>
-<p>_refcount和__mapcount是page数据结构中非常重要的两个引用计数，且都是atomic_t类型的变量。 _refcount表示内核中引用该页面的次数。</p>
+<h2 id="1-page数据结构"><a href="#1-page数据结构" class="headerlink" title="1. page数据结构"></a>1. page数据结构</h2><p>Linux内核内存管理的实现以page数据结构为核心，page数据结构类似于城市地标，其他的内存管理设施都基于page数据结构，如VMA管理、缺页中断、RMAP、页面分配与回收等。page数据结构定义在include/linux/mm_types.h头文件中，大量使用了c语言的联合体（union）来优化其数据结构的大小，因为每个物理页面都需要一个page数据结构来跟踪和管理这些物理页面的使用情况，所以管理成本很高。</p>
+<h3 id="1-1-refcount"><a href="#1-1-refcount" class="headerlink" title="1.1 _refcount"></a>1.1 _refcount</h3><p>_refcount和__mapcount是page数据结构中非常重要的两个引用计数，且都是atomic_t类型的变量。<br>_refcount表示内核中引用该页面的次数。</p>
 <ul>
 <li>当_refcount 的值为0时，表示该页面为空闲页面或即将要被释放的页面</li>
 <li>当_refcount 的值大于0时，表示该页面已经分配给内核正在使用，暂时不会被释放</li>
@@ -299,34 +297,29 @@
 <p>内核中提供加/减_refcount的接口函数，读者应该使用这些接口的数来使用_refcount计数。</p>
 <p>这两个接口函数实现在include/linux/mm.h文件中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mm.h&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">get_page</span><span class="params">(struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  page = compound_head(page);</span><br><span class="line"></span><br><span class="line">  VM_BUG_ON_PAGE(page_ref_zero_or_close_to_overflow(page), page);</span><br><span class="line">  page_ref_inc(page);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">put_page</span><span class="params">(struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  page = compound_head(page);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (page_is_devmap_managed(page)) &#123;</span><br><span class="line">    put_devmap_managed_page(page);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (put_page_testzero(page))</span><br><span class="line">    __put_page(page);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>get_page()函数调用page_ref_inc()来增加引用计数，最后使用atomic_inc()函数原子地增加引用计数。 put_page()首先使用put_page_testzero()函数来使_refcount减1并目判断其是否为0,_refcount减1之后等于0，就会调用put_page()来释放这个页面。</p>
-<h3 id="refcount的应用场景">1.2. _refcount的应用场景</h3>
-<p>refcount通常在内核中用于跟踪页面的使用情况，常见的用法归纳总结如下。</p>
+<p>get_page()函数调用page_ref_inc()来增加引用计数，最后使用atomic_inc()函数原子地增加引用计数。<br>put_page()首先使用put_page_testzero()函数来使_refcount减1并目判断其是否为0,_refcount减1之后等于0，就会调用put_page()来释放这个页面。</p>
+<h3 id="1-2-refcount的应用场景"><a href="#1-2-refcount的应用场景" class="headerlink" title="1.2. _refcount的应用场景"></a>1.2. _refcount的应用场景</h3><p>refcount通常在内核中用于跟踪页面的使用情况，常见的用法归纳总结如下。</p>
 <ul>
-<li>初始状态下，空闲页面的_refcount是0<br />
-</li>
-<li>分配页面时，_refcount会变成1。页面分配接口函数alloc_pages()在成功分配页面后_refcount应该为O，这里使用VM_BUG_ON_PAGE()来判断，然后设置这些页面的_refcoumt<br />
-</li>
-<li>加入LRU链表时，页面会被kswapdI内核线程使用，因此_refcount会加1。以用户程序分配内存为例，发生缺页中断后，do_anonymous_page()函数成功分配出来页面，在设置硬件PTE之前，调用lru_cache_add()函数把这个匿名页面添加到LRU链表中，这个过程中，使用page_cache_get()宏来增加_refcount</li>
-<li>被映射到其他用户进程的PTE时，_refcount会加1。如在创建子进程时共享父进程的地址空间，设置父进程的PTE内容到子进程中并增加该页面的_refcount，详见do_fork()一&gt;copy_process()一&gt;copy_mm()一&gt;dup_mmap()-&gt;copy_pte_ranged()-&gt;copy_one_pte()函数<br />
-</li>
-<li>在copy_one_pte()函数中，通过vm_normal_page()找到父进程的PTE对应的页面，然后增加这个页面的_refcount<br />
-</li>
-<li>页面的private成员指向私有数据
+<li>初始状态下，空闲页面的_refcount是0   </li>
+<li>分配页面时，_refcount会变成1。页面分配接口函数alloc_pages()在成功分配页面后_refcount应该为O，这里使用VM_BUG_ON_PAGE()来判断，然后设置这些页面的_refcoumt  </li>
+<li>加入LRU链表时，页面会被kswapdI内核线程使用，因此_refcount会加1。以用户程序分配内存为例，发生缺页中断后，do_anonymous_page()函数成功分配出来页面，在设置硬件PTE之前，调用lru_cache_add()函数把这个匿名页面添加到LRU链表中，这个过程中，使用page_cache_get()宏来增加_refcount </li>
+<li>被映射到其他用户进程的PTE时，_refcount会加1。如在创建子进程时共享父进程的地址空间，设置父进程的PTE内容到子进程中并增加该页面的_refcount，详见do_fork()一&gt;copy_process()一&gt;copy_mm()一&gt;dup_mmap()-&gt;copy_pte_ranged()-&gt;copy_one_pte()函数  </li>
+<li>在copy_one_pte()函数中，通过vm_normal_page()找到父进程的PTE对应的页面，然后增加这个页面的_refcount   </li>
+<li><p>页面的private成员指向私有数据    </p>
 <ul>
 <li>对于PG_swapable 的页面，__add_to_swap_cache()函数会增加_refcount</li>
 <li>对于PG_private的页面，主要在块设备的buffer_head中使用，如buffer_migrate_page() 函数中会增加refcount</li>
-</ul></li>
-<li>内核对页面进行操作的关键路径上会使_refcount加1，如内核的follow_page()函数和get_user_pages()函数</li>
 </ul>
-<h3 id="mapcount">1.3 _mapcount</h3>
-<p>_mapcount表示这个页面被进程映射的个数，即已经映射了多少个用户PTE。每个用户进程都拥有各自独立的虚拟空间（256TB）和一份独立的页表，所以可能出现多个用户进程地址空间同时映射到一个物理页面的情况，RMAP系统就是利用这个特性来实现的。_mapcount主要用于RMAP系统中。</p>
+</li>
+<li><p>内核对页面进行操作的关键路径上会使_refcount加1，如内核的follow_page()函数和get_user_pages()函数</p>
+</li>
+</ul>
+<h3 id="1-3-mapcount"><a href="#1-3-mapcount" class="headerlink" title="1.3 _mapcount"></a>1.3 _mapcount</h3><p>_mapcount表示这个页面被进程映射的个数，即已经映射了多少个用户PTE。每个用户进程都拥有各自独立的虚拟空间（256TB）和一份独立的页表，所以可能出现多个用户进程地址空间同时映射到一个物理页面的情况，RMAP系统就是利用这个特性来实现的。_mapcount主要用于RMAP系统中。</p>
 <ul>
 <li>若_mapcount等于-1，表示没有PTE映射到页面</li>
 <li>若_mapcount等于O，表示只有父进程映射到页面。匿名页面刚分配时，_mapcount初始化为O。例如，当do_anonymous_page()产生的匿名页面通过page_add_new_anonrmap()添加到rmap系统中时，会设置_mapcount为O，这表明匿名页面当前只有父进程的PTE映射到页面</li>
 </ul>
-<h3 id="rmap">1.4 RMAP</h3>
-<p>用户进程在使用虚拟内存过程中，从虚拟内存页面映射到物理内存页面时，PTE保留了这个记录。page数据结构中的_mapcount记录有多少个用户PTE映射到物理页面。用户PTE是指用户进程地址空间和物理页面建立映射的PTE，不包括内核地址空间映射物理页面时产生的 PTE。有的页面需要迁移，有的页面长时间不使用，需要交换到磁盘。在交换之前，必须找出哪些进程使用这个页面，然后解除这些映射的用户PTE。一个物理页面可以同时被多个进程的虚拟内存映射，但是一个虚拟页面同时只能映射到一个物理页面。</p>
+<h3 id="1-4-RMAP"><a href="#1-4-RMAP" class="headerlink" title="1.4 RMAP"></a>1.4 RMAP</h3><p>用户进程在使用虚拟内存过程中，从虚拟内存页面映射到物理内存页面时，PTE保留了这个记录。page数据结构中的_mapcount记录有多少个用户PTE映射到物理页面。用户PTE是指用户进程地址空间和物理页面建立映射的PTE，不包括内核地址空间映射物理页面时产生的<br>PTE。有的页面需要迁移，有的页面长时间不使用，需要交换到磁盘。在交换之前，必须找出哪些进程使用这个页面，然后解除这些映射的用户PTE。一个物理页面可以同时被多个进程的虚拟内存映射，但是一个虚拟页面同时只能映射到一个物理页面。</p>
 <p>在Linux2.4内核中为了确定某一个页面是否被某个进程映射，必须遍历每个进程的页表，因此工作量相当大，效率很低。在Linux2.5内核开发期向提出了反向映射(Reverse Maping， RMAP）的概念。</p>
 <p>RMAP的主要目的是从物理页面的page数据结构中找到有哪些映射的用户PTE，这样页面回收模块就可以很快速和高效地把这个物理页面映射的所有用户P正都解除并回收这个页面。为了达到这个目的，内核在页面创建时需要建立RMAP的“钩子”，即建立相关的数据结构。</p>
 <p>RMAP的典型应用场景如下。</p>
@@ -334,27 +327,22 @@
 <li>kswapd内核线程为了回收页面，需要断开所有映射到该匿名页面的用户PTE</li>
 <li>页面迁移时，需要断开所有映射到匿名页面的用户PTE</li>
 </ul>
-<h2 id="分配物理页面的接口函数">2. 分配物理页面的接口函数</h2>
-<p>内核中分配物理内存页面的常用接口函数是alloc_pages()，它用于分配一个或者多个连续的物理页面，分配的页面个数只能是2的整数次幂。相比于多次分配离散的物理页面，分配连续的物理而面有利干缓解系统内存的碎片化问题，内存碎片化是一个很让人头疼的问题</p>
-<h3 id="分配物理页面的核心接口函数">2.1. 分配物理页面的核心接口函数</h3>
-<p>aloc_pages()函数的参数有两个，gfp_mask表示分配掩码，order表示分配级数。</p>
+<h2 id="2-分配物理页面的接口函数"><a href="#2-分配物理页面的接口函数" class="headerlink" title="2. 分配物理页面的接口函数"></a>2. 分配物理页面的接口函数</h2><p>内核中分配物理内存页面的常用接口函数是alloc_pages()，它用于分配一个或者多个连续的物理页面，分配的页面个数只能是2的整数次幂。相比于多次分配离散的物理页面，分配连续的物理而面有利干缓解系统内存的碎片化问题，内存碎片化是一个很让人头疼的问题</p>
+<h3 id="2-1-分配物理页面的核心接口函数"><a href="#2-1-分配物理页面的核心接口函数" class="headerlink" title="2.1. 分配物理页面的核心接口函数"></a>2.1. 分配物理页面的核心接口函数</h3><p>aloc_pages()函数的参数有两个，gfp_mask表示分配掩码，order表示分配级数。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/gfp.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">page</span> *__<span class="title">alloc_pages</span>(<span class="title">gfp_t</span> <span class="title">gfp</span>, <span class="title">unsigned</span> <span class="title">int</span> <span class="title">order</span>, <span class="title">int</span> <span class="title">preferred_nid</span>,</span></span><br><span class="line"><span class="class">		<span class="title">nodemask_t</span> *<span class="title">nodemask</span>);</span></span><br></pre></td></tr></table></figure>
-<p>alloc_paes()函数用来分配2的order次幂个连续的物理页面，返回值是第一个物理页面page数据结构。第一个参数是gfp_mask：第二个参数是order，请求的order需要小于MAX_ORDER，MAX_ORDER通常默认是11。 另一个很常见的接口函数是__get_free_pages()，其定义如下。</p>
+<p>alloc_paes()函数用来分配2的order次幂个连续的物理页面，返回值是第一个物理页面page数据结构。第一个参数是gfp_mask：第二个参数是order，请求的order需要小于MAX_ORDER，MAX_ORDER通常默认是11。<br>另一个很常见的接口函数是__get_free_pages()，其定义如下。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/page_alloc.c&gt;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span> __get_free_pages(<span class="keyword">gfp_t</span> gfp_mask, <span class="keyword">unsigned</span> <span class="keyword">int</span> order)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">page</span>;</span></span><br><span class="line"></span><br><span class="line">  page = alloc_pages(gfp_mask &amp; ~__GFP_HIGHMEM, order);</span><br><span class="line">  <span class="keyword">if</span> (!page)</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">return</span> (<span class="keyword">unsigned</span> <span class="keyword">long</span>) page_address(page);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>__get_free_pages()函数返回的是所分配内存的内核空间虚拟地址。如果所分配内存是线性映射的物理内存，则直接返回线性映射区域的内核空间虚拟地址；__get_free_pages()函数不会使用高端内存，如果一定需要使用高端内存，最佳的办法是使用alloc_pages()函数以及kmap()函数。注意，在64位处理器的Linux内核中没有高端内存这个概念，它只实现在32位处理器的Linux内核中。</p>
+<p><strong>get_free_pages()函数返回的是所分配内存的内核空间虚拟地址。如果所分配内存是线性映射的物理内存，则直接返回线性映射区域的内核空间虚拟地址；</strong>get_free_pages()函数不会使用高端内存，如果一定需要使用高端内存，最佳的办法是使用alloc_pages()函数以及kmap()函数。注意，在64位处理器的Linux内核中没有高端内存这个概念，它只实现在32位处理器的Linux内核中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> *<span class="title">page_address</span><span class="params">(<span class="keyword">const</span> struct page *page)</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="分配一个物理页面">2.2. 分配一个物理页面</h3>
-<p>如果需要分配一个物理页面，可以使用如下两个封装好的接口函数，它们最后仍调用alloc_pages()，只是order的值为0.</p>
+<h3 id="2-2-分配一个物理页面"><a href="#2-2-分配一个物理页面" class="headerlink" title="2.2. 分配一个物理页面"></a>2.2. 分配一个物理页面</h3><p>如果需要分配一个物理页面，可以使用如下两个封装好的接口函数，它们最后仍调用alloc_pages()，只是order的值为0.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> alloc_pages_vma(gfp_mask, order, vma, addr, node, false)\</span></span><br><span class="line"><span class="meta">	alloc_pages(gfp_mask, order)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __get_free_page(gfp_mask) \</span></span><br><span class="line"><span class="meta">		__get_free_pages((gfp_mask), 0)</span></span><br></pre></td></tr></table></figure>
 <p>如果需要返回一个全填充为0的页面，可以使用如下接口函数。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">get_zeroed_page</span><span class="params">(<span class="keyword">gfp_t</span> gfp_mask)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> __get_free_pages(gfp_mask | __GFP_ZERO, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>使用alloc_page()分配的物理页面理论上可能被随机地填充了某些垃圾信息，因此在有些敏感的场合下需要先把分配的内存清零再使用，这样可以减少不必要的麻烦。</p>
-<h3 id="页面释放函数">2.3. 页面释放函数</h3>
-<p>页面释放函数主要有如下几个。</p>
+<h3 id="2-3-页面释放函数"><a href="#2-3-页面释放函数" class="headerlink" title="2.3. 页面释放函数"></a>2.3. 页面释放函数</h3><p>页面释放函数主要有如下几个。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="keyword">void</span> __free_pages(struct page *page, <span class="keyword">unsigned</span> <span class="keyword">int</span> order);</span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">free_pages</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> addr, <span class="keyword">unsigned</span> <span class="keyword">int</span> order)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __free_page(page) __free_pages((page), 0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> free_page(addr) free_pages((addr), 0)</span></span><br></pre></td></tr></table></figure>
 <p>释放时需要特别注意参数，传递错误的page指针或者错误的order值会引起系统崩溃。 free_pages()函数的第一个参数是待释放页面的pase指针，第二个参数是order。函数用于释放单个页面。__free_page()</p>
-<h2 id="分配掩码">3. 分配掩码</h2>
-<p>分配掩码是描述页面分配方法的标志，它影响着页面分配的整个流程。因为Linux内核是一个通用的操作系统，所以页面分配器被设计成一个复杂的系统。它既要高效，又要兼顾很多种情况，特别是在内存紧张的情况下的内存分配。gfp_mask其实被定义成一个unsigned类型的变量。</p>
+<h2 id="3-分配掩码"><a href="#3-分配掩码" class="headerlink" title="3. 分配掩码"></a>3. 分配掩码</h2><p>分配掩码是描述页面分配方法的标志，它影响着页面分配的整个流程。因为Linux内核是一个通用的操作系统，所以页面分配器被设计成一个复杂的系统。它既要高效，又要兼顾很多种情况，特别是在内存紧张的情况下的内存分配。gfp_mask其实被定义成一个unsigned类型的变量。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="keyword">unsigned</span> __bitwise__ <span class="keyword">gfp_t</span>;</span><br></pre></td></tr></table></figure>
 <p>gfp_mask定义在include/inux/gfp.h文件中。修饰符在Linux4.4内核中被重新归类，大致可以分成如下几类。</p>
 <ul>
@@ -365,32 +353,28 @@
 <li>行为修饰符（action modifier）</li>
 </ul>
 <p>下面详细介绍各种修饰符的标志。</p>
-<h3 id="内存管理区修饰符的标志">3.1. 内存管理区修饰符的标志</h3>
-<p>内存管理区修饰符主要用于表示应当从哪些内存管理区中来分配物理内存。内存管理区修饰符使用gfp_mask的低4位来表示，其标志如下所示。</p>
+<h3 id="3-1-内存管理区修饰符的标志"><a href="#3-1-内存管理区修饰符的标志" class="headerlink" title="3.1. 内存管理区修饰符的标志"></a>3.1. 内存管理区修饰符的标志</h3><p>内存管理区修饰符主要用于表示应当从哪些内存管理区中来分配物理内存。内存管理区修饰符使用gfp_mask的低4位来表示，其标志如下所示。</p>
 <ul>
 <li>__GFP_DMA: 从ZONE_DMA中分配内存</li>
 <li>__GFP_DMA32: 从ZONE DMA32中分配内存</li>
 <li>__GFP_HIGHMEM: 优先从ZONE_HIGHMEM中分配内存</li>
 <li>__GFP_MOVABLE: 页面可以被迁移或者回收，如用于内存规整机制</li>
 </ul>
-<h3 id="移动修饰符的标志">3.2. 移动修饰符的标志</h3>
-<p>移动修饰符主要用于指示分配出来的页面具有的迁移属性，其标志如下所示。在Linux2.6.24内核中，为了解决外碎片化的问题，引入了迁移类型，因此在分配内存时需要指定所分配的页面具有哪些迁移属性。</p>
+<h3 id="3-2-移动修饰符的标志"><a href="#3-2-移动修饰符的标志" class="headerlink" title="3.2. 移动修饰符的标志"></a>3.2. 移动修饰符的标志</h3><p>移动修饰符主要用于指示分配出来的页面具有的迁移属性，其标志如下所示。在Linux2.6.24内核中，为了解决外碎片化的问题，引入了迁移类型，因此在分配内存时需要指定所分配的页面具有哪些迁移属性。</p>
 <ul>
 <li>__GFP_RECLAIMABLE: 在slab分配器中指定了SLAB_RECLAIM_ACCOUNT标志位，表示slab分配器中使用的页面可以通过收割机来回收</li>
 <li>__GFP_HARDWALL: 使能cpuset内存分配策略</li>
 <li>__GFP_THISNODE: 从指定的内存节点中分配内存，并且没有回退机制</li>
 <li>__GFP_ACCOUNT: 分配过程会被kmemcg记录</li>
 </ul>
-<h3 id="水位修饰符的标志">3.3. 水位修饰符的标志</h3>
-<p>水位修饰符用于控制是否可以访问系统预留的内存。所谓系统预留内存指的是最低警戒水位以下的内存，一般优先级的分配请求是不能访问它们的，只有高优先级的分配请求才能访问，如__GFP_HIGH、__GFP_ATOMIC等。水位修饰符的标志如下所示。</p>
+<h3 id="3-3-水位修饰符的标志"><a href="#3-3-水位修饰符的标志" class="headerlink" title="3.3. 水位修饰符的标志"></a>3.3. 水位修饰符的标志</h3><p>水位修饰符用于控制是否可以访问系统预留的内存。所谓系统预留内存指的是最低警戒水位以下的内存，一般优先级的分配请求是不能访问它们的，只有高优先级的分配请求才能访问，如<strong>GFP_HIGH、</strong>GFP_ATOMIC等。水位修饰符的标志如下所示。</p>
 <ul>
 <li>__GFP_HIGH: 表示分配内存具有高优先级，并且这个分配请求是很有必要的，分配器可以使用系统预留的内存（即最低警戒水位线下的预留内存）</li>
 <li>__GFP_ATOMIC: 表示分配内存的过程不能执行页面回收或者睡眠动作，并且具有很高的优先级，可以访问系统预留的内存。常见的一个场景是在中断上下文中分配内存</li>
 <li>__GFP_MEMALLOC: 分配过程中允许访问所有的内存，包括系统预留的内存。分配内存进程通常要保证在分配内存过程中很快会有内存被释放，如进程退出或者页面回收</li>
 <li>__GFP_NOMEMALLOC: 分配过程不允许访问系统预留的内存</li>
 </ul>
-<h3 id="页面回收修饰符的标志">3.4. 页面回收修饰符的标志</h3>
-<p>页面回收修饰符的常用标志如下所示。</p>
+<h3 id="3-4-页面回收修饰符的标志"><a href="#3-4-页面回收修饰符的标志" class="headerlink" title="3.4. 页面回收修饰符的标志"></a>3.4. 页面回收修饰符的标志</h3><p>页面回收修饰符的常用标志如下所示。</p>
 <ul>
 <li>__GFP_IO: 允许开启I/O传输</li>
 <li>__GFP_FS: 允许调用底层的文件系统。这个标志清零通常是为了避免死锁的发生，如果相应的文件系统操作路径上已经持有了锁，分配内存过程又递归地调用这个文件系统的相应操作路径，可能会产生死锁</li>
@@ -401,8 +385,7 @@
 <li>__GFP_NOFAIL: 当分配失败时会无限地尝试下去，直到分配成功为止。当分配者希望分配内存不失败时，应该使用这个标志位，而不是自己写一个while循环来不断地调用页面分配接口函数</li>
 <li>__GFP_NORETRY: 当使用了直接页面回收和内存规整等机制还无法分配内存时，最好不要重复尝试分配了，直接返回NULL</li>
 </ul>
-<h3 id="行为修饰符的标志">3.5. 行为修饰符的标志</h3>
-<p>行为修饰符的常见标志如下所示。</p>
+<h3 id="3-5-行为修饰符的标志"><a href="#3-5-行为修饰符的标志" class="headerlink" title="3.5. 行为修饰符的标志"></a>3.5. 行为修饰符的标志</h3><p>行为修饰符的常见标志如下所示。</p>
 <ul>
 <li>__GFP_COLD: 分配的内存不会马上被使用。通常会返回一个空的高速缓存页面</li>
 <li>__GFP_NOWARN: 关闭分配过程中的一些错误报告</li>
@@ -431,23 +414,21 @@
 <li>GFP_NOIO和GFP_NOFS都会产生阻塞，它们用于避免某些其他的操作。GFPNOIO表示分配过程中绝不会启动任何磁盘I/O的操作。GFP_NOFS表示可以启动磁盘I/O，但是不会启动文件系统的相关操作。举一个例子，假设进程A在执行打开文件的操作中需要分配内存但内存短缺，那么进程A会睡眠等待，系统的OOM Killer机制会选择一个进程来终止。假设选择了进程B，而进程B退出时需要执行一些文件系统的操作，这些操作可能会申请锁，而恰巧进程A持有这个锁，所以死锁就发生了</li>
 <li>GFP_KERNEL分配的页面通常是不可迁移的，GFP_HIGHUSER_MOVABLE分配的页面是可迁移的</li>
 </ul>
-<h2 id="alloc_pages函数">4. alloc_pages()函数</h2>
-<p>下面以GFP_KERNEL为例，看在理想情况下alloc_pages()函数是如何分配物理内存的。</p>
+<h2 id="4-alloc-pages-函数"><a href="#4-alloc-pages-函数" class="headerlink" title="4. alloc_pages()函数"></a>4. alloc_pages()函数</h2><p>下面以GFP_KERNEL为例，看在理想情况下alloc_pages()函数是如何分配物理内存的。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">《分配物理内存的例子》</span><br><span class="line">page = alloc_pages(GFP_KERNEL, order);</span><br></pre></td></tr></table></figure>
 <p>GFP_KERNEL类型标志定义在gfp.h头文件中，是一个标志组合。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> GFP_KERNEL	(__GFP_RECLAIM | __GFP_IO | __GFP_FS)</span></span><br></pre></td></tr></table></figure>
-<p>所以GFP_KERNEL类型标志包含了__GFP_RECLAIM、__GFP_IO和__GFP_FS这3个标志，其地址换算成十六进制是0x60 00 C0。</p>
-<p>其函数流程如下： <img src="/picture/linux/kernel/mem/alloc_pages.png" /></p>
-<h2 id="zonelist">5. zonelist</h2>
-<p>由于内核使用zone来管理一个内存节占，因此一个内存节点可能被分成了多个不同zone。以QEMU虚拟机为例，一个内存节占被分成ZONE_DMA32和ZONE_NORMAL两个zone。那分配器要从哪个zone来分配内存呢？当某一个zone的内存短缺时，是不是要切换到另外一个zone？</p>
+<p>所以GFP_KERNEL类型标志包含了<strong>GFP_RECLAIM、</strong>GFP_IO和__GFP_FS这3个标志，其地址换算成十六进制是0x60 00 C0。</p>
+<p>其函数流程如下：<br><img src="/picture/linux/kernel/mem/alloc_pages.png" alt=""></p>
+<h2 id="5-zonelist"><a href="#5-zonelist" class="headerlink" title="5. zonelist"></a>5. zonelist</h2><p>由于内核使用zone来管理一个内存节占，因此一个内存节点可能被分成了多个不同zone。以QEMU虚拟机为例，一个内存节占被分成ZONE_DMA32和ZONE_NORMAL两个zone。那分配器要从哪个zone来分配内存呢？当某一个zone的内存短缺时，是不是要切换到另外一个zone？</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mmzone.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zonelist</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">zoneref</span> _<span class="title">zonerefs</span>[<span class="title">MAX_ZONES_PER_ZONELIST</span> + 1];</span></span><br><span class="line">&#125;;</span><br><span class="line">...</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zoneref</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">zone</span> *<span class="title">zone</span>;</span>	<span class="comment">/* Pointer to actual zone */</span></span><br><span class="line">  <span class="keyword">int</span> zone_idx;		<span class="comment">/* zone_idx(zoneref-&gt;zone) */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>zoneref数据结构只有两个成员，zone成员指向实际的zone，zone_idx是一个编号，采用zone_idx()函数获取的编号，通常0表示最低的zone，如ZONE_DMA32，1表示ZONE_NORMAL以此类推。zonelist是所有可用zone的链表，其中排在第一个的zone是页面分配器“最喜欢的”，也是首选的，其他的zone是备选的。 在内存节点数据结构pglist_data中有两个zonelist：其中一个是ZONELIST_FALLBACK，指向本地的zone，即包含备选的zone；另外一个是ZONELIST_NOFALLBACK，用于NUMA系统，指向远端的内存节点的zone.</p>
+<p>zoneref数据结构只有两个成员，zone成员指向实际的zone，zone_idx是一个编号，采用zone_idx()函数获取的编号，通常0表示最低的zone，如ZONE_DMA32，1表示ZONE_NORMAL以此类推。zonelist是所有可用zone的链表，其中排在第一个的zone是页面分配器“最喜欢的”，也是首选的，其他的zone是备选的。<br>在内存节点数据结构pglist_data中有两个zonelist：其中一个是ZONELIST_FALLBACK，指向本地的zone，即包含备选的zone；另外一个是ZONELIST_NOFALLBACK，用于NUMA系统，指向远端的内存节点的zone.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">pglist_data</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">zone</span> <span class="title">node_zones</span>[<span class="title">MAX_NR_ZONES</span>];</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">zonelist</span> <span class="title">node_zonelists</span>[<span class="title">MAX_ZONELISTS</span>];</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> nr_zones; <span class="comment">/* number of populated zones in this node */</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> node_start_pfn;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> node_present_pages; <span class="comment">/* total number of physical pages */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> node_spanned_pages; <span class="comment">/* total size of physical page</span></span><br><span class="line"><span class="comment">					     range, including holes */</span></span><br><span class="line">  <span class="keyword">int</span> node_id;</span><br><span class="line">  <span class="keyword">wait_queue_head_t</span> kswapd_wait;</span><br><span class="line">  <span class="keyword">wait_queue_head_t</span> pfmemalloc_wait;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">kswapd</span>;</span>	<span class="comment">/* Protected by</span></span><br><span class="line"><span class="comment">					   mem_hotplug_begin/end() */</span></span><br><span class="line">  <span class="keyword">int</span> kswapd_order;</span><br><span class="line">  <span class="class"><span class="keyword">enum</span> <span class="title">zone_type</span> <span class="title">kswapd_highest_zoneidx</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> kswapd_failures;		<span class="comment">/* Number of &#x27;reclaimed == 0&#x27; runs */</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * This is a per-node reserve of pages that are not available</span></span><br><span class="line"><span class="comment">	 * to userspace allocations.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		totalreserve_pages;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_NUMA</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		min_unmapped_pages;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		min_slab_pages;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span> <span class="comment">/* CONFIG_NUMA */</span></span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Write-intensive fields used by page reclaim */</span></span><br><span class="line">  ZONE_PADDING(_pad1_)</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_TRANSPARENT_HUGEPAGE</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">deferred_split</span> <span class="title">deferred_split_queue</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">lruvec</span>		__<span class="title">lruvec</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		flags;</span><br><span class="line"></span><br><span class="line">  ZONE_PADDING(_pad2_)</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* Per-node vmstats */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">per_cpu_nodestat</span> __<span class="title">percpu</span> *<span class="title">per_cpu_nodestats</span>;</span></span><br><span class="line">  <span class="keyword">atomic_long_t</span>		vm_stat[NR_VM_NODE_STAT_ITEMS];</span><br><span class="line">&#125; <span class="keyword">pg_data_t</span>;</span><br></pre></td></tr></table></figure>
 <p>系统在初始化时调用build_zonelists()函数建立zonelist，这个函数实现在mm/page_alloc.文件中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/page_alloc.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">build_zonelists</span><span class="params">(<span class="keyword">pg_data_t</span> *pgdat)</span></span></span><br></pre></td></tr></table></figure>
 <p>我们假设系统中只有一个内存节点，有两个zone，分别是ZONE_DMA32和ZONE_NORMAL，那么zonelist 中zone类型、zoneref[]数组和zoneidx之间的关系如下.</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ZONE_NORMAL: __zonerefs[<span class="number">0</span>]-&gt;zone_idx=<span class="number">1</span></span><br><span class="line">ZONE_DMA32: __zonerefs[<span class="number">1</span>]-&gt;zone_idx=<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<p>zonerefs[0]表示ZONE_NORMAL，其zone_idx值为1；zonerefs[1]表示ZONE_DMA32，其zone_idx为0。也就是说，基于zone的设计思想，分配物理页面时会优先考虑ZONE_NORMAL，因为ZONE_NORMAL在zonelist 中排在ZONE_DMA32前面。ZONE_NORMAL是分配器首选的zone，而ZONE_DMA32是备选的zone。 内核中提供了很多与zonelist相关的宏，用于遍历zonelist，如下所示。</p>
+<p>zonerefs[0]表示ZONE_NORMAL，其zone_idx值为1；zonerefs[1]表示ZONE_DMA32，其zone_idx为0。也就是说，基于zone的设计思想，分配物理页面时会优先考虑ZONE_NORMAL，因为ZONE_NORMAL在zonelist 中排在ZONE_DMA32前面。ZONE_NORMAL是分配器首选的zone，而ZONE_DMA32是备选的zone。<br>内核中提供了很多与zonelist相关的宏，用于遍历zonelist，如下所示。</p>
 <ul>
 <li>zonelist_zone(): 返回zonelist对应的zone</li>
 <li>zonelist_zone_idx(): 返回zonelist对应的zone_idx</li>
@@ -456,16 +437,15 @@
 <li>for_each_zone_zonelist_nodemask(): 遍历znnelist中所有的zone或者低于给定的highest zoneidx的所有的z0n</li>
 <li>for_next_zone_zonelist_nodemask(): 从给定的zone开始遍历zonelist中所有的zone</li>
 </ul>
-<p>其中first_zones_zonelist()和for_each_zone_zonelist_nodemask()宏在页面分配器代码中有泛应用。我们以GFP_KERNEL为例，gfp_zone（GFP_KERNEL）函数返回1，即highest_zoneidx为1,而这个内存节点的第一个zone是ZONE_NORMAL，其zoneidx的值为1，因此first_zone_zonelist()函数会返回ZONE_NORMAL for_each_zone_zonelist_nodemask()会遍历ZONE_NORMAL和ZONE_DMA32这两个zone. 我们接下来举一个ARM32上的例子。在ARM Vexpress平台中，zone类型、zoneref数组和zone_idx的关系如下。</p>
+<p>其中first_zones_zonelist()和for_each_zone_zonelist_nodemask()宏在页面分配器代码中有泛应用。我们以GFP_KERNEL为例，gfp_zone（GFP_KERNEL）函数返回1，即highest_zoneidx为1,而这个内存节点的第一个zone是ZONE_NORMAL，其zoneidx的值为1，因此first_zone_zonelist()函数会返回ZONE_NORMAL<br>for_each_zone_zonelist_nodemask()会遍历ZONE_NORMAL和ZONE_DMA32这两个zone. 我们接下来举一个ARM32上的例子。在ARM Vexpress平台中，zone类型、zoneref数组和zone_idx的关系如下。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ZONE_HIGHMEM __zonerefs[O]-&gt;zone_idx=<span class="number">1</span></span><br><span class="line">ZONE_NORMAL __zonerefs[<span class="number">1</span>]-&gt;zone_idx=<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<p>即ZONE_HIGHMEM是分配器的首选zone，而ZONE_NORMAL是备选zone。当分配掩码为GFP_HIGHUSER_MOVABLE时，若GFP_HIGHUSER_MOVABLE包含了_GFP_HIGHMEM那么first_zones_zonelist()函数会返回哪个zone呢？ 若GFP_HIGHUSER_MOVABLE值为0x6200CA，那么gfp_zone(GFP_HIGHUSER_MOVABLE)函数等于2，即highest_zoneidx为2，而这个内存节点的第一个ZONE_HIGHMEM的zoneit为1。 在first_zones_zonelist()函数中，由于第一个zone的zone_idx值小于highest_zoneidx，因此会返回ZONE_HIGHMEM。在for_each_zone_zonelist_nodemask()函数中，next_zones_zonelis（++z，highidx，nodemask）依然会返回ZONE_NORMAL。因此这里会遍历ZONE_HIGHMEM和 ZONE_NORMAL这两个zone，但是会先遍历ZONE_HIGHMEM，后遍历ZONE_NORMAL：要正确理解for_each_zone_zonelist_nodemask()这个宏的行为，需要理解如下两个方面。</p>
+<p>即ZONE_HIGHMEM是分配器的首选zone，而ZONE_NORMAL是备选zone。当分配掩码为GFP_HIGHUSER_MOVABLE时，若GFP_HIGHUSER_MOVABLE包含了_GFP_HIGHMEM那么first_zones_zonelist()函数会返回哪个zone呢？<br>若GFP_HIGHUSER_MOVABLE值为0x6200CA，那么gfp_zone(GFP_HIGHUSER_MOVABLE)函数等于2，即highest_zoneidx为2，而这个内存节点的第一个ZONE_HIGHMEM的zoneit为1。<br>在first_zones_zonelist()函数中，由于第一个zone的zone_idx值小于highest_zoneidx，因此会返回ZONE_HIGHMEM。在for_each_zone_zonelist_nodemask()函数中，next_zones_zonelis（++z，highidx，nodemask）依然会返回ZONE_NORMAL。因此这里会遍历ZONE_HIGHMEM和 ZONE_NORMAL这两个zone，但是会先遍历ZONE_HIGHMEM，后遍历ZONE_NORMAL：要正确理解for_each_zone_zonelist_nodemask()这个宏的行为，需要理解如下两个方面。</p>
 <ul>
 <li>highest_zoneidx的计算方式，即解析分配掩码的方式，这是gfp_zone()函数的职责</li>
 <li>每个内存节点有一个pglist_data数据结构，其成员node_zonelists是一个zonelist数据结构，zonelist中包含了zoneref_zonerefs[]数组来描述这些zone。其中ZONE_HIGHMEM排在前面，并且zonerefs[0]-&gt;zoneindex=1；ZONE_NORMAL排在后面且__zonerefs[1]-&gt;zone_index=0</li>
 </ul>
 <p>上述这些设计让人感觉有些复杂，但这是正确理解以zone为基础的物理页面分配机制基石。</p>
-<h2 id="小结">6. 小结</h2>
-<p>页面分配器是Linux内核内存管理中最基本的分配器，理解页面分配器需要关注如下几个方面。</p>
+<h2 id="6-小结"><a href="#6-小结" class="headerlink" title="6. 小结"></a>6. 小结</h2><p>页面分配器是Linux内核内存管理中最基本的分配器，理解页面分配器需要关注如下几个方面。</p>
 <ul>
 <li>理解伙伴系统的基本原理</li>
 <li>从分配掩码中知道可以从哪些zone中分配内存，分配内存的属性属于哪些MIGRATE_TYPES类型</li>
@@ -473,8 +453,7 @@
 <li>zone水位的判断</li>
 </ul>
 <p>本节介绍了理想情况下页面分配器如何分配物理页面，但是在Linux内核处于内存短缺的情况下又该如何分配内存呢？这涉及内存管理中最难的几个主题，如页面回收、直接内存回收内存规整和OOM Killer机制等。</p>
-<h3 id="参考文献">参考文献</h3>
-<p>《奔跑吧Linux内核》</p>
+<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p>《奔跑吧Linux内核》  </p>
 
     </div>
 
@@ -583,7 +562,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#page%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">1. page数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#refcount"><span class="nav-text">1.1 _refcount</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#refcount%E7%9A%84%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-text">1.2. _refcount的应用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#mapcount"><span class="nav-text">1.3 _mapcount</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rmap"><span class="nav-text">1.4 RMAP</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%87%BD%E6%95%B0"><span class="nav-text">2. 分配物理页面的接口函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%A0%B8%E5%BF%83%E6%8E%A5%E5%8F%A3%E5%87%BD%E6%95%B0"><span class="nav-text">2.1. 分配物理页面的核心接口函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E4%B8%80%E4%B8%AA%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2"><span class="nav-text">2.2. 分配一个物理页面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E9%87%8A%E6%94%BE%E5%87%BD%E6%95%B0"><span class="nav-text">2.3. 页面释放函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E6%8E%A9%E7%A0%81"><span class="nav-text">3. 分配掩码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8C%BA%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.1. 内存管理区修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.2. 移动修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B0%B4%E4%BD%8D%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.3. 水位修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.4. 页面回收修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.5. 行为修饰符的标志</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#alloc_pages%E5%87%BD%E6%95%B0"><span class="nav-text">4. alloc_pages()函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#zonelist"><span class="nav-text">5. zonelist</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-text">6. 小结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-page%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">1. page数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-refcount"><span class="nav-text">1.1 _refcount</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-refcount%E7%9A%84%E5%BA%94%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-text">1.2. _refcount的应用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-mapcount"><span class="nav-text">1.3 _mapcount</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-4-RMAP"><span class="nav-text">1.4 RMAP</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%88%86%E9%85%8D%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%87%BD%E6%95%B0"><span class="nav-text">2. 分配物理页面的接口函数</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%88%86%E9%85%8D%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%A0%B8%E5%BF%83%E6%8E%A5%E5%8F%A3%E5%87%BD%E6%95%B0"><span class="nav-text">2.1. 分配物理页面的核心接口函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E5%88%86%E9%85%8D%E4%B8%80%E4%B8%AA%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2"><span class="nav-text">2.2. 分配一个物理页面</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E9%A1%B5%E9%9D%A2%E9%87%8A%E6%94%BE%E5%87%BD%E6%95%B0"><span class="nav-text">2.3. 页面释放函数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%88%86%E9%85%8D%E6%8E%A9%E7%A0%81"><span class="nav-text">3. 分配掩码</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8C%BA%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.1. 内存管理区修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E7%A7%BB%E5%8A%A8%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.2. 移动修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-%E6%B0%B4%E4%BD%8D%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.3. 水位修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-4-%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.4. 页面回收修饰符的标志</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-5-%E8%A1%8C%E4%B8%BA%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-text">3.5. 行为修饰符的标志</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-alloc-pages-%E5%87%BD%E6%95%B0"><span class="nav-text">4. alloc_pages()函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-zonelist"><span class="nav-text">5. zonelist</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%B0%8F%E7%BB%93"><span class="nav-text">6. 小结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -668,7 +647,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">936k</span>
+    <span title="站点总字数">905k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

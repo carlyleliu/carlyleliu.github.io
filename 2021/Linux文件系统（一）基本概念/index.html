@@ -307,76 +307,65 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/linux/brief/文件系统-基本概念.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhYjMyOTFlMDg1MzA2ZjhjZDczYTk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/linux/brief/文件系统-基本概念.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhYjMyOTFlMDg1MzA2ZjhjZDczYTk=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <blockquote>
 <p>声明：本文转载自<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDY0NTk0NDU=">文件系统的原理<i class="fa fa-external-link-alt"></i></span>和<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDAzMjkxNzc=">Linux中的VFS实现 [一]<i class="fa fa-external-link-alt"></i></span></p>
 </blockquote>
 <p>持久性的数据是存储在外部磁盘上的，如果没有文件系统，访问这些数据就需要直接读写磁盘的sector，实在太不方便了。而文件系统存在的意义，就是能更有效的组织、管理和使用磁盘上的这些raw data。</p>
-<h2 id="文件系统的组成">1. 文件系统的组成</h2>
-<p>要管理，就得先划分，那按照什么粒度划分呢？因为磁盘上的数据要和内存交互，而内存通常是以4KB为单位的，所以从逻辑上，把磁盘按照4KB划分比较方便（称为一个block）。现在假设由一个文件系统管理64个blocks的一个磁盘区域： <img src="/picture/linux/kernel/filesystem/filesystem1.png" /></p>
-<p>那在这些blocks中应该存储些什么？文件系统的基础要素自然是文件，而文件作为一个数据容器的逻辑概念，本质上是一些字节构成的集合，这些字节就是文件的user data（对应下图的"D"）。 <img src="/picture/linux/kernel/filesystem/filesystem2.jpg" /></p>
-<p>除了文件本身包含的数据，还有文件的访问权限、大小和创建时间等控制信息，这些信息被称为meta data。meta data可理解为是关于文件user data的data，这些meta data存储的数据结构就是inode（对应下图的"I"，有些文件系统称之为dnode或fnode）。</p>
-<p>inode是"index node"的简称，在早期的Unix系统中，这些nodes是通过数组组织起来的，因此需要依靠index来索引数组中的node。假设一个inode占据256字节，那么一个4KB的block可以存放16个inodes，使用5个blocks可以存放80个inodes，也就是最多支持80个文件。 <img src="/picture/linux/kernel/filesystem/filesystem3.jpg" /></p>
+<h2 id="1-文件系统的组成"><a href="#1-文件系统的组成" class="headerlink" title="1. 文件系统的组成"></a>1. 文件系统的组成</h2><p>要管理，就得先划分，那按照什么粒度划分呢？因为磁盘上的数据要和内存交互，而内存通常是以4KB为单位的，所以从逻辑上，把磁盘按照4KB划分比较方便（称为一个block）。现在假设由一个文件系统管理64个blocks的一个磁盘区域：<br><img src="/picture/linux/kernel/filesystem/filesystem1.png" alt=""></p>
+<p>那在这些blocks中应该存储些什么？文件系统的基础要素自然是文件，而文件作为一个数据容器的逻辑概念，本质上是一些字节构成的集合，这些字节就是文件的user data（对应下图的”D”）。<br><img src="/picture/linux/kernel/filesystem/filesystem2.jpg" alt=""></p>
+<p>除了文件本身包含的数据，还有文件的访问权限、大小和创建时间等控制信息，这些信息被称为meta data。meta data可理解为是关于文件user data的data，这些meta data存储的数据结构就是inode（对应下图的”I”，有些文件系统称之为dnode或fnode）。</p>
+<p>inode是”index node”的简称，在早期的Unix系统中，这些nodes是通过数组组织起来的，因此需要依靠index来索引数组中的node。假设一个inode占据256字节，那么一个4KB的block可以存放16个inodes，使用5个blocks可以存放80个inodes，也就是最多支持80个文件。<br><img src="/picture/linux/kernel/filesystem/filesystem3.jpg" alt=""></p>
 <p>同内存分配一样，当有了新的数据产生时，我们需要选择一个空闲的block来存放数据，此外还需要一个空闲的inode。所以，需要追踪这些inodes和data blocks的分配和释放情况，以判断哪些是已用的，哪些是空闲的。</p>
-<p>最简单的办法就是使用bitmap，包括记录inode使用情况的bitmap（对应下图的"i"），和记录data block使用情况的bitmap（对应下图的"d"）。空闲就标记为0，正在使用就标记为1。 <img src="/picture/linux/kernel/filesystem/filesystem4.jpg" /></p>
-<p>这个superblock包含了一个文件系统所有的控制信息，比如文件系统中有多少个inodes和data blocks，inode的信息起始于哪个block（这里是第3个），可能还有一个区别不同文件系统类型的magic number。因此，superblock可理解为是文件系统的meta data。 <img src="/picture/linux/kernel/filesystem/filesystem5.jpg" /></p>
-<h2 id="文件寻址">2. 文件寻址</h2>
-<p>这5个blocks中的80个inodes构成了一个inode table。假设一个inode的大小是256字节，现在我们要访问第32个文件，那就要先找到这个文件的控制信息，也就是第32个inode所在的磁盘位置。它应该在相对inode table起始地址的8KB处（32*256=8192），而inode table的起始地址是12KB，所以实际位置是20KB。 <img src="/picture/linux/kernel/filesystem/filesystem6.jpg" /></p>
+<p>最简单的办法就是使用bitmap，包括记录inode使用情况的bitmap（对应下图的”i”），和记录data block使用情况的bitmap（对应下图的”d”）。空闲就标记为0，正在使用就标记为1。<br><img src="/picture/linux/kernel/filesystem/filesystem4.jpg" alt=""></p>
+<p>这个superblock包含了一个文件系统所有的控制信息，比如文件系统中有多少个inodes和data blocks，inode的信息起始于哪个block（这里是第3个），可能还有一个区别不同文件系统类型的magic number。因此，superblock可理解为是文件系统的meta data。<br><img src="/picture/linux/kernel/filesystem/filesystem5.jpg" alt=""></p>
+<h2 id="2-文件寻址"><a href="#2-文件寻址" class="headerlink" title="2. 文件寻址"></a>2. 文件寻址</h2><p>这5个blocks中的80个inodes构成了一个inode table。假设一个inode的大小是256字节，现在我们要访问第32个文件，那就要先找到这个文件的控制信息，也就是第32个inode所在的磁盘位置。它应该在相对inode table起始地址的8KB处（32*256=8192），而inode table的起始地址是12KB，所以实际位置是20KB。<br><img src="/picture/linux/kernel/filesystem/filesystem6.jpg" alt=""></p>
 <p>磁盘同内存不同，它在物理上不是按字节寻址的，而是按sector。一个sector的大小通常是512字节，因此换算一下就是第40个sector（20*1024/512）。</p>
-<p>对于ext2/3/4文件系统，以上介绍的这些inode bitmap, data block bitmap和inode table，都可以通过一个名为"dumpe2fs"的工具来查看其在磁盘上的具体位置： <img src="/picture/linux/kernel/filesystem/filesystem7.jpg" /></p>
-<p>如果只需要查看inode的使用情况，那么直接使用"df -i"命令即可： <img src="/picture/linux/kernel/filesystem/filesystem8.png" /></p>
-<h3 id="寻址方式">2.1 寻址方式</h3>
-<p>那通过inode如何找到对应的文件呢？根据大小的不同，一个文件需要占据若干个blocks，这些blocks可能是磁盘上连续分布的，也可能不是。所以，比较好的办法是使用指针，指针存储在inode中，一个指针指向一个block。</p>
+<p>对于ext2/3/4文件系统，以上介绍的这些inode bitmap, data block bitmap和inode table，都可以通过一个名为”dumpe2fs”的工具来查看其在磁盘上的具体位置：<br><img src="/picture/linux/kernel/filesystem/filesystem7.jpg" alt=""></p>
+<p>如果只需要查看inode的使用情况，那么直接使用”df -i”命令即可：<br><img src="/picture/linux/kernel/filesystem/filesystem8.png" alt=""></p>
+<h3 id="2-1-寻址方式"><a href="#2-1-寻址方式" class="headerlink" title="2.1 寻址方式"></a>2.1 寻址方式</h3><p>那通过inode如何找到对应的文件呢？根据大小的不同，一个文件需要占据若干个blocks，这些blocks可能是磁盘上连续分布的，也可能不是。所以，比较好的办法是使用指针，指针存储在inode中，一个指针指向一个block。</p>
 <p>不过，在这个简化的示例里，并不需要C语言里那种指针，只需要一个block的编号就可以了。如果文件比较小，占有的blocks数目就比较少，那么一个256字节的inode就能存储这些指针。假设一个inode最多能包含12个指针，那么文件的大小不能超过48KB。</p>
-<p>那如果超过了怎么办？可由inode先指向一个block，这个block再指向分散的data block，这种方法称为multi-level index。inode在指向中间block的同时，也可以直接指向data block。假设一个指针占据4个字节，那么一个中间block可存储1024个指针，二级index的寻址范围就可超过4MB，三级index则可超过4GB。 <img src="/picture/linux/kernel/filesystem/filesystem9.jpg" /></p>
+<p>那如果超过了怎么办？可由inode先指向一个block，这个block再指向分散的data block，这种方法称为multi-level index。inode在指向中间block的同时，也可以直接指向data block。假设一个指针占据4个字节，那么一个中间block可存储1024个指针，二级index的寻址范围就可超过4MB，三级index则可超过4GB。<br><img src="/picture/linux/kernel/filesystem/filesystem9.jpg" alt=""></p>
 <p>有没有觉得很像内存管理中的多级页表？事实上，它们的原理可以说是一样的，文件在磁盘上的实际block分布对等于内存的物理地址，而各级index就对等于内存的虚拟地址。</p>
-<p>这种只使用block指针的方式（可被称为"pointer-based"）被ext2和ext3文件系统所采用，但它存在一个问题，对于占据多个data block的文件，需要较多的meta data。</p>
-<p>另一种实现是使用一个block指针加上一个length来表示一组物理上连续的blocks（称为一个extent，其中length以block为单位计），一个文件则由若干个extents构成。这种"extent-based"的方式被后来的ext4文件系统所采用。</p>
+<p>这种只使用block指针的方式（可被称为”pointer-based”）被ext2和ext3文件系统所采用，但它存在一个问题，对于占据多个data block的文件，需要较多的meta data。</p>
+<p>另一种实现是使用一个block指针加上一个length来表示一组物理上连续的blocks（称为一个extent，其中length以block为单位计），一个文件则由若干个extents构成。这种”extent-based”的方式被后来的ext4文件系统所采用。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ext4_extent</span> &#123;</span></span><br><span class="line">    __le32  ee_block;   <span class="comment">/* first logical block extent covers */</span></span><br><span class="line">    __le16  ee_len;     <span class="comment">/* number of blocks covered by extent */</span></span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>相比"pointer-based"而言，"extent-based"由于需要磁盘上连续的free space，灵活性稍差，适用于磁盘空闲空间比较充足的场景。</p>
-<h2 id="目录和路径">3. 目录和路径</h2>
-<p>各级目录构成了访问文件的路径，不同于windows操作系统的drive分区，类Unix系统中的"mount"操作让所有的文件系统的挂载点都是一个路径，形成了树形结构。从抽象的角度，目录也可视作一种文件，只是这种文件比较特殊，它的user data存储的是该路径下的普通文件的inode编号。 <img src="/picture/linux/kernel/filesystem/filesystem10.jpg" /></p>
-<p>所以，如下图所示的这样一个路径结构，假设要在"/foo"目录下创建一个文件"bar.txt"，那么需要从inode bitmap中分配一个空闲的inode，并在"/foo"这个目录中分配一个entry，以关联这个inode号。 <img src="/picture/linux/kernel/filesystem/filesystem11.jpg" /></p>
-<p>接下来，我们要读取刚才创建的这个"/foo/bar.txt"文件，那么先得找到"/"这个目录文件的inode号（这必须是事先知道的，假设是2）。然后访问这个inode指向的data block，从中找到一个名为"foo"的entry，得到目录文件"foo"的inode号（假设是44）。重复此过程，按图索骥，直到找到文本文件"bar.txt"的inode号。</p>
-<h2 id="用户看到的文件">4. 用户看到的文件</h2>
-<h3 id="访问控制">4.1 访问控制</h3>
-<p>每个文件有三种与之关联的权限，分别是读、写和执行。试图访问文件的用户也划分为三类，分别是文件的所有者（user）、与所有者在同一用户组的用户（group），以及其他用户（others）。 <img src="/picture/linux/kernel/filesystem/filesystem12.jpg" /></p>
-<p>可通过"chmod"命令修改文件的权限，通过"chown"命令修改文件的UID和GID。</p>
+<p>相比”pointer-based”而言，”extent-based”由于需要磁盘上连续的free space，灵活性稍差，适用于磁盘空闲空间比较充足的场景。</p>
+<h2 id="3-目录和路径"><a href="#3-目录和路径" class="headerlink" title="3. 目录和路径"></a>3. 目录和路径</h2><p>各级目录构成了访问文件的路径，不同于windows操作系统的drive分区，类Unix系统中的”mount”操作让所有的文件系统的挂载点都是一个路径，形成了树形结构。从抽象的角度，目录也可视作一种文件，只是这种文件比较特殊，它的user data存储的是该路径下的普通文件的inode编号。<br><img src="/picture/linux/kernel/filesystem/filesystem10.jpg" alt=""></p>
+<p>所以，如下图所示的这样一个路径结构，假设要在”/foo”目录下创建一个文件”bar.txt”，那么需要从inode bitmap中分配一个空闲的inode，并在”/foo”这个目录中分配一个entry，以关联这个inode号。<br><img src="/picture/linux/kernel/filesystem/filesystem11.jpg" alt=""></p>
+<p>接下来，我们要读取刚才创建的这个”/foo/bar.txt”文件，那么先得找到”/“这个目录文件的inode号（这必须是事先知道的，假设是2）。然后访问这个inode指向的data block，从中找到一个名为”foo”的entry，得到目录文件”foo”的inode号（假设是44）。重复此过程，按图索骥，直到找到文本文件”bar.txt”的inode号。</p>
+<h2 id="4-用户看到的文件"><a href="#4-用户看到的文件" class="headerlink" title="4. 用户看到的文件"></a>4. 用户看到的文件</h2><h3 id="4-1-访问控制"><a href="#4-1-访问控制" class="headerlink" title="4.1 访问控制"></a>4.1 访问控制</h3><p>每个文件有三种与之关联的权限，分别是读、写和执行。试图访问文件的用户也划分为三类，分别是文件的所有者（user）、与所有者在同一用户组的用户（group），以及其他用户（others）。<br><img src="/picture/linux/kernel/filesystem/filesystem12.jpg" alt=""></p>
+<p>可通过”chmod”命令修改文件的权限，通过”chown”命令修改文件的UID和GID。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">inode</span> &#123;</span></span><br><span class="line">    <span class="keyword">kuid_t</span>    i_uid;    <span class="comment">/* user id */</span></span><br><span class="line">    <span class="keyword">kgid_t</span>    i_gid;    <span class="comment">/* group id */</span></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>每个文件都有三种timestamp：文件上次被访问的时间（access time，简称atime）、文件上次被修改的时间（modification time，简称mtime）和文件属性上次被修改的时间（change time，简称ctime）</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timespec64</span>   <span class="title">i_atime</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timespec64</span>   <span class="title">i_mtime</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">timespec64</span>   <span class="title">i_ctime</span>;</span></span><br></pre></td></tr></table></figure>
-<p>mtime针对的是文件的内容（即user data），而ctime针对的是inode结构自身（即meta data）。 <img src="/picture/linux/kernel/filesystem/filesystem13.jpg" /></p>
-<h3 id="特殊文件">4.2 特殊文件</h3>
-<p>上面示例的这个文件是regular file，此外，设备在Linux中也被视作文件，一个设备可以是block device（即"i_bdev"），也可以是character device（即"i_cdev"），而且设备还具有主设备号和从设备号（即"i_rdev"）。</p>
+<p>mtime针对的是文件的内容（即user data），而ctime针对的是inode结构自身（即meta data）。<br><img src="/picture/linux/kernel/filesystem/filesystem13.jpg" alt=""></p>
+<h3 id="4-2-特殊文件"><a href="#4-2-特殊文件" class="headerlink" title="4.2 特殊文件"></a>4.2 特殊文件</h3><p>上面示例的这个文件是regular file，此外，设备在Linux中也被视作文件，一个设备可以是block device（即”i_bdev”），也可以是character device（即”i_cdev”），而且设备还具有主设备号和从设备号（即”i_rdev”）。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">dev_t</span> i_rdev;</span><br><span class="line"><span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">pipe_inode_info</span>  *<span class="title">i_pipe</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">block_device</span>     *<span class="title">i_bdev</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span>             *<span class="title">i_cdev</span>;</span></span><br><span class="line">    <span class="keyword">char</span>                    *i_link;</span><br><span class="line">    ...</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>如上文所说，目录（directory）也被视作一种特殊的文件，因而它没有独立的数据结构，且基于文件的大部分操作也可用于directory。 <img src="/picture/linux/kernel/filesystem/filesystem14.jpg" /></p>
-<h3 id="inode编号和superblock">4.3 inode编号和superblock</h3>
-<p>一个文件必然处于一个文件系统中，因而一个inode也必然被一个superblock所管理（由"i_sb"指向）。同一superblock的所有inodes以双向链表的形式连接（即"i_sb_list"），每个inode在其所属的superblock中有唯一的编号（即"i_ino"，对应上面stat命令输出的"Inode"项）。</p>
+<p>如上文所说，目录（directory）也被视作一种特殊的文件，因而它没有独立的数据结构，且基于文件的大部分操作也可用于directory。<br><img src="/picture/linux/kernel/filesystem/filesystem14.jpg" alt=""></p>
+<h3 id="4-3-inode编号和superblock"><a href="#4-3-inode编号和superblock" class="headerlink" title="4.3 inode编号和superblock"></a>4.3 inode编号和superblock</h3><p>一个文件必然处于一个文件系统中，因而一个inode也必然被一个superblock所管理（由”i_sb”指向）。同一superblock的所有inodes以双向链表的形式连接（即”i_sb_list”），每个inode在其所属的superblock中有唯一的编号（即”i_ino”，对应上面stat命令输出的”Inode”项）。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">super_block</span>  *<span class="title">i_sb</span>;</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>     <span class="title">i_sb_list</span>;</span></span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">long</span>        i_ino;</span><br></pre></td></tr></table></figure>
-<h3 id="两种link">4.4 两种link</h3>
-<p>一个文件可以有两种link：hard link和symbolic/soft link，可分别通过"ln"和"ln -s"命令创建。 <img src="/picture/linux/kernel/filesystem/filesystem15.png" /></p>
-<p>用"cat"命令查看文件包含的内容，得到的输出都是一样的： <img src="/picture/linux/kernel/filesystem/filesystem16.jpg" /></p>
-<p>但是它们的inode编号却不尽相同（通过"ls -i"查看），hard link与原文件的inode号相同，soft link则有单独的inode号。 <img src="/picture/linux/kernel/filesystem/filesystem17.png" /></p>
-<p>再来查看文件的详细信息： <img src="/picture/linux/kernel/filesystem/filesystem18.png" /></p>
-<p>输出的第一列代表user, group和others的访问权限，第三列是文件的大小（至于第二列的含义，将在后面给出。）。原文件和hard link的大小都是6个字节，也就是"hello"字符串的大小，soft link的大小则是4个字节。</p>
-<p>现在用"rm"命令删除原文件，并通过strace工具追踪这期间发生的系统调用。 <img src="/picture/linux/kernel/filesystem/filesystem19.png" /></p>
-<p>可以看到，它调用了"unlink"，为什么不是叫"remove"或者"delete"呢？先来试试删除原文件之后，还能否继续使用hard link和soft link。 <img src="/picture/linux/kernel/filesystem/filesystem20.png" /></p>
+<h3 id="4-4-两种link"><a href="#4-4-两种link" class="headerlink" title="4.4 两种link"></a>4.4 两种link</h3><p>一个文件可以有两种link：hard link和symbolic/soft link，可分别通过”ln”和”ln -s”命令创建。<br><img src="/picture/linux/kernel/filesystem/filesystem15.png" alt=""></p>
+<p>用”cat”命令查看文件包含的内容，得到的输出都是一样的：<br><img src="/picture/linux/kernel/filesystem/filesystem16.jpg" alt=""></p>
+<p>但是它们的inode编号却不尽相同（通过”ls -i”查看），hard link与原文件的inode号相同，soft link则有单独的inode号。<br><img src="/picture/linux/kernel/filesystem/filesystem17.png" alt=""></p>
+<p>再来查看文件的详细信息：<br><img src="/picture/linux/kernel/filesystem/filesystem18.png" alt=""></p>
+<p>输出的第一列代表user, group和others的访问权限，第三列是文件的大小（至于第二列的含义，将在后面给出。）。原文件和hard link的大小都是6个字节，也就是”hello”字符串的大小，soft link的大小则是4个字节。</p>
+<p>现在用”rm”命令删除原文件，并通过strace工具追踪这期间发生的系统调用。<br><img src="/picture/linux/kernel/filesystem/filesystem19.png" alt=""></p>
+<p>可以看到，它调用了”unlink”，为什么不是叫”remove”或者”delete”呢？先来试试删除原文件之后，还能否继续使用hard link和soft link。<br><img src="/picture/linux/kernel/filesystem/filesystem20.png" alt=""></p>
 <p>hard link还可以正常访问原来的内容，而soft link的访问则会失败。这一切的原因还得从hard link和soft link的属性说起。</p>
 <p>当创建一个文件时，我们需要选择一个路径（pathname），并为文件设置一个字符串形式的名称（symbol）。这其实做了两件事，一是生成一个inode结构体，用于记录这个文件的所有相关信息，包括大小、在磁盘上占据的blocks数目等，二是将生成的inode关联（link）了这个路径和名称。</p>
-<p>一个文件的hard link增加的是对这个inode结构体的关联/指向，并不是一个新的文件。而soft link本身就是一个文件，就像directory这种特殊文件里存放的是该目录下包含哪些文件，soft link这种文件里存放的则是指向原inode的路径，路径越长，soft link的大小就越大。这就是为什么hard link和原文件的inode号相同，而soft link不同。 <img src="/picture/linux/kernel/filesystem/filesystem21.jpg" /></p>
-<p>因此，当我们用"rm"命令“删除”原文件时，删除的只是原文件的路径和inode之间的关联，而不是这个inode本身，文件的内容依然存在于磁盘中，因而只能算是"unlink"。所以直接关联inode的hard link不受影响，而关联原文件路径的soft link此时相当于是一个dangling reference。</p>
-<p>一个inode被link的数目由"i_nlink"表示（这就是前面"ls -l"命令输出中第二列数值的含义）：</p>
+<p>一个文件的hard link增加的是对这个inode结构体的关联/指向，并不是一个新的文件。而soft link本身就是一个文件，就像directory这种特殊文件里存放的是该目录下包含哪些文件，soft link这种文件里存放的则是指向原inode的路径，路径越长，soft link的大小就越大。这就是为什么hard link和原文件的inode号相同，而soft link不同。<br><img src="/picture/linux/kernel/filesystem/filesystem21.jpg" alt=""></p>
+<p>因此，当我们用”rm”命令“删除”原文件时，删除的只是原文件的路径和inode之间的关联，而不是这个inode本身，文件的内容依然存在于磁盘中，因而只能算是”unlink”。所以直接关联inode的hard link不受影响，而关联原文件路径的soft link此时相当于是一个dangling reference。</p>
+<p>一个inode被link的数目由”i_nlink”表示（这就是前面”ls -l”命令输出中第二列数值的含义）：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> i_nlink;</span><br></pre></td></tr></table></figure>
-<p>假设现在有这样的一个目录结构： <img src="/picture/linux/kernel/filesystem/filesystem22.png" /></p>
-<p>来看一下其中的每个directory和每个regular file的link数目： <img src="/picture/linux/kernel/filesystem/filesystem23.jpg" /></p>
-<p>每个目录下，除了包含文件和子目录，还包含一个对当前目录的指向（用"."表示）和一个对上级目录/父目录的指向（用".."表示）。</p>
+<p>假设现在有这样的一个目录结构：<br><img src="/picture/linux/kernel/filesystem/filesystem22.png" alt=""></p>
+<p>来看一下其中的每个directory和每个regular file的link数目：<br><img src="/picture/linux/kernel/filesystem/filesystem23.jpg" alt=""></p>
+<p>每个目录下，除了包含文件和子目录，还包含一个对当前目录的指向（用”.”表示）和一个对上级目录/父目录的指向（用”..”表示）。</p>
 <p>一个普通文本文件（比如file和sub-file）的link数目是1，一个没有子目录的directory（比如sub-test）的link数目是2，包含了自身的引用和父目录对它的引用，一个含有子目录的directory（比如test）的link还包含了子目录对它的指向，所以link数目大于2。</p>
 <p>那什么时候，文件的内容才会被真正的从磁盘上消失，对应的inode管理结构也不再存在呢？这将在后续的文章中给出答案。</p>
 <p>相比起soft link，hard link在使用的时候有个限制，就是必须和原文件位于相同的文件系统，原因还是和inode编号有关。因为一个inode编号只在文件所属的superblock中是唯一的，而hard link使用和原文件相同的inode编号，如果hard link跑到其他文件系统，就可能和这些文件系统中既有的文件inode编号冲突。</p>
-<h3 id="参考文献">参考文献</h3>
-<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDY0NTk0NDU=">https://zhuanlan.zhihu.com/p/106459445<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDAzMjkxNzc=">https://zhuanlan.zhihu.com/p/100329177<i class="fa fa-external-link-alt"></i></span></p>
+<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDY0NTk0NDU=">https://zhuanlan.zhihu.com/p/106459445<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDAzMjkxNzc=">https://zhuanlan.zhihu.com/p/100329177<i class="fa fa-external-link-alt"></i></span>    </p>
 
     </div>
 
@@ -485,7 +474,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%BB%84%E6%88%90"><span class="nav-text">1. 文件系统的组成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%87%E4%BB%B6%E5%AF%BB%E5%9D%80"><span class="nav-text">2. 文件寻址</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%BB%E5%9D%80%E6%96%B9%E5%BC%8F"><span class="nav-text">2.1 寻址方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E5%BD%95%E5%92%8C%E8%B7%AF%E5%BE%84"><span class="nav-text">3. 目录和路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E7%9C%8B%E5%88%B0%E7%9A%84%E6%96%87%E4%BB%B6"><span class="nav-text">4. 用户看到的文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6"><span class="nav-text">4.1 访问控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%B9%E6%AE%8A%E6%96%87%E4%BB%B6"><span class="nav-text">4.2 特殊文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#inode%E7%BC%96%E5%8F%B7%E5%92%8Csuperblock"><span class="nav-text">4.3 inode编号和superblock</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%A4%E7%A7%8Dlink"><span class="nav-text">4.4 两种link</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%BB%84%E6%88%90"><span class="nav-text">1. 文件系统的组成</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%96%87%E4%BB%B6%E5%AF%BB%E5%9D%80"><span class="nav-text">2. 文件寻址</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%AF%BB%E5%9D%80%E6%96%B9%E5%BC%8F"><span class="nav-text">2.1 寻址方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E7%9B%AE%E5%BD%95%E5%92%8C%E8%B7%AF%E5%BE%84"><span class="nav-text">3. 目录和路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E7%94%A8%E6%88%B7%E7%9C%8B%E5%88%B0%E7%9A%84%E6%96%87%E4%BB%B6"><span class="nav-text">4. 用户看到的文件</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E8%AE%BF%E9%97%AE%E6%8E%A7%E5%88%B6"><span class="nav-text">4.1 访问控制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E7%89%B9%E6%AE%8A%E6%96%87%E4%BB%B6"><span class="nav-text">4.2 特殊文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-inode%E7%BC%96%E5%8F%B7%E5%92%8Csuperblock"><span class="nav-text">4.3 inode编号和superblock</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-4-%E4%B8%A4%E7%A7%8Dlink"><span class="nav-text">4.4 两种link</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -570,7 +559,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">936k</span>
+    <span title="站点总字数">905k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
