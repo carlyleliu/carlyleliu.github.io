@@ -286,16 +286,19 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/linux/brief/进程管理-进程调度相关概念.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2OWUzYzBlM2U3NDA3NGNmMGYxOWI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/linux/brief/进程管理-进程调度相关概念.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2OWUzYzBlM2U3NDA3NGNmMGYxOWI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="1-进程调度的基本概念"><a href="#1-进程调度的基本概念" class="headerlink" title="1. 进程调度的基本概念"></a>1. 进程调度的基本概念</h2><p>假设在只有单核处理器的系统中，同一时刻只有一个进程可以拥有处理器资源，那么其他的进程只能在就绪队列（runqueue）中等待，等到处理器空闲之后才有机会获取处理器资源并运行。在这种场景下，操作系统就需要从众多的就绪进程中选择一个最合适的进程来运行，这就是进程调度器（scheduler）。进程调度器产生的最大原因是为了提高处理器的利用率，一个进程在运行的过程中有可能需要等待某些资源，比如等待磁盘操作的完成、等待键盘输入、等待物理页面的分配等。如果处理器和进程一起等待，那么明显会浪费处理器资源，所以一个进程在睡眠等待时，调度器可以调度其他进程来运行，这样就提高了处理器的利用率。</p>
-<h3 id="1-1-进程的分类"><a href="#1-1-进程的分类" class="headerlink" title="1.1 进程的分类"></a>1.1 进程的分类</h3><p>站在处理器的角度看进程的行为，你会发现有的进程一直占用处理器，有的进程只需要处理器的一部分计算资源即可。所以进程按照这个标准可以分成两类：一类是CPU消耗型（CPU-Bound），另外一类是I/O消耗型（I/O-Bound）。</p>
+<h2 id="进程调度的基本概念">1. 进程调度的基本概念</h2>
+<p>假设在只有单核处理器的系统中，同一时刻只有一个进程可以拥有处理器资源，那么其他的进程只能在就绪队列（runqueue）中等待，等到处理器空闲之后才有机会获取处理器资源并运行。在这种场景下，操作系统就需要从众多的就绪进程中选择一个最合适的进程来运行，这就是进程调度器（scheduler）。进程调度器产生的最大原因是为了提高处理器的利用率，一个进程在运行的过程中有可能需要等待某些资源，比如等待磁盘操作的完成、等待键盘输入、等待物理页面的分配等。如果处理器和进程一起等待，那么明显会浪费处理器资源，所以一个进程在睡眠等待时，调度器可以调度其他进程来运行，这样就提高了处理器的利用率。</p>
+<h3 id="进程的分类">1.1 进程的分类</h3>
+<p>站在处理器的角度看进程的行为，你会发现有的进程一直占用处理器，有的进程只需要处理器的一部分计算资源即可。所以进程按照这个标准可以分成两类：一类是CPU消耗型（CPU-Bound），另外一类是I/O消耗型（I/O-Bound）。</p>
 <ul>
 <li>CPU消耗型的进程会把大部分时间用在执行代码上，也就是一直占用CPU</li>
 <li>I/O消耗型的进程大部分时间在提交I/O请求或者等待I/O请求，所以这种类型的进程通常只需要很少的处理器计算资源即可，比如需要键盘输入的进程或者等待网络I/O的进程</li>
 </ul>
 <p>有时候，鉴别一个进程是CPU消耗型还是I/O消耗型其实挺困难的，Linux内核的调度器通常倾向于提高系统的响应性。</p>
-<h3 id="1-2-进程的优先级和权重"><a href="#1-2-进程的优先级和权重" class="headerlink" title="1.2 进程的优先级和权重"></a>1.2 进程的优先级和权重</h3><p>操作系统中最经典的进程调度算法是基于优先级调度。优先级调度的核心思想是把进程按照优先级进行分类，紧急的进程优先级高，不紧急、不重要的进程优先级低。调度器总是从就绪队列中选择优先级高的进程进行调度，而且优先级高的进程分配的时间片也会比优先级低的进程多，这体现了一种等级制度。</p>
+<h3 id="进程的优先级和权重">1.2 进程的优先级和权重</h3>
+<p>操作系统中最经典的进程调度算法是基于优先级调度。优先级调度的核心思想是把进程按照优先级进行分类，紧急的进程优先级高，不紧急、不重要的进程优先级低。调度器总是从就绪队列中选择优先级高的进程进行调度，而且优先级高的进程分配的时间片也会比优先级低的进程多，这体现了一种等级制度。</p>
 <p>Linux系统最早采用nice值来调整进程的优先级。nice值的背后思想是要对其他进程友好（nice），通过降低优先级来支持其他进程消耗更多的处理器时间。范围是-20~+19，默认值是0。nice值越大，优先级反而越低；nice值越低，优先级越高。值-20表示这个进的任务是非常重要的，优先级最高；而nice值为19的进程则允许其他所有进程都可以比己优先享有宝贵的CPU时间，这也是nice这一名称的由来。</p>
 <p>内核使用0 ~ 139的数值表示进程的优先级，数值越低优先级越高。优先级0~99供时进程使用，优先级100 ~ 139供普通进程使用。另外，在用户空间中有一个传统的nice量，它用来映射到普通进程的优先级，取值范围是100 ~ 139。优先级在Linux中的划分方式如下。</p>
 <ul>
@@ -318,39 +321,35 @@
 <p>另外，getpriority()和setpriority()系统调用可以用来获取和修改自身或其他进程的nice值。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;sys/time.h&gt;</span></span></span><br><span class="line"><span class="comment">/* Return the highest priority of any process specified by WHICH and WHO</span></span><br><span class="line"><span class="comment">   (see above); if WHO is zero, the current process, process group, or user</span></span><br><span class="line"><span class="comment">   (as specified by WHO) is used.  A lower priority number means higher</span></span><br><span class="line"><span class="comment">   priority.  Priorities range from PRIO_MIN to PRIO_MAX (above).  */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">int</span> <span class="title">getpriority</span> <span class="params">(<span class="keyword">__priority_which_t</span> __which, <span class="keyword">id_t</span> __who)</span> __THROW</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* Set the priority of all processes specified by WHICH and WHO (see above)</span></span><br><span class="line"><span class="comment">   to PRIO.  Returns 0 on success, -1 on errors.  */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">int</span> <span class="title">setpriority</span> <span class="params">(<span class="keyword">__priority_which_t</span> __which, <span class="keyword">id_t</span> __who, <span class="keyword">int</span> __prio)</span></span></span><br><span class="line"><span class="function">     __THROW</span>;</span><br></pre></td></tr></table></figure>
 <p>推荐阅读<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L3Byb2Nlc3MtcHJpb3JpdHkuaHRtbA==">Linux调度器：进程优先级<i class="fa fa-external-link-alt"></i></span>更详细。</p>
-<h3 id="1-3-调度策略"><a href="#1-3-调度策略" class="headerlink" title="1.3 调度策略"></a>1.3 调度策略</h3><p>进程调度依赖于调度策略（schedule policy），Linux内核把相同的调度策略抽象成了调度类（schedule class）。不同类型的进程采用不同的调度策略，目前Linux内核中默认实现了5个调度类，分别是stop、 deadline、realtime、CFS和idle，它们分别使用sched_class来定义，并且通过next指针串联在一起，如图所示。<br><img src="/picture/linux/kernel/task/sched_list.png" alt=""></p>
+<h3 id="调度策略">1.3 调度策略</h3>
+<p>进程调度依赖于调度策略（schedule policy），Linux内核把相同的调度策略抽象成了调度类（schedule class）。不同类型的进程采用不同的调度策略，目前Linux内核中默认实现了5个调度类，分别是stop、 deadline、realtime、CFS和idle，它们分别使用sched_class来定义，并且通过next指针串联在一起，如图所示。 <img src="/picture/linux/kernel/task/sched_list.png" /></p>
 <ul>
-<li><p>stop   </p>
+<li>stop
 <ul>
 <li>最高优先级，比deadline进程的优先级高</li>
 <li>可以抢占任何进程</li>
 <li>在每个CPU上实现一个名为“migration/N”的内核线程，N表示CPU的编号。该内核线程的优先级最高，可以抢占任何进程的执行，一般用来执行特殊的功能</li>
 <li>用于负载均衡机制中的进程迁移、softlockup检测、CPU热插拔、RCU等</li>
-</ul>
-</li>
-<li><p>deadline(SCHED_DEADLINE )   </p>
+</ul></li>
+<li>deadline(SCHED_DEADLINE )
 <ul>
 <li>最高优先级的实时进程，优先级为-1</li>
 <li>用于调度有严格时间要求的实时进程，如视频编解码等</li>
-</ul>
-</li>
-<li><p>realtime(SCHED_FIFO、SCHED_RR)   </p>
+</ul></li>
+<li>realtime(SCHED_FIFO、SCHED_RR)
 <ul>
 <li>普通实时进程，优先级为0~99</li>
 <li>用于普通的实时进程，比如IRQ线程化</li>
-</ul>
-</li>
-<li><p>CFS(SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE)   </p>
+</ul></li>
+<li>CFS(SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE)
 <ul>
 <li>普通进程，优先级为100~139，由CFS来调度</li>
-</ul>
-</li>
-<li><p>idle   </p>
+</ul></li>
+<li>idle
 <ul>
 <li>最低优先级的进程</li>
 <li>当就绪队列中没有其他进程时进入idle调度类，idle调度类会让CPU进入低功耗模式</li>
-</ul>
-</li>
+</ul></li>
 </ul>
 <p>用户空间程序可以使用调度策略API函数，比如sched_setscheduler()来设定用户进程的调度策略。其中，SCHED_NORMAL、SCHED_BATCH以及SCHED_IDLE使用完全公平调度器（CFS），SCHED_FIFO和SCHED_RR使用realtime调度器，SCHED_DEADLINE专用deadline 调度器。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCHED_NORMAL		0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCHED_FIFO		1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCHED_RR		2</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCHED_BATCH		3</span></span><br><span class="line"><span class="comment">/* SCHED_ISO: reserved but not implemented yet */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCHED_IDLE		5</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> SCHED_DEADLINE		6</span></span><br></pre></td></tr></table></figure>
@@ -361,33 +360,31 @@
 <li>自愿放弃CPU</li>
 <li>进程终止</li>
 <li>被高优先级进程抢占</li>
-</ul>
-</li>
+</ul></li>
 <li><p>SCHED_FIFO（先进先出）调度策略与SCHED_RR调度策略类似，只不过没有时间片的概念。一旦进程获取了CPU控制权，就会一直执行下去，直到下面的某个条件得到满足</p>
 <ul>
 <li>自愿放弃CPU</li>
 <li>进程终止</li>
 <li>被更高优先级进程抢占</li>
+</ul></li>
+<li><p>SCHED_BATCH（批处理）调度策略是普通进程调度策略。这种调度策略会让调度器认为进程是CPU密集型的。因此，调度器对这类进程的唤醒惩罚（wakeup penalty）比较小。在Linux内核里，此类调度策略使用完全公平调度器</p></li>
+<li><p>SCHED_NORMAL（以前称为SCHED_OTHER）分时调度策略是非实时进程的默度策略。所有普通类型的进程的静态优先级都为0，因此，任何使用SCHED_FIFO、SCHED_RR调度策略的就绪进程都会抢占它们。Linux内核没有实现这类调度策略。</p></li>
+<li><p>SCHED_IDLE 空闲调度策略用于运行低优先级的任务</p></li>
 </ul>
-</li>
-<li><p>SCHED_BATCH（批处理）调度策略是普通进程调度策略。这种调度策略会让调度器认为进程是CPU密集型的。因此，调度器对这类进程的唤醒惩罚（wakeup penalty）比较小。在Linux内核里，此类调度策略使用完全公平调度器</p>
-</li>
-<li><p>SCHED_NORMAL（以前称为SCHED_OTHER）分时调度策略是非实时进程的默度策略。所有普通类型的进程的静态优先级都为0，因此，任何使用SCHED_FIFO、SCHED_RR调度策略的就绪进程都会抢占它们。Linux内核没有实现这类调度策略。</p>
-</li>
-<li><p>SCHED_IDLE 空闲调度策略用于运行低优先级的任务</p>
-</li>
-</ul>
-<p>Linux内核中提供了一些宏来判断属于哪个调度策略，主要是通过优先级来判断。 </p>
+<p>Linux内核中提供了一些宏来判断属于哪个调度策略，主要是通过优先级来判断。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/sched/sched.h&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">idle_policy</span><span class="params">(<span class="keyword">int</span> policy)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> policy == SCHED_IDLE;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">fair_policy</span><span class="params">(<span class="keyword">int</span> policy)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> policy == SCHED_NORMAL || policy == SCHED_BATCH;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">rt_policy</span><span class="params">(<span class="keyword">int</span> policy)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> policy == SCHED_FIFO || policy == SCHED_RR;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">dl_policy</span><span class="params">(<span class="keyword">int</span> policy)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> policy == SCHED_DEADLINE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>POSIX标准里还规定了一组接口函数，用来获取和设置进程的调度策略及优先级。 </p>
+<p>POSIX标准里还规定了一组接口函数，用来获取和设置进程的调度策略及优先级。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sched.h&gt;</span></span></span><br><span class="line">SYSCALL_DEFINE3(sched_setscheduler, <span class="keyword">pid_t</span>, pid, <span class="keyword">int</span>, policy, struct sched_param __user *, param)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> (policy &lt; <span class="number">0</span>)</span><br><span class="line">    <span class="keyword">return</span> -EINVAL;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> do_sched_setscheduler(pid, policy, param);</span><br><span class="line">&#125;</span><br><span class="line">SYSCALL_DEFINE1(sched_getscheduler, <span class="keyword">pid_t</span>, pid)</span><br><span class="line">SYSCALL_DEFINE2(sched_getparam, <span class="keyword">pid_t</span>, pid, struct sched_param __user *, param)</span><br><span class="line">SYSCALL_DEFINE2(sched_setparam, <span class="keyword">pid_t</span>, pid, struct sched_param __user *, param)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> do_sched_setscheduler(pid, SETPARAM_POLICY, param);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>sched_setscheduler()系统调用修改进程的调度策略和优先级。sched_getscheduler()系统调用获取进程的调度策略。sched_getparam()和sched_setparam()接口函数可以获取和设置调度策略及优先级参数。</p>
 <p>struct sched_param数据结构里包含了调度参数，目前只有进程优先级一个参数。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_param</span> &#123;</span></span><br><span class="line">  <span class="keyword">int</span> sched_priority;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<h3 id="1-4-时间片"><a href="#1-4-时间片" class="headerlink" title="1.4. 时间片"></a>1.4. 时间片</h3><p>时间片（time slice）是操作系统进程调度中一个很重要的术语，它表示进程被调度进与被调度出去之间所能持续运行的时间长度。通常操作系统都会规定默认的时间片，但是很难确定多长的时间片是合适的。时间片过长的话会导致交互型进程得不到及时响应，时间片过短的话会增大进程切换带来的处理器消耗。所以，I/O消耗型和CPU消耗型进程之间的矛盾很难得到平衡。I/O消耗型的进程不需要很长的时间片，而CPU消耗型的进程则希望时间片越长越好。</p>
+<h3 id="时间片">1.4. 时间片</h3>
+<p>时间片（time slice）是操作系统进程调度中一个很重要的术语，它表示进程被调度进与被调度出去之间所能持续运行的时间长度。通常操作系统都会规定默认的时间片，但是很难确定多长的时间片是合适的。时间片过长的话会导致交互型进程得不到及时响应，时间片过短的话会增大进程切换带来的处理器消耗。所以，I/O消耗型和CPU消耗型进程之间的矛盾很难得到平衡。I/O消耗型的进程不需要很长的时间片，而CPU消耗型的进程则希望时间片越长越好。</p>
 <p>早期的Linux中的调度器采用的是固定时间片，但是现在的CFS已经抛弃固定时间片的做法，而是采用进程权重占比的方法来公平地划分CPU时间，这样进程获得的CPU时间就与进程的权重以及CPU上的总权重有了关系。权重和优先级相关，优先级高的进程权重也高，有机会占用更多的CPU时间；而优先级低的进程权重也低，那么理应占用较少的CPU时间。</p>
-<h2 id="2-传统调度算法"><a href="#2-传统调度算法" class="headerlink" title="2. 传统调度算法"></a>2. 传统调度算法</h2><h3 id="2-1-经典调度算法（多级反馈队列算法）"><a href="#2-1-经典调度算法（多级反馈队列算法）" class="headerlink" title="2.1 经典调度算法（多级反馈队列算法）"></a>2.1 经典调度算法（多级反馈队列算法）</h3><p>1962年，由Corbato等人提出的多级反馈队列（Multi-Level Feedback Queue，MLFQ）算法对操作系统进程调度器的设计产生了深远的影响。很多操作系统进程调度器基于多级反馈队列算法，比如Solaris、 FreeBSD、Windows NT、Linux的O(1)调度器等，因此Corbato在1990年获得了图灵奖。</p>
-<p>多级反馈队列算法的核心思想是把进程按照优先级分成多个队列，相同优先级的进程在同一个队列中。如图所示，系统中有5个优先级，每个优先级有一个队列，队列5的优先级最高，队列1的优先级最低。<img src="/picture/linux/kernel/task/MLFQ.png" alt=""></p>
+<h2 id="传统调度算法">2. 传统调度算法</h2>
+<h3 id="经典调度算法多级反馈队列算法">2.1 经典调度算法（多级反馈队列算法）</h3>
+<p>1962年，由Corbato等人提出的多级反馈队列（Multi-Level Feedback Queue，MLFQ）算法对操作系统进程调度器的设计产生了深远的影响。很多操作系统进程调度器基于多级反馈队列算法，比如Solaris、 FreeBSD、Windows NT、Linux的O(1)调度器等，因此Corbato在1990年获得了图灵奖。</p>
+<p>多级反馈队列算法的核心思想是把进程按照优先级分成多个队列，相同优先级的进程在同一个队列中。如图所示，系统中有5个优先级，每个优先级有一个队列，队列5的优先级最高，队列1的优先级最低。<img src="/picture/linux/kernel/task/MLFQ.png" /></p>
 <p>多级反馈队列算法有如下几条基本规则。</p>
 <ul>
 <li>规则1：如果进程A的优先级大于进程B的优先级，那么调度器选择进程A</li>
@@ -401,17 +398,22 @@
 <li>规则4a：当一个进程吃满时间片时，说明这是一个CPU消耗型的进程，需要把优先级降一级，从高优先级队列中迁移到低一级的队列里</li>
 <li>规则4b：当一个进程在时间片还没有结束之前放弃CPU时，说明这是一个I/O消耗型的进程，优先级保持不变，维持原来的高优先级</li>
 </ul>
-<p>多级反馈队列算法看起来很不错，可是在实际应用过程中还是有不少问题的。<br>第一个问题就是产生饥饿，当系统中有大量的I/O消耗型的进程时，这些I/O消耗型的进程会完全占用CPU，因为它们的优先级最高，所以那些CPU消耗型的进程就得不到CPU时间片，从而产生饥饿。<br>第二个问题是有些进程会欺骗调度器。比如，有的进程在时间片快要结束时突然发起一个I/O请求并且放弃CPU，那么按照规则4b，调度器会把这种进程判断为I/O消耗型的进程，从而欺骗调度器，继续保留在高优先级的队列里面。这种进程99%的时间在占用时间片，到了最后时刻还会巧妙利用规则欺骗调度器。如果系统中有大量的这种进程，那么系统的交互性就会变差。<br>第三个问题是，一个进程在生命周期里，有可能一会儿是I/O消耗型的，一会儿是CPU消耗型的，所以很难判断一个进程究竟是哪种类型。<br>针对第一个问题，多级反馈队列算法提出了一种改良方案，也就是在一定的时间周期后，把系统中的全部进程都提升到最高优先级，相当于系统中的进程过了一段时间又重新开始一样。</p>
+<p>多级反馈队列算法看起来很不错，可是在实际应用过程中还是有不少问题的。 第一个问题就是产生饥饿，当系统中有大量的I/O消耗型的进程时，这些I/O消耗型的进程会完全占用CPU，因为它们的优先级最高，所以那些CPU消耗型的进程就得不到CPU时间片，从而产生饥饿。 第二个问题是有些进程会欺骗调度器。比如，有的进程在时间片快要结束时突然发起一个I/O请求并且放弃CPU，那么按照规则4b，调度器会把这种进程判断为I/O消耗型的进程，从而欺骗调度器，继续保留在高优先级的队列里面。这种进程99%的时间在占用时间片，到了最后时刻还会巧妙利用规则欺骗调度器。如果系统中有大量的这种进程，那么系统的交互性就会变差。 第三个问题是，一个进程在生命周期里，有可能一会儿是I/O消耗型的，一会儿是CPU消耗型的，所以很难判断一个进程究竟是哪种类型。 针对第一个问题，多级反馈队列算法提出了一种改良方案，也就是在一定的时间周期后，把系统中的全部进程都提升到最高优先级，相当于系统中的进程过了一段时间又重新开始一样。</p>
 <ul>
-<li>规则5：每隔时间周期S之后，把系统中所有进程的优先级都提到最高级别。规则5可以解决进程饥饿的问题，因为系统每隔一段时间（S）就会把低优先级的进程提高到最高优先级，这样低优先级的CPU消耗型的进程就有机会和那些长期处于高优先级的I/O消耗型的进程同场竞技了。然而，将时间周期S设置为多少合适呢？如果S太长，那么CPU消耗型的进程会饥饿；如果S太短，那么会影响系统的交互性。<br>针对第二个问题，需要对规则4做一些改进。</li>
+<li>规则5：每隔时间周期S之后，把系统中所有进程的优先级都提到最高级别。规则5可以解决进程饥饿的问题，因为系统每隔一段时间（S）就会把低优先级的进程提高到最高优先级，这样低优先级的CPU消耗型的进程就有机会和那些长期处于高优先级的I/O消耗型的进程同场竞技了。然而，将时间周期S设置为多少合适呢？如果S太长，那么CPU消耗型的进程会饥饿；如果S太短，那么会影响系统的交互性。 针对第二个问题，需要对规则4做一些改进。</li>
 <li>新的规则4：当一个进程使用完时间片后，不管它是否在时间片的最末尾发生I/O请求从而放弃CPU，都把它的优先级降一级。经过改进后的规则4可以有效地避免进程的欺骗行为。</li>
 </ul>
 <p>在介绍完多级反馈队列算法的核心实现后，在实际工程应用中还有很多问题需要思考和解决，其中一个最难的问题是参数如何确定和优化。比如，系统需要设计多少个优先级队列？时间片应该设置成多少？规则5中的时间间隔S又应该设置成多少，才能实现既不会让进程饥饿，也不会降低系统的交互性？这些问题很难回答，需要具体问题，具体分析。</p>
-<p>现本很多unix系统中采用了多级反馈队列算法的变种，它们允许动态改变时间片，就是不同的优先级队列有不同的时间片。例如，高优先级队列里通常都是I/O消耗型的进程因而设置的时间片比较短，比如10ms。低优先级队列里通常是CPU消耗型的进程，可以时间片设置得长一些，比如20ms。Sun公司开发的Solaris操作系统也是基于多级反馈队算法的，它提供了一个表（table）来让系统管理员优化这些参数；FreeBSD（4.3版本）则用了另一种变种—名为decay-usage的变种算法，该算法使用公式来动态计算这些参数。Linx2.6里使用的O(1)调度器就是多级反馈队列算法的一个变种，但是由于交互性能常常达不到令人满意的程度，因此需要加入大量难以维护和阅读的代码来修复各种问题。该调度器在Linux2.6.23之后被CFS取代。</p>
-<h3 id="2-2-Linux-O-n-调度算法"><a href="#2-2-Linux-O-n-调度算法" class="headerlink" title="2.2 Linux O(n)调度算法"></a>2.2 Linux O(n)调度算法</h3><p>O（n）调度器是Linux内核最早采用的一种基于优先级的调度算法。Linux2.4内核以及更早期的Linux内核都采用这种算法。<br>就绪队列是一个全局链表，从就绪队列中查找下一个最佳就绪进程和就绪队列里进程的数目有关，因为耗费的时间为O（n），所以称为O（n）调度器。当就绪队列里的进程很多时，选择下一个就绪进程会变得很慢，从而导致系统整体性能下降。<br>每个进程在创建时都会被赋予一个固定时间片。当前进程的时间片使用完之后，调度器会选择下一个进程来运行。当所有进程的时间片都用完之后，才会对所有进程重新分配时间片。</p>
-<h3 id="2-3-Linux-O-1-调度算法"><a href="#2-3-Linux-O-1-调度算法" class="headerlink" title="2.3 Linux O(1)调度算法"></a>2.3 Linux O(1)调度算法</h3><p>Linux 2.6采用Red Hat公司Ingo Molnar设计的O(1)调度算法，该调度算法的核心思想基于Corbato等人提出的多级反馈队列算法。每个CPU维护一个自己的就绪队列，从而减少了锁的争用。<br>就绪队列由两个优先级数组组成，分别是活跃优先级数组和过期优先级数组。每个优先级数组包含MAX_PRIO（140）个优先级队列，也就是每个优先级对应一个队列，其中前100个对应实时进程，后40个对应普通进程。这样设计的好处在于，调度器选择下一个被调度进程就显得高效和简单多了，只需要在活跃优先级数组中选择优先级最高，并且队列中有就绪进程的优先级队列即可。这里使用位图来定义给定优先级队列中是否有可运行的进程，如果有，则位图中相应的位会被置1。<br>这样选择下一个被调度进程的时间就变成了查询位图操作，而且和系统中就绪进程的量不相关，由于时间复杂度为O(1)，因此称为O(1)调度器。当活跃优先级数组中的所有进程用完时间片之后，活跃优先级数组和过期优先级数组会进行互换。</p>
-<h3 id="2-4-CFS调度器"><a href="#2-4-CFS调度器" class="headerlink" title="2.4 CFS调度器"></a>2.4 CFS调度器</h3><p>这个会在后续文章详细介绍，这里就不多详述了。</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p>《奔跑吧Linux内核》<br>《Linux内核设计与实现》   </p>
+<p>现本很多unix系统中采用了多级反馈队列算法的变种，它们允许动态改变时间片，就是不同的优先级队列有不同的时间片。例如，高优先级队列里通常都是I/O消耗型的进程因而设置的时间片比较短，比如10ms。低优先级队列里通常是CPU消耗型的进程，可以时间片设置得长一些，比如20ms。Sun公司开发的Solaris操作系统也是基于多级反馈队算法的，它提供了一个表（table）来让系统管理员优化这些参数；FreeBSD（4.3版本）则用了另一种变种--名为decay-usage的变种算法，该算法使用公式来动态计算这些参数。Linx2.6里使用的O(1)调度器就是多级反馈队列算法的一个变种，但是由于交互性能常常达不到令人满意的程度，因此需要加入大量难以维护和阅读的代码来修复各种问题。该调度器在Linux2.6.23之后被CFS取代。</p>
+<h3 id="linux-on调度算法">2.2 Linux O(n)调度算法</h3>
+<p>O（n）调度器是Linux内核最早采用的一种基于优先级的调度算法。Linux2.4内核以及更早期的Linux内核都采用这种算法。 就绪队列是一个全局链表，从就绪队列中查找下一个最佳就绪进程和就绪队列里进程的数目有关，因为耗费的时间为O（n），所以称为O（n）调度器。当就绪队列里的进程很多时，选择下一个就绪进程会变得很慢，从而导致系统整体性能下降。 每个进程在创建时都会被赋予一个固定时间片。当前进程的时间片使用完之后，调度器会选择下一个进程来运行。当所有进程的时间片都用完之后，才会对所有进程重新分配时间片。</p>
+<h3 id="linux-o1调度算法">2.3 Linux O(1)调度算法</h3>
+<p>Linux 2.6采用Red Hat公司Ingo Molnar设计的O(1)调度算法，该调度算法的核心思想基于Corbato等人提出的多级反馈队列算法。每个CPU维护一个自己的就绪队列，从而减少了锁的争用。 就绪队列由两个优先级数组组成，分别是活跃优先级数组和过期优先级数组。每个优先级数组包含MAX_PRIO（140）个优先级队列，也就是每个优先级对应一个队列，其中前100个对应实时进程，后40个对应普通进程。这样设计的好处在于，调度器选择下一个被调度进程就显得高效和简单多了，只需要在活跃优先级数组中选择优先级最高，并且队列中有就绪进程的优先级队列即可。这里使用位图来定义给定优先级队列中是否有可运行的进程，如果有，则位图中相应的位会被置1。 这样选择下一个被调度进程的时间就变成了查询位图操作，而且和系统中就绪进程的量不相关，由于时间复杂度为O(1)，因此称为O(1)调度器。当活跃优先级数组中的所有进程用完时间片之后，活跃优先级数组和过期优先级数组会进行互换。</p>
+<h3 id="cfs调度器">2.4 CFS调度器</h3>
+<p>这个会在后续文章详细介绍，这里就不多详述了。</p>
+<h3 id="参考文献">参考文献</h3>
+<p>《奔跑吧Linux内核》<br />
+《Linux内核设计与实现》</p>
 
     </div>
 
@@ -520,7 +522,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">1. 进程调度的基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-text">1.1 进程的分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E8%BF%9B%E7%A8%8B%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7%E5%92%8C%E6%9D%83%E9%87%8D"><span class="nav-text">1.2 进程的优先级和权重</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5"><span class="nav-text">1.3 调度策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-4-%E6%97%B6%E9%97%B4%E7%89%87"><span class="nav-text">1.4. 时间片</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BC%A0%E7%BB%9F%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text">2. 传统调度算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E7%BB%8F%E5%85%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%EF%BC%88%E5%A4%9A%E7%BA%A7%E5%8F%8D%E9%A6%88%E9%98%9F%E5%88%97%E7%AE%97%E6%B3%95%EF%BC%89"><span class="nav-text">2.1 经典调度算法（多级反馈队列算法）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-Linux-O-n-%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text">2.2 Linux O(n)调度算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-Linux-O-1-%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text">2.3 Linux O(1)调度算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-CFS%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">2.4 CFS调度器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6%E7%9A%84%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">1. 进程调度的基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-text">1.1 进程的分类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7%E5%92%8C%E6%9D%83%E9%87%8D"><span class="nav-text">1.2 进程的优先级和权重</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5"><span class="nav-text">1.3 调度策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%89%87"><span class="nav-text">1.4. 时间片</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text">2. 传统调度算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%BB%8F%E5%85%B8%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95%E5%A4%9A%E7%BA%A7%E5%8F%8D%E9%A6%88%E9%98%9F%E5%88%97%E7%AE%97%E6%B3%95"><span class="nav-text">2.1 经典调度算法（多级反馈队列算法）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-on%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text">2.2 Linux O(n)调度算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-o1%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text">2.3 Linux O(1)调度算法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cfs%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">2.4 CFS调度器</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -605,7 +607,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">905k</span>
+    <span title="站点总字数">927k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

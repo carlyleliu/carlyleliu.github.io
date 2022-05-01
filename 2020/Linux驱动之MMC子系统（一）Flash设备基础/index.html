@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. Flash Memory 简介Flash Memory 是一种非易失性的存储器。在嵌入式系统中通常用于存放系统、应用和数据等。在 PC 系统中，则主要用在固态硬盘以及主板 BIOS 中。另外，绝大部分的 U 盘、SDCard 等移动存储设备也都是使用 Flash Memory 作为存储介质。 1.1 Flash Memory 的主要特性与传统的硬盘存储器相比，Flash Memory 具有质">
+  <meta name="description" content="1. Flash Memory 简介 Flash Memory 是一种非易失性的存储器。在嵌入式系统中通常用于存放系统、应用和数据等。在 PC 系统中，则主要用在固态硬盘以及主板 BIOS 中。另外，绝大部分的 U 盘、SDCard 等移动存储设备也都是使用 Flash Memory 作为存储介质。 1.1 Flash Memory 的主要特性 与传统的硬盘存储器相比，Flash Memory 具">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之MMC子系统（一）Flash设备基础">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BMMC%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%80%EF%BC%89Flash%E8%AE%BE%E5%A4%87%E5%9F%BA%E7%A1%80/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. Flash Memory 简介Flash Memory 是一种非易失性的存储器。在嵌入式系统中通常用于存放系统、应用和数据等。在 PC 系统中，则主要用在固态硬盘以及主板 BIOS 中。另外，绝大部分的 U 盘、SDCard 等移动存储设备也都是使用 Flash Memory 作为存储介质。 1.1 Flash Memory 的主要特性与传统的硬盘存储器相比，Flash Memory 具有质">
+<meta property="og:description" content="1. Flash Memory 简介 Flash Memory 是一种非易失性的存储器。在嵌入式系统中通常用于存放系统、应用和数据等。在 PC 系统中，则主要用在固态硬盘以及主板 BIOS 中。另外，绝大部分的 U 盘、SDCard 等移动存储设备也都是使用 Flash Memory 作为存储介质。 1.1 Flash Memory 的主要特性 与传统的硬盘存储器相比，Flash Memory 具">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/mmc/nand_nor_flash.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/mmc/nand_interface.png">
@@ -318,20 +318,23 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="1-Flash-Memory-简介"><a href="#1-Flash-Memory-简介" class="headerlink" title="1. Flash Memory 简介"></a>1. Flash Memory 简介</h2><p>Flash Memory 是一种非易失性的存储器。在嵌入式系统中通常用于存放系统、应用和数据等。在 PC 系统中，则主要用在固态硬盘以及主板 BIOS 中。另外，绝大部分的 U 盘、SDCard 等移动存储设备也都是使用 Flash Memory 作为存储介质。</p>
-<h3 id="1-1-Flash-Memory-的主要特性"><a href="#1-1-Flash-Memory-的主要特性" class="headerlink" title="1.1 Flash Memory 的主要特性"></a>1.1 Flash Memory 的主要特性</h3><p>与传统的硬盘存储器相比，Flash Memory 具有质量轻、能耗低、体积小、抗震能力强等的优点，但也有不少局限性，主要如下：</p>
+        <h2 id="flash-memory-简介">1. Flash Memory 简介</h2>
+<p>Flash Memory 是一种非易失性的存储器。在嵌入式系统中通常用于存放系统、应用和数据等。在 PC 系统中，则主要用在固态硬盘以及主板 BIOS 中。另外，绝大部分的 U 盘、SDCard 等移动存储设备也都是使用 Flash Memory 作为存储介质。</p>
+<h3 id="flash-memory-的主要特性">1.1 Flash Memory 的主要特性</h3>
+<p>与传统的硬盘存储器相比，Flash Memory 具有质量轻、能耗低、体积小、抗震能力强等的优点，但也有不少局限性，主要如下：</p>
 <ul>
-<li><p>需要先擦除再写入<br>  Flash Memory 写入数据时有一定的限制。它只能将当前为 1 的比特改写为 0，而无法将已经为 0 的比特改写为 1，只有在擦除的操作中，才能把整块的比特改写为 1。</p>
-</li>
-<li><p>块擦除次数有限<br>  Flash Memory 的每个数据块都有擦除次数的限制（十万到百万次不等），擦写超过一定次数后，该数据块将无法可靠存储数据，成为坏块。为了最大化的延长 Flash Memory 的寿命，在软件上需要做擦写均衡（Wear Leveling），通过分散写入、动态映射等手段均衡使用各个数据块。同时，软件还需要进行坏块管理（Bad Block Management，BBM），标识坏块，不让坏块参与数据存储。（注：除了擦写导致的坏块外，Flash Memory 在生产过程也会产生坏块，即固有坏块。）</p>
-</li>
-<li><p>读写干扰<br>  由于硬件实现上的物理特性，Flash Memory 在进行读写操作时，有可能会导致邻近的其他比特发生位翻转，导致数据异常。这种异常可以通过重新擦除来恢复。Flash Memory 应用中通常会使用 ECC 等算法进行错误检测和数据修正。</p>
-</li>
-<li><p>电荷泄漏<br>  存储在 Flash Memory 存储单元的电荷，如果长期没有使用，会发生电荷泄漏，导致数据错误。不过这个时间比较长，一般十年左右。此种异常是非永久性的，重新擦除可以恢复。</p>
-</li>
+<li><p>需要先擦除再写入<br />
+Flash Memory 写入数据时有一定的限制。它只能将当前为 1 的比特改写为 0，而无法将已经为 0 的比特改写为 1，只有在擦除的操作中，才能把整块的比特改写为 1。</p></li>
+<li><p>块擦除次数有限<br />
+Flash Memory 的每个数据块都有擦除次数的限制（十万到百万次不等），擦写超过一定次数后，该数据块将无法可靠存储数据，成为坏块。为了最大化的延长 Flash Memory 的寿命，在软件上需要做擦写均衡（Wear Leveling），通过分散写入、动态映射等手段均衡使用各个数据块。同时，软件还需要进行坏块管理（Bad Block Management，BBM），标识坏块，不让坏块参与数据存储。（注：除了擦写导致的坏块外，Flash Memory 在生产过程也会产生坏块，即固有坏块。）</p></li>
+<li><p>读写干扰<br />
+由于硬件实现上的物理特性，Flash Memory 在进行读写操作时，有可能会导致邻近的其他比特发生位翻转，导致数据异常。这种异常可以通过重新擦除来恢复。Flash Memory 应用中通常会使用 ECC 等算法进行错误检测和数据修正。</p></li>
+<li><p>电荷泄漏<br />
+存储在 Flash Memory 存储单元的电荷，如果长期没有使用，会发生电荷泄漏，导致数据错误。不过这个时间比较长，一般十年左右。此种异常是非永久性的，重新擦除可以恢复。</p></li>
 </ul>
 <span id="more"></span>
-<h3 id="1-2-NOR-Flash-和-NAND-Flash"><a href="#1-2-NOR-Flash-和-NAND-Flash" class="headerlink" title="1.2 NOR Flash 和 NAND Flash"></a>1.2 NOR Flash 和 NAND Flash</h3><p>根据硬件上存储原理的不同，Flash Memory 主要可以分为 NOR Flash 和 NAND Flash 两类。 主要的差异如下所示：</p>
+<h3 id="nor-flash-和-nand-flash">1.2 NOR Flash 和 NAND Flash</h3>
+<p>根据硬件上存储原理的不同，Flash Memory 主要可以分为 NOR Flash 和 NAND Flash 两类。 主要的差异如下所示：</p>
 <ul>
 <li>NAND Flash 读取速度与 NOR Flash 相近，根据接口的不同有所差异。</li>
 <li>NAND Flash 的写入速度比 NOR Flash 快很多。</li>
@@ -343,53 +346,65 @@
 <li>大容量下 NAND Flash 比 NOR Flash 成本要低很多，体积也更小。</li>
 </ul>
 <p>（注：NOR Flash 和 NAND Flash 的擦除都是按块块进行的，执行一个擦除或者写入操作时，NOR Flash 大约需要 5s，而 NAND Flash 通常不超过 4ms。）</p>
-<h4 id="1-2-1-NOR-Flash"><a href="#1-2-1-NOR-Flash" class="headerlink" title="1.2.1 NOR Flash"></a>1.2.1 NOR Flash</h4><p>NOR Flash 根据与 CPU 端接口的不同，可以分为 Parallel NOR Flash 和 Serial NOR Flash 两类。<br>Parallel NOR Flash 可以接入到 Host 的 SRAM/DRAM Controller 上，所存储的内容可以直接映射到 CPU 地址空间，不需要拷贝到 RAM 中即可被 CPU 访问，因而支持片上执行。Serial NOR Flash 的成本比 Parallel NOR Flash 低，主要通过 SPI 接口与 Host 连接。<br><img src="/picture/linux_driver/mmc/nand_nor_flash.png" alt=""></p>
+<h4 id="nor-flash">1.2.1 NOR Flash</h4>
+<p>NOR Flash 根据与 CPU 端接口的不同，可以分为 Parallel NOR Flash 和 Serial NOR Flash 两类。 Parallel NOR Flash 可以接入到 Host 的 SRAM/DRAM Controller 上，所存储的内容可以直接映射到 CPU 地址空间，不需要拷贝到 RAM 中即可被 CPU 访问，因而支持片上执行。Serial NOR Flash 的成本比 Parallel NOR Flash 低，主要通过 SPI 接口与 Host 连接。 <img src="/picture/linux_driver/mmc/nand_nor_flash.png" /></p>
 <p>鉴于 NOR Flash 擦写速度慢，成本高等特性，NOR Flash 主要应用于小容量、内容更新少的场景，例如 PC 主板 BIOS、路由器系统存储等。</p>
-<h4 id="1-2-2-NAND-Flash"><a href="#1-2-2-NAND-Flash" class="headerlink" title="1.2.2 NAND Flash"></a>1.2.2 NAND Flash</h4><p>NAND Flash 需要通过专门的 NFI（NAND Flash Interface）与 Host 端进行通信，如下图所示：<br><img src="/picture/linux_driver/mmc/nand_interface.png" alt=""></p>
+<h4 id="nand-flash">1.2.2 NAND Flash</h4>
+<p>NAND Flash 需要通过专门的 NFI（NAND Flash Interface）与 Host 端进行通信，如下图所示： <img src="/picture/linux_driver/mmc/nand_interface.png" /></p>
 <p>NAND Flash 根据每个存储单元内存储比特个数的不同，可以分为 SLC（Single-Level Cell）、MLC（Multi-Level Cell） 和 TLC（Triple-Level Cell） 三类。其中，在一个存储单元中，SLC 可以存储 1 个比特，MLC 可以存储 2 个比特，TLC 则可以存储 3 个比特。</p>
-<p>NAND Flash 的一个存储单元内部，是通过不同的电压等级，来表示其所存储的信息的。在 SLC 中，存储单元的电压被分为两个等级，分别表示 0 和 1 两个状态，即 1 个比特。在 MLC 中，存储单元的电压则被分为 4 个等级，分别表示 00 01 10 11 四个状态，即 2 个比特位。同理，在 TLC 中，存储单元的电压被分为 8 个等级，存储 3 个比特信息。<br><img src="/picture/linux_driver/mmc/slc_mlc_tlc.png" alt=""></p>
-<p>NAND Flash 的单个存储单元存储的比特位越多，读写性能会越差，寿命也越短，但是成本会更低。Table 1 中，给出了特定工艺和技术水平下的成本和寿命数据。<br><img src="/picture/linux_driver/mmc/slc_mlc_tlc_sell.png" alt=""></p>
+<p>NAND Flash 的一个存储单元内部，是通过不同的电压等级，来表示其所存储的信息的。在 SLC 中，存储单元的电压被分为两个等级，分别表示 0 和 1 两个状态，即 1 个比特。在 MLC 中，存储单元的电压则被分为 4 个等级，分别表示 00 01 10 11 四个状态，即 2 个比特位。同理，在 TLC 中，存储单元的电压被分为 8 个等级，存储 3 个比特信息。 <img src="/picture/linux_driver/mmc/slc_mlc_tlc.png" /></p>
+<p>NAND Flash 的单个存储单元存储的比特位越多，读写性能会越差，寿命也越短，但是成本会更低。Table 1 中，给出了特定工艺和技术水平下的成本和寿命数据。 <img src="/picture/linux_driver/mmc/slc_mlc_tlc_sell.png" /></p>
 <p>相比于 NOR Flash，NAND Flash 写入性能好，大容量下成本低。目前，绝大部分手机和平板等移动设备中所使用的 eMMC 内部的 Flash Memory 都属于 NAND Flash。PC 中的固态硬盘中也是使用 NAND Flash。</p>
-<h3 id="1-3-Raw-Flash-和-Managed-Flash"><a href="#1-3-Raw-Flash-和-Managed-Flash" class="headerlink" title="1.3 Raw Flash 和 Managed Flash"></a>1.3 Raw Flash 和 Managed Flash</h3><p>由于 Flash Memory 存在按块擦写、擦写次数的限制、读写干扰、电荷泄露等的局限，为了最大程度的发挥 Flash Memory 的价值，通常需要有一个特殊的软件层次，实现坏块管理、擦写均衡、ECC、垃圾回收等的功能，这一个软件层次称为 FTL（Flash Translation Layer）。</p>
-<p>在具体实现中，根据 FTL 所在的位置的不同，可以把 Flash Memory 分为 Raw Flash 和 Managed Flash 两类。<br><img src="/picture/linux_driver/mmc/managed_raw_flash.png" alt=""></p>
+<h3 id="raw-flash-和-managed-flash">1.3 Raw Flash 和 Managed Flash</h3>
+<p>由于 Flash Memory 存在按块擦写、擦写次数的限制、读写干扰、电荷泄露等的局限，为了最大程度的发挥 Flash Memory 的价值，通常需要有一个特殊的软件层次，实现坏块管理、擦写均衡、ECC、垃圾回收等的功能，这一个软件层次称为 FTL（Flash Translation Layer）。</p>
+<p>在具体实现中，根据 FTL 所在的位置的不同，可以把 Flash Memory 分为 Raw Flash 和 Managed Flash 两类。 <img src="/picture/linux_driver/mmc/managed_raw_flash.png" /></p>
 <ul>
-<li><p>Raw Flash<br>  在此类应用中，在 Host 端通常有专门的 FTL 或者 Flash 文件系统来实现坏块管理、擦写均衡等的功能。Host 端的软件复杂度较高，但是整体方案的成本较低，常用于价格敏感的嵌入式产品中。通常我们所说的 NOR Flash 和 NAND Flash 都属于这类型。</p>
-</li>
-<li><p>Managed Flash<br>  Managed Flash 在其内部集成了 Flash Controller，用于完成擦写均衡、坏块管理、ECC校验等功能。相比于直接将 Flash 接入到 Host 端，Managed Flash 屏蔽了 Flash 的物理特性，对 Host 提供标准化的接口，可以减少 Host 端软件的复杂度，让 Host 端专注于上层业务，省去对 Flash 进行特殊的处理。EMMC、SD Card、UFS、U 盘等产品是属于 Managed Flash 这一类。</p>
-</li>
+<li><p>Raw Flash<br />
+在此类应用中，在 Host 端通常有专门的 FTL 或者 Flash 文件系统来实现坏块管理、擦写均衡等的功能。Host 端的软件复杂度较高，但是整体方案的成本较低，常用于价格敏感的嵌入式产品中。通常我们所说的 NOR Flash 和 NAND Flash 都属于这类型。</p></li>
+<li><p>Managed Flash<br />
+Managed Flash 在其内部集成了 Flash Controller，用于完成擦写均衡、坏块管理、ECC校验等功能。相比于直接将 Flash 接入到 Host 端，Managed Flash 屏蔽了 Flash 的物理特性，对 Host 提供标准化的接口，可以减少 Host 端软件的复杂度，让 Host 端专注于上层业务，省去对 Flash 进行特殊的处理。EMMC、SD Card、UFS、U 盘等产品是属于 Managed Flash 这一类。</p></li>
 </ul>
-<h2 id="2-EMMC-简介"><a href="#2-EMMC-简介" class="headerlink" title="2. EMMC 简介"></a>2. EMMC 简介</h2><p>EMMC 是 embedded MultiMediaCard 的简称。MultiMediaCard，即 MMC， 是一种闪存卡（Flash Memory Card）标准，它定义了 MMC 的架构以及访问　Flash Memory 的接口和协议。而 EMMC 则是对 MMC 的一个拓展，以满足更高标准的性能、成本、体积、稳定、易用等的需求。</p>
-<p>eMMC 的整体架构如下图片所示：<br><img src="/picture/linux_driver/mmc/emmc.png" alt=""><br>EMMC 内部主要可以分为 Flash Memory、Flash Controller 以及 Host Interface 三大部分。</p>
-<h3 id="2-1-Flash-Memory"><a href="#2-1-Flash-Memory" class="headerlink" title="2.1 Flash Memory"></a>2.1 Flash Memory</h3><p>Flash Memory 是一种非易失性的存储器，通常在嵌入式系统中用于存放系统、应用和数据等，类似与 PC 系统中的硬盘。目前，绝大部分手机和平板等移动设备中所使用的 eMMC 内部的 Flash Memory 都属于 NAND Flash，关于 NAND Flash 的更多细节可以参考 Flash Memory 章节。</p>
-<p>EMMC 在内部对 Flash Memory 划分了几个主要区域，如下图所示：<br><img src="/picture/linux_driver/mmc/emmc_interface.png" alt=""></p>
+<h2 id="emmc-简介">2. EMMC 简介</h2>
+<p>EMMC 是 embedded MultiMediaCard 的简称。MultiMediaCard，即 MMC， 是一种闪存卡（Flash Memory Card）标准，它定义了 MMC 的架构以及访问　Flash Memory 的接口和协议。而 EMMC 则是对 MMC 的一个拓展，以满足更高标准的性能、成本、体积、稳定、易用等的需求。</p>
+<p>eMMC 的整体架构如下图片所示： <img src="/picture/linux_driver/mmc/emmc.png" /> EMMC 内部主要可以分为 Flash Memory、Flash Controller 以及 Host Interface 三大部分。</p>
+<h3 id="flash-memory">2.1 Flash Memory</h3>
+<p>Flash Memory 是一种非易失性的存储器，通常在嵌入式系统中用于存放系统、应用和数据等，类似与 PC 系统中的硬盘。目前，绝大部分手机和平板等移动设备中所使用的 eMMC 内部的 Flash Memory 都属于 NAND Flash，关于 NAND Flash 的更多细节可以参考 Flash Memory 章节。</p>
+<p>EMMC 在内部对 Flash Memory 划分了几个主要区域，如下图所示： <img src="/picture/linux_driver/mmc/emmc_interface.png" /></p>
 <ul>
-<li><p>BOOT Area Partition 1 &amp; 2<br>  此分区主要是为了支持从 EMMC 启动系统而设计的。该分区的数据，在 EMMC 上电后，可以通过很简单的协议就可以读取出来。同时，大部分的 SOC 都可以通过 GPIO 或者 FUSE 的配置，让 ROM 代码在上电后，将 EMMC BOOT 分区的内容加载到 SOC 内部的 SRAM 中执行。</p>
-</li>
-<li><p>RPMB Partition<br>  PMB 是 Replay Protected Memory Block 的简称，它通过 HMAC SHA-256 和 Write Counter 来保证保存在 RPMB 内部的数据不被非法篡改。<br>在实际应用中，RPMB 分区通常用来保存安全相关的数据，例如指纹数据、安全支付相关的密钥等。</p>
-</li>
-<li><p>General Purpose Partition 1～4<br>  此区域则主要用于存储系统或者用户数据。 General Purpose Partition 在芯片出厂时，通常是不存在的，需要主动进行配置后，才会存在。</p>
-</li>
-<li><p>User Data Area<br>  此区域则主要用于存储系统和用户数据。User Data Area 通常会进行再分区，例如 Android 系统中，通常在此区域分出 boot、system、userdata 等分区。</p>
-</li>
+<li><p>BOOT Area Partition 1 &amp; 2<br />
+此分区主要是为了支持从 EMMC 启动系统而设计的。该分区的数据，在 EMMC 上电后，可以通过很简单的协议就可以读取出来。同时，大部分的 SOC 都可以通过 GPIO 或者 FUSE 的配置，让 ROM 代码在上电后，将 EMMC BOOT 分区的内容加载到 SOC 内部的 SRAM 中执行。</p></li>
+<li><p>RPMB Partition<br />
+PMB 是 Replay Protected Memory Block 的简称，它通过 HMAC SHA-256 和 Write Counter 来保证保存在 RPMB 内部的数据不被非法篡改。 在实际应用中，RPMB 分区通常用来保存安全相关的数据，例如指纹数据、安全支付相关的密钥等。</p></li>
+<li><p>General Purpose Partition 1～4<br />
+此区域则主要用于存储系统或者用户数据。 General Purpose Partition 在芯片出厂时，通常是不存在的，需要主动进行配置后，才会存在。</p></li>
+<li><p>User Data Area<br />
+此区域则主要用于存储系统和用户数据。User Data Area 通常会进行再分区，例如 Android 系统中，通常在此区域分出 boot、system、userdata 等分区。</p></li>
 </ul>
-<h3 id="2-2-Flash-Controller"><a href="#2-2-Flash-Controller" class="headerlink" title="2.2 Flash Controller"></a>2.2 Flash Controller</h3><p>NAND Flash 直接接入 Host 时，Host 端通常需要有 NAND Flash Translation Layer，即 NFTL 或者 NAND Flash 文件系统来做坏块管理、ECC等的功能。</p>
-<p>eMMC 则在其内部集成了 Flash Controller，用于完成擦写均衡、坏块管理、ECC校验等功能。相比于直接将 NAND Flash 接入到 Host 端，eMMC 屏蔽了 NAND Flash 的物理特性，可以减少 Host 端软件的复杂度，让 Host 端专注于上层业务，省去对 NAND Flash 进行特殊的处理。同时，eMMC 通过使用 Cache、Memory Array 等技术，在读写性能上也比 NAND Flash 要好很多。<br><img src="/picture/linux_driver/mmc/nand_emmc.png" alt=""></p>
-<h3 id="2-3-Host-Interface"><a href="#2-3-Host-Interface" class="headerlink" title="2.3 Host Interface"></a>2.3 Host Interface</h3><p>EMMC 与 Host 之间的连接如下图所示：<br><img src="/picture/linux_driver/mmc/host_emmc.png" alt=""></p>
+<h3 id="flash-controller">2.2 Flash Controller</h3>
+<p>NAND Flash 直接接入 Host 时，Host 端通常需要有 NAND Flash Translation Layer，即 NFTL 或者 NAND Flash 文件系统来做坏块管理、ECC等的功能。</p>
+<p>eMMC 则在其内部集成了 Flash Controller，用于完成擦写均衡、坏块管理、ECC校验等功能。相比于直接将 NAND Flash 接入到 Host 端，eMMC 屏蔽了 NAND Flash 的物理特性，可以减少 Host 端软件的复杂度，让 Host 端专注于上层业务，省去对 NAND Flash 进行特殊的处理。同时，eMMC 通过使用 Cache、Memory Array 等技术，在读写性能上也比 NAND Flash 要好很多。 <img src="/picture/linux_driver/mmc/nand_emmc.png" /></p>
+<h3 id="host-interface">2.3 Host Interface</h3>
+<p>EMMC 与 Host 之间的连接如下图所示： <img src="/picture/linux_driver/mmc/host_emmc.png" /></p>
 <p>各个信号的用途如下所示：</p>
 <ul>
-<li><p>CLK<br>  CLK 信号用于从 Host 端输出时钟信号，进行数据传输的同步和设备运作的驱动。在一个时钟周期内，CMD 和 DAT0-7 信号上都可以支持传输 1 个比特，即 SDR (Single Data Rate) 模式。此外，DAT0-7 信号还支持配置为 DDR (Double Data Rate) 模式，在一个时钟周期内，可以传输 2 个比特。Host 可以在通讯过程中动态调整时钟信号的频率（注，频率范围需要满足 Spec 的定义）。通过调整时钟频率，可以实现省电或者数据流控（避免 Over-run 或者 Under-run）功能。 在一些场景中，Host 端还可以关闭时钟，例如 EMMC 处于 Busy 状态时，或者接收完数据，进入 Programming State 时。</p>
-</li>
-<li><p>CMD<br>  CMD 信号主要用于 Host 向 EMMC 发送 Command 和 EMMC 向 Host 发送对于的 Response。Command 和 Response 的细节会在后续章节中介绍。</p>
-</li>
-<li><p>DAT0-7<br>  DAT0-7 信号主要用于 Host 和 EMMC 之间的数据传输。在 EMMC 上电或者软复位后，只有 DAT0 可以进行数据传输，完成初始化后，可配置 DAT0-3 或者 DAT0-7 进行数据传输，即数据总线可以配置为 4 bits 或者 8 bits 模式。</p>
-</li>
-<li><p>Data Strobe<br>  Data Strobe 时钟信号由 EMMC 发送给 Host，频率与 CLK 信号相同，用于 Host 端进行数据接收的同步。Data Strobe 信号只能在 HS400 模式下配置启用，启用后可以提高数据传输的稳定性，省去总线 tuning 过程。<br>Host 与 EMMC 之间的通信都是 Host 以一个 Command 开始发起的。针对不同的 Command，Device 会做出不同的响应。</p>
-</li>
+<li><p>CLK<br />
+CLK 信号用于从 Host 端输出时钟信号，进行数据传输的同步和设备运作的驱动。在一个时钟周期内，CMD 和 DAT0-7 信号上都可以支持传输 1 个比特，即 SDR (Single Data Rate) 模式。此外，DAT0-7 信号还支持配置为 DDR (Double Data Rate) 模式，在一个时钟周期内，可以传输 2 个比特。Host 可以在通讯过程中动态调整时钟信号的频率（注，频率范围需要满足 Spec 的定义）。通过调整时钟频率，可以实现省电或者数据流控（避免 Over-run 或者 Under-run）功能。 在一些场景中，Host 端还可以关闭时钟，例如 EMMC 处于 Busy 状态时，或者接收完数据，进入 Programming State 时。</p></li>
+<li><p>CMD<br />
+CMD 信号主要用于 Host 向 EMMC 发送 Command 和 EMMC 向 Host 发送对于的 Response。Command 和 Response 的细节会在后续章节中介绍。</p></li>
+<li><p>DAT0-7<br />
+DAT0-7 信号主要用于 Host 和 EMMC 之间的数据传输。在 EMMC 上电或者软复位后，只有 DAT0 可以进行数据传输，完成初始化后，可配置 DAT0-3 或者 DAT0-7 进行数据传输，即数据总线可以配置为 4 bits 或者 8 bits 模式。</p></li>
+<li><p>Data Strobe<br />
+Data Strobe 时钟信号由 EMMC 发送给 Host，频率与 CLK 信号相同，用于 Host 端进行数据接收的同步。Data Strobe 信号只能在 HS400 模式下配置启用，启用后可以提高数据传输的稳定性，省去总线 tuning 过程。 Host 与 EMMC 之间的通信都是 Host 以一个 Command 开始发起的。针对不同的 Command，Device 会做出不同的响应。</p></li>
 </ul>
-<h2 id="3-EMMC-总线协议"><a href="#3-EMMC-总线协议" class="headerlink" title="3. EMMC 总线协议"></a>3. EMMC 总线协议</h2><h3 id="3-1-EMMC-总线模型"><a href="#3-1-EMMC-总线模型" class="headerlink" title="3.1 EMMC 总线模型"></a>3.1 EMMC 总线模型</h3><p>eMMC 总线中，可以有一个 Host，多个 eMMC Devices。总线上的所有通讯都由 Host 端以一个 Command 开发发起，Host 一次只能与一个 eMMC Device 通讯。<br>系统在上电启动后，Host 会为所有 eMMC Device 逐个分配地址（RCA，Relative device Address）。当 Host 需要和某一个 eMMC Device 通讯时，会先根据 RCA 选中该 eMMC Device，只有被选中的 eMMC Device 才会响应 Host 的 Command。</p>
-<h4 id="3-1-1-速率模式"><a href="#3-1-1-速率模式" class="headerlink" title="3.1.1 速率模式"></a>3.1.1 速率模式</h4><p>随着 eMMC 协议的版本迭代，eMMC 总线的速率越来越高。为了兼容旧版本的 eMMC Device，所有 Devices 在上电启动或者 Reset 后，都会先进入兼容速率模式（Backward Compatible Mode）。在完成 eMMC Devices 的初始化后，Host 可以通过特定的流程，让 Device 进入其他高速率模式，目前支持以下的几种速率模式。<br><img src="/picture/linux_driver/mmc/emmc_speed.png" alt=""></p>
-<h4 id="3-1-2-通信模型"><a href="#3-1-2-通信模型" class="headerlink" title="3.1.2 通信模型"></a>3.1.2 通信模型</h4><p>Host 与 eMMC Device 之间的通信都是由 Host 以一个 Command 开始发起的，eMMC Device 在完成 Command 所指定的任务后，则返回一个 Response。</p>
-<h5 id="Read-Data"><a href="#Read-Data" class="headerlink" title="Read Data"></a>Read Data</h5><p><img src="/picture/linux_driver/mmc/emmc_read_data.png" alt=""></p>
+<h2 id="emmc-总线协议">3. EMMC 总线协议</h2>
+<h3 id="emmc-总线模型">3.1 EMMC 总线模型</h3>
+<p>eMMC 总线中，可以有一个 Host，多个 eMMC Devices。总线上的所有通讯都由 Host 端以一个 Command 开发发起，Host 一次只能与一个 eMMC Device 通讯。 系统在上电启动后，Host 会为所有 eMMC Device 逐个分配地址（RCA，Relative device Address）。当 Host 需要和某一个 eMMC Device 通讯时，会先根据 RCA 选中该 eMMC Device，只有被选中的 eMMC Device 才会响应 Host 的 Command。</p>
+<h4 id="速率模式">3.1.1 速率模式</h4>
+<p>随着 eMMC 协议的版本迭代，eMMC 总线的速率越来越高。为了兼容旧版本的 eMMC Device，所有 Devices 在上电启动或者 Reset 后，都会先进入兼容速率模式（Backward Compatible Mode）。在完成 eMMC Devices 的初始化后，Host 可以通过特定的流程，让 Device 进入其他高速率模式，目前支持以下的几种速率模式。 <img src="/picture/linux_driver/mmc/emmc_speed.png" /></p>
+<h4 id="通信模型">3.1.2 通信模型</h4>
+<p>Host 与 eMMC Device 之间的通信都是由 Host 以一个 Command 开始发起的，eMMC Device 在完成 Command 所指定的任务后，则返回一个 Response。</p>
+<h5 id="read-data">Read Data</h5>
+<p><img src="/picture/linux_driver/mmc/emmc_read_data.png" /></p>
 <p>Host 从 eMMC Device 读取数据的流程如上图所示。</p>
 <p>如果 Host 发送的是 Single Block Read 的 Command，那么 eMMC Device 只会发送一个 Block 的数据。</p>
 <p>如果 Host 在发送 Multiple Block Read 的 Command 前，先发送一个设定需要读取的 Block Count 的 Command。eMMC Device 在完成指定 Block Count 的数据发送后，就自动结束数据传输，不需要 Host 主动发送 Stop Command。</p>
@@ -397,66 +412,75 @@
 <blockquote>
 <p>从 eMMC Device 读数据都是按 Block 读取的。 Block 大小可以由 Host 设定，或者固定为 512 Bytes，不同的速率模式下有所不同。</p>
 </blockquote>
-<h5 id="Write-Data"><a href="#Write-Data" class="headerlink" title="Write Data"></a>Write Data</h5><p><img src="/picture/linux_driver/mmc/emmc_write_data.png" alt=""></p>
+<h5 id="write-data">Write Data</h5>
+<p><img src="/picture/linux_driver/mmc/emmc_write_data.png" /></p>
 <p>Host 向 eMMC Device 写入数据的流程如上图所示。</p>
 <p>如果 Host 发送的是 Single Block Write Command，那么 eMMC Device 只会将后续第一个 Block 的数据写入的存储器中。</p>
 <p>如果 Host 在发送 Multiple Block Write 的 Command 前，先发送一个设定需要读取的 Block Count 的 Command。eMMC Device 在接收到指定 Block Count 的数据后，就自动结束数据接收，不需要 Host 主动发送 Stop Command。</p>
 <p>如果 Host 没有发送设定需要读取的 Block Count 的 Command，发送 Multiple Block Write 的 Command 后，eMMC Device 会持续接收数据，直到 Host 发送 Stop Command 停止数据传输。</p>
-<p>eMMC Device 在接收到一个 Block 的数据后，会进行 CRC 校验，然后将校验结果通过 CRC Token 发送给 Host。<br>发送完 CRC Token 后，如果 CRC 校验成功，eMMC Device 会将数据写入到内部存储器时，此时 DAT0 信号会拉低，作为 Busy 信号。Host 会持续检测 DAT0 信号，直到为高电平时，才会接着发送下一个 Block 的数据。如果 CRC 校验失败，那么 eMMC Device 不会进行数据写入，此次传输后续的数据都会被忽略。</p>
+<p>eMMC Device 在接收到一个 Block 的数据后，会进行 CRC 校验，然后将校验结果通过 CRC Token 发送给 Host。 发送完 CRC Token 后，如果 CRC 校验成功，eMMC Device 会将数据写入到内部存储器时，此时 DAT0 信号会拉低，作为 Busy 信号。Host 会持续检测 DAT0 信号，直到为高电平时，才会接着发送下一个 Block 的数据。如果 CRC 校验失败，那么 eMMC Device 不会进行数据写入，此次传输后续的数据都会被忽略。</p>
 <blockquote>
 <p>向 eMMC Device 写数据都是按 Block 写入的。 Block 大小可以由 Host 设定，或者固定为 512 Bytes，不同的速率模式下有所不同。</p>
 </blockquote>
-<h5 id="No-Data"><a href="#No-Data" class="headerlink" title="No Data"></a>No Data</h5><p>在 Host 与 eMMC Device 的通信中，有部分交互是不需要进行数据传输的，还有部分交互甚至不需要 eMMC Device 的回复 Response。<br><img src="/picture/linux_driver/mmc/emmc_no_data.png" alt=""></p>
-<h5 id="Command"><a href="#Command" class="headerlink" title="Command"></a>Command</h5><p><img src="/picture/linux_driver/mmc/emmc_command.png" alt=""></p>
-<p>如上图所示，eMMC Command 由 48 Bits 组成，各个 Bits 的解析如下所示：<br><img src="/picture/linux_driver/mmc/emmc_command_item.png" alt=""></p>
+<h5 id="no-data">No Data</h5>
+<p>在 Host 与 eMMC Device 的通信中，有部分交互是不需要进行数据传输的，还有部分交互甚至不需要 eMMC Device 的回复 Response。 <img src="/picture/linux_driver/mmc/emmc_no_data.png" /></p>
+<h5 id="command">Command</h5>
+<p><img src="/picture/linux_driver/mmc/emmc_command.png" /></p>
+<p>如上图所示，eMMC Command 由 48 Bits 组成，各个 Bits 的解析如下所示： <img src="/picture/linux_driver/mmc/emmc_command_item.png" /></p>
 <ul>
-<li>Start Bit 固定为 “0”，在没有数据传输的情况下，CMD 信号保持高电平，当 Host 将 Start Bit 发送到总线上时，eMMC Device 可以很方便检测到该信号，并开始接收 Command。</li>
-<li>Transmission Bit 固定为 “1”，指示了该数据包的传输方向为 Host 发送到 eMMC Device。</li>
+<li>Start Bit 固定为 "0"，在没有数据传输的情况下，CMD 信号保持高电平，当 Host 将 Start Bit 发送到总线上时，eMMC Device 可以很方便检测到该信号，并开始接收 Command。</li>
+<li>Transmission Bit 固定为 "1"，指示了该数据包的传输方向为 Host 发送到 eMMC Device。</li>
 <li>Command Index 和 Argument 为 Command 的具体内容，不同的 Command 有不同的 Index，不同的 Command 也有各自的 Argument。 更多的细节，请参考 eMMC Commands 章节。</li>
 <li>CRC7 是包含 Start Bit、Transmission Bit、 Command Index 和 Argument 内容的 CRC 校验值。</li>
-<li>End Bit 为结束标志位，固定为”1”。</li>
+<li>End Bit 为结束标志位，固定为"1"。</li>
 </ul>
 <blockquote>
 <p>CRC 校验简单来说，是发送方将需要传输的数据“除于”（模2除）一个约定的数，并将得到的余数附在数据上一并发送出去。接收方收到数据后，再做同样的“除法”，然后校验得到余数是否与接收的余数相同。如果不相同，那么意味着数据在传输过程中发生了改变。更多的细节不在本文展开描述，感兴趣的读者可以参考 CRC wiki 中的介绍。</p>
 </blockquote>
-<h5 id="Response"><a href="#Response" class="headerlink" title="Response"></a>Response</h5><p><img src="/picture/linux_driver/mmc/emmc_response.png" alt=""></p>
+<h5 id="response">Response</h5>
+<p><img src="/picture/linux_driver/mmc/emmc_response.png" /></p>
 <p>eMMC Response 有两种长度的数据包，分别为 48 Bits 和 136 Bits。</p>
 <ul>
-<li>Start Bit 与 Command 一样，固定为 “0”，在没有数据传输的情况下，CMD 信号保持高电平，当 eMMC Device 将 Start Bit 发送到总线上时，Host 可以很方便检测到该信号，并开始接收 Response。</li>
-<li>Transmission Bit 固定为 “0”，指示了该数据包的传输方向为 eMMC Device 发送到 Host。</li>
+<li>Start Bit 与 Command 一样，固定为 "0"，在没有数据传输的情况下，CMD 信号保持高电平，当 eMMC Device 将 Start Bit 发送到总线上时，Host 可以很方便检测到该信号，并开始接收 Response。</li>
+<li>Transmission Bit 固定为 "0"，指示了该数据包的传输方向为 eMMC Device 发送到 Host。</li>
 <li>Content 为 Response 的具体内容，不同的 Command 会有不同的 Content。 更多的细节，请参考 eMMC Responses 章节。</li>
 <li>CRC7 是包含 Start Bit、Transmission Bit 和 Content 内容的 CRC 校验值。</li>
-<li>End Bit 为结束标志位，固定为”1”。</li>
+<li>End Bit 为结束标志位，固定为"1"。</li>
 </ul>
-<h5 id="Data-Block"><a href="#Data-Block" class="headerlink" title="Data Block"></a>Data Block</h5><p>Data Block 由 Start Bit、Data、CRC16 和 End Bit 组成。以下是不同总线宽度和 Data Rate 下，Data Block 详细格式。<br><img src="/picture/linux_driver/mmc/emmc_1bit_sdr.png" alt=""></p>
+<h5 id="data-block">Data Block</h5>
+<p>Data Block 由 Start Bit、Data、CRC16 和 End Bit 组成。以下是不同总线宽度和 Data Rate 下，Data Block 详细格式。 <img src="/picture/linux_driver/mmc/emmc_1bit_sdr.png" /></p>
 <p>CRC 为 Data 的 16 bit CRC 校验值，不包含 Start Bit。</p>
-<p><img src="/picture/linux_driver/mmc/emmc_4bit_sdr.png" alt=""></p>
+<p><img src="/picture/linux_driver/mmc/emmc_4bit_sdr.png" /></p>
 <p>各个 Data Line 上的 CRC 为对应 Data Line 的 Data 的 16 bit CRC 校验值。</p>
-<p><img src="/picture/linux_driver/mmc/emmc_8bit_sdr.png" alt=""></p>
+<p><img src="/picture/linux_driver/mmc/emmc_8bit_sdr.png" /></p>
 <p>各个 Data Line 上的 CRC 为对应 Data Line 的 Data 的16 bit CRC 校验值。</p>
-<p><img src="/picture/linux_driver/mmc/emmc_sdr_item.png" alt=""></p>
-<p>在 DDR 模式下，Data Line 在时钟的上升沿和下降沿都会传输数据，其中上升沿传输数据的奇数字节 （Byte 1,3,5 …），下降沿则传输数据的偶数字节（Byte 2,4,6 …）。此外，在 DDR 模式下，1 个 Data Line 上有两个相互交织的 CRC16，上升沿的 CRC 比特组成 odd CRC16，下降沿的 CRC 比特组成 even CRC16。odd CRC16 用于校验该 Data Line 上所有上升沿比特组成的数据，even CRC16 则用于校验该 Data Line 上所有下降沿比特组成的数据。</p>
+<p><img src="/picture/linux_driver/mmc/emmc_sdr_item.png" /></p>
+<p>在 DDR 模式下，Data Line 在时钟的上升沿和下降沿都会传输数据，其中上升沿传输数据的奇数字节 （Byte 1,3,5 ...），下降沿则传输数据的偶数字节（Byte 2,4,6 ...）。此外，在 DDR 模式下，1 个 Data Line 上有两个相互交织的 CRC16，上升沿的 CRC 比特组成 odd CRC16，下降沿的 CRC 比特组成 even CRC16。odd CRC16 用于校验该 Data Line 上所有上升沿比特组成的数据，even CRC16 则用于校验该 Data Line 上所有下降沿比特组成的数据。</p>
 <blockquote>
 <p>DDR 模式下使用两个 CRC16 作为校验，可能是为了更可靠的校验，选用 CRC16 而非 CRC32 则可能是出于兼容性设计的考虑。</p>
 </blockquote>
-<h5 id="CRC-Status-Token"><a href="#CRC-Status-Token" class="headerlink" title="CRC Status Token"></a>CRC Status Token</h5><p>在写数据传输中，eMMC Device 接收到 Host 发送的一个 Data Block 后，会进行 CRC 校验，如果校验成功，eMMC 会在对应的 Data Line 上向 Host 发回一个 Positive CRC status token (010)，如果校验失败，则会在对应的 Data Line 上发送一个 Negative CRC status token (101)。</p>
+<h5 id="crc-status-token">CRC Status Token</h5>
+<p>在写数据传输中，eMMC Device 接收到 Host 发送的一个 Data Block 后，会进行 CRC 校验，如果校验成功，eMMC 会在对应的 Data Line 上向 Host 发回一个 Positive CRC status token (010)，如果校验失败，则会在对应的 Data Line 上发送一个 Negative CRC status token (101)。</p>
 <blockquote>
 <p>读数据时，Host 接收到 eMMC Device 发送的 Data Block 后，也会进行 CRC 校验，但是不管校验成功或者失败，都不会向 eMMC Device 发送 CRC Status Token。</p>
 </blockquote>
-<p>详细格式如下图所示：<br><img src="/picture/linux_driver/mmc/emmc_crc_token.png" alt=""></p>
-<h3 id="3-2-eMMC-总线测试过程"><a href="#3-2-eMMC-总线测试过程" class="headerlink" title="3.2 eMMC 总线测试过程"></a>3.2 eMMC 总线测试过程</h3><p>当 eMMC Device 处于 SDR 模式时，Host 可以发送 CMD19 命令，触发总线测试过程（Bus testing procedure），测试总线硬件上的连通性。如果 eMMC Device 支持总线测试，那么 eMMC Device 在接收到 CMD19 后，会发回对应的 Response，接着 eMMC Device 会发送一组固定的测试数据给 Host。Host 接收到数据后，检查数据正确与否，即可得知总线是否正确连通。</p>
+<p>详细格式如下图所示： <img src="/picture/linux_driver/mmc/emmc_crc_token.png" /></p>
+<h3 id="emmc-总线测试过程">3.2 eMMC 总线测试过程</h3>
+<p>当 eMMC Device 处于 SDR 模式时，Host 可以发送 CMD19 命令，触发总线测试过程（Bus testing procedure），测试总线硬件上的连通性。如果 eMMC Device 支持总线测试，那么 eMMC Device 在接收到 CMD19 后，会发回对应的 Response，接着 eMMC Device 会发送一组固定的测试数据给 Host。Host 接收到数据后，检查数据正确与否，即可得知总线是否正确连通。</p>
 <blockquote>
 <p>NOTE: 如果 eMMC Device 不支持总线测试，那么接收到 CMD19 时，不会发回 Response。总线测试不支持在 DDR 模式下进行。</p>
 </blockquote>
-<p>测试数据如下所示：<br><img src="/picture/linux_driver/mmc/emmc_test.png" alt=""></p>
+<p>测试数据如下所示： <img src="/picture/linux_driver/mmc/emmc_test.png" /></p>
 <blockquote>
 <p>NOTE: 总线宽度为 1 时，只发送 DAT0 上的数据，总线宽度为 4 时，则只发送 DAT0-3 上的数据</p>
 </blockquote>
-<h3 id="3-3-eMMC-总线-Sampling-Tuning"><a href="#3-3-eMMC-总线-Sampling-Tuning" class="headerlink" title="3.3 eMMC 总线 Sampling Tuning"></a>3.3 eMMC 总线 Sampling Tuning</h3><p>由于芯片制造工艺、PCB 走线、电压、温度等因素的影响，数据信号从 eMMC Device 到达 Host 端的时间是存在差异的，Host 接收数据时采样的时间点也需要相应的进行调整。而 Host 端最佳采样时间点，则是通过 Sampling Tuning 流程得到。</p>
+<h3 id="emmc-总线-sampling-tuning">3.3 eMMC 总线 Sampling Tuning</h3>
+<p>由于芯片制造工艺、PCB 走线、电压、温度等因素的影响，数据信号从 eMMC Device 到达 Host 端的时间是存在差异的，Host 接收数据时采样的时间点也需要相应的进行调整。而 Host 端最佳采样时间点，则是通过 Sampling Tuning 流程得到。</p>
 <blockquote>
 <p>NOTE: 不同 eMMC Device 最佳的采样点可能不同，同一 eMMC Device 在不同的环境下运作时的最佳采样点也可能不同。在 eMMC 标准中，定义了在 HS200 模式下可以进行 Sampling Tuning。</p>
 </blockquote>
-<h4 id="3-3-1-Sampling-Tuning-流程"><a href="#3-3-1-Sampling-Tuning-流程" class="headerlink" title="3.3.1 Sampling Tuning 流程"></a>3.3.1 Sampling Tuning 流程</h4><p>Sampling Tuning 是用于计算 Host 最佳采样时间点的流程，大致的流程如下：</p>
+<h4 id="sampling-tuning-流程">3.3.1 Sampling Tuning 流程</h4>
+<p>Sampling Tuning 是用于计算 Host 最佳采样时间点的流程，大致的流程如下：</p>
 <ul>
 <li>Host 将采样时间点重置为默认值</li>
 <li>Host 向 eMMC Device 发送 Send Tuning Block 命令</li>
@@ -468,12 +492,16 @@
 <blockquote>
 <p>上述流程仅仅是一个示例。Tuning 流程执行的时机、频率和具体的步骤是由 Host 端的 eMMC Controller 具体实现而定的。</p>
 </blockquote>
-<h4 id="3-3-2-Tuning-Block-数据"><a href="#3-3-2-Tuning-Block-数据" class="headerlink" title="3.3.2 Tuning Block 数据"></a>3.3.2 Tuning Block 数据</h4><p>Tuning Block 是专门为了 Tuning 而设计的一组特殊数据。相对于普通的数据，这组特殊数据在传输过程中，会更高概率的出现 high SSO noise、deterministic jitter、ISI、timing errors 等问题。这组数据的具体内容如下所示：<br><img src="/picture/linux_driver/mmc/emmc_tuning1.png" alt=""><br><img src="/picture/linux_driver/mmc/emmc_tuning2.png" alt=""></p>
-<h2 id="4-eMMC工作模式"><a href="#4-eMMC工作模式" class="headerlink" title="4. eMMC工作模式"></a>4. eMMC工作模式</h2><p>eMMC Device 在 Power On、HW Reset 或者 SW Reset 时，Host 可以触发 eMMC Boot，让 eMMC 进入 Boot Mode。在此模式下，eMMC Device 会将 Boot Data 发送给 Host，这部分内容通常为系统的启动代码，如 BootLoader。</p>
+<h4 id="tuning-block-数据">3.3.2 Tuning Block 数据</h4>
+<p>Tuning Block 是专门为了 Tuning 而设计的一组特殊数据。相对于普通的数据，这组特殊数据在传输过程中，会更高概率的出现 high SSO noise、deterministic jitter、ISI、timing errors 等问题。这组数据的具体内容如下所示： <img src="/picture/linux_driver/mmc/emmc_tuning1.png" /> <img src="/picture/linux_driver/mmc/emmc_tuning2.png" /></p>
+<h2 id="emmc工作模式">4. eMMC工作模式</h2>
+<p>eMMC Device 在 Power On、HW Reset 或者 SW Reset 时，Host 可以触发 eMMC Boot，让 eMMC 进入 Boot Mode。在此模式下，eMMC Device 会将 Boot Data 发送给 Host，这部分内容通常为系统的启动代码，如 BootLoader。</p>
 <p>如果 Host 没有触发 Boot 流程或者 Boot 流程完成后，eMMC Device 会进入 Device Identification Mode。在此模式下，eMMC Device 将进行初始化，Host 会为 eMMC Device 设定工作电压、协商寻址模式以及分配 RCA 设备地址。</p>
 <p>Device Identification Mode 结束后，就会进入 Data Transfer Mode。在此模式下，Host 可以发起数据读写流程。</p>
 <p>进入 Data Transfer Mode 后，Host 可以发起命令，让 eMMC Device 进入 Interrupt Mode。在此模式下，eMMC Device 会等待内部的中断事件，例如，写数据完成等。eMMC Device 在收到内部中断事件时，会向 Host 发送 Response，然后切换到 Data Transfer Mode，等待 Host 后续的数据读写命令。</p>
-<h3 id="4-1-Boot-Operation-Mode"><a href="#4-1-Boot-Operation-Mode" class="headerlink" title="4.1 Boot Operation Mode"></a>4.1 Boot Operation Mode</h3><h4 id="4-1-1-Boot-From-eMMC-Device"><a href="#4-1-1-Boot-From-eMMC-Device" class="headerlink" title="4.1.1 Boot From eMMC Device"></a>4.1.1 Boot From eMMC Device</h4><p>在 Power On、HW Reset 或者 SW Reset 后，如果 eMMC Device 有使能 Boot Mode（即，寄存器位 BOOT_PARTITION_ENABLE (EXT_CSD byte [179]) 指定了启动分区），那么 Host 有两种方式可以让 eMMC Device 进入 Boot Mode，分别定义为 Original Boot 和 Alternative Boot，如下：</p>
+<h3 id="boot-operation-mode">4.1 Boot Operation Mode</h3>
+<h4 id="boot-from-emmc-device">4.1.1 Boot From eMMC Device</h4>
+<p>在 Power On、HW Reset 或者 SW Reset 后，如果 eMMC Device 有使能 Boot Mode（即，寄存器位 BOOT_PARTITION_ENABLE (EXT_CSD byte [179]) 指定了启动分区），那么 Host 有两种方式可以让 eMMC Device 进入 Boot Mode，分别定义为 Original Boot 和 Alternative Boot，如下：</p>
 <ul>
 <li>Original Boot：拉低 CMD 信号并保持不少于 74 个时钟周期</li>
 <li>Alternative Boot：保持 CMD 信号为高电平，74 个时钟周期后，发送参数为 0xFFFFFFFA 的 CMD0 命令</li>
@@ -487,16 +515,20 @@
 <blockquote>
 <p>Host 发送参数为 0xF0F0F0F0 的 CMD0 命令，可以让 eMMC Device 进行 SW Reset Host 拉高 RST_n 信号可以触发 eMMC Device 进行 HW Reset</p>
 </blockquote>
-<h4 id="4-1-2-Boot-Acknowledge"><a href="#4-1-2-Boot-Acknowledge" class="headerlink" title="4.1.2 Boot Acknowledge"></a>4.1.2 Boot Acknowledge</h4><p>如果寄存器位 BOOT_ACK (EXT_CSD byte [179]) 被设定为 1， eMMC Device 会在 Host 触发 Boot Mode 的 50 ms 内，在 DAT0 上发送一个 “010” Boot ACK 给 Host。</p>
-<h4 id="4-1-3-Boot-Bus-配置"><a href="#4-1-3-Boot-Bus-配置" class="headerlink" title="4.1.3 Boot Bus 配置"></a>4.1.3 Boot Bus 配置</h4><p>EXT_CSD byte [177] BOOT_BUS_CONDITIONS 寄存器用于配置在 Boot Mode 时，数据传输的总线状态。</p>
-<p>通过 BOOT_BUS_CONDITIONS 寄存器配置，在 Boot Mode 时，总线可以支持以下几种模式：<br><img src="/picture/linux_driver/mmc/emmc_boot_mode.png" alt=""></p>
+<h4 id="boot-acknowledge">4.1.2 Boot Acknowledge</h4>
+<p>如果寄存器位 BOOT_ACK (EXT_CSD byte [179]) 被设定为 1， eMMC Device 会在 Host 触发 Boot Mode 的 50 ms 内，在 DAT0 上发送一个 "010" Boot ACK 给 Host。</p>
+<h4 id="boot-bus-配置">4.1.3 Boot Bus 配置</h4>
+<p>EXT_CSD byte [177] BOOT_BUS_CONDITIONS 寄存器用于配置在 Boot Mode 时，数据传输的总线状态。</p>
+<p>通过 BOOT_BUS_CONDITIONS 寄存器配置，在 Boot Mode 时，总线可以支持以下几种模式： <img src="/picture/linux_driver/mmc/emmc_boot_mode.png" /></p>
 <p>BOOT_BUS_CONDITIONS 寄存器还可以配置退出 Boot Mode 后，是复位还是保留当前总线配置。如果配置为复位，那么退出 Boot Mode 后，总线会被复位为 Backward Compatible SDR x1 模式，如果配置为保留，那么退出 Boot Mode 后，总线会保留 Boot Mode 时的总线模式。</p>
 <blockquote>
 <p>BOOT_BUS_CONDITIONS 寄存器为 nonvolatile 属性，配置内容掉电不会丢失。如果 eMMC Device 没有经过 Boot Mode，BOOT_BUS_CONDITIONS 寄存器不会改变总线模式。退出 Boot Mode 后，还可以通过 HS_TIMING 和 BUS_WIDTH 寄存器配置总线模式。</p>
 </blockquote>
-<h4 id="4-1-4-Boot-Data-更新"><a href="#4-1-4-Boot-Data-更新" class="headerlink" title="4.1.4 Boot Data 更新"></a>4.1.4 Boot Data 更新</h4><p>eMMC Device 在从厂商出货时，没有存储内容，也没有使能 Boot Mode。使用 eMMC Devcie 产品需要先通过其他的方式（例如，通过 USB、UART 等）启动一个下载系统，将 Boot Data 以及其他的系统数据写入到 eMMC 中，同时使能 Boot Mode 并设定 Boot Bus 模式。而后，产品才能从 eMMC Device 上启动软件系统。</p>
+<h4 id="boot-data-更新">4.1.4 Boot Data 更新</h4>
+<p>eMMC Device 在从厂商出货时，没有存储内容，也没有使能 Boot Mode。使用 eMMC Devcie 产品需要先通过其他的方式（例如，通过 USB、UART 等）启动一个下载系统，将 Boot Data 以及其他的系统数据写入到 eMMC 中，同时使能 Boot Mode 并设定 Boot Bus 模式。而后，产品才能从 eMMC Device 上启动软件系统。</p>
 <p>Boot Data 的更新与其他数据的写入类似，更多的数据写入细节，请参考 Data Transfer Mode 小节。</p>
-<h3 id="4-2-Device-Identification-Mode"><a href="#4-2-Device-Identification-Mode" class="headerlink" title="4.2 Device Identification Mode"></a>4.2 Device Identification Mode</h3><p>如果 Host 没有触发 Boot 流程或者 Boot 流程完成后，eMMC Device 会进入 Device Identification Mode。</p>
+<h3 id="device-identification-mode">4.2 Device Identification Mode</h3>
+<p>如果 Host 没有触发 Boot 流程或者 Boot 流程完成后，eMMC Device 会进入 Device Identification Mode。</p>
 <p>eMMC Device 在退出 Boot Mode 后或者没使能 Boot Mode 时 Power On、HW Reset 或者 SW Reset 后，会进入 Device Identification Mode 的 Idle State。</p>
 <p>在 Idle State 下，eMMC Device 会进行内部初始化，Host 需要持续发送 CMD1命令，查询 eMMC Device 是否已经完成初始化，同时进行工作电压和寻址模式协商。</p>
 <p>Host 发送的 CMD1 命令的参数中，包含了 Host 所支持的工作电压和寻址模式信息，eMMC Device 在接收到这些信息后，会进行匹配。如果 eMMC Devcie 和 Host 所支持的工作电压和寻址模式不匹配，那么 eMMC Device 会进入 Inactive State。</p>
@@ -510,25 +542,28 @@
 <p>本节只描述了单个 eMMC Device 的 Devcie Identification 过程，多个 eMMC 的 Device Identification 过程与此类似，更多的细节可以参考 eMMC Spec。</p>
 </blockquote>
 <ul>
-<li><p>Voltage Range<br>  eMMC Device 支持 3.3v 和 1.8v 两种工作电压模式。在 1.8v 模式下，eMMC Device 会更加的省电。</p>
-</li>
-<li><p>Memory Access Mode<br>  Memory Access Mode 决定了 eMMC Device 在响应 Host 的数据读写请求时，是如何访问内部存储器的。在 eMMC 标准中存在两种 Memory Access Mode：Byte Access Mode 和 Sector Access Mode。</p>
-<p>  在数据读写的 Command 中，Host 会将读写的地址 A 作为 Command 的参数发送给 eMMC Device，在 Byte Access Mode 下，eMMC Device 将从第 A 个 Byte 开始进行读写操作，而在 Sector Access Mode 下，eMMC Device 将会从第 A 个 Sector 开始进行读写操作，一个 Sector 的大小为 512 Bytes 或者 4 KBytes，更大的 Sector 支持更大容量的存储器访问。</p>
-<p>  使用 Byte Access Mode 更加的灵活高效，但是由于寻址位数的限制，不能访问超过 2GB 的存储内容。Sector Access Mode 则支持大容量存储的访问，其中 512 Bytes Sector 可以支持最大 256 GB 容量的存储访问，更大容量的需求则可以使用 4 KBytes Sector。</p>
-</li>
-<li><p>RCA - Relative device Address<br>  RCA 是在 Devcie Identification 过程中，由 Host 分配的 16 Bits 的设备地址，主要用于 Data Transfer Mode 下进行通信时，选定具体要进行操作的 eMMC Devcie。</p>
-<p>  Host 分配的 RCA 通常从 1 开始递增，0 地址作为广播地址。eMMC Devcie 的 RCA register 保存了 Host 分配的 RCA。</p>
-<p>  TODO：确认掉电重启后，RCA register 的值是否丢失。</p>
-</li>
+<li><p>Voltage Range<br />
+eMMC Device 支持 3.3v 和 1.8v 两种工作电压模式。在 1.8v 模式下，eMMC Device 会更加的省电。</p></li>
+<li><p>Memory Access Mode<br />
+Memory Access Mode 决定了 eMMC Device 在响应 Host 的数据读写请求时，是如何访问内部存储器的。在 eMMC 标准中存在两种 Memory Access Mode：Byte Access Mode 和 Sector Access Mode。</p>
+<p>在数据读写的 Command 中，Host 会将读写的地址 A 作为 Command 的参数发送给 eMMC Device，在 Byte Access Mode 下，eMMC Device 将从第 A 个 Byte 开始进行读写操作，而在 Sector Access Mode 下，eMMC Device 将会从第 A 个 Sector 开始进行读写操作，一个 Sector 的大小为 512 Bytes 或者 4 KBytes，更大的 Sector 支持更大容量的存储器访问。</p>
+<p>使用 Byte Access Mode 更加的灵活高效，但是由于寻址位数的限制，不能访问超过 2GB 的存储内容。Sector Access Mode 则支持大容量存储的访问，其中 512 Bytes Sector 可以支持最大 256 GB 容量的存储访问，更大容量的需求则可以使用 4 KBytes Sector。</p></li>
+<li><p>RCA - Relative device Address<br />
+RCA 是在 Devcie Identification 过程中，由 Host 分配的 16 Bits 的设备地址，主要用于 Data Transfer Mode 下进行通信时，选定具体要进行操作的 eMMC Devcie。</p>
+<p>Host 分配的 RCA 通常从 1 开始递增，0 地址作为广播地址。eMMC Devcie 的 RCA register 保存了 Host 分配的 RCA。</p>
+<p>TODO：确认掉电重启后，RCA register 的值是否丢失。</p></li>
 </ul>
-<h3 id="4-3-Data-Transfer-Mode"><a href="#4-3-Data-Transfer-Mode" class="headerlink" title="4.3 Data Transfer Mode"></a>4.3 Data Transfer Mode</h3><p>eMMC Device 完成 Device Identification 后，就会进入到 Data Transfer Mode 的 Standby State。</p>
+<h3 id="data-transfer-mode">4.3 Data Transfer Mode</h3>
+<p>eMMC Device 完成 Device Identification 后，就会进入到 Data Transfer Mode 的 Standby State。</p>
 <p>在 Standby State 时，Host 可以通过发送 CMD5 命令，让 eMMC Devcie 进入 低功耗的 Sleep State，而后再发送 CMD5 命令则可以让 eMMC Device 退出 Sleep State。</p>
 <p>在 Standby State 时，Host 可以通过发送 CMD7 命令，让 eMMC Devcie 进入 Transfer State，而后再发送 CMD7 命令则可以让 eMMC Device 退出 Transfer State。</p>
-<h4 id="4-3-1-Read-Data"><a href="#4-3-1-Read-Data" class="headerlink" title="4.3.1 Read Data"></a>4.3.1 Read Data</h4><p>在 Transfer State 时，Host 可以发送以下的命令，触发数据读取流程：<br><img src="/picture/linux_driver/mmc/read_data.png" alt=""></p>
+<h4 id="read-data-1">4.3.1 Read Data</h4>
+<p>在 Transfer State 时，Host 可以发送以下的命令，触发数据读取流程： <img src="/picture/linux_driver/mmc/read_data.png" /></p>
 <p>eMMC Device 在接收到上述几个 CMD 时，就会进入 Sending-data State。在此 State 下，eMMC Device 会持续将数据发送给 Host，直到指定数量的数据 Block 传输完成或者接收到 Host 发送的 CMD12 传输停止命令。eMMC Device 在停止发送数据后，会返回到 Transfer State。</p>
 <p>如果 Host 在发送 CMD18 前，先发送一个设定需要读取的 Block Count 的 CMD23。eMMC Device 在完成指定 Block Count 的数据发送后，就自动结束数据传输，不需要 Host 主动发送停止命令 CMD12。</p>
 <p>如果 Host 没有发送设定需要读取的 Block Count 的 Command，发送 Multiple Block Read 的 Command 后，eMMC Device 会持续发送数据，直到 Host 发送 Stop Command 停止数据传输。</p>
-<h4 id="4-3-2-Write-Data"><a href="#4-3-2-Write-Data" class="headerlink" title="4.3.2 Write Data"></a>4.3.2 Write Data</h4><p>在 Transfer State 时，Host 可以发送以下的命令，触发数据写入流程：<br><img src="/picture/linux_driver/mmc/write_data.png" alt=""></p>
+<h4 id="write-data-1">4.3.2 Write Data</h4>
+<p>在 Transfer State 时，Host 可以发送以下的命令，触发数据写入流程： <img src="/picture/linux_driver/mmc/write_data.png" /></p>
 <blockquote>
 <p>CID 寄存器值通常是只能写一次，由厂家在生产时确定并写入 CSD 寄存器值的部分位则可以多次改写。</p>
 </blockquote>
@@ -539,112 +574,128 @@
 <p>当 eMMC Device 完成数据接收后，就会进入到 Programming State，将内部 Buffer 中剩余未写入的数据写入到 Flash 中。 在该 State 下，eMMC Device 会持续将 DAT0 拉低，作为 Busy 信号。如果在完成写入前，有收到新的写入命令，那么 eMMC Device 会立刻退回到 Receive-data State，进行数据接收；如果在完成写入前，没有收到新的写入命令，则会在完成写入后，退回到 Transfer State。</p>
 <p>如果 eMMC Devcie 在 Programming State 时，还没有完成写入操作，就收到参数不等于自身 RCA 的 CMD7 命令，那么 eMMC Device 会进入到 Disconnect State。在该 State 下，eMMC Device 会继续进行写入操作，写入完成后则进入到 Stand-by State。</p>
 <p>如果 eMMC Device 在 Disconnect State 时，还没有完成写入操作，就收到参数等于自身 RCA 的 CMD7 命令，那么 eMMC Devcie 会从新回到 Programming State。</p>
-<h4 id="4-3-3-Packed-Commands-Packed-Write-and-Packed-Read"><a href="#4-3-3-Packed-Commands-Packed-Write-and-Packed-Read" class="headerlink" title="4.3.3 Packed Commands - Packed Write and Packed Read"></a>4.3.3 Packed Commands - Packed Write and Packed Read</h4><p>在实际应用场景中，通常会对 eMMC Device 有很多随机数据读取和写入操作，这些随机读写的目标地址往往都不是连续的，每一个随机读写都需要通过一个独立的读写流程来实现。</p>
+<h4 id="packed-commands---packed-write-and-packed-read">4.3.3 Packed Commands - Packed Write and Packed Read</h4>
+<p>在实际应用场景中，通常会对 eMMC Device 有很多随机数据读取和写入操作，这些随机读写的目标地址往往都不是连续的，每一个随机读写都需要通过一个独立的读写流程来实现。</p>
 <p>在 eMMC 4.5 及以后的标准中，引入了 Packed Commands 机制，将多个地址不连续的数据写入请求封装到一个 Multiple Block Write 流程中，同时将多个地址不连续的数据读取请求封装的一个 Multiple Block Read 流程中，以此减少读写请求数量，提高数据读写的效率。</p>
 <ul>
-<li><p>Packed Write<br>  发起 Packed Write 流程时，首先 Host 端会需要发送 packed flag 置 1 的 CMD23 SET_BLOCK_COUNT 命令。其中，CMD23 中的 Block Count 参数为 Packed Command Header 和实际写入的数据所占 Block 的总数。<br>  然后 Host 再发送 CMD25 命令给 eMMC Device，开始进行多个 Block 的数据写入。其中第 1 个（或者前 8 个） Block 数据为 Packed Command Header，它包含了各个写请求写入数据的起始地址和长度等信息。<br>  eMMC Devcie 在接收到数据后，会根据 Packed Command Header 的信息，将数据写入到指定的位置。</p>
-</li>
-<li><p>Packed Read<br>  发起 Packed Read 流程时，首先 Host 端会需要发送 packed flag 置 1 的 CMD23 SET_BLOCK_COUNT 命令。其中，CMD23 中的 Block Count 参数为 Packed Command Header 所占 Block 的数量。<br>  然后 Host 再发送 CMD25 命令给 eMMC Device，开始进行 1 个（或者 8 个） Block 的 Packed Command Header 数据发送。Packed Command Header 包含了各个读请求读取数据的起始地址和长度等信息。<br>  发送完 Packed Command Header 后，Host 会再发送一个 packed flag 置 1 的 CMD23 SET_BLOCK_COUNT 命令。其中，CMD23 中的 Block Count 参数为待读取数据的 Block 的数量。<br>  紧接着，Host 再发送 CMD18 命令，开始进行多个 Block 的数据读取。eMMC Devcie 会解析接收到的 Packed Command Header，然后将指定的数据发送给 Host 端。</p>
-</li>
-<li><p>Packed Command Header<br>  Packed Command Header 的格式如上图所示，其中 CMD23_ARG_x 指示了各个请求数据读取或者写入的 Block 数，CMDxx_ARG_x （CMD18 或者 CMD25）则指示了各个请求数据读取或者写入的起始位置。</p>
-<p>  当 DATA_SECTOR_SIZE[61] = 0x00 时，即 Data Sector Size 为 512 Bytes 时，Packed Command Header 占 1 个 Block 大小，当 DATA_SECTOR_SIZE[61] = 0x01 时，即 Data Sector Size 为 4 KBytes 时，Packed Command Header 占 8 个 Block 大小。</p>
-</li>
-<li><p>数据擦除<br>  eMMC 标准提供了几种主动擦除数据的方法，以满足不同的场景需求。<br><img src="/picture/linux_driver/mmc/emmc_erase.png" alt=""></p>
-</li>
+<li><p>Packed Write<br />
+发起 Packed Write 流程时，首先 Host 端会需要发送 packed flag 置 1 的 CMD23 SET_BLOCK_COUNT 命令。其中，CMD23 中的 Block Count 参数为 Packed Command Header 和实际写入的数据所占 Block 的总数。 然后 Host 再发送 CMD25 命令给 eMMC Device，开始进行多个 Block 的数据写入。其中第 1 个（或者前 8 个） Block 数据为 Packed Command Header，它包含了各个写请求写入数据的起始地址和长度等信息。 eMMC Devcie 在接收到数据后，会根据 Packed Command Header 的信息，将数据写入到指定的位置。</p></li>
+<li><p>Packed Read<br />
+发起 Packed Read 流程时，首先 Host 端会需要发送 packed flag 置 1 的 CMD23 SET_BLOCK_COUNT 命令。其中，CMD23 中的 Block Count 参数为 Packed Command Header 所占 Block 的数量。 然后 Host 再发送 CMD25 命令给 eMMC Device，开始进行 1 个（或者 8 个） Block 的 Packed Command Header 数据发送。Packed Command Header 包含了各个读请求读取数据的起始地址和长度等信息。 发送完 Packed Command Header 后，Host 会再发送一个 packed flag 置 1 的 CMD23 SET_BLOCK_COUNT 命令。其中，CMD23 中的 Block Count 参数为待读取数据的 Block 的数量。 紧接着，Host 再发送 CMD18 命令，开始进行多个 Block 的数据读取。eMMC Devcie 会解析接收到的 Packed Command Header，然后将指定的数据发送给 Host 端。</p></li>
+<li><p>Packed Command Header<br />
+Packed Command Header 的格式如上图所示，其中 CMD23_ARG_x 指示了各个请求数据读取或者写入的 Block 数，CMDxx_ARG_x （CMD18 或者 CMD25）则指示了各个请求数据读取或者写入的起始位置。</p>
+<p>当 DATA_SECTOR_SIZE[61] = 0x00 时，即 Data Sector Size 为 512 Bytes 时，Packed Command Header 占 1 个 Block 大小，当 DATA_SECTOR_SIZE[61] = 0x01 时，即 Data Sector Size 为 4 KBytes 时，Packed Command Header 占 8 个 Block 大小。</p></li>
+<li><p>数据擦除<br />
+eMMC 标准提供了几种主动擦除数据的方法，以满足不同的场景需求。 <img src="/picture/linux_driver/mmc/emmc_erase.png" /></p></li>
 </ul>
-<p>Erase 操作以 Erase Group 为单位进行一个或者多个 Group 的数据擦除，一个 Erase Group 由一个或者多个 Write Block 组成。<br>eMMC Device 在执行 Erase 操作时，通常并不会进行实际物理数据的擦除，只是将待擦除的 Erase Group 中的 Block 从地址空间中 unmap，然后从后台的空闲 Block 中选择已经完成物理擦除的 Block，重新 map 到该地址空间中，然后告知 Host 端已完成 Erase 操作。实际物理擦除操作则在后台选择合适的时机进行。<br>这样的逻辑可以减少 Host 执行 Erase 操作的等待时间，提高 eMMC Devcie 的响应速度。</p>
+<p>Erase 操作以 Erase Group 为单位进行一个或者多个 Group 的数据擦除，一个 Erase Group 由一个或者多个 Write Block 组成。 eMMC Device 在执行 Erase 操作时，通常并不会进行实际物理数据的擦除，只是将待擦除的 Erase Group 中的 Block 从地址空间中 unmap，然后从后台的空闲 Block 中选择已经完成物理擦除的 Block，重新 map 到该地址空间中，然后告知 Host 端已完成 Erase 操作。实际物理擦除操作则在后台选择合适的时机进行。 这样的逻辑可以减少 Host 执行 Erase 操作的等待时间，提高 eMMC Devcie 的响应速度。</p>
 <p>发起 Erase 流程时，首先 Host 会发送参数为待擦除 Erase Group 起始地址的 CMD23 SET_BLOCK_COUNT 命令</p>
-<h2 id="5-eMMC-分区管理"><a href="#5-eMMC-分区管理" class="headerlink" title="5. eMMC 分区管理"></a>5. eMMC 分区管理</h2><p>eMMC 标准中，将内部的 Flash Memory 划分为 4 类区域，最多可以支持 8 个硬件分区，如下图所示：<br><img src="/picture/linux_driver/mmc/emmc_interface.png" alt=""></p>
+<h2 id="emmc-分区管理">5. eMMC 分区管理</h2>
+<p>eMMC 标准中，将内部的 Flash Memory 划分为 4 类区域，最多可以支持 8 个硬件分区，如下图所示： <img src="/picture/linux_driver/mmc/emmc_interface.png" /></p>
 <p>一般情况下，Boot Area Partitions 和 RPMB Partition 的容量大小通常都为 4MB，部分芯片厂家也会提供配置的机会。General Purpose Partitions (GPP) 则在出厂时默认不被支持，即不存在这些分区，需要用户主动使能，并配置其所要使用的 GPP 的容量大小，GPP 的数量可以为 1 - 4 个，各个 GPP 的容量大小可以不一样。User Data Area (UDA) 的容量大小则为总容量大小减去其他分区所占用的容量。更多各个分区的细节将在后续小节中描述。</p>
 <p>eMMC 的每一个硬件分区的存储空间都是独立编址的，即访问地址为 0 - partition size。具体的数据读写操作实际访问哪一个硬件分区，是由 eMMC 的 Extended CSD register 的 PARTITION_CONFIG Field 中 的 Bit[2:0]: PARTITION_ACCESS 决定的，用户可以通过配置 PARTITION_ACCESS 来切换硬件分区的访问。也就是说，用户在访问特定的分区前，需要先发送命令，配置 PARTITION_ACCESS，然后再发送相关的数据访问请求。更多数据读写相关的细节，请参考 eMMC 总线协议 章节。</p>
-<h3 id="5-1-Boot-Area-Partitions"><a href="#5-1-Boot-Area-Partitions" class="headerlink" title="5.1 Boot Area Partitions"></a>5.1 Boot Area Partitions</h3><p>Boot Area 包含两个 Boot Area Partitions，主要用于存储 Bootloader，支持 SOC 从 eMMC 启动系统。</p>
-<h4 id="5-1-1-容量大小"><a href="#5-1-1-容量大小" class="headerlink" title="5.1.1 容量大小"></a>5.1.1 容量大小</h4><p>两个 Boot Area Partitions 的大小是完全一致的，由 Extended CSD register 的 BOOT_SIZE_MULT Field 决定，大小的计算公式如下：</p>
+<h3 id="boot-area-partitions">5.1 Boot Area Partitions</h3>
+<p>Boot Area 包含两个 Boot Area Partitions，主要用于存储 Bootloader，支持 SOC 从 eMMC 启动系统。</p>
+<h4 id="容量大小">5.1.1 容量大小</h4>
+<p>两个 Boot Area Partitions 的大小是完全一致的，由 Extended CSD register 的 BOOT_SIZE_MULT Field 决定，大小的计算公式如下：</p>
 <p>Size = 128Kbytes x BOOT_SIZE_MULT</p>
 <p>一般情况下，Boot Area Partition 的大小都为 4 MB，即 BOOT_SIZE_MULT 为 32，部分芯片厂家会提供改写 BOOT_SIZE_MULT 的功能来改变 Boot Area Partition 的容量大小。BOOT_SIZE_MULT 最大可以为 255，即 Boot Area Partition 的最大容量大小可以为 255 x 128 KB = 32640 KB = 31.875 MB。</p>
-<h4 id="5-1-2-从-Boot-Area-启动"><a href="#5-1-2-从-Boot-Area-启动" class="headerlink" title="5.1.2 从 Boot Area 启动"></a>5.1.2 从 Boot Area 启动</h4><p>eMMC 中定义了 Boot State，在 Power-up、HW reset 或者 SW reset 后，如果满足一定的条件，eMMC 就会进入该 State。进入 Boot State 的条件如下：</p>
+<h4 id="从-boot-area-启动">5.1.2 从 Boot Area 启动</h4>
+<p>eMMC 中定义了 Boot State，在 Power-up、HW reset 或者 SW reset 后，如果满足一定的条件，eMMC 就会进入该 State。进入 Boot State 的条件如下：</p>
 <ul>
-<li><p>Original Boot Operation<br>  CMD 信号保持低电平不少于 74 个时钟周期，会触发 Original Boot Operation，进入 Boot State。</p>
-<p>  <img src="/picture/linux_driver/mmc/emmc_obo1.png" alt=""></p>
-</li>
-<li><p>Alternative Boot Operation<br>  在 74 个时钟周期后，在 CMD 信号首次拉低或者 Host 发送 CMD1 之前，Host 发送参数为 0xFFFFFFFA 的 COM0时，会触发 Alternative Boot Operation，进入 Boot State。</p>
-<p>  <img src="/picture/linux_driver/mmc/emmc_obo2.png" alt=""></p>
-<p>  在 Boot State 下，如果有配置 BOOT_ACK，eMMC 会先发送 “010” 的 ACK 包，接着 eMMC 会将最大为 128Kbytes x BOOT_SIZE_MULT 的 Boot Data 发送给 Host。传输过程中，Host 可以通过拉高 CMD 信号 (Original Boot 中)，或者发送 Reset 命令 (Alternative Boot 中) 来中断 eMMC 的数据发送，完成 Boot Data 传输。</p>
-<p>  Boot Data 根据 Extended CSD register 的 PARTITION_CONFIG Field 的 Bit[5:3]:BOOT_PARTITION_ENABLE 的设定，可以从 Boot Area Partition 1、Boot Area Partition 2 或者 User Data Area 读出。</p>
-</li>
+<li><p>Original Boot Operation<br />
+CMD 信号保持低电平不少于 74 个时钟周期，会触发 Original Boot Operation，进入 Boot State。</p>
+<p><img src="/picture/linux_driver/mmc/emmc_obo1.png" /></p></li>
+<li><p>Alternative Boot Operation<br />
+在 74 个时钟周期后，在 CMD 信号首次拉低或者 Host 发送 CMD1 之前，Host 发送参数为 0xFFFFFFFA 的 COM0时，会触发 Alternative Boot Operation，进入 Boot State。</p>
+<p><img src="/picture/linux_driver/mmc/emmc_obo2.png" /></p>
+<p>在 Boot State 下，如果有配置 BOOT_ACK，eMMC 会先发送 “010” 的 ACK 包，接着 eMMC 会将最大为 128Kbytes x BOOT_SIZE_MULT 的 Boot Data 发送给 Host。传输过程中，Host 可以通过拉高 CMD 信号 (Original Boot 中)，或者发送 Reset 命令 (Alternative Boot 中) 来中断 eMMC 的数据发送，完成 Boot Data 传输。</p>
+<p>Boot Data 根据 Extended CSD register 的 PARTITION_CONFIG Field 的 Bit[5:3]:BOOT_PARTITION_ENABLE 的设定，可以从 Boot Area Partition 1、Boot Area Partition 2 或者 User Data Area 读出。</p></li>
 </ul>
-<h4 id="5-1-3-写保护"><a href="#5-1-3-写保护" class="headerlink" title="5.1.3 写保护"></a>5.1.3 写保护</h4><p>通过设定 Extended CSD register 的 BOOT_WP Field，可以为两个 Boot Area Partition 独立配置写保护功能,以防止数据被意外改写或者擦出。</p>
+<h4 id="写保护">5.1.3 写保护</h4>
+<p>通过设定 Extended CSD register 的 BOOT_WP Field，可以为两个 Boot Area Partition 独立配置写保护功能,以防止数据被意外改写或者擦出。</p>
 <p>eMMC 中定义了两种 Boot Area 的写保护模式：</p>
 <ul>
 <li>Power-on write protection，使能后，如果 eMMC 掉电，写保护功能失效，需要每次 Power on 后进行配置</li>
 <li>Permanent write protection，使能后，即使掉电也不会失效，主动进行关闭才会失效</li>
 </ul>
-<h3 id="5-2-RPMB-Partition"><a href="#5-2-RPMB-Partition" class="headerlink" title="5.2 RPMB Partition"></a>5.2 RPMB Partition</h3><p>RPMB（Replay Protected Memory Block）Partition 是 eMMC 中的一个具有安全特性的分区。<br>eMMC 在写入数据到 RPMB 时，会校验数据的合法性，只有指定的 Host 才能够写入，同时在读数据时，也提供了签名机制，保证 Host 读取到的数据是 RPMB 内部数据，而不是攻击者伪造的数据。</p>
+<h3 id="rpmb-partition">5.2 RPMB Partition</h3>
+<p>RPMB（Replay Protected Memory Block）Partition 是 eMMC 中的一个具有安全特性的分区。 eMMC 在写入数据到 RPMB 时，会校验数据的合法性，只有指定的 Host 才能够写入，同时在读数据时，也提供了签名机制，保证 Host 读取到的数据是 RPMB 内部数据，而不是攻击者伪造的数据。</p>
 <p>RPMB 在实际应用中，通常用于存储一些有防止非法篡改需求的数据，例如手机上指纹支付相关的公钥、序列号等。RPMB 可以对写入操作进行鉴权，但是读取并不需要鉴权，任何人都可以进行读取的操作，因此存储到 RPMB 的数据通常会进行加密后再存储。</p>
-<h4 id="5-2-1-容量大小"><a href="#5-2-1-容量大小" class="headerlink" title="5.2.1 容量大小"></a>5.2.1 容量大小</h4><p>两个 RPMB Partition 的大小是由 Extended CSD register 的 BOOT_SIZE_MULT Field 决定，大小的计算公式如下：</p>
+<h4 id="容量大小-1">5.2.1 容量大小</h4>
+<p>两个 RPMB Partition 的大小是由 Extended CSD register 的 BOOT_SIZE_MULT Field 决定，大小的计算公式如下：</p>
 <p>Size = 128Kbytes x BOOT_SIZE_MULT</p>
 <p>一般情况下，Boot Area Partition 的大小为 4 MB，即 RPMB_SIZE_MULT 为 32，部分芯片厂家会提供改写 RPMB_SIZE_MULT 的功能来改变 RPMB Partition 的容量大小。RPMB_SIZE_MULT 最大可以为 128，即 Boot Area Partition 的最大容量大小可以为 128 x 128 KB = 16384 KB = 16 MB。</p>
-<h4 id="5-2-2-Replay-Protect-原理"><a href="#5-2-2-Replay-Protect-原理" class="headerlink" title="5.2.2 Replay Protect 原理"></a>5.2.2 Replay Protect 原理</h4><p>使用 eMMC 的产品，在产线生产时，会为每一个产品生产一个唯一的 256 bits 的 Secure Key，烧写到 eMMC 的 OTP 区域（只能烧写一次的区域），同时 Host 在安全区域中（例如：TEE）也会保留该 Secure Key。</p>
+<h4 id="replay-protect-原理">5.2.2 Replay Protect 原理</h4>
+<p>使用 eMMC 的产品，在产线生产时，会为每一个产品生产一个唯一的 256 bits 的 Secure Key，烧写到 eMMC 的 OTP 区域（只能烧写一次的区域），同时 Host 在安全区域中（例如：TEE）也会保留该 Secure Key。</p>
 <p>在 eMMC 内部，还有一个RPMB Write Counter。RPMB 每进行一次合法的写入操作时，Write Counter 就会自动加一 。</p>
 <p>通过 Secure Key 和 Write Counter 的应用，RMPB 可以实现数据读取和写入的 Replay Protect。</p>
-<h5 id="RPMB-数据读取"><a href="#RPMB-数据读取" class="headerlink" title="RPMB 数据读取"></a>RPMB 数据读取</h5><p>RPMB 数据读取的流程如下：<br><img src="/picture/linux_driver/mmc/emmc_rpmb.png" alt=""></p>
+<h5 id="rpmb-数据读取">RPMB 数据读取</h5>
+<p>RPMB 数据读取的流程如下： <img src="/picture/linux_driver/mmc/emmc_rpmb.png" /></p>
 <ul>
 <li>Host 向 eMMC 发起读 RPMB 的请求，同时生成一个 16 bytes 的随机数，发送给 eMMC。</li>
 <li>eMMC 将请求的数据从 RPMB 中读出，并使用 Secure Key 通过 HMAC SHA-256 算法，计算读取到的数据和接收到的随机数拼接到一起后的签名。然后，eMMC 将读取到的数据、接收到的随机数、计算得到的签名一并发送给 Host。</li>
 <li>Host 接收到 RPMB 的数据、随机数以及签名后，首先比较随机数是否与自己发送的一致，如果一致，再用同样的 Secure Key 通过 HMAC SHA-256 算法对数据和随机数组合到一起进行签名，如果签名与 eMMC 发送的签名是一致的，那么就可以确定该数据是从 RPMB 中读取到的正确数据，而不是攻击者伪造的数据。</li>
 </ul>
 <p>通过上述的读取流程，可以保证 Host 正确的读取到 RPMB 的数据</p>
-<h5 id="RPMB-数据写入"><a href="#RPMB-数据写入" class="headerlink" title="RPMB 数据写入"></a>RPMB 数据写入</h5><p>RPMB 数据写入的流程如下：<br><img src="/picture/linux_driver/mmc/emmc_rpmb_write.png" alt=""></p>
+<h5 id="rpmb-数据写入">RPMB 数据写入</h5>
+<p>RPMB 数据写入的流程如下： <img src="/picture/linux_driver/mmc/emmc_rpmb_write.png" /></p>
 <ul>
 <li>Host 按照上面的读数据流程，读取 RPMB 的 Write Counter。</li>
 <li>Host 将需要写入的数据和 Write Counter 拼接到一起并计算签名，然后将数据、Write Counter 以及签名一并发给 eMMC。</li>
 <li>eMMC 接收到数据后，先对比 Write Counter 是否与当前的值相同，如果相同那么再对数据和 Write Counter 的组合进行签名，然后和 Host 发送过来的签名进行比较，如果签名相同则鉴权通过，将数据写入到 RPMB 中。</li>
 </ul>
 <p>通过上述的写入流程，可以保证 RPMB 不会被非法篡改。</p>
-<h3 id="5-3-General-Purpose-Partitions"><a href="#5-3-General-Purpose-Partitions" class="headerlink" title="5.3 General Purpose Partitions"></a>5.3 General Purpose Partitions</h3><p>eMMC 提供了 General Purpose Partitions (GPP)，主要用于存储系统和应用数据。在很多使用 eMMC 的产品中，GPP 都没有被启用，因为它在功能上与 UDA 类似，产品上直接使用 UDA 就可以满足需求。</p>
-<h4 id="5-3-1-容量大小"><a href="#5-3-1-容量大小" class="headerlink" title="5.3.1 容量大小"></a>5.3.1 容量大小</h4><p>eMMC 最多可以支持 4 个 GPPs，每一个 GPP 的大小可以单独配置。用户可以通过设定 Extended CSD register 的以下三个 Field 来设 GPPx (x=1~4) 的容量大小：</p>
+<h3 id="general-purpose-partitions">5.3 General Purpose Partitions</h3>
+<p>eMMC 提供了 General Purpose Partitions (GPP)，主要用于存储系统和应用数据。在很多使用 eMMC 的产品中，GPP 都没有被启用，因为它在功能上与 UDA 类似，产品上直接使用 UDA 就可以满足需求。</p>
+<h4 id="容量大小-2">5.3.1 容量大小</h4>
+<p>eMMC 最多可以支持 4 个 GPPs，每一个 GPP 的大小可以单独配置。用户可以通过设定 Extended CSD register 的以下三个 Field 来设 GPPx (x=1~4) 的容量大小：</p>
 <pre><code>GP_SIZE_MULT_x_2
 GP_SIZE_MULT_x_1
 GP_SIZE_MULT_x_0
-GPPx 的容量计算公式如下：
-</code></pre><p>Size = (GP_SIZE_MULT_x_2 <em> 2^16 + GP_SIZE_MULT_x_1 </em> 2^8 + GP_SIZE_MULT_x_0 <em> 2^0) </em> (Write protect group size)</p>
-<p>Write protect group size = 512KB <em> HC_ERASE_GRP_SIZE </em> HC_WP_GRP_SIZE</p>
+GPPx 的容量计算公式如下：</code></pre>
+<p>Size = (GP_SIZE_MULT_x_2 * 2^16 + GP_SIZE_MULT_x_1 * 2^8 + GP_SIZE_MULT_x_0 * 2^0) * (Write protect group size)</p>
+<p>Write protect group size = 512KB * HC_ERASE_GRP_SIZE * HC_WP_GRP_SIZE</p>
 <blockquote>
 <p>eMMC 中，擦除和写保护都是按块进行的，上述表达式中的 HC_WP_GRP_SIZE 为写保护的操作块大小，HC_ERASE_GRP_SIZE 则为擦除操作的快的大小。eMMC 芯片的 GPP 的配置通常是只能进行一次 (OTP)，一般会在产品量产阶段，在产线上进行。</p>
 </blockquote>
-<h4 id="5-3-2-分区属性"><a href="#5-3-2-分区属性" class="headerlink" title="5.3.2 分区属性"></a>5.3.2 分区属性</h4><p>eMMC 标准中，为 GPP 定义了两类属性，Enhanced attribute 和 Extended attribute。每个 GPP 可以设定两类属性中的一种属性，不可以同时设定多个属性。<br><img src="/picture/linux_driver/mmc/emmc_attr.png" alt=""></p>
+<h4 id="分区属性">5.3.2 分区属性</h4>
+<p>eMMC 标准中，为 GPP 定义了两类属性，Enhanced attribute 和 Extended attribute。每个 GPP 可以设定两类属性中的一种属性，不可以同时设定多个属性。 <img src="/picture/linux_driver/mmc/emmc_attr.png" /></p>
 <ul>
-<li><p>Enhanced attribute   </p>
+<li><p>Enhanced attribute</p>
 <ul>
 <li>Default, 未设定 Enhanced attribute。</li>
-<li><p>Enhanced storage media， 设定 GPP 为 Enhanced storage media。</p>
-<p>在 eMMC 标准中，实际上并未定义设定 Enhanced attribute 后对 eMMC 的影响。Enhanced attribute 的具体作用，由芯片制造商定义。<br>在实际的产品中，设定 Enhanced storage media 后，一般是把该分区的存储介质从 MLC 改变为 SLC，提高该分区的读写性能、寿命以及稳定性。由于 1 个存储单元下，MLC 的容量是 SLC 的两倍，所以在总的存储单元数量一定的情况下，如果把原本为 MLC 的分区改变为 SLC，会减少 eMMC 的容量，就是说，此时 eMMC 的实际总容量比标称的总容量会小一点。（MLC 和 SLC 的细节可以参考 Flash Memory 章节内容）</p>
-</li>
+<li>Enhanced storage media， 设定 GPP 为 Enhanced storage media。</li>
 </ul>
-</li>
-<li><p>Extended attribute   </p>
+<p>在 eMMC 标准中，实际上并未定义设定 Enhanced attribute 后对 eMMC 的影响。Enhanced attribute 的具体作用，由芯片制造商定义。 在实际的产品中，设定 Enhanced storage media 后，一般是把该分区的存储介质从 MLC 改变为 SLC，提高该分区的读写性能、寿命以及稳定性。由于 1 个存储单元下，MLC 的容量是 SLC 的两倍，所以在总的存储单元数量一定的情况下，如果把原本为 MLC 的分区改变为 SLC，会减少 eMMC 的容量，就是说，此时 eMMC 的实际总容量比标称的总容量会小一点。（MLC 和 SLC 的细节可以参考 Flash Memory 章节内容）</p></li>
+<li><p>Extended attribute</p>
 <ul>
 <li>Default, 未设定 Extended attribute。</li>
 <li>System code， 设定 GPP 为 System code 属性，该属性主要用在存放操作系统类的、很少进行擦写更新的分区。</li>
 <li>Non-Persistent，设定 GPP 为 Non-Persistent 属性，该属性主要用于存储临时数据的分区，例如 tmp 目录所在分区、 swap 分区等。</li>
-</ul>
-</li>
+</ul></li>
 </ul>
 <p>在 eMMC 标准中，同样也没有定义设定 Extended attribute 后对 eMMC 的影响。Extended attribute 的具体作用，由芯片制造商定义。Extended attribute 主要是跟分区的应用场景有关，厂商可以为不用应用场景的分区做不同的优化处理。</p>
-<h3 id="5-4-User-Data-Area"><a href="#5-4-User-Data-Area" class="headerlink" title="5.4 User Data Area"></a>5.4 User Data Area</h3><p>User Data Area (UDA) 通常是 eMMC 中最大的一个分区，是实际产品中，最主要的存储区域。</p>
-<h4 id="5-4-1-容量大小"><a href="#5-4-1-容量大小" class="headerlink" title="5.4.1 容量大小"></a>5.4.1 容量大小</h4><p>UDA 的容量大小不需要设置，在配置完其他分区大小后，再扣除设置 Enhanced attribute 所损耗的容量，剩下的容量就是 UDA 的容量。</p>
-<h4 id="5-4-2-软件分区"><a href="#5-4-2-软件分区" class="headerlink" title="5.4.2 软件分区"></a>5.4.2 软件分区</h4><p>为了更合理的管理数据，满足不同的应用需求，UDA 在实际产品中，会进行软件再分区。目前主流的软件分区技术有 MBR（Master Boot Record）和 GPT（GUID Partition Table）两种。这两种分区技术的基本原理类似，如下图所示：<br><img src="/picture/linux_driver/mmc/emmc_area.png" alt=""></p>
+<h3 id="user-data-area">5.4 User Data Area</h3>
+<p>User Data Area (UDA) 通常是 eMMC 中最大的一个分区，是实际产品中，最主要的存储区域。</p>
+<h4 id="容量大小-3">5.4.1 容量大小</h4>
+<p>UDA 的容量大小不需要设置，在配置完其他分区大小后，再扣除设置 Enhanced attribute 所损耗的容量，剩下的容量就是 UDA 的容量。</p>
+<h4 id="软件分区">5.4.2 软件分区</h4>
+<p>为了更合理的管理数据，满足不同的应用需求，UDA 在实际产品中，会进行软件再分区。目前主流的软件分区技术有 MBR（Master Boot Record）和 GPT（GUID Partition Table）两种。这两种分区技术的基本原理类似，如下图所示： <img src="/picture/linux_driver/mmc/emmc_area.png" /></p>
 <p>软件分区技术一般是将存储介质划分为多个区域，既 SW Partitions，然后通过一个 Partition Table 来维护这些 SW Partitions。在 Partition Table 中，每一个条目都保存着一个 SW Partition 的起始地址、大小等的属性信息。软件系统在启动后，会去扫描 Partition Table，获取存储介质上的各个 SW Partitions 信息，然后根据这些信息，将各个 Partitions 加载到系统中，进行数据存取。</p>
 <blockquote>
 <p>MBR 和 GPT 此处不展开详细介绍，更多的细节可以参考 wikipedia 上 MBR 和 GPT 相关介绍。</p>
 </blockquote>
-<h4 id="5-4-3-区域属性"><a href="#5-4-3-区域属性" class="headerlink" title="5.4.3 区域属性"></a>5.4.3 区域属性</h4><p>eMMC 标准中，支持为 UDA 中一个特定大小的区域设定 Enhanced attribute。与 GPP 中的 Enhanced attribute 相同，eMMC 标准也没有定义该区域设定 Enhanced attribute 后对 eMMC 的影响。Enhanced attribute 的具体作用，由芯片制造商定义。</p>
+<h4 id="区域属性">5.4.3 区域属性</h4>
+<p>eMMC 标准中，支持为 UDA 中一个特定大小的区域设定 Enhanced attribute。与 GPP 中的 Enhanced attribute 相同，eMMC 标准也没有定义该区域设定 Enhanced attribute 后对 eMMC 的影响。Enhanced attribute 的具体作用，由芯片制造商定义。</p>
 <p><strong>Enhanced attribute</strong></p>
 <ul>
 <li>Default, 未设定 Enhanced attribute。</li>
 <li>Enhanced storage media， 设定该区域为 Enhanced storage media。</li>
 </ul>
 <p>在实际的产品中，UDA 区域设定为 Enhanced storage media 后，一般是把该区域的存储介质从 MLC 改变为 SLC。通常，产品中可以将某一个 SW Partition 设定为 Enhanced storage media，以获得更好的性能和健壮性。</p>
-<h3 id="5-5-eMMC-分区应用实例"><a href="#5-5-eMMC-分区应用实例" class="headerlink" title="5.5 eMMC 分区应用实例"></a>5.5 eMMC 分区应用实例</h3><p>在一个 Android 手机系统中，各个分区的呈现形式如下：</p>
+<h3 id="emmc-分区应用实例">5.5 eMMC 分区应用实例</h3>
+<p>在一个 Android 手机系统中，各个分区的呈现形式如下：</p>
 <ul>
 <li>mmcblk0 为 eMMC 的块设备;</li>
 <li>mmcblk0boot0 和 mmcblk0boot1 对应两个 Boot Area Partitions;</li>
@@ -655,7 +706,12 @@ GPPx 的容量计算公式如下：
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">root@xxx:/ <span class="comment"># ls /dev/block/mmcblk0*</span></span><br><span class="line">/dev/block/mmcblk0</span><br><span class="line">/dev/block/mmcblk0boot0</span><br><span class="line">/dev/block/mmcblk0boot1</span><br><span class="line">/dev/block/mmcblk0rpmb</span><br><span class="line">/dev/block/mmcblk0p1</span><br><span class="line">/dev/block/mmcblk0p2</span><br><span class="line">/dev/block/mmcblk0p3</span><br><span class="line">/dev/block/mmcblk0p4</span><br><span class="line">/dev/block/mmcblk0p5</span><br><span class="line">/dev/block/mmcblk0p6</span><br><span class="line">/dev/block/mmcblk0p7</span><br><span class="line">/dev/block/mmcblk0p8</span><br><span class="line">/dev/block/mmcblk0p9</span><br><span class="line">/dev/block/mmcblk0p10</span><br><span class="line">/dev/block/mmcblk0p11</span><br><span class="line">/dev/block/mmcblk0p12</span><br><span class="line">/dev/block/mmcblk0p13</span><br><span class="line">/dev/block/mmcblk0p14</span><br><span class="line">/dev/block/mmcblk0p15</span><br><span class="line">/dev/block/mmcblk0p16</span><br><span class="line">/dev/block/mmcblk0p17</span><br><span class="line">/dev/block/mmcblk0p18</span><br><span class="line">/dev/block/mmcblk0p19</span><br><span class="line">/dev/block/mmcblk0p20</span><br><span class="line">/dev/block/mmcblk0p21</span><br><span class="line">/dev/block/mmcblk0p22</span><br><span class="line">/dev/block/mmcblk0p23</span><br><span class="line">/dev/block/mmcblk0p24</span><br><span class="line">/dev/block/mmcblk0p25</span><br><span class="line">/dev/block/mmcblk0p26</span><br><span class="line">/dev/block/mmcblk0p27</span><br><span class="line">/dev/block/mmcblk0p28</span><br><span class="line">/dev/block/mmcblk0p29</span><br><span class="line">/dev/block/mmcblk0p30</span><br><span class="line">/dev/block/mmcblk0p31</span><br><span class="line">/dev/block/mmcblk0p32</span><br></pre></td></tr></table></figure>
 <p>每一个分区会根据实际的功能来设定名称。</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">root@xxx:/ <span class="comment"># ls -l /dev/block/platform/mtk-msdc.0/11230000.msdc0/by-name/</span></span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 boot -&gt; /dev/block/mmcblk0p22</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 cache -&gt; /dev/block/mmcblk0p30</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 custom -&gt; /dev/block/mmcblk0p3</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 devinfo -&gt; /dev/block/mmcblk0p28</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 expdb -&gt; /dev/block/mmcblk0p4</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 flashinfo -&gt; /dev/block/mmcblk0p32</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 frp -&gt; /dev/block/mmcblk0p5</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 keystore -&gt; /dev/block/mmcblk0p27</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 lk -&gt; /dev/block/mmcblk0p20</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 lk2 -&gt; /dev/block/mmcblk0p21</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 logo -&gt; /dev/block/mmcblk0p23</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 md1arm7 -&gt; /dev/block/mmcblk0p17</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 md1dsp -&gt; /dev/block/mmcblk0p16</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 md1img -&gt; /dev/block/mmcblk0p15</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 md3img -&gt; /dev/block/mmcblk0p18</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 metadata -&gt; /dev/block/mmcblk0p8</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 nvdata -&gt; /dev/block/mmcblk0p7</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 nvram -&gt; /dev/block/mmcblk0p19</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 oemkeystore -&gt; /dev/block/mmcblk0p12</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 para -&gt; /dev/block/mmcblk0p2</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 ppl -&gt; /dev/block/mmcblk0p6</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 proinfo -&gt; /dev/block/mmcblk0p13</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 protect1 -&gt; /dev/block/mmcblk0p9</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 protect2 -&gt; /dev/block/mmcblk0p10</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 recovery -&gt; /dev/block/mmcblk0p1</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 rstinfo -&gt; /dev/block/mmcblk0p14</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 seccfg -&gt; /dev/block/mmcblk0p11</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 secro -&gt; /dev/block/mmcblk0p26</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 system -&gt; /dev/block/mmcblk0p29</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 tee1 -&gt; /dev/block/mmcblk0p24</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 tee2 -&gt; /dev/block/mmcblk0p25</span><br><span class="line">lrwxrwxrwx root root 2015-01-03 04:03 userdata -&gt; /dev/block/mmcblk0p31</span><br></pre></td></tr></table></figure>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5Lw==">https://linux.codingbelief.com/zh/storage/flash_memory/<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMv">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMvZW1tY19wYXJ0aXRpb25zLmh0bWw=">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/emmc_partitions.html<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMvZW1tY19idXNfcHJvdG9jb2wuaHRtbA==">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/emmc_bus_protocol.html<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMvZW1tY19tb2Rlcy5odG1s">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/emmc_modes.html<i class="fa fa-external-link-alt"></i></span>    </p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5Lw==">https://linux.codingbelief.com/zh/storage/flash_memory/<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMv">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMvZW1tY19wYXJ0aXRpb25zLmh0bWw=">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/emmc_partitions.html<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMvZW1tY19idXNfcHJvdG9jb2wuaHRtbA==">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/emmc_bus_protocol.html<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9saW51eC5jb2RpbmdiZWxpZWYuY29tL3poL3N0b3JhZ2UvZmxhc2hfbWVtb3J5L2VtbWMvZW1tY19tb2Rlcy5odG1s">https://linux.codingbelief.com/zh/storage/flash_memory/emmc/emmc_modes.html<i class="fa fa-external-link-alt"></i></span></p>
 
     </div>
 
@@ -764,7 +820,7 @@ GPPx 的容量计算公式如下：
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Flash-Memory-%E7%AE%80%E4%BB%8B"><span class="nav-text">1. Flash Memory 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-Flash-Memory-%E7%9A%84%E4%B8%BB%E8%A6%81%E7%89%B9%E6%80%A7"><span class="nav-text">1.1 Flash Memory 的主要特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-NOR-Flash-%E5%92%8C-NAND-Flash"><span class="nav-text">1.2 NOR Flash 和 NAND Flash</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-1-NOR-Flash"><span class="nav-text">1.2.1 NOR Flash</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-2-2-NAND-Flash"><span class="nav-text">1.2.2 NAND Flash</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-Raw-Flash-%E5%92%8C-Managed-Flash"><span class="nav-text">1.3 Raw Flash 和 Managed Flash</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-EMMC-%E7%AE%80%E4%BB%8B"><span class="nav-text">2. EMMC 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-Flash-Memory"><span class="nav-text">2.1 Flash Memory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-Flash-Controller"><span class="nav-text">2.2 Flash Controller</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-Host-Interface"><span class="nav-text">2.3 Host Interface</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-EMMC-%E6%80%BB%E7%BA%BF%E5%8D%8F%E8%AE%AE"><span class="nav-text">3. EMMC 总线协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-EMMC-%E6%80%BB%E7%BA%BF%E6%A8%A1%E5%9E%8B"><span class="nav-text">3.1 EMMC 总线模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-1-%E9%80%9F%E7%8E%87%E6%A8%A1%E5%BC%8F"><span class="nav-text">3.1.1 速率模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-1-2-%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%9E%8B"><span class="nav-text">3.1.2 通信模型</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#Read-Data"><span class="nav-text">Read Data</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Write-Data"><span class="nav-text">Write Data</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#No-Data"><span class="nav-text">No Data</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Command"><span class="nav-text">Command</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Response"><span class="nav-text">Response</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Data-Block"><span class="nav-text">Data Block</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#CRC-Status-Token"><span class="nav-text">CRC Status Token</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-eMMC-%E6%80%BB%E7%BA%BF%E6%B5%8B%E8%AF%95%E8%BF%87%E7%A8%8B"><span class="nav-text">3.2 eMMC 总线测试过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-3-eMMC-%E6%80%BB%E7%BA%BF-Sampling-Tuning"><span class="nav-text">3.3 eMMC 总线 Sampling Tuning</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-1-Sampling-Tuning-%E6%B5%81%E7%A8%8B"><span class="nav-text">3.3.1 Sampling Tuning 流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-3-2-Tuning-Block-%E6%95%B0%E6%8D%AE"><span class="nav-text">3.3.2 Tuning Block 数据</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-eMMC%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F"><span class="nav-text">4. eMMC工作模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-Boot-Operation-Mode"><span class="nav-text">4.1 Boot Operation Mode</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-1-Boot-From-eMMC-Device"><span class="nav-text">4.1.1 Boot From eMMC Device</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-2-Boot-Acknowledge"><span class="nav-text">4.1.2 Boot Acknowledge</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-3-Boot-Bus-%E9%85%8D%E7%BD%AE"><span class="nav-text">4.1.3 Boot Bus 配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-1-4-Boot-Data-%E6%9B%B4%E6%96%B0"><span class="nav-text">4.1.4 Boot Data 更新</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-Device-Identification-Mode"><span class="nav-text">4.2 Device Identification Mode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-Data-Transfer-Mode"><span class="nav-text">4.3 Data Transfer Mode</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-1-Read-Data"><span class="nav-text">4.3.1 Read Data</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-2-Write-Data"><span class="nav-text">4.3.2 Write Data</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-3-3-Packed-Commands-Packed-Write-and-Packed-Read"><span class="nav-text">4.3.3 Packed Commands - Packed Write and Packed Read</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-eMMC-%E5%88%86%E5%8C%BA%E7%AE%A1%E7%90%86"><span class="nav-text">5. eMMC 分区管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-Boot-Area-Partitions"><span class="nav-text">5.1 Boot Area Partitions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-1-1-%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F"><span class="nav-text">5.1.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-1-2-%E4%BB%8E-Boot-Area-%E5%90%AF%E5%8A%A8"><span class="nav-text">5.1.2 从 Boot Area 启动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-1-3-%E5%86%99%E4%BF%9D%E6%8A%A4"><span class="nav-text">5.1.3 写保护</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-RPMB-Partition"><span class="nav-text">5.2 RPMB Partition</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-2-1-%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F"><span class="nav-text">5.2.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-2-2-Replay-Protect-%E5%8E%9F%E7%90%86"><span class="nav-text">5.2.2 Replay Protect 原理</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#RPMB-%E6%95%B0%E6%8D%AE%E8%AF%BB%E5%8F%96"><span class="nav-text">RPMB 数据读取</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#RPMB-%E6%95%B0%E6%8D%AE%E5%86%99%E5%85%A5"><span class="nav-text">RPMB 数据写入</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-General-Purpose-Partitions"><span class="nav-text">5.3 General Purpose Partitions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-3-1-%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F"><span class="nav-text">5.3.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-3-2-%E5%88%86%E5%8C%BA%E5%B1%9E%E6%80%A7"><span class="nav-text">5.3.2 分区属性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-4-User-Data-Area"><span class="nav-text">5.4 User Data Area</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#5-4-1-%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F"><span class="nav-text">5.4.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-4-2-%E8%BD%AF%E4%BB%B6%E5%88%86%E5%8C%BA"><span class="nav-text">5.4.2 软件分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-4-3-%E5%8C%BA%E5%9F%9F%E5%B1%9E%E6%80%A7"><span class="nav-text">5.4.3 区域属性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-5-eMMC-%E5%88%86%E5%8C%BA%E5%BA%94%E7%94%A8%E5%AE%9E%E4%BE%8B"><span class="nav-text">5.5 eMMC 分区应用实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#flash-memory-%E7%AE%80%E4%BB%8B"><span class="nav-text">1. Flash Memory 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#flash-memory-%E7%9A%84%E4%B8%BB%E8%A6%81%E7%89%B9%E6%80%A7"><span class="nav-text">1.1 Flash Memory 的主要特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#nor-flash-%E5%92%8C-nand-flash"><span class="nav-text">1.2 NOR Flash 和 NAND Flash</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#nor-flash"><span class="nav-text">1.2.1 NOR Flash</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#nand-flash"><span class="nav-text">1.2.2 NAND Flash</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#raw-flash-%E5%92%8C-managed-flash"><span class="nav-text">1.3 Raw Flash 和 Managed Flash</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#emmc-%E7%AE%80%E4%BB%8B"><span class="nav-text">2. EMMC 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#flash-memory"><span class="nav-text">2.1 Flash Memory</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#flash-controller"><span class="nav-text">2.2 Flash Controller</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#host-interface"><span class="nav-text">2.3 Host Interface</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#emmc-%E6%80%BB%E7%BA%BF%E5%8D%8F%E8%AE%AE"><span class="nav-text">3. EMMC 总线协议</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#emmc-%E6%80%BB%E7%BA%BF%E6%A8%A1%E5%9E%8B"><span class="nav-text">3.1 EMMC 总线模型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9F%E7%8E%87%E6%A8%A1%E5%BC%8F"><span class="nav-text">3.1.1 速率模式</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%9A%E4%BF%A1%E6%A8%A1%E5%9E%8B"><span class="nav-text">3.1.2 通信模型</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#read-data"><span class="nav-text">Read Data</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#write-data"><span class="nav-text">Write Data</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#no-data"><span class="nav-text">No Data</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#command"><span class="nav-text">Command</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#response"><span class="nav-text">Response</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#data-block"><span class="nav-text">Data Block</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#crc-status-token"><span class="nav-text">CRC Status Token</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#emmc-%E6%80%BB%E7%BA%BF%E6%B5%8B%E8%AF%95%E8%BF%87%E7%A8%8B"><span class="nav-text">3.2 eMMC 总线测试过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#emmc-%E6%80%BB%E7%BA%BF-sampling-tuning"><span class="nav-text">3.3 eMMC 总线 Sampling Tuning</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#sampling-tuning-%E6%B5%81%E7%A8%8B"><span class="nav-text">3.3.1 Sampling Tuning 流程</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tuning-block-%E6%95%B0%E6%8D%AE"><span class="nav-text">3.3.2 Tuning Block 数据</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#emmc%E5%B7%A5%E4%BD%9C%E6%A8%A1%E5%BC%8F"><span class="nav-text">4. eMMC工作模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#boot-operation-mode"><span class="nav-text">4.1 Boot Operation Mode</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#boot-from-emmc-device"><span class="nav-text">4.1.1 Boot From eMMC Device</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#boot-acknowledge"><span class="nav-text">4.1.2 Boot Acknowledge</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#boot-bus-%E9%85%8D%E7%BD%AE"><span class="nav-text">4.1.3 Boot Bus 配置</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#boot-data-%E6%9B%B4%E6%96%B0"><span class="nav-text">4.1.4 Boot Data 更新</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#device-identification-mode"><span class="nav-text">4.2 Device Identification Mode</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#data-transfer-mode"><span class="nav-text">4.3 Data Transfer Mode</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#read-data-1"><span class="nav-text">4.3.1 Read Data</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#write-data-1"><span class="nav-text">4.3.2 Write Data</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#packed-commands---packed-write-and-packed-read"><span class="nav-text">4.3.3 Packed Commands - Packed Write and Packed Read</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#emmc-%E5%88%86%E5%8C%BA%E7%AE%A1%E7%90%86"><span class="nav-text">5. eMMC 分区管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#boot-area-partitions"><span class="nav-text">5.1 Boot Area Partitions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F"><span class="nav-text">5.1.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8E-boot-area-%E5%90%AF%E5%8A%A8"><span class="nav-text">5.1.2 从 Boot Area 启动</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%86%99%E4%BF%9D%E6%8A%A4"><span class="nav-text">5.1.3 写保护</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rpmb-partition"><span class="nav-text">5.2 RPMB Partition</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F-1"><span class="nav-text">5.2.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#replay-protect-%E5%8E%9F%E7%90%86"><span class="nav-text">5.2.2 Replay Protect 原理</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#rpmb-%E6%95%B0%E6%8D%AE%E8%AF%BB%E5%8F%96"><span class="nav-text">RPMB 数据读取</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#rpmb-%E6%95%B0%E6%8D%AE%E5%86%99%E5%85%A5"><span class="nav-text">RPMB 数据写入</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#general-purpose-partitions"><span class="nav-text">5.3 General Purpose Partitions</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F-2"><span class="nav-text">5.3.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E5%8C%BA%E5%B1%9E%E6%80%A7"><span class="nav-text">5.3.2 分区属性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#user-data-area"><span class="nav-text">5.4 User Data Area</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%B9%E9%87%8F%E5%A4%A7%E5%B0%8F-3"><span class="nav-text">5.4.1 容量大小</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E5%88%86%E5%8C%BA"><span class="nav-text">5.4.2 软件分区</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8C%BA%E5%9F%9F%E5%B1%9E%E6%80%A7"><span class="nav-text">5.4.3 区域属性</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#emmc-%E5%88%86%E5%8C%BA%E5%BA%94%E7%94%A8%E5%AE%9E%E4%BE%8B"><span class="nav-text">5.5 eMMC 分区应用实例</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -849,7 +905,7 @@ GPPx 的容量计算公式如下：
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">905k</span>
+    <span title="站点总字数">927k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

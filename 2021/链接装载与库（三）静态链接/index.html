@@ -297,15 +297,18 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/program/静态链接.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMwODIzYWU0MDFmZDA3MjZiYTVjMzY=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/program/静态链接.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMwODIzYWU0MDFmZDA3MjZiYTVjMzY=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<p>当我们有两个目标文件时，如何将它们链接起来形成一个可执行文件？这个过程中发生了什么？这基本上就是链接的核心内容：静态链接。在这一节里，我们将使用下面这两个源代码文件“a.c”和“b.c”作为例子展开分析：<br><img src="/picture/program/ld1.png" alt=""></p>
+<p>当我们有两个目标文件时，如何将它们链接起来形成一个可执行文件？这个过程中发生了什么？这基本上就是链接的核心内容：静态链接。在这一节里，我们将使用下面这两个源代码文件“a.c”和“b.c”作为例子展开分析： <img src="/picture/program/ld1.png" /></p>
 <p>假设我们的程序只有这两个模块“a.c”和“b.c”。首先我们使用gcc将“a.c”和“b.c”分别编译成目标文件“a.o”和“b.o”：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -c a.c b.c</span><br></pre></td></tr></table></figure>
 <p>经过编译以后我们就得到了“a.o”和“b.o”这两个目标文件。从代码中可以看到，“b.c”总共定义了两个全局符号，一个是变量“shared”，另外一个是函数“swap”；“a.c”里面定义了一个全局符号就是“main”。模块“a.c”里面引用到了“b.c”里面的“swap”和“shared”。我们接下来要做的就是把“a.o”和“b.o”这两个目标文件链接在一起并最终形成一个可执行文件“ab”。</p>
-<h2 id="1-空间与地址分配"><a href="#1-空间与地址分配" class="headerlink" title="1. 空间与地址分配"></a>1. 空间与地址分配</h2><p>对于链接器来说，整个链接过程中，它就是将几个输入目标文件加工后合并成一个输出文件。我们知道，可执行文件中的代码段和数据段都是由输入的目标文件中合并而来的。那么我们链接过程就很明显产生了第一个问题：对于多个输入目标文件，链接器如何将它们的各个段合并到输出文件？或者说，输出文件中的空间如何分配给输入文件？</p>
-<h3 id="1-1-按序叠加"><a href="#1-1-按序叠加" class="headerlink" title="1.1 按序叠加"></a>1.1 按序叠加</h3><p><img src="/picture/program/ld2.png" alt=""><br>一个最简单的方案就是将输入的目标文件按照次序叠加起来，如图4-1所示。就是直接将各个目标文件依次合并。但是这样做会造成一个问题，在有很多输入文件的情况下，输出文件将会有很多零散的段。这种做法非常浪费空间，因为每个段都须要有一定的地址和空间对齐要求，那么就是说如果一个段的长度只有1个字节，它也要在内存中占用4096字节。这样会造成内存空间大量的内部碎片，所以这并不是一个很好的方案。</p>
-<h3 id="1-2-相似段合并"><a href="#1-2-相似段合并" class="headerlink" title="1.2 相似段合并"></a>1.2 相似段合并</h3><p>一个更实际的方法是将相同性质的段合并到一起，比如将所有输入文件的“.text”合并到输出文件的“.text”段，接着是“.data”段、“.bss”段等，如图4-2所示。<br><img src="/picture/program/ld3.png" alt=""></p>
+<h2 id="空间与地址分配">1. 空间与地址分配</h2>
+<p>对于链接器来说，整个链接过程中，它就是将几个输入目标文件加工后合并成一个输出文件。我们知道，可执行文件中的代码段和数据段都是由输入的目标文件中合并而来的。那么我们链接过程就很明显产生了第一个问题：对于多个输入目标文件，链接器如何将它们的各个段合并到输出文件？或者说，输出文件中的空间如何分配给输入文件？</p>
+<h3 id="按序叠加">1.1 按序叠加</h3>
+<p><img src="/picture/program/ld2.png" /> 一个最简单的方案就是将输入的目标文件按照次序叠加起来，如图4-1所示。就是直接将各个目标文件依次合并。但是这样做会造成一个问题，在有很多输入文件的情况下，输出文件将会有很多零散的段。这种做法非常浪费空间，因为每个段都须要有一定的地址和空间对齐要求，那么就是说如果一个段的长度只有1个字节，它也要在内存中占用4096字节。这样会造成内存空间大量的内部碎片，所以这并不是一个很好的方案。</p>
+<h3 id="相似段合并">1.2 相似段合并</h3>
+<p>一个更实际的方法是将相同性质的段合并到一起，比如将所有输入文件的“.text”合并到输出文件的“.text”段，接着是“.data”段、“.bss”段等，如图4-2所示。 <img src="/picture/program/ld3.png" /></p>
 <p>正如我们前文所提到的，“.bss”段在目标文件和可执行文件中并不占用文件的空间，但是它在装载时占用地址空间。所以链接器在合并各个段的同时，也将“.bss”合并，并且分配虚拟空间。从“.bss”段的空间分配上我们可以思考一个问题，那就是这里的所谓的“空间分配”到底是什么空间？</p>
 <p>“链接器为目标文件分配地址和空间”这句话中的“地址和空间”其实有两个含义：</p>
 <ul>
@@ -327,60 +330,64 @@
 <li>-e main表示将main函数作为程序入口，ld链接器默认的程序入口为_start</li>
 <li>-o ab表示链接输出文件名为ab，默认为a.out</li>
 </ul>
-<p>让我们使用objdump来查看链接前后地址的分配情况，代码如清单4-1所示。<br><img src="/picture/program/ld4.png" alt=""></p>
+<p>让我们使用objdump来查看链接前后地址的分配情况，代码如清单4-1所示。 <img src="/picture/program/ld4.png" /></p>
 <blockquote>
 <p>VMA表示Virtual Memory Address，即虚拟地址，LMA表示Load Memory Address，即加载地址，正常情况下这两个值应该是一样的，但是在有些嵌入式系统中，特别是在那些程序放在ROM的系统中时，LMA和VMA是不相同的。这里我们只要关注VMA即可。</p>
 </blockquote>
-<p>链接前后的程序中所使用的地址已经是程序在进程中的虚拟地址，即我们关心上面各个段中的VMA（Virtual Memory Address）和Size，而忽略文件偏移（File off）。我们可以看到，在链接之前，目标文件中的所有段的VMA都是O，因为虚拟空间还没有被分配，所以它们默认都为0。等到链接之后，可执行文件“b”中的各个段都被分配到了相应的虚拟地址。这里的输出程序“ab”中，“.text”段被分配到了地址0x08048094，大小为0x72字节；“.data”段从地址0x08049108开始，大小为4字节。整个链接过程前后，目标文件各段的分配、程序虚拟地址如图4-3所示。<br><img src="/picture/program/ld5.png" alt=""></p>
+<p>链接前后的程序中所使用的地址已经是程序在进程中的虚拟地址，即我们关心上面各个段中的VMA（Virtual Memory Address）和Size，而忽略文件偏移（File off）。我们可以看到，在链接之前，目标文件中的所有段的VMA都是O，因为虚拟空间还没有被分配，所以它们默认都为0。等到链接之后，可执行文件“b”中的各个段都被分配到了相应的虚拟地址。这里的输出程序“ab”中，“.text”段被分配到了地址0x08048094，大小为0x72字节；“.data”段从地址0x08049108开始，大小为4字节。整个链接过程前后，目标文件各段的分配、程序虚拟地址如图4-3所示。 <img src="/picture/program/ld5.png" /></p>
 <p>我们在图4-3中忽略了像.comment这种无关紧要的段，只关心代码段和数据段。由于在本例中没有“.bss”段，所以我们也将其简化了。从图4-3中可以看到，“a.o”和“b.o”的代码段被先后叠加起来，合并成“ab”的一个.text段，加起来的长度为0x72。所以“ab”的代码段里面肯定包含了main函数和swap函数的指令代码。</p>
 <p>那么，为什么链接器要将可执行文件“ab”的“.text”分配到0x08048094、将“.data”分配0x08049108？而不是从虚拟空间的0地址开始分配呢？这涉及操作系统的进程虚拟地址空间的分配规则，在Linux下，ELF可执行文件默认从地址0x08048000开始分配。</p>
-<h3 id="1-3-符号地址的确定"><a href="#1-3-符号地址的确定" class="headerlink" title="1.3 符号地址的确定"></a>1.3 符号地址的确定</h3><p>我们还是以“a.o”和“b.o”作为例子，来分析这两个步骤中链接器的工作过程。在第一步的扫描和空间分配阶段，链接器按照前面介绍的空间分配方法进行分配，这时候输入文件中的各个段在链接后的虚拟地址就已经确定了，比如“.text”段起始地址为0x08048094，“.data”段的起始地址为0x08049108。</p>
+<h3 id="符号地址的确定">1.3 符号地址的确定</h3>
+<p>我们还是以“a.o”和“b.o”作为例子，来分析这两个步骤中链接器的工作过程。在第一步的扫描和空间分配阶段，链接器按照前面介绍的空间分配方法进行分配，这时候输入文件中的各个段在链接后的虚拟地址就已经确定了，比如“.text”段起始地址为0x08048094，“.data”段的起始地址为0x08049108。</p>
 <p>当前面一步完成之后，链接器开始计算各个符号的虚拟地址。因为各个符号在段内的相对位置是固定的，所以这时候其实“main”、“shared”和“swap”的地址也已经是确定的了，只不过链接器须要给每个符号加上一个偏移量，使它们能够调整到正确的虚拟地址。比如我们假设“a.o”中的“main”函数相对于“a.o”的“.text”段的偏移是X，但是经过链接合并以后，“a.o”的“.text”段位于虚拟地址0x08048094，那么“main”的地址应该是0x08048094+X。从前面“objdump”的输出看到，“main”位于“a.o”的“.text”段的最开始，也就是偏移为0，所以“main”这个符号在最终的输出文件中的地址应该是0x08048094+0，即0x08048094。我们也可以通过完全一样的计算方法得知所有符号的地址，在这个例子里面，只有三个全局符号，所以链接器在更新全局符号表的符号地址以后，各个符号的最终地址如下表所示。</p>
-<div class="table-container">
 <table>
 <thead>
-<tr>
+<tr class="header">
 <th>符号</th>
 <th>类型</th>
 <th>虚拟地址</th>
 </tr>
 </thead>
 <tbody>
-<tr>
+<tr class="odd">
 <td>main</td>
 <td>函数</td>
 <td>0x08048094</td>
 </tr>
-<tr>
+<tr class="even">
 <td>swap</td>
 <td>函数</td>
 <td>0x080480c8</td>
 </tr>
-<tr>
+<tr class="odd">
 <td>shared</td>
 <td>函数</td>
 <td>0x08048108</td>
 </tr>
 </tbody>
 </table>
-</div>
-<h2 id="2-符号解析与重定位"><a href="#2-符号解析与重定位" class="headerlink" title="2. 符号解析与重定位"></a>2. 符号解析与重定位</h2><h3 id="2-1-重定位"><a href="#2-1-重定位" class="headerlink" title="2.1 重定位"></a>2.1 重定位</h3><p>在完成空间和地址的分配步骤以后，链接器就进入了符号解析与重定位的步骤，这也是静态链接的核心内容。在分析符号解析和重定位之前，首先让我们来看看“a.o”里面是怎么使用这两个外部符号的，也就是说我们在“a.c”的源程序里面使用了“shared”变量和“swap”函数，那么编译器在将“a.c”编译成指令时，它如何访问“shared”变量？如何调用“swap”函数？<br>使用objdump的“-d”参数可以看到“a.o”的代码段反汇编结果：<br><img src="/picture/program/ld6.png" alt=""></p>
+<h2 id="符号解析与重定位">2. 符号解析与重定位</h2>
+<h3 id="重定位">2.1 重定位</h3>
+<p>在完成空间和地址的分配步骤以后，链接器就进入了符号解析与重定位的步骤，这也是静态链接的核心内容。在分析符号解析和重定位之前，首先让我们来看看“a.o”里面是怎么使用这两个外部符号的，也就是说我们在“a.c”的源程序里面使用了“shared”变量和“swap”函数，那么编译器在将“a.c”编译成指令时，它如何访问“shared”变量？如何调用“swap”函数？ 使用objdump的“-d”参数可以看到“a.o”的代码段反汇编结果： <img src="/picture/program/ld6.png" /></p>
 <p>我们知道在程序的代码里面使用的都是虚拟地址，在这里也可以看到“main”的起始地址为0×00000000，这是因为在未进行前面提到过的空间分配之前，目标文件代码段中的起始地址以0x00000000开始，等到空间分配完成以后，各个函数才会确定自己在虚拟地址空间中的位置。</p>
-<p>我们可以很清楚地看到“a.o”的反汇编结果中，“a.o”共定义了一个函数main。这个函数占用0x33个字节，共17条指令；最左边那列是每条指令的偏移量，每一行代表一条指令。我们已经用粗体标出了两个引用“shared”和“swap”的位置，对于“shared”的引用是一条“mov”指令，这条指令总共8个字节，它的作用是将“shared”的地址赋值到ESP寄存器+4的偏移地址中去，前面4个字节是指令码，后面4个字节是“shared”的地址，我们只关心后面的4个字节部分，如图4-4所示。<br><img src="/picture/program/ld7.png" alt=""></p>
+<p>我们可以很清楚地看到“a.o”的反汇编结果中，“a.o”共定义了一个函数main。这个函数占用0x33个字节，共17条指令；最左边那列是每条指令的偏移量，每一行代表一条指令。我们已经用粗体标出了两个引用“shared”和“swap”的位置，对于“shared”的引用是一条“mov”指令，这条指令总共8个字节，它的作用是将“shared”的地址赋值到ESP寄存器+4的偏移地址中去，前面4个字节是指令码，后面4个字节是“shared”的地址，我们只关心后面的4个字节部分，如图4-4所示。 <img src="/picture/program/ld7.png" /></p>
 <p>当源代码“a.c”在被编译成目标文件时，编译器并不知道“shared”和“swap”的地址，因为它们定义在其他目标文件中。所以编译器就暂时把地址O看作是“shared”的地址，我们可以看到这条“mov”指令中，关于“shared”的地址部分为“0x00000000”。</p>
-<p>另外一个是偏移为0x26的指令的一条调用指令，它其实就表示对swap函数的调用，如图4-5所示。<br><img src="/picture/program/ld8.png" alt=""></p>
+<p>另外一个是偏移为0x26的指令的一条调用指令，它其实就表示对swap函数的调用，如图4-5所示。 <img src="/picture/program/ld8.png" /></p>
 <p>这条指令共5个字节，前面的0xE8是操作码（Operation Code），这条指令是一条近址相对位移调用指令，后面4个字节就是被调用函数的相对于调用指令的下一条指令的偏移量。在没有重定位之前，相对偏移被置为0 xFFFFFFFC（小端），它是常量“-4”的补码形式。</p>
 <p>让我们来仔细看这条指令的含义。紧跟在这条call指令后面的那条指令为add指令，add指令的地址为0x2b，而相对于add指令偏移为“-4”的地址即0x2b-4=0x27。所以这条call指令的实际调用地址为0x27。我们可以看到0x27存放着并不是swap函数的地址，跟前面“shared”一样，“OxFFFFFFFC”只是一个临时的假地址，因为在编译的时候，编译器并不知道“swap”的真正地址。</p>
-<p>编译器把这两条指令的地址部分暂时用地址“0x00000000”和“0xFFFFFFFC”代替着，把真正的地址计算工作留给了链接器。我们通过前面的空间与地址分配可以得知，链接器在完成地址和空间分配之后就已经可以确定所有符号的虚拟地址了，那么链接器就可以根据符号的地址对每个需要重定位的指令进行地位修正。我们用objdump来反汇编输出程序“ab”的代码段，可以看到main函数的两个重定位入口都已经被修正到止确的位置：<br><img src="/picture/program/ld9.png" alt=""></p>
+<p>编译器把这两条指令的地址部分暂时用地址“0x00000000”和“0xFFFFFFFC”代替着，把真正的地址计算工作留给了链接器。我们通过前面的空间与地址分配可以得知，链接器在完成地址和空间分配之后就已经可以确定所有符号的虚拟地址了，那么链接器就可以根据符号的地址对每个需要重定位的指令进行地位修正。我们用objdump来反汇编输出程序“ab”的代码段，可以看到main函数的两个重定位入口都已经被修正到止确的位置： <img src="/picture/program/ld9.png" /></p>
 <p>经过修正以后，“shared”和“swap”的地址分别为0x08049108和0x00000009（小端字节序）。关于“shared”很好理解，因为“shared”变量的地址的确是0x08049108。对于“swap”来说稍显晦涩。我们前面介绍过，这个“call”指令是一条近址相对位移调用指令，它后面跟的是调用指令的下一条指令的偏移量，“call”指令的下一条指令是“add”，它的地址是0x080480bf，所以“相对于add指令偏移量为0x00000009”的地址为0x080480bf+9=0x080480c8，即刚好是“swp”函数的地址。有兴趣的读者可以阅读后面的“指令修正方式”一节，那里我们将更加详细介绍指令修正时的地址计算方式。</p>
-<h3 id="2-2-重定位表"><a href="#2-2-重定位表" class="headerlink" title="2.2 重定位表"></a>2.2 重定位表</h3><p>那么链接器是怎么知道哪些指令是要被调整的呢？这些指令的哪些部分要被调整？怎么调整？比如上面例子中“mov”指令和“call”指令的调整方式就有所不同。事实上在ELF文件中，有一个叫重定位表（Relocation Table）的结构专门用来保存这些与重定位相关的信息，我们在前面介绍ELF文件结构时已经提到过了重定位表，它在ELF文件中往往是一个或多个段。</p>
-<p>对于可重定位的ELF文件来说，它必须包含有重定位表，用来描述如何修改相应的段里的内容。比如代码段“.text”如有要被重定位的地方，那么会有一个相对应叫“.rel.text”的段保存了代码段的重定位表；如果代码段“.data”有要被重定位的地方，就会有一个相对应叫“.rel.data”的段保存了数据段的重定位表。我们可以使用objdump来查看目标文件的重定位表：<br><img src="/picture/program/ld10.png" alt=""></p>
+<h3 id="重定位表">2.2 重定位表</h3>
+<p>那么链接器是怎么知道哪些指令是要被调整的呢？这些指令的哪些部分要被调整？怎么调整？比如上面例子中“mov”指令和“call”指令的调整方式就有所不同。事实上在ELF文件中，有一个叫重定位表（Relocation Table）的结构专门用来保存这些与重定位相关的信息，我们在前面介绍ELF文件结构时已经提到过了重定位表，它在ELF文件中往往是一个或多个段。</p>
+<p>对于可重定位的ELF文件来说，它必须包含有重定位表，用来描述如何修改相应的段里的内容。比如代码段“.text”如有要被重定位的地方，那么会有一个相对应叫“.rel.text”的段保存了代码段的重定位表；如果代码段“.data”有要被重定位的地方，就会有一个相对应叫“.rel.data”的段保存了数据段的重定位表。我们可以使用objdump来查看目标文件的重定位表： <img src="/picture/program/ld10.png" /></p>
 <p>这个命令可以用来查看“a.o”里面要重定位的地方，即“a.o”所有引用到外部符号的地址。每个要被重定位的地方叫一个重定位入口（Relocation Entry），我们可以看到“a.o”里面有两个重定位入口。重定位入口的偏移（Offset）表示该入口在要被重定位的段中的位置，“RELOCATION RECORDS FOR[.text]”表示这个重定位表是代码段的重定位表，所以偏移表示代码段中须要被调整的位置。对照前面的反汇编结果可以知道，这里的0x1c和0x27分别就是代码段中“mov”指令和“call”指令的地址部分。</p>
-<h3 id="2-3-符号解析"><a href="#2-3-符号解析" class="headerlink" title="2.3. 符号解析"></a>2.3. 符号解析</h3><p>在我们通常的观念里，之所以要链接是因为我们目标文件中用到的符号被定义在其他目标文件，所以要将它们链接起来。比如我们直接使用ld来链接“a.o”，而不将“b.o”作为输入。链接器就会发现shared和swap两个符号没有被定义，没有办法完成链接工作：</p>
+<h3 id="符号解析">2.3. 符号解析</h3>
+<p>在我们通常的观念里，之所以要链接是因为我们目标文件中用到的符号被定义在其他目标文件，所以要将它们链接起来。比如我们直接使用ld来链接“a.o”，而不将“b.o”作为输入。链接器就会发现shared和swap两个符号没有被定义，没有办法完成链接工作：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ld a.o</span><br><span class="line">a.o:In <span class="keyword">function</span> main:</span><br><span class="line">a.c:(text+0x1c):undefined reference to shared</span><br><span class="line">a.c:(text+0x27):undefined reference to swap</span><br></pre></td></tr></table></figure>
-<p>其实重定位过程也伴随着符号的解析过程，每个目标文件都可能定义一些符号，也可能引用到定义在其他目标文件的符号。重定位的过程中，每个重定位的入口都是对一个符号的引用，那么当链接器须要对某个符号的引用进行重定位时，它就要确定这个符号的目标地址。这时候链接器就会去查找由所有输入目标文件的符号表组成的全局符号表，找到相应的符号后进行重定位。<br>比如我们查看“a.o”的符号表：<br><img src="/picture/program/ld11.png" alt=""></p>
+<p>其实重定位过程也伴随着符号的解析过程，每个目标文件都可能定义一些符号，也可能引用到定义在其他目标文件的符号。重定位的过程中，每个重定位的入口都是对一个符号的引用，那么当链接器须要对某个符号的引用进行重定位时，它就要确定这个符号的目标地址。这时候链接器就会去查找由所有输入目标文件的符号表组成的全局符号表，找到相应的符号后进行重定位。 比如我们查看“a.o”的符号表： <img src="/picture/program/ld11.png" /></p>
 <p>“GLOBAL”类型的符号，除了“main”函数是定义在代码段之外，其他两个“shared”和“swap”都是“UND”，即“undefined”未定义类型，这种未定义的符号都是因为该目标文件中有关于它们的重定位项。所以在链接器扫描完所有的输入目标文件之后，所有这些未定义的符号都应该能够在全局符号表中找到，否则链接器就报符号未定义错误。</p>
-<h3 id="2-4-指令修正方式"><a href="#2-4-指令修正方式" class="headerlink" title="2.4 指令修正方式"></a>2.4 指令修正方式</h3><p>不同的处理器指令对于地址的格式和方式都不一样。比如对于32位Intel x86处理器来说，转移跳转指令（jmp指令）、子程序调用指令（call指令）和数据传送指令（mov指令）寻址方式千差万别。这些寻址方式有如下几方面的区别：</p>
+<h3 id="指令修正方式">2.4 指令修正方式</h3>
+<p>不同的处理器指令对于地址的格式和方式都不一样。比如对于32位Intel x86处理器来说，转移跳转指令（jmp指令）、子程序调用指令（call指令）和数据传送指令（mov指令）寻址方式千差万别。这些寻址方式有如下几方面的区别：</p>
 <ul>
 <li>近址寻址或远址寻址</li>
 <li>绝对寻址或相对寻址</li>
@@ -391,7 +398,7 @@
 <li>绝对近址32位寻址</li>
 <li>相对近址32位寻址</li>
 </ul>
-<p>这两种重定位方式指令修正方式每个被修正的位置的长度都为32位，即4个字节。而且都是近址寻址，不用考虑Intel的段间远址寻址。唯一的区别就是绝对寻址和相对寻址。前面我们提到过，重定位入口的r_info成员低8位表示重定位入口类型，如表4-2所示。<br><img src="/picture/program/ld12.png" alt=""></p>
+<p>这两种重定位方式指令修正方式每个被修正的位置的长度都为32位，即4个字节。而且都是近址寻址，不用考虑Intel的段间远址寻址。唯一的区别就是绝对寻址和相对寻址。前面我们提到过，重定位入口的r_info成员低8位表示重定位入口类型，如表4-2所示。 <img src="/picture/program/ld12.png" /></p>
 <ul>
 <li>A=保存在被修正位置的值</li>
 <li>P=被修正的位置（相对于段开始的偏移量或者虚拟地址），注意，该值可通过r_offset计算得到</li>
@@ -418,7 +425,8 @@
 <blockquote>
 <p>从这两个例子可以看出来，绝对寻址修正和相对寻址修正的区别就是绝对寻址修正后的地址为该符号的实际地址；相对寻址修正后的地址为符号距离被修正位置的地址差。</p>
 </blockquote>
-<h2 id="3-COMMON块"><a href="#3-COMMON块" class="headerlink" title="3. COMMON块"></a>3. COMMON块</h2><p>正如前面提到过的，由于弱符号机制允许同一个符号的定义存在于多个文件中，所以可能会导致的一个问题是：如果一个弱符号定义在多个目标文件中，而它们的类型又不同，怎么办？目前的链接器本身并不支持符号的类型，即变量类型对于链接器来说是透明的，它只知道一个符号的名字，并不知道类型是否一致。那么当我们定义的多个符号定义类型不一致时，链接器该如何处理呢？让我们米分析一下多个符号定义类型不一致的几种情况，主要分三种情况：</p>
+<h2 id="common块">3. COMMON块</h2>
+<p>正如前面提到过的，由于弱符号机制允许同一个符号的定义存在于多个文件中，所以可能会导致的一个问题是：如果一个弱符号定义在多个目标文件中，而它们的类型又不同，怎么办？目前的链接器本身并不支持符号的类型，即变量类型对于链接器来说是透明的，它只知道一个符号的名字，并不知道类型是否一致。那么当我们定义的多个符号定义类型不一致时，链接器该如何处理呢？让我们米分析一下多个符号定义类型不一致的几种情况，主要分三种情况：</p>
 <ul>
 <li>两个或两个以上强符号类型不一致.无须额外处理的，因为多个强符号定义本身就是非法的,链接器会报符号多重定义错误</li>
 <li>有一个强符号，其他都是弱符号，出现类型不一致, 最终输出结果中的符号所占空间与强符号相同</li>
@@ -427,7 +435,7 @@
 <blockquote>
 <p>值得注意的是，如果链接过程中有弱符号大小大于强符号，那么ld链接器会报如下警告：</p>
 </blockquote>
-<p>事实上，现在的编译器和链接器都支持一种叫COMMON块（Common Block）的机制，当不同的目标文件需要的COMMON块空间大小不一致时，以最大的那块为准。<br>现代的链接机制在处理弱符号的时候，采用的就是与COMMON块一样的机制。</p>
+<p>事实上，现在的编译器和链接器都支持一种叫COMMON块（Common Block）的机制，当不同的目标文件需要的COMMON块空间大小不一致时，以最大的那块为准。 现代的链接机制在处理弱符号的时候，采用的就是与COMMON块一样的机制。</p>
 <p>这种使用COMMON块的方法实际上是一种类似“黑客”的取巧办法，直接导致需要COMMON机制的原因是编译器和链接器允许不同类型的弱符号存在，但最本质的原因还是链接器不支持符号类型，即链接器无法判断各个符号的类型是否一致。</p>
 <p>现在我们再回头总结性地思考关于未初始化的全局变量的问题：在目标文件中，编译器为什么不直接把未初始化的全局变量也当作未初始化的局部静态变量一样处理，为它在BSS段分配空间，而是将其标记为一个COMMON类型的变量？</p>
 <p>通过了解链接器处理多个弱符号的过程，我们可以想到，当编译器将一个编译单元编译成目标文件的时候，如果该编译单元包含了弱符号（未初始化的全局变量就是典型的弱符号），那么该弱符号最终所占空间的大小在此时是未知的，因为有可能其他编译单元中该符号所占的空间比本编译单元该符号所占的空间要大。所以编译器此时无法为该弱符号在B段分配空间，因为所须要空间的大小未知。但是链接器在链接过程中可以确定弱符号的大小，因为当链接器读取所有输入目标文件以后，任何一个弱符号的最终大小都可以确定了，所以它可以在最终输出文件的BSS段为其分配空间。所以总体来看，未初始化全局变量最终还是被放在BSS段的。</p>
@@ -435,8 +443,10 @@
 <p>GCC的“-fno-common”也允许我们把所有未初始化的全局变量不以COMMON块的形式处理，或者使用“<strong>attribute</strong>”扩展：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> global __attribute__((nocommon));</span><br></pre></td></tr></table></figure>
 <p>一旦一个未初始化的全局变量不是以COMMON块的形式存在，那么它就相当于一个强符号，如果其他目标文件中还有同一个变量的强符号定义，链接时就会发生符号重复定义错误。</p>
-<h2 id="4-C-相关问题"><a href="#4-C-相关问题" class="headerlink" title="4. C++相关问题"></a>4. C++相关问题</h2><p>C++的一些语言特性使之必须由编译器和链接器共同支持才能完成工作。最主要的有两个方面，一个是C++的重复代码消除，还有一个就是全局构造与析构。另外由于C++语言的各种特性，比如虚函数、函数重载、继承、异常等，使得它背后的数据结构异常复杂，这些数据结构往往在不同的编译器和链接器之间相互不能通用，使得C++程序的二进制兼容性成了一个很大的问题。</p>
-<h3 id="4-1-重复代码消除"><a href="#4-1-重复代码消除" class="headerlink" title="4.1 重复代码消除"></a>4.1 重复代码消除</h3><p>C++编译器在很多时候会产生重复的代码，比如模板（Templates）、外部内联函数（Extern Inline Function）和虚函数表（Virtual Function Table）都有可能在不同的编译单元里生成相同的代码。最简单的情况就拿模板来说，模板从本质上来讲很像宏，当模板在一个编译单元里被实例化时，它并不知道自己是否在别的编译单元也被实例化了。所以当一个模板在多个编译单元同时实例化成相同的类型的时候，必然会生成重复的代码。当然，最简单的方案就是不管这些，将这些重复的代码都保留下来。不过这样做的主要问题有以下几方面。</p>
+<h2 id="c相关问题">4. C++相关问题</h2>
+<p>C++的一些语言特性使之必须由编译器和链接器共同支持才能完成工作。最主要的有两个方面，一个是C++的重复代码消除，还有一个就是全局构造与析构。另外由于C++语言的各种特性，比如虚函数、函数重载、继承、异常等，使得它背后的数据结构异常复杂，这些数据结构往往在不同的编译器和链接器之间相互不能通用，使得C++程序的二进制兼容性成了一个很大的问题。</p>
+<h3 id="重复代码消除">4.1 重复代码消除</h3>
+<p>C++编译器在很多时候会产生重复的代码，比如模板（Templates）、外部内联函数（Extern Inline Function）和虚函数表（Virtual Function Table）都有可能在不同的编译单元里生成相同的代码。最简单的情况就拿模板来说，模板从本质上来讲很像宏，当模板在一个编译单元里被实例化时，它并不知道自己是否在别的编译单元也被实例化了。所以当一个模板在多个编译单元同时实例化成相同的类型的时候，必然会生成重复的代码。当然，最简单的方案就是不管这些，将这些重复的代码都保留下来。不过这样做的主要问题有以下几方面。</p>
 <ul>
 <li>空间浪费</li>
 <li>地址较易出错，有可能两个指向同一个函数的指针会不相等</li>
@@ -444,17 +454,18 @@
 </ul>
 <p>一个比较有效的做法就是将每个模板的实例代码都单独地存放在一个段里，每个段只包含一个模板实例。比如有个模板函数是add<T>()，某个编译单元以int类型和float类型实例化了该模板函数，那么该编译单元的目标文件中就包含了两个该模板实例的段。为了简单起见，我们假设这两个段的名字分别叫.temp.add<int>和.temp.add<float>。这样，当别的编译单元也以int或float类型实例化该模板函数后，也会生成同样的名字，这样链接器在最终链接的时候可以区分这些相同的模板实例段，然后将它们合并入最后的代码段。</p>
 <p>这种方法虽然能够基本上解决代码重复的问题，但还是存在一些问题。比如相同名称的段可能拥有不同的内容，这可能由于不同的编译单元使用了不同的编译器版本或者编译优化选项，导致同一个函数编译出来的实际代码有所不同。那么这种情况下链接器可能会做出一个选择，那就是随意选择其中任何一个副本作为链接的输入，然后同时提供一个警告信息。</p>
-<p><strong>函数级别链接</strong><br>由于现在的程序和库通常来讲都非常庞大，一个目标文件可能包含成千上百个函数或变量。当我们须要用到某个目标文件中的任意一个函数或变量时，就须要把它整个地链接进来，也就是说那些没有用到的函数也被一起链接了进来。这样的后果是链接输出文件会变得很大，所有用到的没用到的变量和函数都一起塞到了输出文件中。</p>
+<p><strong>函数级别链接</strong><br />
+由于现在的程序和库通常来讲都非常庞大，一个目标文件可能包含成千上百个函数或变量。当我们须要用到某个目标文件中的任意一个函数或变量时，就须要把它整个地链接进来，也就是说那些没有用到的函数也被一起链接了进来。这样的后果是链接输出文件会变得很大，所有用到的没用到的变量和函数都一起塞到了输出文件中。</p>
 <p>VISUAL C++编译器提供了一个编译选项叫函数级别链接（Functional-Level Linking），这个选项的作用就是让所有的函数都像前面模板函数一样，单独保存到一个段里面。当链接器须要用到某个函数时，它就将它合并到输出文件中，对于那些没有用的函数则将它们抛弃。这种做法可以很大程度上减小输出文件的长度，减少空间浪费。但是这个优化选项会减慢编译和链接过程，因为链接器须要计算各个函数之间的依赖关系，并且所有函数都保持到独立的段中，目标函数的段的数量大大增加，重定位过程也会因为段的数目的增加而变得复杂，目标文件随着段数目的增加也会变得相对较大。</p>
 <p>GCC编译器也提供了类似的机制，它有两个选择分别是“-ffunction-sections”和“-fdata-sections”，这两个选项的作用就是将每个函数或变量分别保持到独立的段中。</p>
-<h3 id="4-2-全局构造与析构"><a href="#4-2-全局构造与析构" class="headerlink" title="4.2 全局构造与析构"></a>4.2 全局构造与析构</h3><p>其实在main函数被调用之前，为了程序能够顺利执行，要先初始化进程执行环境，比如堆分配初始化（malloc、free）、线程子系统等。C++的全局对象构造函数也是在这一时期被执行的，我们知道C++的全局对象的构造函数在main之前被执行，C++全局对象的析构函数在main之后被执行。</p>
-<p>Linux系统下一般程序的入口是“_start’”，这个函数是Linux系统库（Glibc）的一部分。当我们的程序与Glibc库链接在一起形成最终可执行文件以后，这个函数就是程序的初始化部分的入口，程序初始化部分完成一系列初始化过程之后，会调用main函数来执行程序的主体。在main函数执行完成以后，返回到初始化部分，它进行一些清理工作，然后结束进程。对于有些场合，程序的一些特定的操作必须在main函数之前被执行，还有一些操作必须在main函数之后被执行，其中很具有代表性的就是C++的全局对象的构造和析构函数。因此ELF文件还定义了两种特殊的段。</p>
+<h3 id="全局构造与析构">4.2 全局构造与析构</h3>
+<p>其实在main函数被调用之前，为了程序能够顺利执行，要先初始化进程执行环境，比如堆分配初始化（malloc、free）、线程子系统等。C++的全局对象构造函数也是在这一时期被执行的，我们知道C++的全局对象的构造函数在main之前被执行，C++全局对象的析构函数在main之后被执行。</p>
+<p>Linux系统下一般程序的入口是“_start'”，这个函数是Linux系统库（Glibc）的一部分。当我们的程序与Glibc库链接在一起形成最终可执行文件以后，这个函数就是程序的初始化部分的入口，程序初始化部分完成一系列初始化过程之后，会调用main函数来执行程序的主体。在main函数执行完成以后，返回到初始化部分，它进行一些清理工作，然后结束进程。对于有些场合，程序的一些特定的操作必须在main函数之前被执行，还有一些操作必须在main函数之后被执行，其中很具有代表性的就是C++的全局对象的构造和析构函数。因此ELF文件还定义了两种特殊的段。</p>
 <ul>
 <li>.init 该段里面保存的是可执行指令，它构成了进程的初始化代码。因此，当一个程序开始运行时，在main函数被调用之前，Glibc的初始化部分安排执行这个段的中的代码</li>
 <li>.fini 该段保存着进程终止代码指令。因此，当-个程序的main函数正常退出时，Glibc会安排执行这个段中的代码</li>
 </ul>
-<p>这两个段.init和.fini的存在有着特别的目的，如果一个函数放到.init段，在main函数执行前系统就会执行它。同理，假如一个函数放到.fini段，在main函数返回后该函数就会被执行。利用这两个特性，C++的全局构造和析构函数就由此实现。</p>
-<h3 id="4-3-C-与ABI"><a href="#4-3-C-与ABI" class="headerlink" title="4.3 C++与ABI"></a>4.3 C++与ABI</h3><p>如果要使两个编译器编译出来的目标文件能够相互链接，那么这两个目标文件必须满足下面这些条件：采用同样的目标文件格式、拥有同样的符号修饰标准、变量的内存分布方式相同、函数的调用方式相同等等。其中我们把符号修饰标准、变量内存布局、函数调用方式等这些跟可执行代码二进制兼容性相关的内容称为ABI(Application Binary Interface)。</p>
+<p>这两个段.init和.fini的存在有着特别的目的，如果一个函数放到.init段，在main函数执行前系统就会执行它。同理，假如一个函数放到.fini段，在main函数返回后该函数就会被执行。利用这两个特性，C++的全局构造和析构函数就由此实现。 ### 4.3 C++与ABI 如果要使两个编译器编译出来的目标文件能够相互链接，那么这两个目标文件必须满足下面这些条件：采用同样的目标文件格式、拥有同样的符号修饰标准、变量的内存分布方式相同、函数的调用方式相同等等。其中我们把符号修饰标准、变量内存布局、函数调用方式等这些跟可执行代码二进制兼容性相关的内容称为ABI(Application Binary Interface)。</p>
 <p>影响ABI的因素非常多，硬件、编程语言、编译器、链接器、操作系统等都会影响ABI。我们可以从C语言的角度来看一个编程语言是如何影响ABI的。对于C语言的目标代码来说，以下几个方面会决定目标文件之间是否二进制兼容：</p>
 <ul>
 <li>内置类型（如int、float、char等）的大小和在存储器中的放置方式（大端、小端、对齐方式等）</li>
@@ -476,12 +487,13 @@
 <li>内嵌函数访问细节</li>
 </ul>
 <p>很多时候，库厂商往往不希望库用户看到库的源代码，所以一般是以二进制的方式提供给用户。这样，当用户的编译器型号版本与编译库所用的编译器型号和版本不同时，就可能产生不兼容。</p>
-<h2 id="5-静态库链接"><a href="#5-静态库链接" class="headerlink" title="5 静态库链接"></a>5 静态库链接</h2><p>让我们还是先回到一个比较初步的问题，就是程序如何使用操作系统提供的API。在一般的情况下，一种语言的开发环境往往会附带有语言库（Language Library）。这些库就是对操作系统的API的包装，比如我们经典的C语言版“Hello World”程序，它使用C语言标准库的“printf’”函数来输出一个字符串，“printf”函数对字符串进行一些必要的处理以后，最后会调用操作系统提供的API。</p>
+<h2 id="静态库链接">5 静态库链接</h2>
+<p>让我们还是先回到一个比较初步的问题，就是程序如何使用操作系统提供的API。在一般的情况下，一种语言的开发环境往往会附带有语言库（Language Library）。这些库就是对操作系统的API的包装，比如我们经典的C语言版“Hello World”程序，它使用C语言标准库的“printf'”函数来输出一个字符串，“printf”函数对字符串进行一些必要的处理以后，最后会调用操作系统提供的API。</p>
 <p>库里面还带有那些很常用的函数，比如C语言标准库里面有很常用一个函数取得一个字符串的长度叫strlen()，该函数即遍历整个字符串后返回字符串长度，这个函数并没有调用任何操作系统的API，也没有做任何输入输出。但是很大一部分库函数都是要调用操作系统的API的，比如最常用的往终端输出格式化字符串的printf就是会调用操作系统，往终端里面打印一些字符串。</p>
 <p>其实一个静态库可以简单地看成一组目标文件的集合，即很多目标文件经过压缩打包后形成的一个文件。比如我们在Linux中最常用的C语言静态库libc位于/usr/lib/libc.a，它属于glibc项目的一部分。</p>
 <p>我们知道在一个语言的运行库中，包含了很多跟系统功能相关的代码，比如输入输出、文件操作、时间日期、内存管理等。glibc本身是用C语言开发的，它由成百上千个C语言源代码文件组成，也就是说，编译完成以后有相同数量的目标文件，比如输入输出有printf.o，scanf.o；文件操作有fread.o，fwrite.o；时间日期有date.o，time.o；内存管理有malloc.o等。把这些零散的目标文件直接提供给库的使用者，很大程度上会造成文件传输、管理和组织方面的不便，于是通常人们使用“ar”压缩程序将这些目标文件压缩到一起，并且对其进行编号和索引，以便于查找和检索，就形成了libc.a这个静态库文件。在我的机器上，该文件有2.8MB大小，我们也可以使用“ar”工具来查看这个文件包含了哪些目标文件：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$ar</span> -t libc.a </span><br><span class="line">init-first.o</span><br><span class="line">libc-start.o</span><br><span class="line">sysdep.o</span><br><span class="line">version.o</span><br><span class="line">check_fds.o</span><br><span class="line">libc-tls.o</span><br><span class="line">elf-init.o</span><br><span class="line">dso_handle.o</span><br><span class="line">errno.o</span><br><span class="line">errno-loc.o</span><br><span class="line">iconv_open.o</span><br><span class="line">iconv.o</span><br><span class="line">iconv_close.o</span><br><span class="line">gconv_open.o</span><br><span class="line">gconv.o</span><br><span class="line">gconv_close.o</span><br><span class="line">gconv_db.o</span><br><span class="line">gconv_conf.o</span><br></pre></td></tr></table></figure>
-<p>libc.a里面总共包含了1400个目标文件，那么，我们如何在这么多目标文件中找到“printf’”函数所在的目标文件呢？答案是使用“objdump”或“readelf’”加上文本查找工具如“grep”，使用“objdump”查看libc.a的符号可以发现如下结果：</p>
+<p>libc.a里面总共包含了1400个目标文件，那么，我们如何在这么多目标文件中找到“printf'”函数所在的目标文件呢？答案是使用“objdump”或“readelf'”加上文本查找工具如“grep”，使用“objdump”查看libc.a的符号可以发现如下结果：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$objdump</span> -t libc.a</span><br><span class="line">aio.o:     file format elf64-little</span><br><span class="line"></span><br><span class="line">SYMBOL TABLE:</span><br><span class="line">...</span><br><span class="line">printf.o:     file format elf64-little</span><br><span class="line">0000000000000000 l    df *ABS*	0000000000000000 printf.c</span><br><span class="line">0000000000000000 l    d  .text.printf	0000000000000000 .text.printf</span><br><span class="line">0000000000000000 l       .text.printf	0000000000000000 <span class="variable">$x</span></span><br><span class="line">0000000000000000 g     F .text.printf	0000000000000084 <span class="built_in">printf</span></span><br><span class="line">0000000000000000         *UND*	0000000000000000 vfprintf</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
 <p>可以看到“printf”函数被定义在了“printf.o”这个目标文件中。这里我们似乎找到了最终的机制，那就是“Hello World”程序编译出来的目标文件只要和libc.a里面的“printf.o。链接在一起，最后就可以形成一个可用的可执行文件了。这个解释似乎很完美，实际上己经很接近最后的答案了。那么我们就按照这个方案去尝试一下，假设“Hello World”程序的源代码为“hello.c”，使用如下方法编译：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -c -fno-builtin hello.c</span><br></pre></td></tr></table></figure>
@@ -489,8 +501,8 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ar -x libc.a</span><br></pre></td></tr></table></figure>
 <p>这个命令会将libc.a中的所有目标文件“解压”至当前目录。我们也可以找到“printf.o”，然后将其与“hello.o”链接在一起：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ ld hello.o printf.o</span><br><span class="line">ld:warning:cannot find entry symbol _start;defaulting to 0000000008048080printf.o:In <span class="keyword">function</span> IO_printf<span class="string">&#x27;:</span></span><br><span class="line"><span class="string">(.text+0x18):undefined reference to stdout&#x27;</span>printf.o:In <span class="keyword">function</span> _IO_printf<span class="string">&#x27;:</span></span><br><span class="line"><span class="string">(.text+0x20):undefined reference to &#x27;</span>vfprintf<span class="string">&#x27;</span></span><br></pre></td></tr></table></figure>
-<p>链接却失败了，原因是缺少两个外部符号的定义。其实眼尖的读者可能已经在最开始打印“printf.o”的符号表时就看出一点问题来了，那就是“printf.o”里面有两个“UND”的符号“stdout”和“vfprintf’”，也就是有两个未定义的符号。正是这两个未定义的符号打破了看似完美的解释，很明显：“printf.o”依赖于其他的目标文件。</p>
-<p>用同样的方法，我们可以找到“stdout”这个符号所在的目标文件，它位于“stdio.o”；而“vfprintf”位于“vfprintf.o”。很不幸的是这两个文件还依赖于其他的目标文件，因为它们也有未定义的符号。这些变量和函数都分布在glbc的各个目标文件之中，如果我们能够一一将它们收集齐，那么理论上就可以将它们链接在一起，最后跟“hello.o”链接成一个可执行文件。但是，如果靠人工这样做的代价实在是太大了，我们在这里不打算演示这样一个繁琐的过程。幸好ld链接器会处理这一切繁琐的事务，自动寻找所有须要的符号及它们所在的目标文件，将这些目标文件从“libc.a”中“解压”出来，最终将它们链接在一起成为一个可执行文件。那么我们可不可以就这么认为：将“hello.o”和“libc.a”链接起来就可以得到可执行文件呢？理论上这样就可以了，如图4-6所示。<br><img src="/picture/program/ld13.png" alt=""></p>
+<p>链接却失败了，原因是缺少两个外部符号的定义。其实眼尖的读者可能已经在最开始打印“printf.o”的符号表时就看出一点问题来了，那就是“printf.o”里面有两个“UND”的符号“stdout”和“vfprintf'”，也就是有两个未定义的符号。正是这两个未定义的符号打破了看似完美的解释，很明显：“printf.o”依赖于其他的目标文件。</p>
+<p>用同样的方法，我们可以找到“stdout”这个符号所在的目标文件，它位于“stdio.o”；而“vfprintf”位于“vfprintf.o”。很不幸的是这两个文件还依赖于其他的目标文件，因为它们也有未定义的符号。这些变量和函数都分布在glbc的各个目标文件之中，如果我们能够一一将它们收集齐，那么理论上就可以将它们链接在一起，最后跟“hello.o”链接成一个可执行文件。但是，如果靠人工这样做的代价实在是太大了，我们在这里不打算演示这样一个繁琐的过程。幸好ld链接器会处理这一切繁琐的事务，自动寻找所有须要的符号及它们所在的目标文件，将这些目标文件从“libc.a”中“解压”出来，最终将它们链接在一起成为一个可执行文件。那么我们可不可以就这么认为：将“hello.o”和“libc.a”链接起来就可以得到可执行文件呢？理论上这样就可以了，如图4-6所示。 <img src="/picture/program/ld13.png" /></p>
 <p>实际情况恐怕还是令人失望的，现在Linux系统上的库比我们想象的要复杂。当我们编译和链接一个普通C程序的时候，不仅要用到C语言库libc.a，而且还有其他一些辅助性质的目标文件和库。我们可以使用下面的GCC命令编译“hello.c”，“-verbose”表示将整个编译链接过程的中间步骤打印出来：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ gcc -static --verbose -fno-builtin Simplesection.c</span><br><span class="line">Using built-in specs.</span><br><span class="line">COLLECT_GCC=gcc</span><br><span class="line">COLLECT_LTO_WRAPPER=/usr/lib/gcc/x86_64-linux-gnu/9/lto-wrapper</span><br><span class="line">OFFLOAD_TARGET_NAMES=nvptx-none:hsa</span><br><span class="line">OFFLOAD_TARGET_DEFAULT=1</span><br><span class="line">Target: x86_64-linux-gnu</span><br><span class="line">Configured with: ../src/configure -v --with-pkgversion=<span class="string">&#x27;Ubuntu 9.3.0-17ubuntu1~20.04&#x27;</span> --with-bugurl=file:///usr/share/doc/gcc-9/README.Bugs --enable-languages=c,ada,c++,go,brig,d,fortran,objc,obj-c++,gm2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-9 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-gnu-unique-object --disable-vtable-verify --enable-plugin --enable-default-pie --with-system-zlib --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --disable-werror --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none=/build/gcc-9-HskZEa/gcc-9-9.3.0/debian/tmp-nvptx/usr,hsa --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu</span><br><span class="line">Thread model: posix</span><br><span class="line">gcc version 9.3.0 (Ubuntu 9.3.0-17ubuntu1~20.04)</span><br><span class="line">COLLECT_GCC_OPTIONS=<span class="string">&#x27;-static&#x27;</span> <span class="string">&#x27;-v&#x27;</span> <span class="string">&#x27;-fno-builtin&#x27;</span> <span class="string">&#x27;-mtune=generic&#x27;</span> <span class="string">&#x27;-march=x86-64&#x27;</span></span><br><span class="line"> /usr/lib/gcc/x86_64-linux-gnu/9/cc1 -quiet -v -imultiarch x86_64-linux-gnu Simplesection.c -quiet -dumpbase Simplesection.c -mtune=generic -march=x86-64 -auxbase Simplesection -version -fno-builtin -fasynchronous-unwind-tables -fstack-protector-strong -Wformat -Wformat-security -fstack-clash-protection -fcf-protection -o /tmp/ccobRCAH.s</span><br><span class="line">GNU C17 (Ubuntu 9.3.0-17ubuntu1~20.04) version 9.3.0 (x86_64-linux-gnu)</span><br><span class="line">  compiled by GNU C version 9.3.0, GMP version 6.2.0, MPFR version 4.0.2, MPC version 1.1.0, isl version isl-0.22.1-GMP</span><br><span class="line"></span><br><span class="line">GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072</span><br><span class="line">ignoring nonexistent directory <span class="string">&quot;/usr/local/include/x86_64-linux-gnu&quot;</span></span><br><span class="line">ignoring nonexistent directory <span class="string">&quot;/usr/lib/gcc/x86_64-linux-gnu/9/include-fixed&quot;</span></span><br><span class="line">ignoring nonexistent directory <span class="string">&quot;/usr/lib/gcc/x86_64-linux-gnu/9/../../../../x86_64-linux-gnu/include&quot;</span></span><br><span class="line"><span class="comment">#include &quot;...&quot; search starts here:</span></span><br><span class="line"><span class="comment">#include &lt;...&gt; search starts here:</span></span><br><span class="line"> /usr/lib/gcc/x86_64-linux-gnu/9/include</span><br><span class="line"> /usr/<span class="built_in">local</span>/include</span><br><span class="line"> /usr/include/x86_64-linux-gnu</span><br><span class="line"> /usr/include</span><br><span class="line">End of search list.</span><br><span class="line">GNU C17 (Ubuntu 9.3.0-17ubuntu1~20.04) version 9.3.0 (x86_64-linux-gnu)</span><br><span class="line">  compiled by GNU C version 9.3.0, GMP version 6.2.0, MPFR version 4.0.2, MPC version 1.1.0, isl version isl-0.22.1-GMP</span><br><span class="line"></span><br><span class="line">GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072</span><br><span class="line">Compiler executable checksum: bbf13931d8de1abe14040c9909cb6969</span><br><span class="line">COLLECT_GCC_OPTIONS=<span class="string">&#x27;-static&#x27;</span> <span class="string">&#x27;-v&#x27;</span> <span class="string">&#x27;-fno-builtin&#x27;</span> <span class="string">&#x27;-mtune=generic&#x27;</span> <span class="string">&#x27;-march=x86-64&#x27;</span></span><br><span class="line"> as -v --64 -o /tmp/ccQ6DrhG.o /tmp/ccobRCAH.s</span><br><span class="line">GNU assembler version 2.34 (x86_64-linux-gnu) using BFD version (GNU Binutils <span class="keyword">for</span> Ubuntu) 2.34</span><br><span class="line">COMPILER_PATH=/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/</span><br><span class="line">LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/9/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/9/../../../:/lib/:/usr/lib/</span><br><span class="line">COLLECT_GCC_OPTIONS=<span class="string">&#x27;-static&#x27;</span> <span class="string">&#x27;-v&#x27;</span> <span class="string">&#x27;-fno-builtin&#x27;</span> <span class="string">&#x27;-mtune=generic&#x27;</span> <span class="string">&#x27;-march=x86-64&#x27;</span></span><br><span class="line"> /usr/lib/gcc/x86_64-linux-gnu/9/collect2 -plugin /usr/lib/gcc/x86_64-linux-gnu/9/liblto_plugin.so -plugin-opt=/usr/lib/gcc/x86_64-linux-gnu/9/lto-wrapper -plugin-opt=-fresolution=/tmp/cctIiGBE.res -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lgcc_eh -plugin-opt=-pass-through=-lc --build-id -m elf_x86_64 --hash-style=gnu --as-needed -static -z relro /usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/crt1.o /usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/9/crtbeginT.o -L/usr/lib/gcc/x86_64-linux-gnu/9 -L/usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/9/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/9/../../.. /tmp/ccQ6DrhG.o --start-group -lgcc -lgcc_eh -lc --end-group /usr/lib/gcc/x86_64-linux-gnu/9/crtend.o /usr/lib/gcc/x86_64-linux-gnu/9/../../../x86_64-linux-gnu/crtn.o</span><br><span class="line">COLLECT_GCC_OPTIONS=<span class="string">&#x27;-static&#x27;</span> <span class="string">&#x27;-v&#x27;</span> <span class="string">&#x27;-fno-builtin&#x27;</span> <span class="string">&#x27;-mtune=generic&#x27;</span> <span class="string">&#x27;-march=x86-64&#x27;</span></span><br></pre></td></tr></table></figure>
 <p>关键的三个步骤上面已经用粗体表示出来了，第一步是调用cc1程序，这个程序实际上就是GCC的C语言编译器，它将“hello.c”编译成一个临时的汇编文件“/tmp/ccUhtGSB.s”：然后调用as程序，as程序是GNU的汇编器，它将“/tmp/ccUhtGSB.s”汇编成临时目标文件“/tmp/cCQZRPL5.o”，这个“/tmp/cCQZRPL5.o”实际上就是前面的“hello.o”；接着最关键的步骤是最后一步，GCC调用collect2程序来完成最后的链接。但是按照我们之前的理解，链接过程应该由ld链接器来完成，这里怎么忽然杀出个collect2？这是个什么程序？</p>
@@ -506,8 +518,10 @@
 <li>crtn.o</li>
 </ul>
 <p>这些库和目标文件现在看来可能很不熟悉，我们将在第部分专门介绍这些库及它们背后的原理。</p>
-<h2 id="6-链接过程控制"><a href="#6-链接过程控制" class="headerlink" title="6 链接过程控制"></a>6 链接过程控制</h2><p>绝大部分情况下，我们使用链接器提供的默认链接规则对目标文件进行链接。这在一般情况下是没有问题的，但对于一些特殊要求的程序，比如操作系统内核、BIOS（Basic Input Output System）或一些在没有操作系统的情况下运行的程序（如引导程序Boot Loader或者嵌入式系统的程序，或者有一些脱离操作系统的硬盘分区软件PQMagic等），以及另外的一些须要特殊的链接过程的程序，如一些内核驱动程序等，它们往往受限于一些特殊的条件，如须要指定输出文件的各个段虚拟地址、段的名称、段存放的顺序等，因为这些特殊的环境，特别是某些硬件条件的限制，往往对程序的各个段的地址有着特殊的要求。</p>
-<h3 id="6-1-链接控制脚本"><a href="#6-1-链接控制脚本" class="headerlink" title="6.1 链接控制脚本"></a>6.1 链接控制脚本</h3><p>链接器一般都提供多种控制整个链接过程的方法，以用来产生用户所须要的文件。一般链接器有如下三种方法。</p>
+<h2 id="链接过程控制">6 链接过程控制</h2>
+<p>绝大部分情况下，我们使用链接器提供的默认链接规则对目标文件进行链接。这在一般情况下是没有问题的，但对于一些特殊要求的程序，比如操作系统内核、BIOS（Basic Input Output System）或一些在没有操作系统的情况下运行的程序（如引导程序Boot Loader或者嵌入式系统的程序，或者有一些脱离操作系统的硬盘分区软件PQMagic等），以及另外的一些须要特殊的链接过程的程序，如一些内核驱动程序等，它们往往受限于一些特殊的条件，如须要指定输出文件的各个段虚拟地址、段的名称、段存放的顺序等，因为这些特殊的环境，特别是某些硬件条件的限制，往往对程序的各个段的地址有着特殊的要求。</p>
+<h3 id="链接控制脚本">6.1 链接控制脚本</h3>
+<p>链接器一般都提供多种控制整个链接过程的方法，以用来产生用户所须要的文件。一般链接器有如下三种方法。</p>
 <ul>
 <li>使用命令行来给链接器指定参数，我们前面所使用的ld的-o、-e参数就属于这类。这种方法我们已经在前面使用很多次了</li>
 <li>将链接指令存放在目标文件里面，编译器经常会通过这种方法向链接器传递指令。该方法也比较常见，只是我们平时很少关注，比如VISUAL C++编译器会把链接参数放在PE目标文件的.drectve段以用来传递参数</li>
@@ -518,11 +532,12 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ld -verbose</span><br></pre></td></tr></table></figure>
 <p>默认的ld链接脚本存放在/usr/lib/ldscripts/下，不同的机器平台、输出文件格式都有相应的链接脚本。我们可以自己写一个脚本，然后指定该脚本为链接控制脚本。比如可以使用-T参数：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ld -T link.script</span><br></pre></td></tr></table></figure>
-<h3 id="6-2-最“小”的程序"><a href="#6-2-最“小”的程序" class="headerlink" title="6.2 最“小”的程序"></a>6.2 最“小”的程序</h3><p>为了演示链接的控制过程，我们接着要做一个最小的程序：这个程序的功能是在终端上输出“Hello world！”。</p>
+<h3 id="最小的程序">6.2 最“小”的程序</h3>
+<p>为了演示链接的控制过程，我们接着要做一个最小的程序：这个程序的功能是在终端上输出“Hello world！”。</p>
 <ul>
 <li>首先，经典的helloworld使用了printf函数，该函数是系统C语言库的一部分。为了使用该函数，我们必须在链接时将C语言库与程序的目标文件链接产生最终可执行文件。我们希望“小程序”能够脱离C语言运行库</li>
 <li>其次，经典的helloworld由于使用了库，所以必须有main函数。我们知道一般程序的入口在库的_start，由库负责初始化后调用main函数来执行程序的主体部分。为了不使用main这个我们已经感到厌烦的函数名，“小程序”使用nomain作为整个程序的入口</li>
-<li>接着，经典的helloworld会产生多个段：main程序的指令部分会产生.text段、字符串常量“Hello world！\n”会被放在数据段或只读数据段，还有C库所包含的各种段。为了演示ld链接脚本的控制过程，我们将“小程序”的所有段都合并到一个叫“tinytext”的段，注意：这个段是我们任意命名的，是由链接脚本控制链接过程生成的。TinyHelloWorld.c源代码如下：</li>
+<li>接着，经典的helloworld会产生多个段：main程序的指令部分会产生.text段、字符串常量“Hello world！”会被放在数据段或只读数据段，还有C库所包含的各种段。为了演示ld链接脚本的控制过程，我们将“小程序”的所有段都合并到一个叫“tinytext”的段，注意：这个段是我们任意命名的，是由链接脚本控制链接过程生成的。TinyHelloWorld.c源代码如下：</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span>* str = <span class="string">&quot;Hello world!\n&quot;</span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">print</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">asm</span>(<span class="string">&quot;movl $13,%%edx \n\t&quot;</span></span><br><span class="line">        <span class="string">&quot;movl $0,%%ecx \n\t&quot;</span></span><br><span class="line">        <span class="string">&quot;movl $0,%%ebx \n\t&quot;</span></span><br><span class="line">        <span class="string">&quot;movl $4,%%eax \n\t&quot;</span></span><br><span class="line">        <span class="string">&quot;int $Ox80\n\t&quot;</span></span><br><span class="line">        ::<span class="string">&quot;r&quot;</span>(str):<span class="string">&quot;edx&quot;</span>,<span class="string">&quot;ecx&quot;</span>,<span class="string">&quot;ebx);</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="string">void exit()</span></span><br><span class="line"><span class="string">&#123;</span></span><br><span class="line"><span class="string">    asm(&quot;</span>movl $<span class="number">42</span>,%ebx \n\t<span class="string">&quot;</span></span><br><span class="line"><span class="string">        &quot;</span>movl $<span class="number">1</span>,%eax \n\t<span class="string">&quot;</span></span><br><span class="line"><span class="string">        &quot;</span><span class="keyword">int</span> <span class="number">0x80</span>\n\t<span class="string">&quot;);</span></span><br><span class="line"><span class="string">&#125;</span></span><br><span class="line"><span class="string">void nomain()</span></span><br><span class="line"><span class="string">&#123;</span></span><br><span class="line"><span class="string">    print();</span></span><br><span class="line"><span class="string">    exit();</span></span><br><span class="line"><span class="string">&#125;</span></span><br></pre></td></tr></table></figure>
 <p>从源代码我们可以看到，程序入口为nomain()函数，然后该函数调用print()函数，打印“Hello World”，接着调用exit()函数，结束进程。这里的print函数使用了Linux的write系统调用，exit()函数使用了exit系统调用。这里简单介绍系统调用：系统调用通过0x80中断实现，其中eax为调用号，ebx、ecx、edx等通用寄存器用来传递参数，比如write调用是往一个文件句柄写入数据，如果用C语言来描述它的原型就是：</p>
@@ -535,7 +550,7 @@
 </ul>
 <p>同理，exit系统调用中，ebx表示进程退出码（Exit Code），比如我们平时的main程序中的return的数值会返回给系统库，由系统库将该数值传递给exit系统调用。这样父进程就可以接收到子进程的退出码。exit系统调用的调用号为1，即eax=1。你可以通过下面的方法得到上一条bash命令执行的程序的退出码：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ ./TinyHelloWorld</span><br><span class="line">$ <span class="built_in">echo</span> $?</span><br><span class="line">$ 42</span><br></pre></td></tr></table></figure>
-<p>这里要调用exit结束进程是因为如果是普通程序，main()函数结束后控制权返回给系统库，由系统库负责调用EXIT，退出进程。我们这里的nomain结束后系统控制权不会返回，可能会执行到nomain后面不正常的指令，最后导致进程异常退出。<br>我们先不急于使用链接脚本，而先使用普通命令行的方式来编译和链接TinyHelloWorld.c：</p>
+<p>这里要调用exit结束进程是因为如果是普通程序，main()函数结束后控制权返回给系统库，由系统库负责调用EXIT，退出进程。我们这里的nomain结束后系统控制权不会返回，可能会执行到nomain后面不正常的指令，最后导致进程异常退出。 我们先不急于使用链接脚本，而先使用普通命令行的方式来编译和链接TinyHelloWorld.c：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -c -fno-builtin TinyHelloWorld.c</span><br><span class="line">ld -static -e nomain -o TinyHelloWorld TinyHelloNorld.o</span><br></pre></td></tr></table></figure>
 <p>第一步是使用GCC将TinyHelloWorld.c编译成TinyHelloWorld.o，接着使用ld将TinyHelloWorld.o链接成可执行文件TinyHelloWorld。这里GCC和ld的参数的意义如下。</p>
 <ul>
@@ -547,24 +562,26 @@
 <p>我们得到了一个924字节（依赖于系统环境）的ELF可执行文件，运行它以后能够正确打印“Hello world！”并且正常退出。但是当我们用objdump或readelf查看TinyHelloWorld这个文件时，会发现它有4个段：.text、.rodata、.data和.comment.通过前面的介绍我们可以猜到：</p>
 <ul>
 <li>.text肯定保存的是程序的指令，它是只读的</li>
-<li>.rodata保存的是字符串“Hello World!\n”，它也是只读的</li>
+<li>.rodata保存的是字符串“Hello World!”，它也是只读的</li>
 <li>.data保存的是str全局变量，看上去它是可读写的，但我们并没有在程序中改写该变量，所以实际上它也是只读的</li>
 <li>.comment保存的是编译器和系统版本信息，这些信息也是只读的。由于.comment里面保存的数据并不关键，对于程序的运行没有作用，所以可以将其丢弃</li>
 </ul>
 <p>鉴于这些段的属性如此相似，原则上讲，我们可以把它们合并到一个段里面，该段的属性是可执行、可读的，包含程序的数据和指令。为了达到这个目的，我们必须使用ld链接脚本来控制链接过程。</p>
-<h3 id="6-3-使用ld链接脚本"><a href="#6-3-使用ld链接脚本" class="headerlink" title="6.3 使用ld链接脚本"></a>6.3 使用ld链接脚本</h3><p>无论是输出文件还是输入文件，它们的主要的数据就是文件中的各种段，我们把输入文件中的段称为输入段（Input Sections），输出文件中的段称为输出段（Output Sections）。简单来讲，控制链接过程无非是控制输入段如何变成输出段，比如哪些输入段要合并一个输出段，哪些输入段要丢弃；指定输出段的名字、装载地址、属性，等等。我们先来看看TinyHelloWorld的链接脚本TinyHelloWorld.lds（一般链接脚本名都以lds作为扩展名ldscript），有个感性的认识：</p>
+<h3 id="使用ld链接脚本">6.3 使用ld链接脚本</h3>
+<p>无论是输出文件还是输入文件，它们的主要的数据就是文件中的各种段，我们把输入文件中的段称为输入段（Input Sections），输出文件中的段称为输出段（Output Sections）。简单来讲，控制链接过程无非是控制输入段如何变成输出段，比如哪些输入段要合并一个输出段，哪些输入段要丢弃；指定输出段的名字、装载地址、属性，等等。我们先来看看TinyHelloWorld的链接脚本TinyHelloWorld.lds（一般链接脚本名都以lds作为扩展名ldscript），有个感性的认识：</p>
 <figure class="highlight ada"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ENTRY</span>(nomain)</span><br><span class="line">SECTIONS</span><br><span class="line">&#123;</span><br><span class="line">    .=<span class="number">0</span>x08048000 + SIZEOF_HEADERS;</span><br><span class="line">    tinytext : &#123;*(.<span class="type">text</span>) *(.data)*(.rodata)&#125;</span><br><span class="line">    /DISCARD/ : &#123;*(.<span class="type">comment</span>)&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这是一个非常简单的链接脚本，第一行的ENTRY（nomain）指定了程序的入口为nomain()函数；后面的SECTIONS命令一般是链接脚本的主体，这个命令指定了各种输入段到输出段的变换，SECTIONS后面紧跟着的一对大括号里面包含了SECTIONS变换规则，其中有三条语句，每条语句一行。第一条是赋值语句，后面两条是段转换规则，它们的含义分别如下：</p>
 <ul>
-<li>.=0x08048000 + SIZEOF_HEADERS第一条赋值语句的意思是将当前虚拟地址设置成0x08048000+SIZEOF_HEADERS，SIZEOF_HEADERS为输出文件的文件头大小。“.”表示当前虚拟地址，因为这条语句后面紧跟着输出段“tinytext’”，所以“tinytext’”段的起始虚拟地址即为0x08048000+SIZEOF_HEADERS。它将当前虚拟地址设置成一个比较巧妙的值，以便于装载时页映射更为方便</li>
-<li>tinytext : {<em>(.text) </em>(.data)*(.rodata)}第二条是个段转换规则，它的意思即为所有输入文件中的名字为“.text”、“.data”或“.rodata”的段依次合并到输出文件的“tinytext’”</li>
-<li>/DISCARD/：{*（.comment）}第三条规则为：将所有输入文件中的名字为“.comment’”的段丢弃，不保存到输出文件中</li>
+<li>.=0x08048000 + SIZEOF_HEADERS第一条赋值语句的意思是将当前虚拟地址设置成0x08048000+SIZEOF_HEADERS，SIZEOF_HEADERS为输出文件的文件头大小。“.”表示当前虚拟地址，因为这条语句后面紧跟着输出段“tinytext'”，所以“tinytext'”段的起始虚拟地址即为0x08048000+SIZEOF_HEADERS。它将当前虚拟地址设置成一个比较巧妙的值，以便于装载时页映射更为方便</li>
+<li>tinytext : {<em>(.text) </em>(.data)*(.rodata)}第二条是个段转换规则，它的意思即为所有输入文件中的名字为“.text”、“.data”或“.rodata”的段依次合并到输出文件的“tinytext'”</li>
+<li>/DISCARD/：{*（.comment）}第三条规则为：将所有输入文件中的名字为“.comment'”的段丢弃，不保存到输出文件中</li>
 </ul>
 <p>通过上述两条转换规则，我们就达到了TinyHelloWorld程序的第三个要求：最终输出的可执行文件只有一个叫“tinytext”的段。我们通过下面的命令行来编译TinyHelloWorld，并且启用该链接控制脚本：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc -c -fno-builtin TinyHelloWorld.c</span><br><span class="line">1d -static -T TinyHelloWorld.lds -o TinyHelloworld TinyHelloWorld.o</span><br></pre></td></tr></table></figure>
-<p>我们得到了一个588字节的ELF可执行文件：TinyHelloWorld，并且执行这个程序能够在终端上正确显示“Hello World！”。如果你使用objdump查看TinyHelloWorld的段，你会很高兴地发现，我们达到了目的：整个程序只有一个段“tinytext’”。但是兴奋之余你可能又想用readelf工具查看一下，发现程序除了tinytext之外居然还有其他3个段：.shstrtab、.symtab和.strtab。这3个段我们在前面己经介绍过了，它们分别是段名字符串表、符号表和字符串表。在默认情况下，ld链接器在产生可执行文件时会产生这3个段。对于可执行文件来说，符号表和字符串表是可选的，但是段名字符串表用户保存段名，所以它是必不可少的。</p>
+<p>我们得到了一个588字节的ELF可执行文件：TinyHelloWorld，并且执行这个程序能够在终端上正确显示“Hello World！”。如果你使用objdump查看TinyHelloWorld的段，你会很高兴地发现，我们达到了目的：整个程序只有一个段“tinytext'”。但是兴奋之余你可能又想用readelf工具查看一下，发现程序除了tinytext之外居然还有其他3个段：.shstrtab、.symtab和.strtab。这3个段我们在前面己经介绍过了，它们分别是段名字符串表、符号表和字符串表。在默认情况下，ld链接器在产生可执行文件时会产生这3个段。对于可执行文件来说，符号表和字符串表是可选的，但是段名字符串表用户保存段名，所以它是必不可少的。</p>
 <p>你可以通过ld的-s参数禁止链接器产生符号表，或者使用strip命令来去除程序中的符号表，去掉符号表后的TinyHelloWorld只有340个字节，但它仍然是-个有效的ELF可执行文件，能够正确执行并输出结果。</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p>《程序员的自我修养》   </p>
+<h3 id="参考文献">参考文献</h3>
+<p>《程序员的自我修养》</p>
 
     </div>
 
@@ -673,7 +690,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E7%A9%BA%E9%97%B4%E4%B8%8E%E5%9C%B0%E5%9D%80%E5%88%86%E9%85%8D"><span class="nav-text">1. 空间与地址分配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E6%8C%89%E5%BA%8F%E5%8F%A0%E5%8A%A0"><span class="nav-text">1.1 按序叠加</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E7%9B%B8%E4%BC%BC%E6%AE%B5%E5%90%88%E5%B9%B6"><span class="nav-text">1.2 相似段合并</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E7%AC%A6%E5%8F%B7%E5%9C%B0%E5%9D%80%E7%9A%84%E7%A1%AE%E5%AE%9A"><span class="nav-text">1.3 符号地址的确定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E7%AC%A6%E5%8F%B7%E8%A7%A3%E6%9E%90%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-text">2. 符号解析与重定位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-text">2.1 重定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8"><span class="nav-text">2.2 重定位表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E7%AC%A6%E5%8F%B7%E8%A7%A3%E6%9E%90"><span class="nav-text">2.3. 符号解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E6%8C%87%E4%BB%A4%E4%BF%AE%E6%AD%A3%E6%96%B9%E5%BC%8F"><span class="nav-text">2.4 指令修正方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-COMMON%E5%9D%97"><span class="nav-text">3. COMMON块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-C-%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98"><span class="nav-text">4. C++相关问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E9%87%8D%E5%A4%8D%E4%BB%A3%E7%A0%81%E6%B6%88%E9%99%A4"><span class="nav-text">4.1 重复代码消除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E5%85%A8%E5%B1%80%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84"><span class="nav-text">4.2 全局构造与析构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-C-%E4%B8%8EABI"><span class="nav-text">4.3 C++与ABI</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E9%9D%99%E6%80%81%E5%BA%93%E9%93%BE%E6%8E%A5"><span class="nav-text">5 静态库链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E9%93%BE%E6%8E%A5%E8%BF%87%E7%A8%8B%E6%8E%A7%E5%88%B6"><span class="nav-text">6 链接过程控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E9%93%BE%E6%8E%A5%E6%8E%A7%E5%88%B6%E8%84%9A%E6%9C%AC"><span class="nav-text">6.1 链接控制脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E6%9C%80%E2%80%9C%E5%B0%8F%E2%80%9D%E7%9A%84%E7%A8%8B%E5%BA%8F"><span class="nav-text">6.2 最“小”的程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-3-%E4%BD%BF%E7%94%A8ld%E9%93%BE%E6%8E%A5%E8%84%9A%E6%9C%AC"><span class="nav-text">6.3 使用ld链接脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A9%BA%E9%97%B4%E4%B8%8E%E5%9C%B0%E5%9D%80%E5%88%86%E9%85%8D"><span class="nav-text">1. 空间与地址分配</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%89%E5%BA%8F%E5%8F%A0%E5%8A%A0"><span class="nav-text">1.1 按序叠加</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E4%BC%BC%E6%AE%B5%E5%90%88%E5%B9%B6"><span class="nav-text">1.2 相似段合并</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%A6%E5%8F%B7%E5%9C%B0%E5%9D%80%E7%9A%84%E7%A1%AE%E5%AE%9A"><span class="nav-text">1.3 符号地址的确定</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%A6%E5%8F%B7%E8%A7%A3%E6%9E%90%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-text">2. 符号解析与重定位</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E5%AE%9A%E4%BD%8D"><span class="nav-text">2.1 重定位</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8"><span class="nav-text">2.2 重定位表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AC%A6%E5%8F%B7%E8%A7%A3%E6%9E%90"><span class="nav-text">2.3. 符号解析</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%87%E4%BB%A4%E4%BF%AE%E6%AD%A3%E6%96%B9%E5%BC%8F"><span class="nav-text">2.4 指令修正方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#common%E5%9D%97"><span class="nav-text">3. COMMON块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#c%E7%9B%B8%E5%85%B3%E9%97%AE%E9%A2%98"><span class="nav-text">4. C++相关问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%87%8D%E5%A4%8D%E4%BB%A3%E7%A0%81%E6%B6%88%E9%99%A4"><span class="nav-text">4.1 重复代码消除</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E6%9E%84%E9%80%A0%E4%B8%8E%E6%9E%90%E6%9E%84"><span class="nav-text">4.2 全局构造与析构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E5%BA%93%E9%93%BE%E6%8E%A5"><span class="nav-text">5 静态库链接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5%E8%BF%87%E7%A8%8B%E6%8E%A7%E5%88%B6"><span class="nav-text">6 链接过程控制</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%93%BE%E6%8E%A5%E6%8E%A7%E5%88%B6%E8%84%9A%E6%9C%AC"><span class="nav-text">6.1 链接控制脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9C%80%E5%B0%8F%E7%9A%84%E7%A8%8B%E5%BA%8F"><span class="nav-text">6.2 最“小”的程序</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8ld%E9%93%BE%E6%8E%A5%E8%84%9A%E6%9C%AC"><span class="nav-text">6.3 使用ld链接脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -758,7 +775,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">905k</span>
+    <span title="站点总字数">927k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

@@ -286,15 +286,17 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/program/Linux共享库的组织.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMxNjUzNzU2NTNiYjA3NGIxZTAxNDI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/program/Linux共享库的组织.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMxNjUzNzU2NTNiYjA3NGIxZTAxNDI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <p>由于动态链接的诸多优点，大量的程序开始使用动态链接机制，导致系统里面存在数量极为庞大的共享对象。如果没有很好的方法将这些共享对象组织起来，整个系统中的共享对象文件则会散落在各个目录下，给长期的维护、升级造成了很大的问题。所以操作系统一般会对共享对象的目录组织和使用方法有一定的规则，我们将在这一章介绍Linux下共享库的管理问题。</p>
-<h2 id="1-共享库版本"><a href="#1-共享库版本" class="headerlink" title="1. 共享库版本"></a>1. 共享库版本</h2><h3 id="1-1-共享库兼容性"><a href="#1-1-共享库兼容性" class="headerlink" title="1.1 共享库兼容性"></a>1.1 共享库兼容性</h3><p>共享库的开发者会不停地更新共享库的版本，以修正原有的bug、增加新的功能或改进性能等。由于动态链接的灵活性，使得程序本身和程序所依赖的共享库可以分别独立开发和更新，比如当有程序A依赖于libfoo.so，当libfoo.so的开发者宣布新版本开发完成之后，理论上我们只需要用新的libfoo.so将旧版本的替换掉即可享用新版libfoo.so提供的一切好处。但是共享库版本的更新可能会导致接口的更改或删除，这可能导致依赖于该共享库的程序无法正常运行。最简单的情况下，共享库的更新可以被分为两类。</p>
+<h2 id="共享库版本">1. 共享库版本</h2>
+<h3 id="共享库兼容性">1.1 共享库兼容性</h3>
+<p>共享库的开发者会不停地更新共享库的版本，以修正原有的bug、增加新的功能或改进性能等。由于动态链接的灵活性，使得程序本身和程序所依赖的共享库可以分别独立开发和更新，比如当有程序A依赖于libfoo.so，当libfoo.so的开发者宣布新版本开发完成之后，理论上我们只需要用新的libfoo.so将旧版本的替换掉即可享用新版libfoo.so提供的一切好处。但是共享库版本的更新可能会导致接口的更改或删除，这可能导致依赖于该共享库的程序无法正常运行。最简单的情况下，共享库的更新可以被分为两类。</p>
 <ul>
 <li>兼容更新。所有的更新只是在原有的共享库基础上添加一些内容，所有原有的接口都保持不变</li>
 <li>不兼容更新。共享库更新改变了原有的接口，使用该共享库原有接口的程序可能不能运行或运行不正常</li>
 </ul>
-<p>接口这个词有着很广泛的含义，在软件的很多层次上都有所谓的“接口”。但是这里讨论的接口是二进制接口，即ABI（Application Binary Interface）。共享库的ABI跟程序语言有着很大的关系，不同的语言对于接口的兼容性要求不同。ABI对于不同的语言来说，主要包括一些诸如函数调用的堆栈结构、符号命名、参数规则、数据结构的内存分布等方面的规则。那么对于一个C语言编写的共享库来说，什么样的更改会导致ABI变化呢？表8-1列举了几种常见的更改方式。<br><img src="/picture/program/s1.png" alt=""></p>
+<p>接口这个词有着很广泛的含义，在软件的很多层次上都有所谓的“接口”。但是这里讨论的接口是二进制接口，即ABI（Application Binary Interface）。共享库的ABI跟程序语言有着很大的关系，不同的语言对于接口的兼容性要求不同。ABI对于不同的语言来说，主要包括一些诸如函数调用的堆栈结构、符号命名、参数规则、数据结构的内存分布等方面的规则。那么对于一个C语言编写的共享库来说，什么样的更改会导致ABI变化呢？表8-1列举了几种常见的更改方式。 <img src="/picture/program/s1.png" /></p>
 <p>导致C语言的共享库ABI改变的行为主要有如下4个：</p>
 <ul>
 <li>导出函数的行为发生改变，也就是说调用这个函数以后产生的结果与以前不一样，不再满足旧版本规定的函数行为准则</li>
@@ -313,44 +315,54 @@
 <li>不要在接口中使用模板</li>
 </ul>
 <p>最重要的是，不要改变接口的任何部分或干脆不要使用C++作为共享库接口！</p>
-<h3 id="1-2-共享库版本命名"><a href="#1-2-共享库版本命名" class="headerlink" title="1.2 共享库版本命名"></a>1.2 共享库版本命名</h3><p>既然共享库存在这样那样的兼容性问题，那么保持共享库在系统中的兼容性，保证依赖于它们的应用程序能够正常运行是必须要解决的问题。有几种办法可用于解决共享库的兼容性问题，有效办法之一就是使用共享库版本的方法。Linux有一套规则来命名系统中的每一个共享库，它规定共享库的文件名规则必须如下：</p>
-<p><strong>libname.so.x.y.z</strong><br>最前面使用前缀“lib”、中间是库的名字和后缀“.so”，最后面跟着的是三个数字组成的版本号。“x”表示主版本号（Major Version Number），“y”表示次版本号（Minor Version Number），“z”表示发布版本号（Release Version Number）。三个版本号的含义不一样。</p>
+<h3 id="共享库版本命名">1.2 共享库版本命名</h3>
+<p>既然共享库存在这样那样的兼容性问题，那么保持共享库在系统中的兼容性，保证依赖于它们的应用程序能够正常运行是必须要解决的问题。有几种办法可用于解决共享库的兼容性问题，有效办法之一就是使用共享库版本的方法。Linux有一套规则来命名系统中的每一个共享库，它规定共享库的文件名规则必须如下：</p>
+<p><strong>libname.so.x.y.z</strong><br />
+最前面使用前缀“lib”、中间是库的名字和后缀“.so”，最后面跟着的是三个数字组成的版本号。“x”表示主版本号（Major Version Number），“y”表示次版本号（Minor Version Number），“z”表示发布版本号（Release Version Number）。三个版本号的含义不一样。</p>
 <ul>
-<li><p>主版本号表示库的重大升级，不同主版本号的库之间是不兼容的，依赖于旧的主版本号的程序需要改动相应的部分，并且重新编译，才可以在新版的共享库中运行；或者，系统必须保留旧版的共享库，使得那些依赖于旧版共享库的程序能够正常运行</p>
-</li>
-<li><p>次版本号表示库的增量升级，即增加一些新的接口符号，且保持原来的符号不变。在主版本号相同的情况下，高的次版本号的库向后兼容低的次版本号的库。一个依赖于旧的次版本号共享库的程序，可以在新的次版本号共享库中运行，因为新版中保留了原来所有的接口，并且不改变它们的定义和含义</p>
-</li>
-<li><p>发布版本号表示库的一些错误的修正、性能的改进等，并不添加任何新的接口，也不对接口进行更改。相同主版本号、次版本号的共享库，不同的发布版本号之间完全兼容，依赖于某个发布版本号的程序可以在任何一个其他发布版本号中正常运行，而无须做任何修改</p>
-</li>
+<li><p>主版本号表示库的重大升级，不同主版本号的库之间是不兼容的，依赖于旧的主版本号的程序需要改动相应的部分，并且重新编译，才可以在新版的共享库中运行；或者，系统必须保留旧版的共享库，使得那些依赖于旧版共享库的程序能够正常运行</p></li>
+<li><p>次版本号表示库的增量升级，即增加一些新的接口符号，且保持原来的符号不变。在主版本号相同的情况下，高的次版本号的库向后兼容低的次版本号的库。一个依赖于旧的次版本号共享库的程序，可以在新的次版本号共享库中运行，因为新版中保留了原来所有的接口，并且不改变它们的定义和含义</p></li>
+<li><p>发布版本号表示库的一些错误的修正、性能的改进等，并不添加任何新的接口，也不对接口进行更改。相同主版本号、次版本号的共享库，不同的发布版本号之间完全兼容，依赖于某个发布版本号的程序可以在任何一个其他发布版本号中正常运行，而无须做任何修改</p></li>
 </ul>
-<h3 id="1-3-SO-NAME"><a href="#1-3-SO-NAME" class="headerlink" title="1.3 SO-NAME"></a>1.3 SO-NAME</h3><p><strong>程序需要记录什么</strong><br>可以这么说，共享库的主版本号和次版本号决定了一个共享库的接口。那么从一个可执行程序的角度看，如何表示它依赖于哪些版本的哪些共享库？或者说在运行时，动态链接器怎样知道程序依赖于哪些共享库，它们的版本号又是什么？</p>
+<h3 id="so-name">1.3 SO-NAME</h3>
+<p><strong>程序需要记录什么</strong><br />
+可以这么说，共享库的主版本号和次版本号决定了一个共享库的接口。那么从一个可执行程序的角度看，如何表示它依赖于哪些版本的哪些共享库？或者说在运行时，动态链接器怎样知道程序依赖于哪些共享库，它们的版本号又是什么？</p>
 <p>我们假设程序中有一个它所依赖的共享库的列表，其中每一项对应于它所依赖的一个共享库。可以肯定的是，程序中必须包含被依赖的共享库的名字和主版本号。因为我们知道不同主版本号之间的共享库是完全不兼容的，所以程序中保存一个诸如libfoo.so.2的记录，以防止动态链接器在运行时意外地将程序与libfoo.so.1或libfoo.so.3链接到一起。通过这个可以发现，如果在系统中运行旧的应用程序，就需要在系统中保留旧应用程序所需要的旧的主版本号的共享库。</p>
-<p><strong>SO-NAME</strong><br>对于新的系统来说，包括Solaris和Linux，普遍采用一种叫做SO-NAME的命名机制来记录共享库的依赖关系。每个共享库都有一个对应的“SO-NAME”，这个SO-NAME即共享库的文件名去掉次版本号和发布版本号，保留主版本号。比如一个共享库叫做libfoo.so.2.6.1，那么它的SO-NAME即libfoo.so.2。很明显，“SO-NAME”规定了共享库的接口，“SO-NAME”的两个相同共享库，次版本号大的兼容次版本号小的。在Linux系统中，系统会为每个共享库在它所在的目录创建一个跟“$O-NAME”相同的并且指向它的软链接（Symbol Link）。比如系统中有存在一个共享库“lib/libfoo.so.2.6.1”，那么Linux中的共享库管理程序就会为它产生一个软链接“/lib/libfoo.so.2”指向它。比如Linux系统的Glibc共享库：</p>
+<p><strong>SO-NAME</strong><br />
+对于新的系统来说，包括Solaris和Linux，普遍采用一种叫做SO-NAME的命名机制来记录共享库的依赖关系。每个共享库都有一个对应的“SO-NAME”，这个SO-NAME即共享库的文件名去掉次版本号和发布版本号，保留主版本号。比如一个共享库叫做libfoo.so.2.6.1，那么它的SO-NAME即libfoo.so.2。很明显，“SO-NAME”规定了共享库的接口，“SO-NAME”的两个相同共享库，次版本号大的兼容次版本号小的。在Linux系统中，系统会为每个共享库在它所在的目录创建一个跟“$O-NAME”相同的并且指向它的软链接（Symbol Link）。比如系统中有存在一个共享库“lib/libfoo.so.2.6.1”，那么Linux中的共享库管理程序就会为它产生一个软链接“/lib/libfoo.so.2”指向它。比如Linux系统的Glibc共享库：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ ld -l /lib/libc</span><br><span class="line">-rwxr-xr-x 1 root root 1249520 2007-10-25 09:03 libc-2.6.1.so</span><br><span class="line">...</span><br><span class="line">lrwxrwxrwx 1 root root 13      2007-11-10 15:49 libc.so.6-&gt;libc-2.6.1.so</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
 <p>由于历史原因，动态链接器和C语言库的共享对象文件名规则不按Linux标准的共享库命名方法，但是C语言的SO-NAME还是按照正常的规则：Glibc的C语言库libc-2.6.1.so，它的SO-NAME是libc.so.6；为了“彰显”动态连接器的与众不同，它的SO-NAME命名也不按照普通的规则，比如动态链接器的文件名是ld-2.6.1.so，它的SO-NAME是ld一linux.so。</p>
 <p>那么以“SO-NAME”为名字建立软链接有什么用处呢？实际上这个软链接会指向目录中主版本号相同、次版本号和发布版本号最新的共享库。也就是说，比如目录中有两个共享库版本分别为：/lib/libfoo.so.2.6.1和/lib/libfoo.2.5.3，那么软链接/ib/libfoo.so.2会指向/lib/libfoo.so.2.6.1。这样保证了所有的以SO-NAME为名的软链接都指向系统中最新版的共享库。</p>
 <p>建立以SO-NAME为名字的软链接目的是，使得所有依赖某个共享库的模块，在编译、链接和运行时，都使用共享库的SO-NAME，而不使用详细的版本号。我们在前面介绍动态链接文件中的“.dynamic”段时已经提到过，如果某文件A依赖于某文件B，那么A的“.dynamic”段中会有DT_NEED类型的字段，字段的值就是B。现在有一个问题是，这个字段值该如何表示B这个文件呢？如果保存的是B的文件名，即包含次版本号和发布版本号，那么会有什么问题呢？很直接的问题是，这个文件A只能依赖于某个特定版本的B。比如程序A依赖于C语言库，它在编译时，系统中存在的C语言库版本是/ib/1ibc-2.6.1.so，那么编译完成后，它的“.dynamic”中的DT_NEED类型如果保存了/ib/libc-2.6.1.so。当系统将C语言库版本升级至2.6.2或2.7.1时，系统必须保留原来的2.6.1的共享库，否则这个这个程序A就无法正常运行。</p>
-<p>但是我们知道，因为根据Linux的共享库版本规定，实际上2.6.2或2.7.1版本的共享库是兼容2.6.1的，我们不需要继续保留原来的2.6.1，否则系统中将遗留大量的各种版本的共享库，大大浪费了磁盘和内存空间。所以一个可行的方法就是编译输出ELF文件时，将被依赖的共享库的SO-NAME保存到“.dynamic’”中，这样当动态链接器进行共享库依赖文件查找时，就会根据系统中各种共享库目录中的SO-NAME软链接自动定向到最新版本的共享库。比如之前Lib.so的依赖文件：</p>
+<p>但是我们知道，因为根据Linux的共享库版本规定，实际上2.6.2或2.7.1版本的共享库是兼容2.6.1的，我们不需要继续保留原来的2.6.1，否则系统中将遗留大量的各种版本的共享库，大大浪费了磁盘和内存空间。所以一个可行的方法就是编译输出ELF文件时，将被依赖的共享库的SO-NAME保存到“.dynamic'”中，这样当动态链接器进行共享库依赖文件查找时，就会根据系统中各种共享库目录中的SO-NAME软链接自动定向到最新版本的共享库。比如之前Lib.so的依赖文件：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">readelf -d Lib.so</span><br><span class="line">Dynamic section at offset 0x4f4 contains 21 entries:</span><br><span class="line">Tag         Type            Name/value</span><br><span class="line">0x00000001  (NEEDED)        Shared library:[libc.so.6]</span><br></pre></td></tr></table></figure>
 <p>当共享库进行升级的时候，如果只是进行增量升级，即保持主版本号不变，只改变次版本号或发布版本号，那么我们可以直接将新版的共享库替换掉旧版，并且修改SO-NAME的软链接指向新版本共享库，即可实现升级；当共享库的主版本号升级时，系统中就会存在多个SO-NAME，由于这些SO-NAME并不相同，所以已有的程序并不会受影响。</p>
-<p>总之，SO-NAME表示一个库的接口，接口不向后兼容，SO-NAME就发生变化，这是基本的原则。<br>Linux中提供了一个工具叫做“ldconfig”，当系统中安装或更新一个共享库时，就需要运行这个工具，它会遍历所有的默认共享库目录，比如/lib/usr/lib等，然后更新所有的软链接，使它们指向最新版的共享库：如果安装了新的共享库，那么ldconfig会为其创建相应的软链接。</p>
-<p><strong>链接名</strong><br>当我们在编译器里面使用共享库的时候（比如使用GCC的“”参数链接某个共享库），我们使用了更为简洁的方式，比如需要链接一个libXXX.so.2.6.1的共享库，只需要在编译器命令行里面指定-XX即可，可省略所有其他部分。编译器会根据当前环境，在系统中的相关路径（往往由-L参数指定）查找最新版本的“XXX”库。</p>
+<p>总之，SO-NAME表示一个库的接口，接口不向后兼容，SO-NAME就发生变化，这是基本的原则。 Linux中提供了一个工具叫做“ldconfig”，当系统中安装或更新一个共享库时，就需要运行这个工具，它会遍历所有的默认共享库目录，比如/lib/usr/lib等，然后更新所有的软链接，使它们指向最新版的共享库：如果安装了新的共享库，那么ldconfig会为其创建相应的软链接。</p>
+<p><strong>链接名</strong><br />
+当我们在编译器里面使用共享库的时候（比如使用GCC的“”参数链接某个共享库），我们使用了更为简洁的方式，比如需要链接一个libXXX.so.2.6.1的共享库，只需要在编译器命令行里面指定-XX即可，可省略所有其他部分。编译器会根据当前环境，在系统中的相关路径（往往由-L参数指定）查找最新版本的“XXX”库。</p>
 <p>这个“XXX”又被称为共享库的链接名（Link Name）。不同类型的库可能会有同样的链接名，比如C语言运行库有静态版本（libc.a）和动态版本（libc.so.x.y.z）的区别，如果在链接时使用参数“-c”，那么链接器会根据输出文件的情况（动态/静态）来选择适合版本的库。比如ld使用“-static”参数时，“-lc”会查找libc.a；如果使用“-Bdynamic”（这也是默认情况），它会查找最新版本的libc.so.xy.z。</p>
-<h2 id="2-符号版本"><a href="#2-符号版本" class="headerlink" title="2 符号版本"></a>2 符号版本</h2><p><strong>次版本号交会问题并没有因为SO-NAME而解决</strong><br>动态链接器在进行动态链接时，只进行主版本号的判断，即只判断SO-NAME，如果某个被依赖的共享库SO-NAME与系统中存在的实际共享库SO-NAME一致，那么系统就认为接口兼容，而不再进行兼容性检查。这样就会出现一个问题，当某个程序依赖于较高的次版本号的共享库，而运行于较低次版本号的共享库系统时，就可能产生缺少某些符号的错误。因为次版本号只保证向后兼容，并不保证向前兼容，新版的次版本号的共享库可能添加了一些旧版没有的符号。这种次版本号交会问题并没有因为SO-NAME的存在而得到任何改善。对于这个问题，现代的系统通过一种更加精巧的方式来解决，那就是符号版本机制。</p>
-<h3 id="2-1-基于符号的版本机制"><a href="#2-1-基于符号的版本机制" class="headerlink" title="2.1 基于符号的版本机制"></a>2.1 基于符号的版本机制</h3><p>正常情况下，为了表示某个共享库中增加了一些接口，我们就把这个共享库的次版本号升高（表示里面添加了一些东西）。但是我们需要一种更为巧妙的方法，来解决次版本号交会问题。Linux下的Glibc从版本2.1之后开始支持一种叫做基于符合的版本机制（Symbol Versioning）的方案。这个方案的基本思路是让每个导出和导入的符号都有一个相关联的版本号，它的实际做法类似于名称修饰的方法。与以往简单地将某个共享库的版本号重新命名不同（比如将libfoo.so.1.2升级到libfoo.so.1.3），当我们将libfoo.so.1.2升级至1.3时，仍然保持libfoo.so.1这个SO-NAME，但是给在1.3这个新版中添加的那些全局符号打上一个标记，比如“VERS_1.3”。那么，如果一个共享库每一次次版本号升级，我们都能给那些在新的次版本号中添加的全局符号打上相应的标记，就可以清楚地看到共享库中的每个符号都拥有相应的标签，比如“VERS_1.1”、“VERS_1.2”、“VERS_1.3”、“VERS_1.4”。</p>
-<h3 id="2-2-Solaris中的符号版本机制"><a href="#2-2-Solaris中的符号版本机制" class="headerlink" title="2.2 Solaris中的符号版本机制"></a>2.2 Solaris中的符号版本机制</h3><p>这个基于符号版本的方案最早是Sun在1995年的Solaris2.5中实现的，在这个新的机制中，Solaris的ld链接器为共享库新增了版本机制（Versioning）和范围机制（Scoping）。<br>版本机制的想法很简单，也就是定义一些符号的集合，这些集合本身都有名字，比如叫“VERS_1.1”、“VERS_1.2”等，每个集合都包含一些指定的符号，除了可以拥有符号以外，一个集合还可以包含另外一个集合，比如“VERS_1.2”可以包含集合“VERS_1.1”。就概念而言与其说是“包含”，不如说是“继承”，比如“VER_1.2”的符号集合包含（继承）了所有“VERS_1.1”的符号，并且包含所有“VERS_1.2”的符号。<br>那么，这些集合的定义及它们包含哪些符号是怎样指定的呢？在Solaris中，程序员可以在链接共享库时编写一种叫做符号版本脚本的文件，在这个文件中指定这些符号与集合之间及集合与集合之间的继承依赖关系。链接器在链接时根据符号版本脚本中指定的关系来产生共享库，并且设置符号的集合与它们之间的关系。</p>
+<h2 id="符号版本">2 符号版本</h2>
+<p><strong>次版本号交会问题并没有因为SO-NAME而解决</strong><br />
+动态链接器在进行动态链接时，只进行主版本号的判断，即只判断SO-NAME，如果某个被依赖的共享库SO-NAME与系统中存在的实际共享库SO-NAME一致，那么系统就认为接口兼容，而不再进行兼容性检查。这样就会出现一个问题，当某个程序依赖于较高的次版本号的共享库，而运行于较低次版本号的共享库系统时，就可能产生缺少某些符号的错误。因为次版本号只保证向后兼容，并不保证向前兼容，新版的次版本号的共享库可能添加了一些旧版没有的符号。这种次版本号交会问题并没有因为SO-NAME的存在而得到任何改善。对于这个问题，现代的系统通过一种更加精巧的方式来解决，那就是符号版本机制。</p>
+<h3 id="基于符号的版本机制">2.1 基于符号的版本机制</h3>
+<p>正常情况下，为了表示某个共享库中增加了一些接口，我们就把这个共享库的次版本号升高（表示里面添加了一些东西）。但是我们需要一种更为巧妙的方法，来解决次版本号交会问题。Linux下的Glibc从版本2.1之后开始支持一种叫做基于符合的版本机制（Symbol Versioning）的方案。这个方案的基本思路是让每个导出和导入的符号都有一个相关联的版本号，它的实际做法类似于名称修饰的方法。与以往简单地将某个共享库的版本号重新命名不同（比如将libfoo.so.1.2升级到libfoo.so.1.3），当我们将libfoo.so.1.2升级至1.3时，仍然保持libfoo.so.1这个SO-NAME，但是给在1.3这个新版中添加的那些全局符号打上一个标记，比如“VERS_1.3”。那么，如果一个共享库每一次次版本号升级，我们都能给那些在新的次版本号中添加的全局符号打上相应的标记，就可以清楚地看到共享库中的每个符号都拥有相应的标签，比如“VERS_1.1”、“VERS_1.2”、“VERS_1.3”、“VERS_1.4”。</p>
+<h3 id="solaris中的符号版本机制">2.2 Solaris中的符号版本机制</h3>
+<p>这个基于符号版本的方案最早是Sun在1995年的Solaris2.5中实现的，在这个新的机制中，Solaris的ld链接器为共享库新增了版本机制（Versioning）和范围机制（Scoping）。 版本机制的想法很简单，也就是定义一些符号的集合，这些集合本身都有名字，比如叫“VERS_1.1”、“VERS_1.2”等，每个集合都包含一些指定的符号，除了可以拥有符号以外，一个集合还可以包含另外一个集合，比如“VERS_1.2”可以包含集合“VERS_1.1”。就概念而言与其说是“包含”，不如说是“继承”，比如“VER_1.2”的符号集合包含（继承）了所有“VERS_1.1”的符号，并且包含所有“VERS_1.2”的符号。 那么，这些集合的定义及它们包含哪些符号是怎样指定的呢？在Solaris中，程序员可以在链接共享库时编写一种叫做符号版本脚本的文件，在这个文件中指定这些符号与集合之间及集合与集合之间的继承依赖关系。链接器在链接时根据符号版本脚本中指定的关系来产生共享库，并且设置符号的集合与它们之间的关系。</p>
 <p>当共享库的符号都有了版本集合之后，一个最明显的效果就是，当我们在构建（编译和链接）应用程序的时候，链接器可以在程序的最终输出文件中记录下它所用到的版本符号集合。值得注意的是，程序里面记录的不是构建时共享库中版本最新的符号集合，而是程序所依赖的集合中版本号最小的那个（或者那些）。比如，一个共享库libfoo.so.1中有6个符号版本，从SUNW_1.1到SUNW_1.6，某个应用程序app_foo在编译时，系统中的libfoo.so.1的符号版本为SUNW_1.6，但实际上app_foo只用到了最高到SUNW_1.3集合的符号，那么应用程序实际上依赖于SUNW_1.3，而不是SUNW_1.6。链接器会计算出app_foo所用到的最高版本的符号，然后把SUNW_1.3记录到app_foo的可执行文件内。</p>
-<p>在程序运行时，动态链接器会通过程序内记录的它所依赖的所有共享库的符号集合版本信息，然后判定当前系统共享库中的符号集合版本是否满足这些被依赖的符号集合。通过这样的机制，就可以保证那些在高次版本共享库的系统中编译的程序在低次版本共享库中运行。如果该低次版本的共享库满足符号集合的要求，比如app_foo在libfoo.so.1次版本号大于等于3的系统中运行，就没有任何问题；如果低次版本共享库不满足要求，如app_foo在libfoo.so.1次版本号小于3的系统中运行，动态链接器就会意识到当前系统的共享库次版本号不满足要求，从而阻止程序运行，以防止造成进一步的损失。<br>这种符号版本的方法是对SO-NAME机制保证共享库主版本号一致的一种非常好的补充。</p>
-<h3 id="2-3-Linux中的符号版本"><a href="#2-3-Linux中的符号版本" class="headerlink" title="2.3 Linux中的符号版本"></a>2.3 Linux中的符号版本</h3><p>Linux系统下共享库的符号版本机制并没有被广泛应用，主要使用共享库符号版本机制的是Glibc软件包中所提供的20多个共享库。这些共享库比较有效地利用了符号版本机制来表示符号的版本演化及利用范围机制来屏蔽一些不希望暴露给共享库使用者的符号。对于目前2.6.1的Glibc中的C语言运行库libc-2.6.1.so来说，它的符号版本演化如下：</p>
-<p>GLIBC_2.0、GLIBC_2.1、GLIBC_2.1.1、GLIBC_2.1.2、GLIBC_2.1.3、GLIBC_2.2、<br>GLIBC_2.2.1、GLIBC_2.2.2、GLIBC_2.2.3、GLIBC_2.2.4、GLIBC_2.2.6、GLIBC_2.3、<br>GLIBC_2.3.2、GLIBC_2.3.3、GLIBC_2.3.4、GLIBC_2.4、GLIBC_2.5、GLIBC_2.6</p>
+<p>在程序运行时，动态链接器会通过程序内记录的它所依赖的所有共享库的符号集合版本信息，然后判定当前系统共享库中的符号集合版本是否满足这些被依赖的符号集合。通过这样的机制，就可以保证那些在高次版本共享库的系统中编译的程序在低次版本共享库中运行。如果该低次版本的共享库满足符号集合的要求，比如app_foo在libfoo.so.1次版本号大于等于3的系统中运行，就没有任何问题；如果低次版本共享库不满足要求，如app_foo在libfoo.so.1次版本号小于3的系统中运行，动态链接器就会意识到当前系统的共享库次版本号不满足要求，从而阻止程序运行，以防止造成进一步的损失。 这种符号版本的方法是对SO-NAME机制保证共享库主版本号一致的一种非常好的补充。</p>
+<h3 id="linux中的符号版本">2.3 Linux中的符号版本</h3>
+<p>Linux系统下共享库的符号版本机制并没有被广泛应用，主要使用共享库符号版本机制的是Glibc软件包中所提供的20多个共享库。这些共享库比较有效地利用了符号版本机制来表示符号的版本演化及利用范围机制来屏蔽一些不希望暴露给共享库使用者的符号。对于目前2.6.1的Glibc中的C语言运行库libc-2.6.1.so来说，它的符号版本演化如下：</p>
+<p>GLIBC_2.0、GLIBC_2.1、GLIBC_2.1.1、GLIBC_2.1.2、GLIBC_2.1.3、GLIBC_2.2、 GLIBC_2.2.1、GLIBC_2.2.2、GLIBC_2.2.3、GLIBC_2.2.4、GLIBC_2.2.6、GLIBC_2.3、 GLIBC_2.3.2、GLIBC_2.3.3、GLIBC_2.3.4、GLIBC_2.4、GLIBC_2.5、GLIBC_2.6</p>
 <p>对于有些像Glibc中的加密解密库libcrypt，它目前的共享库版本是libcrypt-2.6.1.so，但是它内部的符号版本只有GLIBC2.0，因为它的接口十分稳定，从2.0版本之后就没有改动过。另外我们在Glibc的库中还可以看到类似于“GCC_”为前缀及“GLIBC_PRIVATE”这样的符号版本，这样的符号版本标记分别用于GCC编译器和GLIBC内部，它提醒共享库的使用者：最好不要使用这些符号，因为它并不是对外公开的，有可能随着共享库的版本演化而被删除或改变，总之一句话，后果自负。</p>
-<p><strong>GCC对Solaris符号版本机制的扩展</strong><br>GCC在Solaris系统中的符号版本机制的基础上还提供了两个扩展。第一个扩展是，除了可以在符号版本脚本中指定符号的版本之外，GCC还允许使用一个叫做“.symver”的汇编宏指令来指定符号的版本，这个汇编宏指令可以被用在GAS汇编中，也可以在GCC的C/C++源代码中以嵌入汇编指令的模式使用。它的用法如下：</p>
+<p><strong>GCC对Solaris符号版本机制的扩展</strong><br />
+GCC在Solaris系统中的符号版本机制的基础上还提供了两个扩展。第一个扩展是，除了可以在符号版本脚本中指定符号的版本之外，GCC还允许使用一个叫做“.symver”的汇编宏指令来指定符号的版本，这个汇编宏指令可以被用在GAS汇编中，也可以在GCC的C/C++源代码中以嵌入汇编指令的模式使用。它的用法如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;.symver add,add@VERS_1.1&quot;</span>);</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">add</span><span class="params">(<span class="keyword">int</span> a,<span class="keyword">int</span> b)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> a + b;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>这样就可以把符号“add”指定为符号标签“VERS_1.1”。</p>
 <p>第二个扩展是GCC允许多个版本的同一个符号存在于一个共享库中，也就是说，在链接层面提供了某种形式的符号重载机制，比如：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;.symver old_printf,printf@VERS_1.1&quot;</span>);</span><br><span class="line"><span class="keyword">asm</span>(<span class="string">&quot;.symver new_printf,printf@VERS 1.2&quot;</span>);</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">old_printf</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">new_printf</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>为什么要提供这种符号多版本重载机制呢？有时候当我们对共享库进行升级的时候，可能仅仅更改了一个符号的接口或含义，那么，如果仅仅为了这个符号的更改而升级主版本号，那么将会对系统带来很大的影响。理想的情况是，当共享库发生比较小的变化时，新版的共享库能够在原来的基础上做些补充，而并不影响旧版的功能，即能完全保持向后兼容性，争取做到不更改共享库的SO-NAME，即不更改主版本号。<br>Solaris2.5系统的符号版本方案有一个不足，那就是同一个共享库中，每个函数只能有一个版本号，也就是说不允许多个版本的同一个函数名存在，只允许该函数的某个版本存在。比如符号foo要么是VERS_1.0，要么是VERS_1.1，不允许这两个版本同时存在。Linux下的符号版本机制比Salaris2.5的要先进一些，它允许同一个名称的符号存在多个版本。当某个符号在新的共享库版本中接口被更改或符号的含义被改变，那么共享库可以保留原来的版本符号，比如前面例子中导出的printf 1.1版实际上即为old_printf；而将新版的new_printf导出成printf版本1.2。这样，链接器可以挑选符合某个程序版本号的符号来进行链接，使用1.1版printf的程序会被链接到old_printf，而使用1.2版的程序会被链接到new_printf，所有的程序都可以正确运行，更改函数的接口和含义并不影响旧版程序的运行。</p>
-<p><strong>Linux系统中符号版本机制实践</strong><br>在Linux下，当我们使用ld链接一个共享库时，可以使用“-version-script’”参数；如果使用GCC，则可以使用“-Xlinker’”参数加“-version-script’”，相当于把“-version-script”传递给ld链接器。如编译源代码为“lib.c”，符号版本脚本文件为“lib.ver”：</p>
+<p>为什么要提供这种符号多版本重载机制呢？有时候当我们对共享库进行升级的时候，可能仅仅更改了一个符号的接口或含义，那么，如果仅仅为了这个符号的更改而升级主版本号，那么将会对系统带来很大的影响。理想的情况是，当共享库发生比较小的变化时，新版的共享库能够在原来的基础上做些补充，而并不影响旧版的功能，即能完全保持向后兼容性，争取做到不更改共享库的SO-NAME，即不更改主版本号。 Solaris2.5系统的符号版本方案有一个不足，那就是同一个共享库中，每个函数只能有一个版本号，也就是说不允许多个版本的同一个函数名存在，只允许该函数的某个版本存在。比如符号foo要么是VERS_1.0，要么是VERS_1.1，不允许这两个版本同时存在。Linux下的符号版本机制比Salaris2.5的要先进一些，它允许同一个名称的符号存在多个版本。当某个符号在新的共享库版本中接口被更改或符号的含义被改变，那么共享库可以保留原来的版本符号，比如前面例子中导出的printf 1.1版实际上即为old_printf；而将新版的new_printf导出成printf版本1.2。这样，链接器可以挑选符合某个程序版本号的符号来进行链接，使用1.1版printf的程序会被链接到old_printf，而使用1.2版的程序会被链接到new_printf，所有的程序都可以正确运行，更改函数的接口和含义并不影响旧版程序的运行。</p>
+<p><strong>Linux系统中符号版本机制实践</strong><br />
+在Linux下，当我们使用ld链接一个共享库时，可以使用“-version-script'”参数；如果使用GCC，则可以使用“-Xlinker'”参数加“-version-script'”，相当于把“-version-script”传递给ld链接器。如编译源代码为“lib.c”，符号版本脚本文件为“lib.ver”：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -shared -fPIC lib.c -Xlinker --version-script lib.ver -o lib.so</span><br></pre></td></tr></table></figure>
 <p>假设lib.c里面定义了一个foo的函数，而main.c调用了这个函数，如我们使用下面的符号版本脚本编译一个lib.so：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">VERS_1<span class="number">.2</span> &#123;</span><br><span class="line">    global:</span><br><span class="line">    foo;</span><br><span class="line">    local:</span><br><span class="line">    *;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
@@ -358,13 +370,15 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc main.c /lib.so -o main</span><br></pre></td></tr></table></figure>
 <p>于是main程序里面所引用的foo也是VERS_1.2的。如果把这个main程序拿到一台只包含低于VERS1.2的foo的lib.so系统中运行，那么动态链接器就会报运行错误并且退出程序，防止了符号版本不符所造成额外的损失：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./main</span><br><span class="line">/main:/lib.so:version VERS <span class="string">&#x27;1.2&#x27;</span> not found (required by ./main)</span><br></pre></td></tr></table></figure>
-<h2 id="3-共享库系统路径"><a href="#3-共享库系统路径" class="headerlink" title="3. 共享库系统路径"></a>3. 共享库系统路径</h2><p>目前大多数包括Linux在内的开源操作系统都遵守一个叫做FHS（File Hierarchy Standard）的标准，这个标准规定了一个系统中的系统文件应该如何存放，包括各个目录的结构、组织和作用，这有利于促进各个开源操作系统之间的兼容性。共享库作为系统中重要的文件，它们的存放方式也被FHS列入了规定范围。FHS规定，一个系统中主要有两个存放共享库的位置，它们分别如下：</p>
+<h2 id="共享库系统路径">3. 共享库系统路径</h2>
+<p>目前大多数包括Linux在内的开源操作系统都遵守一个叫做FHS（File Hierarchy Standard）的标准，这个标准规定了一个系统中的系统文件应该如何存放，包括各个目录的结构、组织和作用，这有利于促进各个开源操作系统之间的兼容性。共享库作为系统中重要的文件，它们的存放方式也被FHS列入了规定范围。FHS规定，一个系统中主要有两个存放共享库的位置，它们分别如下：</p>
 <ul>
 <li>/lib，这个位置主要存放系统最关键和基础的共享库，比如动态链接器、C语言运行库、数学库等，这些库主要是那些/bin和/sbin下的程序所需要用到的库，还有系统启动时需要的库</li>
 <li>/usr/lib，这个目录下主要保存的是一些非系统运行时所需要的关键性的共亨库，主要是一些开发时用到的共享库，这些共享库一般不会被用户的程序或shell脚本直接用到。这个目录下面还包含了开发时可能会用到的静态库、目标文件等</li>
 <li>/usr/local/lib，这个目录用来放置一些跟操作系统本身并不十分相关的库，主要是一些第三方的应用程序的库。比如我们在系统中安装了python语言的解释器，那么与它相关的共享库可能会被放到/usr/local/lib/python，而它的可执行文件可能被放到/usr/local/bin下。GNU的标准推荐第三方的程序应该默认将库安装到/usr/local/lib下。所以总体来看，/lib和/usr/lib是一些很常用的、成熟的，一般是系统本身所需要的库；而/usr/local/ib是非系统所需的第三方程序的共享库</li>
 </ul>
-<h2 id="4-共享库查找过程"><a href="#4-共享库查找过程" class="headerlink" title="4. 共享库查找过程"></a>4. 共享库查找过程</h2><p>在开源系统中，包括所有的Linux系统在内的很多都是基于Glibc的。我们知道在这些系统里面，动态链接的ELF可执行文件在启动时同时会启动动态链接器。在Linux系统中，动态链接器是/lib/ld-linux.so.X（X是版本号），程序所依赖的共享对象全部由动态链接器负责装载和初始化。我们知道任何一个动态链接的模块所依赖的模块路径保存在“.dynamic”段里面，由DT_NEED类型的项表示。动态链接器对于模块的查找有一定的规则：如果DT_NEED里面保存的是绝对路径，那么动态链接器就按照这个路径去查找；如果DT_NEED里面保存的是相对路径，那么动态链接器会在/lib、/usr/lib和由/etc/ld.so.conf配置文件指定的目录中查找共享库。为了程序的可移植性和兼容性，共享库的路径往往是相对的。</p>
+<h2 id="共享库查找过程">4. 共享库查找过程</h2>
+<p>在开源系统中，包括所有的Linux系统在内的很多都是基于Glibc的。我们知道在这些系统里面，动态链接的ELF可执行文件在启动时同时会启动动态链接器。在Linux系统中，动态链接器是/lib/ld-linux.so.X（X是版本号），程序所依赖的共享对象全部由动态链接器负责装载和初始化。我们知道任何一个动态链接的模块所依赖的模块路径保存在“.dynamic”段里面，由DT_NEED类型的项表示。动态链接器对于模块的查找有一定的规则：如果DT_NEED里面保存的是绝对路径，那么动态链接器就按照这个路径去查找；如果DT_NEED里面保存的是相对路径，那么动态链接器会在/lib、/usr/lib和由/etc/ld.so.conf配置文件指定的目录中查找共享库。为了程序的可移植性和兼容性，共享库的路径往往是相对的。</p>
 <p>ld.so.conf是一个文本配置文件，它可能包含其他的配置文件，这些配置文件中存放着目录信息。在我的机器中，由ld.so.conf指定的日录是：</p>
 <figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="regexp">/usr/</span>local/lib</span><br><span class="line"><span class="regexp">/lib/i</span>486-linux-gnu</span><br><span class="line"><span class="regexp">/usr/</span>lib/i486-linux-gnu</span><br></pre></td></tr></table></figure>
 <p>如果动态链接器在每次查找共享库时都去遍历这些目录，那将会非常耗费时间。所以Linux系统中都有一个叫做ldconfig的程序，这个程序的作用是为共亨库目录下的各个共享库创建、删除或更新相应的SO-NAME（即相应的符号链接），这样每个共享库的SO-NAME就能够指向正确的共享库文件；并且这个程序还会将这些SO-NAME收集起来，集中存放到/etc/ld.so.cache文件里面，并建立一个SO-NAME的缓存。当动态链接器要查找共享库时，它可以直接从/etc/ld.so.cache里面查找。而/etc/ld.so.cache的结构是经过特殊设计的，非常适合查找，所以这个设计大大加快了共享库的查找过程。</p>
@@ -372,7 +386,9 @@
 <blockquote>
 <p>不同的系统中，上面的各个文件的名字或路径可能有所不同，比如FreeBSD的SO-NAME缓存文件是/var/run/ld-elf.so.hints，我们可以通过查看ldconfig的man手册来得知这些信息。</p>
 </blockquote>
-<h2 id="5-环境变量"><a href="#5-环境变量" class="headerlink" title="5. 环境变量"></a>5. 环境变量</h2><p><strong>LD_LIBRARY_PATH</strong><br>Linux系统提供了很多方法来改变动态链接器装载共享库路径的方法，通过使用这些方法，我们可以满足一些特殊的需求，比如共享库的调试和测试、应用程序级别的虚拟等。改变共享库查找路径最简单的方法是使用LD_LIBRARY_PATH环境变量，这个方法可以临时改变某个应用程序的共享库查找路径，而不会影响系统中的其他程序。</p>
+<h2 id="环境变量">5. 环境变量</h2>
+<p><strong>LD_LIBRARY_PATH</strong><br />
+Linux系统提供了很多方法来改变动态链接器装载共享库路径的方法，通过使用这些方法，我们可以满足一些特殊的需求，比如共享库的调试和测试、应用程序级别的虚拟等。改变共享库查找路径最简单的方法是使用LD_LIBRARY_PATH环境变量，这个方法可以临时改变某个应用程序的共享库查找路径，而不会影响系统中的其他程序。</p>
 <p>在Linux系统中，LD_LIBRARY_PATH是一个由若干个路径组成的环境变量，每个路径之间由冒号隔开。默认情况下，LD_LIBRARY_PATH为空。如果我们为某个进程设置了LD_LIBRARY_PATH，那么进程在启动时，动态链接器在查找共享库时，会首先查找由LD_LIBRARY_PATH指定的目录。这个环境变量可以很方便地让我们测试新的共享库或使用非标准的共享库。比如我们希望使用修改过的libc.so.，可以将这个新版的libc放到我们的目录/home/user中，然后指定LD_LIBRARY_PATH：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$LD_LIBRARY_PATH</span>=/home/user /bin/ls</span><br></pre></td></tr></table></figure>
 <p>Linux中还有一种方法可以实现与LD_LIBRARY_PATH类似的功能，那就是直接运行动态链接器来启动程序，比如：</p>
@@ -384,10 +400,12 @@
 <li>默认共享库目录，先/usr/lib，然后/lib</li>
 </ul>
 <p>LD_LIBRARY_PATH对于共享库的开发和测试来说十分方便，但是它不应该被滥用。也就是说，普通用户在正常情况下不应该随意设置LD_LIBRARY_PATH来调整共享库搜索目录。随意修改LD_LIBRARY_PATH并且将其导出至全局范围，将可能引起其他应用程序运行出现的问题；LD_LIBRARY_PATH也会影响GCC编译时查找库的路径，它里面包含的目录相当于链接时GCC的“-L”参数。</p>
-<p><strong>LD_PRELOAD</strong><br>系统中另外还有一个环境变量叫做LD_PRELOAD，这个文件中我们可以指定预先装载的一些共享库甚或是目标文件。在LD_PRELOAD里面指定的文件会在动态链接器按照固定规则搜索共享库之前装载，它比LD_LIBRARY_PATH里面所指定的目录中的共享库还要优先。无论程序是否依赖于它们，LD_PRELOAD里面指定的共享库或目标文件都会被装载。</p>
+<p><strong>LD_PRELOAD</strong><br />
+系统中另外还有一个环境变量叫做LD_PRELOAD，这个文件中我们可以指定预先装载的一些共享库甚或是目标文件。在LD_PRELOAD里面指定的文件会在动态链接器按照固定规则搜索共享库之前装载，它比LD_LIBRARY_PATH里面所指定的目录中的共享库还要优先。无论程序是否依赖于它们，LD_PRELOAD里面指定的共享库或目标文件都会被装载。</p>
 <p>由于全局符号介入这个机制的存在，LD_PRELOAD里面指定的共享库或目标文件中的全局符号就会覆盖后面加载的同名全局符号，这使得我们可以很方便地做到改写标准库中的某个或某几个函数而不影响其他函数，对于程序的调试或测试非常有用。与LD_LIBRARY_PATH一样，正常情况下应该尽量避免使用LD_PRELOAD，比如一个发布版本的程序运行不应该依赖于LD_PRELOAD。</p>
 <p>系统配置文件中有一个文件是/etc/ld.so.preload，它的作用与LD_PRELOAD一样。这个文件里面记录的共享库或目标文件的效果跟LD_PRELOAD里面指定的一样，也会被提前装载。</p>
-<p><strong>LD_DEBUG</strong><br>另外还有一个非常有用的环境变量LD_DEBUG，这个变量可以打开动态链接器的调试功能，当我们设置这个变量时，动态链接器会在运行时打印出各种有用的信息，对于我们开发和调试共享库有很大的帮助。比如我们可以将LD_DEBUG设置成“files”，并且运行一个简单动态链接的HelloWorld：<br><img src="/picture/program/s2.png" alt=""></p>
+<p><strong>LD_DEBUG</strong><br />
+另外还有一个非常有用的环境变量LD_DEBUG，这个变量可以打开动态链接器的调试功能，当我们设置这个变量时，动态链接器会在运行时打印出各种有用的信息，对于我们开发和调试共享库有很大的帮助。比如我们可以将LD_DEBUG设置成“files”，并且运行一个简单动态链接的HelloWorld： <img src="/picture/program/s2.png" /></p>
 <p>动态链接器打印出了整个装载过程，显示程序依赖于哪个共享库并且按照什么步骤装载和初始化，共享库装载时的地址等。LD_DEBUG还可以设置成其他值，比如：</p>
 <ul>
 <li>“bindings”显示动态链接的符号绑定过程</li>
@@ -398,7 +416,9 @@
 <li>“statistics”显示动态链接过程中的各种统计信息。“all”显示以上所有信息</li>
 <li>“help”显示上面的各种可选值的帮助信息</li>
 </ul>
-<h2 id="6-共享库的创建和安装"><a href="#6-共享库的创建和安装" class="headerlink" title="6. 共享库的创建和安装"></a>6. 共享库的创建和安装</h2><h3 id="6-1-共享库的创建"><a href="#6-1-共享库的创建" class="headerlink" title="6.1 共享库的创建"></a>6.1 共享库的创建</h3><p>创建共享库非常简单，我们在前面已经演示了如何创建一个“.o”共享对象。创建共享库的过程跟创建一般的共享对象的过程基本一致，最关键的是使用GCC的两个参数，即“-shared”和“-fPIC”。“-shared”表示输出结果是共享库类型的；“-fPIC”表示使用地址无关代码（Position Independent Code）技术来生产输出文件。另外还有一个参数是“-Wl”参数，这个参数可以将指定的参数传递给链接器，比如当我们使用“-Wl、-soname、my_soname”时，GCC会将“-soname my_soname”传递给链接器，用来定输出共享库的SO-NAME。所以我们可以使用如下命令行来生成一个共享库：</p>
+<h2 id="共享库的创建和安装">6. 共享库的创建和安装</h2>
+<h3 id="共享库的创建">6.1 共享库的创建</h3>
+<p>创建共享库非常简单，我们在前面已经演示了如何创建一个“.o”共享对象。创建共享库的过程跟创建一般的共享对象的过程基本一致，最关键的是使用GCC的两个参数，即“-shared”和“-fPIC”。“-shared”表示输出结果是共享库类型的；“-fPIC”表示使用地址无关代码（Position Independent Code）技术来生产输出文件。另外还有一个参数是“-Wl”参数，这个参数可以将指定的参数传递给链接器，比如当我们使用“-Wl、-soname、my_soname”时，GCC会将“-soname my_soname”传递给链接器，用来定输出共享库的SO-NAME。所以我们可以使用如下命令行来生成一个共享库：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -shared -wl,-soname,my_soname -o library_name source_fileslibrary files</span><br></pre></td></tr></table></figure>
 <blockquote>
 <p>如果我们不使用-soname来指定共享库的SO-NAME，那么该共享库默认就没有意SO-NAME，即使用ldconfig更新SO-NAME的软链接时，对该共享库也没有效果。</p>
@@ -409,36 +429,37 @@
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -c -g -Wall -o libfool.o libfoo1.c </span><br><span class="line">$ gcc -c -g -Wall -o libfoo2.o libfoo2.c</span><br><span class="line">$ ld -ghared -soname libfoo.so.1 -o libfoo.so.1.0.0 \</span><br><span class="line">libfoo1.o libfoo2.o -lbar1 -lbar2</span><br></pre></td></tr></table></figure>
 <p>几个值得注意的事项：</p>
 <ul>
-<li><p>不要把输出共享库中的符号和调试信息去掉，也不要使用GCC的“-fomit-frame-pointer”选项，这样做虽然不会导致共享库停止运行，但是会影响调试共享库，给后面的工作带来很多麻烦。关于“-fomit-frame-pointer”请参照后面的“函数调用和堆栈”这一节</p>
-</li>
-<li><p>在开发过程中，你可能要测试新的共享库，但是你又不希望影响现有的程序正常运行。我们前面提到的LD_LIBRARY_PATH是一个很好的方法，用它可以指定共享库的查找路径。还有一种方法是使用链接器的“-rpath”选项（或者GCC的-Wl，-rpath），这种方法可以指定链接产生的目标程序的共享库查找路径。比如我们用如下命令行产生一个可执行文件：   </p>
-  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ld -rpath /home/mylib -o program.out program.o -lsomelib</span><br></pre></td></tr></table></figure>
-<p>  这样产生的输出可执行文件program.out在被动态链接器装载时，动态链接器会首先在“/home/mylib”查找共享库</p>
-</li>
-<li><p>默认情况下，链接器在产生可执行文件时，只会将那些链接时被其他共享模块引用到的符号放到动态符号表，这样可以减少动态符号表的大小。也就是说，在共享模块中反向引用主模块中的符号时，只有那些在链接时被共享模块引用到的符号才会被导出。有一种情况是，当程序使用dlopen()动态加载某个共享模块，而该共享模块须反向引用主模块的符号时，有可能主模块的某些符号因为在链接时没有被其他共享模块引用而没有被放到动态符号表里面，导致了反向引用失败。ld链接器提供了一个“-export-dynamic”的参数，这个参数表示链接器在生产可执行文件时，将所有全局符号导出到动态符号表，以防止出现上述问题。我们也可以在GCC中使用<br>“-Wl，-export-dynamic”将该参数传递给链接器。</p>
-</li>
+<li><p>不要把输出共享库中的符号和调试信息去掉，也不要使用GCC的“-fomit-frame-pointer”选项，这样做虽然不会导致共享库停止运行，但是会影响调试共享库，给后面的工作带来很多麻烦。关于“-fomit-frame-pointer”请参照后面的“函数调用和堆栈”这一节</p></li>
+<li><p>在开发过程中，你可能要测试新的共享库，但是你又不希望影响现有的程序正常运行。我们前面提到的LD_LIBRARY_PATH是一个很好的方法，用它可以指定共享库的查找路径。还有一种方法是使用链接器的“-rpath”选项（或者GCC的-Wl，-rpath），这种方法可以指定链接产生的目标程序的共享库查找路径。比如我们用如下命令行产生一个可执行文件：<br />
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ld -rpath /home/mylib -o program.out program.o -lsomelib</span><br></pre></td></tr></table></figure> 这样产生的输出可执行文件program.out在被动态链接器装载时，动态链接器会首先在“/home/mylib”查找共享库</p></li>
+<li><p>默认情况下，链接器在产生可执行文件时，只会将那些链接时被其他共享模块引用到的符号放到动态符号表，这样可以减少动态符号表的大小。也就是说，在共享模块中反向引用主模块中的符号时，只有那些在链接时被共享模块引用到的符号才会被导出。有一种情况是，当程序使用dlopen()动态加载某个共享模块，而该共享模块须反向引用主模块的符号时，有可能主模块的某些符号因为在链接时没有被其他共享模块引用而没有被放到动态符号表里面，导致了反向引用失败。ld链接器提供了一个“-export-dynamic”的参数，这个参数表示链接器在生产可执行文件时，将所有全局符号导出到动态符号表，以防止出现上述问题。我们也可以在GCC中使用 “-Wl，-export-dynamic”将该参数传递给链接器。</p></li>
 </ul>
-<h3 id="6-2-清除符号信息"><a href="#6-2-清除符号信息" class="headerlink" title="6.2 清除符号信息"></a>6.2 清除符号信息</h3><p>正常情况下编译出来的共享库或可执行文件里面带有符号信息和调试信息，这些信息在调试时非常有用，但是对于最终发布的版本来说，这些符号信息用处并不大，并且使得文件尺寸变大。我们可以使用一个叫“strip”的工具清除掉共享库或可执行文件的所有符号和调试信息（“strip”是binutils的一部分）：</p>
+<h3 id="清除符号信息">6.2 清除符号信息</h3>
+<p>正常情况下编译出来的共享库或可执行文件里面带有符号信息和调试信息，这些信息在调试时非常有用，但是对于最终发布的版本来说，这些符号信息用处并不大，并且使得文件尺寸变大。我们可以使用一个叫“strip”的工具清除掉共享库或可执行文件的所有符号和调试信息（“strip”是binutils的一部分）：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ strip libfoo.so</span><br></pre></td></tr></table></figure>
 <p>去除符号和调试信息以后的文件往往比之前要小很多，一般只有原来的一半大小，甚至不到一半。除了使用“strip”工具，我们还可以使用ld的“-s”和“-S”参数，使得链接器生成输出文件时就不产生符号信息。“-s”和“-S”的区别是：“S”消除调试符号信息，而“-s”消除所有符号信息。我们也可以在gcc中通过“-Wl，-s”和“-W，-S”给ld传递这两个参数。</p>
-<h3 id="6-3-共享库的安装"><a href="#6-3-共享库的安装" class="headerlink" title="6.3 共享库的安装"></a>6.3 共享库的安装</h3><p>创建共享库以后我们须将它安装在系统中，以便于各种程序都可以共享它。最简单的办法就是将共享库复制到某个标准的共亨库目录，如/lib、/usr/lib等，然后运行ldconfig即可。</p>
+<h3 id="共享库的安装">6.3 共享库的安装</h3>
+<p>创建共享库以后我们须将它安装在系统中，以便于各种程序都可以共享它。最简单的办法就是将共享库复制到某个标准的共亨库目录，如/lib、/usr/lib等，然后运行ldconfig即可。</p>
 <p>不过上述方法往往需要系统的root权限，如果没有，则无法往/lib、/usr/lib等目录添加文件，也无法运行ldconfig程序。当然我们也有其他办法安装共享库，只不过步骤稍微麻烦一些，无非是建立相应的SO-NAME软链接，并告诉编译器和程序如何查找该共享库等，以便于编译器和程序都能够正常运行。建立SO-NAME的办法也是使用ldconfig，只不过需要指定共享库所在的目录：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ldconfig -n shared_library_directory</span><br></pre></td></tr></table></figure>
 <p>在编译程序时，也需要指定共享库的位置，GCC提供了两个参数“-L”和“-l”，分别用于指定共享库搜索目录和共字库的路径。当然也可以使用前面提到过的“-rpath”参数，这几个参数之间有些细微的区别，我们这里不详细解释了，它们的作用都是用来指定共享库的位置，具体可以参照GCC的手册。前面提到过的LD_LIBRARY_PATH的方法也可以用来指定某个共享库的位置。</p>
-<h3 id="6-4-共享库构造和析构函数"><a href="#6-4-共享库构造和析构函数" class="headerlink" title="6.4 共享库构造和析构函数"></a>6.4 共享库构造和析构函数</h3><p>很多时候你希望共享库在被装载时能够进行一些初始化工作，比如打开文件、网络连接等，使得共享库里面的函数接口能够正常T作。GCC提供了一种共享库的构造函数，只要在函数声明时加上“<strong>attribute</strong>(constructor)”的属性，即指定该函数为共享库构造函数，拥有这种属性的函数会在共享库加载时被执行，即在程序的main函数之前执行。如果我们使用dlopen()打开共享库，共享库构造函数会在dlopen()返回之前被执行。</p>
+<h3 id="共享库构造和析构函数">6.4 共享库构造和析构函数</h3>
+<p>很多时候你希望共享库在被装载时能够进行一些初始化工作，比如打开文件、网络连接等，使得共享库里面的函数接口能够正常T作。GCC提供了一种共享库的构造函数，只要在函数声明时加上“<strong>attribute</strong>(constructor)”的属性，即指定该函数为共享库构造函数，拥有这种属性的函数会在共享库加载时被执行，即在程序的main函数之前执行。如果我们使用dlopen()打开共享库，共享库构造函数会在dlopen()返回之前被执行。</p>
 <p>与共享库构造函数相对应的是析构函数，我们可以使用在函数声明时加上“<strong>attribute</strong>(destructor)”的属性，这种函数会在main()函数执行完毕之后执行（或者是程序调用exit）时执行）。如果共享库是运行时加载的，那么我们使用dlclose()来卸载共享库时，析构函数将会在dlclose()返回之前执行。声明构造和析构函数的格式如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> __attribute__(constructor))<span class="function">init <span class="title">function</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"><span class="keyword">void</span> __attribute__((destructor))fini_function (<span class="keyword">void</span>);</span><br></pre></td></tr></table></figure>
 <blockquote>
-<p>当然，这种<strong>attribute</strong>的语法是GCC对C和C++语言的扩展，在其他编译器上这种语法并不通用。</p>
+<p>当然，这种__attribute__的语法是GCC对C和C++语言的扩展，在其他编译器上这种语法并不通用。</p>
 </blockquote>
 <p>值得注意的是，如果我们使用了这种析构或构造函数，那么必须使用系统默认的标准运行库和启动文件，即不可以使用GCC的“-nostartfiles”或“-nostdlib”这两个参数。因为这些构造和析构函数是在系统默认的标准运行库或启动文件里面被运行的，如果没有这些辅助结构，它们可能不会被运行。我们将在后面的关于系统库和启动文件的章节更加详细介绍相关的机制。</p>
 <p>另外还有一个问题是，如果我们有多个构造函数，那么默认情况下，它们被执行的顺序是没有规定的。如果我们希望构造和析构函数能够按照一定的顺序执行，GCC为我们提供了一个参数叫做优先级，我们可以指定某个构造或析构函数的优先级：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> __attribute__((constructor (<span class="number">5</span>))init_function1 (<span class="keyword">void</span>);</span><br><span class="line"><span class="keyword">void</span> __attribute__((constructor (<span class="number">10</span>)))init_function2(<span class="keyword">void</span>);</span><br></pre></td></tr></table></figure>
 <p>对于构造函数来说，属性中优先级数字越小的函数将会在优先级大的函数之前运行；而对于析构函数来讲，则刚好相反。这种安排有利于构造函数和析构函数能够匹配，比如某一对构造函数和析构函数分别用来申请和释放某个资源，那么它们可以拥有一样的优先级。这样做的结果往往是先中请的资源后释放，符合资源释放的一般规则。</p>
-<h3 id="6-5-共享库脚本"><a href="#6-5-共享库脚本" class="headerlink" title="6.5 共享库脚本"></a>6.5 共享库脚本</h3><p>我们前面所提到的共享库都是动态链接的ELF共享对象文件（.o），事实上，共享库还可以是符合一定格式的链接脚本文件。通过这种脚本文件，我们可以把几个现有的共享库通过一定的方式组合起来，从用户的角度看就是一个新的共享库。比如我们可以把运行库和数学库组合成一个新的库libfoo.so，那么libfoo.so的内容可以如下：</p>
+<h3 id="共享库脚本">6.5 共享库脚本</h3>
+<p>我们前面所提到的共享库都是动态链接的ELF共享对象文件（.o），事实上，共享库还可以是符合一定格式的链接脚本文件。通过这种脚本文件，我们可以把几个现有的共享库通过一定的方式组合起来，从用户的角度看就是一个新的共享库。比如我们可以把运行库和数学库组合成一个新的库libfoo.so，那么libfoo.so的内容可以如下：</p>
 <figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="constructor">GROUP(<span class="operator">/</span><span class="params">lib</span><span class="operator">/</span><span class="params">libc</span>.<span class="params">so</span>.6 <span class="operator">/</span><span class="params">lib</span><span class="operator">/</span><span class="params">libm</span>.<span class="params">so</span>.2)</span></span><br></pre></td></tr></table></figure>
 <p>我们在前面也介绍过LD的链接脚本，这里的脚本与LD的脚本从语法和命令上来讲没什么区别，它们的作用也相似，即将一个或多个输入文件以一定的格式经过变换以后形成一个输出文件。我们也可以将这种共享库脚本叫做动态链接脚本，因为这个链接过程是动态完成的，也就是运行时完成的。</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p>《程序员的自我修养》   </p>
+<h3 id="参考文献">参考文献</h3>
+<p>《程序员的自我修养》</p>
 
     </div>
 
@@ -547,7 +568,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%85%B1%E4%BA%AB%E5%BA%93%E7%89%88%E6%9C%AC"><span class="nav-text">1. 共享库版本</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E5%85%B1%E4%BA%AB%E5%BA%93%E5%85%BC%E5%AE%B9%E6%80%A7"><span class="nav-text">1.1 共享库兼容性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E5%85%B1%E4%BA%AB%E5%BA%93%E7%89%88%E6%9C%AC%E5%91%BD%E5%90%8D"><span class="nav-text">1.2 共享库版本命名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-SO-NAME"><span class="nav-text">1.3 SO-NAME</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E7%AC%A6%E5%8F%B7%E7%89%88%E6%9C%AC"><span class="nav-text">2 符号版本</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E5%9F%BA%E4%BA%8E%E7%AC%A6%E5%8F%B7%E7%9A%84%E7%89%88%E6%9C%AC%E6%9C%BA%E5%88%B6"><span class="nav-text">2.1 基于符号的版本机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-Solaris%E4%B8%AD%E7%9A%84%E7%AC%A6%E5%8F%B7%E7%89%88%E6%9C%AC%E6%9C%BA%E5%88%B6"><span class="nav-text">2.2 Solaris中的符号版本机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-Linux%E4%B8%AD%E7%9A%84%E7%AC%A6%E5%8F%B7%E7%89%88%E6%9C%AC"><span class="nav-text">2.3 Linux中的符号版本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%85%B1%E4%BA%AB%E5%BA%93%E7%B3%BB%E7%BB%9F%E8%B7%AF%E5%BE%84"><span class="nav-text">3. 共享库系统路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%85%B1%E4%BA%AB%E5%BA%93%E6%9F%A5%E6%89%BE%E8%BF%87%E7%A8%8B"><span class="nav-text">4. 共享库查找过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-text">5. 环境变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%88%9B%E5%BB%BA%E5%92%8C%E5%AE%89%E8%A3%85"><span class="nav-text">6. 共享库的创建和安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-text">6.1 共享库的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E6%B8%85%E9%99%A4%E7%AC%A6%E5%8F%B7%E4%BF%A1%E6%81%AF"><span class="nav-text">6.2 清除符号信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-3-%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%AE%89%E8%A3%85"><span class="nav-text">6.3 共享库的安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-4-%E5%85%B1%E4%BA%AB%E5%BA%93%E6%9E%84%E9%80%A0%E5%92%8C%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0"><span class="nav-text">6.4 共享库构造和析构函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-5-%E5%85%B1%E4%BA%AB%E5%BA%93%E8%84%9A%E6%9C%AC"><span class="nav-text">6.5 共享库脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E7%89%88%E6%9C%AC"><span class="nav-text">1. 共享库版本</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E5%85%BC%E5%AE%B9%E6%80%A7"><span class="nav-text">1.1 共享库兼容性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E7%89%88%E6%9C%AC%E5%91%BD%E5%90%8D"><span class="nav-text">1.2 共享库版本命名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#so-name"><span class="nav-text">1.3 SO-NAME</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AC%A6%E5%8F%B7%E7%89%88%E6%9C%AC"><span class="nav-text">2 符号版本</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E7%AC%A6%E5%8F%B7%E7%9A%84%E7%89%88%E6%9C%AC%E6%9C%BA%E5%88%B6"><span class="nav-text">2.1 基于符号的版本机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#solaris%E4%B8%AD%E7%9A%84%E7%AC%A6%E5%8F%B7%E7%89%88%E6%9C%AC%E6%9C%BA%E5%88%B6"><span class="nav-text">2.2 Solaris中的符号版本机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux%E4%B8%AD%E7%9A%84%E7%AC%A6%E5%8F%B7%E7%89%88%E6%9C%AC"><span class="nav-text">2.3 Linux中的符号版本</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E7%B3%BB%E7%BB%9F%E8%B7%AF%E5%BE%84"><span class="nav-text">3. 共享库系统路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E6%9F%A5%E6%89%BE%E8%BF%87%E7%A8%8B"><span class="nav-text">4. 共享库查找过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F"><span class="nav-text">5. 环境变量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%88%9B%E5%BB%BA%E5%92%8C%E5%AE%89%E8%A3%85"><span class="nav-text">6. 共享库的创建和安装</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-text">6.1 共享库的创建</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B8%85%E9%99%A4%E7%AC%A6%E5%8F%B7%E4%BF%A1%E6%81%AF"><span class="nav-text">6.2 清除符号信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%AE%89%E8%A3%85"><span class="nav-text">6.3 共享库的安装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E6%9E%84%E9%80%A0%E5%92%8C%E6%9E%90%E6%9E%84%E5%87%BD%E6%95%B0"><span class="nav-text">6.4 共享库构造和析构函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B1%E4%BA%AB%E5%BA%93%E8%84%9A%E6%9C%AC"><span class="nav-text">6.5 共享库脚本</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -632,7 +653,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">905k</span>
+    <span title="站点总字数">927k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
