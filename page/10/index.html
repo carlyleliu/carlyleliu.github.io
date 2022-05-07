@@ -280,13 +280,12 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="概述">1. 概述</h2>
-<p>内核版本3.1中引入了Regmap API，用于统一内核开发人员访问SPI/IIC设备的方式，无论是SPI设备还是IIC设备，只需要初始化，配置Regmap就可以通过Regmap读写设备。Regmap子系统主要提供如下两种功能:</p>
+          <h2 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h2><p>内核版本3.1中引入了Regmap API，用于统一内核开发人员访问SPI/IIC设备的方式，无论是SPI设备还是IIC设备，只需要初始化，配置Regmap就可以通过Regmap读写设备。Regmap子系统主要提供如下两种功能:    </p>
 <ul>
 <li>第一是为IIC/SPI/MMIO等提供统一的访问接口，linux中大量的iic和spi设备就可以通过统一的接口进行访问尤其对于那些同时支持iic和spi接口的设备。</li>
 <li>第二是提供缓存访问机制用于加速设备访问设备，对于支持缓存的设备这将大大加快设备的当问速度。</li>
 </ul>
-<p>下面看一下Regmapz子系统在驱动中的位置，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTVhMzg1NjUzYmI2NDkzMGMxYzAz">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/Regmap/Regmap.png" /></p>
+<p>下面看一下Regmapz子系统在驱动中的位置，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTVhMzg1NjUzYmI2NDkzMGMxYzAz">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/Regmap/Regmap.png" alt=""></p>
 <p>通过Regmap子系统后对于具体的设备驱动程序开发就可以使用统一的api接口来操作了，并且也不需要自己去实现具体的寄存器操作权限管理，缓存和页等操作，全部交给Regmap子系统去完成吧，而我们需要做的就是配置Regmap子系统。</p>
           <!--noindex-->
             <div class="post-button">
@@ -389,8 +388,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="pinctrl概述">1. Pinctrl概述</h2>
-<p>gpio引脚除了作为普通输入输出端口之外还具有接入其他控制器的功能，例如gpio的pin可以作为uart、iic、spi等其他控制器的功能引脚，同时gpio还有上拉下拉，驱动能力以及速率等配置信息。一个soc里有几百个引脚，这些引脚的功能分配和特性配置是个繁琐的工作而且容易出现管脚复用冲突等问题还不容易查找到问题，而pinctrl正好是为了统一管理pin的功能分配的。 <img src="/picture/linux_driver/gpio/pinctrl_hardware_block.png" /></p>
+          <h2 id="1-Pinctrl概述"><a href="#1-Pinctrl概述" class="headerlink" title="1. Pinctrl概述"></a>1. Pinctrl概述</h2><p>gpio引脚除了作为普通输入输出端口之外还具有接入其他控制器的功能，例如gpio的pin可以作为uart、iic、spi等其他控制器的功能引脚，同时gpio还有上拉下拉，驱动能力以及速率等配置信息。一个soc里有几百个引脚，这些引脚的功能分配和特性配置是个繁琐的工作而且容易出现管脚复用冲突等问题还不容易查找到问题，而pinctrl正好是为了统一管理pin的功能分配的。<br><img src="/picture/linux_driver/gpio/pinctrl_hardware_block.png" alt=""></p>
 <p>关于pinctrl主要可以归结为两类设置，其中一类是功能选择，即一组gpio是用于iic还是uart还是就作为普通gpio来用，另一类是gpio的特性配置，即上拉、下拉、驱动能力和速率的配置。而pinctrl主要负责这两类配置的管理工作。总结起来pinctrl主要完成以下三种功能：</p>
 <ul>
 <li>引脚枚举与命名(Enumerating and naming)。</li>
@@ -498,15 +496,14 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="gpio概述">1. GPIO概述</h2>
-<p>以前学习stm32的时候看到手册里有关于gpio的电路图，如下： <img src="/picture/linux_driver/gpio/gpio.png" /></p>
+          <h2 id="1-GPIO概述"><a href="#1-GPIO概述" class="headerlink" title="1. GPIO概述"></a>1. GPIO概述</h2><p>以前学习stm32的时候看到手册里有关于gpio的电路图，如下：<br><img src="/picture/linux_driver/gpio/gpio.png" alt=""></p>
 <ul>
-<li><p>保护二极体：<br />
-IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。</p></li>
-<li><p>P-MOS管和N-MOS管：<br />
-由P-MOS管和N-MOS管组成的单元电路使得GPIO具有“推挽输出”和“开漏输出”的模式。这里的电路会在下面很详细地分析到。</p></li>
-<li><p>TTL肖特基触发器：<br />
-信号经过触发器后，模拟信号转化为0和1的数字信号。但是，当GPIO引脚作为ADC采集电压的输入通道时，用其“模拟输入”功能，此时信号不再经过触发器进行TTL电平转换。ADC外设要采集到的原始的模拟信号。</p></li>
+<li><p>保护二极体：<br>  IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电压输入。当引脚电压高于VDD时，上方的二极体导通；当引脚电压低于VSS时，下方的二极体导通，防止不正常电压引入晶片导致晶片烧毁。但是尽管如此，还是不能直接外接大功率器件，须加大功率及隔离电路驱动，防止烧坏晶片或者外接器件无法正常工作。</p>
+</li>
+<li><p>P-MOS管和N-MOS管：<br>  由P-MOS管和N-MOS管组成的单元电路使得GPIO具有“推挽输出”和“开漏输出”的模式。这里的电路会在下面很详细地分析到。</p>
+</li>
+<li><p>TTL肖特基触发器：<br>  信号经过触发器后，模拟信号转化为0和1的数字信号。但是，当GPIO引脚作为ADC采集电压的输入通道时，用其“模拟输入”功能，此时信号不再经过触发器进行TTL电平转换。ADC外设要采集到的原始的模拟信号。</p>
+</li>
 </ul>
           <!--noindex-->
             <div class="post-button">
@@ -609,11 +606,9 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="spi协议">1. SPI协议</h2>
-<h3 id="概述">1.1 概述</h3>
-<p>SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。</p>
+          <h2 id="1-SPI协议"><a href="#1-SPI协议" class="headerlink" title="1. SPI协议"></a>1. SPI协议</h2><h3 id="1-1-概述"><a href="#1-1-概述" class="headerlink" title="1.1 概述"></a>1.1 概述</h3><p>SPI设备之间使用全双工模式通信，是一个主机和一个或多个从机的主从模式。主机负责初始化帧，这个数据传输帧可以用于读与写两种操作，片选（英语：Chip select）线路可以从多个从机选择一个来响应主机的请求。</p>
 <p>有时SPI接口被称作四线式接口，这是为了与其他不同线制的数据传输接口加以区分。SPI准确来讲应为“同步串行接口”，但是它又与同步串行接口协议（SSI）是完全不同的两种协议。虽然SSI也是一个四线式同步通信协议，但是它使用差分信号，而且仅提供一个单工通信信道。于此相对地，SPI是一个单主机多从机的通信接口。</p>
-<p><img src="/picture/linux_driver/spi/SPI.png" /></p>
+<p><img src="/picture/linux_driver/spi/SPI.png" alt=""></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BSPI%E5%AD%90%E7%B3%BB%E7%BB%9F/#more" rel="contents">
@@ -715,8 +710,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="pwm概述">1. PWM概述</h2>
-<p>脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下： <img src="/picture/linux_driver/PWM/PWM.png" /></p>
+          <h2 id="1-PWM概述"><a href="#1-PWM概述" class="headerlink" title="1. PWM概述"></a>1. PWM概述</h2><p>脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下：<br><img src="/picture/linux_driver/PWM/PWM.png" alt=""></p>
 <ul>
 <li>Ton：信号高电平持续时间</li>
 <li>Toff：信号底电平持续时间</li>
@@ -824,9 +818,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="iic协议">1. IIC协议</h2>
-<h3 id="写操作">1.1 写操作</h3>
-<p>流程如下：</p>
+          <h2 id="1-IIC协议"><a href="#1-IIC协议" class="headerlink" title="1. IIC协议"></a>1. IIC协议</h2><h3 id="1-1-写操作"><a href="#1-1-写操作" class="headerlink" title="1.1 写操作"></a>1.1 写操作</h3><p>流程如下：</p>
 <ul>
 <li>主芯片要发出一个start信号。</li>
 <li>然后发出一个设备地址(用来确定是往哪一个芯片写数据)，方向(读/写，0表示写，1表示读)。</li>
@@ -835,7 +827,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
 <li>每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成)，然后再传输下一个数据。</li>
 <li>数据发送完之后，主芯片就会发送一个停止信号。</li>
 </ul>
-<p>下图：白色背景表示"主→从"，灰色背景表示"从→主" <img src="/picture/linux_driver/iic/007_i2c_write.png" /></p>
+<p>下图：白色背景表示”主→从”，灰色背景表示”从→主”<br><img src="/picture/linux_driver/iic/007_i2c_write.png" alt=""></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BIIC%E5%AD%90%E7%B3%BB%E7%BB%9F/#more" rel="contents">
@@ -937,10 +929,8 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="dts文件格式">1. DTS文件格式</h2>
-<p>Devicetree Source (DTS) 格式是一种设备树的文本表示，dtc 可以将其处理为内核期望形式的二进制设备树。</p>
-<h3 id="compiler-directives">1.1 Compiler directives</h3>
-<p>可以从 DTS 文件中包含其他源文件。包含文件的名称应以“.dtsi”结尾。包含的文件又可以包含其他文件。 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/include/ <span class="string">&quot;FILE&quot;</span></span><br></pre></td></tr></table></figure></p>
+          <h2 id="1-DTS文件格式"><a href="#1-DTS文件格式" class="headerlink" title="1. DTS文件格式"></a>1. DTS文件格式</h2><p>Devicetree Source (DTS) 格式是一种设备树的文本表示，dtc 可以将其处理为内核期望形式的二进制设备树。</p>
+<h3 id="1-1-Compiler-directives"><a href="#1-1-Compiler-directives" class="headerlink" title="1.1 Compiler directives"></a>1.1 Compiler directives</h3><p>可以从 DTS 文件中包含其他源文件。包含文件的名称应以“.dtsi”结尾。包含的文件又可以包含其他文件。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/include/ <span class="string">&quot;FILE&quot;</span></span><br></pre></td></tr></table></figure></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E8%AE%BE%E5%A4%87%E6%A0%91/#more" rel="contents">
@@ -1042,11 +1032,8 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="vfs">1. VFS</h2>
-<p>...后续补充</p>
-<h2 id="seq_file">2. seq_file</h2>
-<h3 id="概述">2.1. 概述</h3>
-<p>seq_file只是在普通的文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口。seq_file一般只提供只读接口，在使用seq_file操作时，主要靠下述四个操作来完成内核自定义缓冲区的遍历的输出操作，其中pos作为遍历的iterator，在seq_read函数中被多次使用，用以定位当前从内核自定义链表中读取的当前位置，当多次读取时，pos非常重要，且pos总是遵循从0,1,2...end+1遍历的次序，其即必须作为遍历内核自定义链表的下标，也可以作为返回内容的标识。但是我在使用中仅仅将其作为返回内容的标示，并没有将其作为遍历链表的下标，从而导致返回数据量大时造成莫名奇妙的错误，注意：start返回的void*如果非0，被show输出后，在作为参数传递给next函数，next可以对其修改，也可以忽略；当next或者start返回NULL时，在seq_open中控制路径到达seq_end。</p>
+          <h2 id="1-VFS"><a href="#1-VFS" class="headerlink" title="1. VFS"></a>1. VFS</h2><p>…后续补充</p>
+<h2 id="2-seq-file"><a href="#2-seq-file" class="headerlink" title="2. seq_file"></a>2. seq_file</h2><h3 id="2-1-概述"><a href="#2-1-概述" class="headerlink" title="2.1. 概述"></a>2.1. 概述</h3><p>seq_file只是在普通的文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口。seq_file一般只提供只读接口，在使用seq_file操作时，主要靠下述四个操作来完成内核自定义缓冲区的遍历的输出操作，其中pos作为遍历的iterator，在seq_read函数中被多次使用，用以定位当前从内核自定义链表中读取的当前位置，当多次读取时，pos非常重要，且pos总是遵循从0,1,2…end+1遍历的次序，其即必须作为遍历内核自定义链表的下标，也可以作为返回内容的标识。但是我在使用中仅仅将其作为返回内容的标示，并没有将其作为遍历链表的下标，从而导致返回数据量大时造成莫名奇妙的错误，注意：start返回的void*如果非0，被show输出后，在作为参数传递给next函数，next可以对其修改，也可以忽略；当next或者start返回NULL时，在seq_open中控制路径到达seq_end。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">seq_operations</span> &#123;</span></span><br><span class="line">  <span class="keyword">void</span> * (*start) (struct seq_file *m, <span class="keyword">loff_t</span> *pos);</span><br><span class="line">  <span class="keyword">void</span> (*stop) (struct seq_file *m, <span class="keyword">void</span> *v);</span><br><span class="line">  <span class="keyword">void</span> * (*next) (struct seq_file *m, <span class="keyword">void</span> *v, <span class="keyword">loff_t</span> *pos);</span><br><span class="line">  <span class="keyword">int</span> (*show) (struct seq_file *m, <span class="keyword">void</span> *v);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
           <!--noindex-->
             <div class="post-button">
@@ -1149,13 +1136,9 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="kobject">1. kobject</h2>
-<h3 id="概述">1.1. 概述</h3>
-<ul>
-<li>Kobjects有一个name和一个引用计数，还具有父指针（允许将对象排列成层次结构）。<br />
-</li>
-<li>ktype是嵌入在kobject结构体中的对象。 每个kobject结构都需要一个相应的ktype。 ktype控制kobject在创建和销毁时的行为。<br />
-</li>
+          <h2 id="1-kobject"><a href="#1-kobject" class="headerlink" title="1. kobject"></a>1. kobject</h2><h3 id="1-1-概述"><a href="#1-1-概述" class="headerlink" title="1.1. 概述"></a>1.1. 概述</h3><ul>
+<li>Kobjects有一个name和一个引用计数，还具有父指针（允许将对象排列成层次结构）。   </li>
+<li>ktype是嵌入在kobject结构体中的对象。 每个kobject结构都需要一个相应的ktype。 ktype控制kobject在创建和销毁时的行为。   </li>
 <li>kset是一组kobjects(kset本身包含一个kobject), 这些kobject可以拥有相同的ktype。kset也是sysfs中的一个子目录，其中可以显示与kset相关联的kobject。 每个kset都包含一个kobject，它可以设置为其他kobject的父级；sysfs层次结构的顶层目录就是这样构建的。Ksets可以支持kobjects的“热插拔”并影响uevent事件如何报告给用户空间。</li>
 </ul>
           <!--noindex-->
@@ -1259,8 +1242,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
     <div class="post-body" itemprop="articleBody">
 
       
-          <h2 id="openwrt编译流程vocore为例">1. openwrt编译流程（vocore为例）</h2>
-<p>clone源码并解压 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget http://vonger.cn/misc/vocore2/openwrt.tar.bz2</span><br><span class="line">tar -jxvf openwrt.tar.bz2</span><br></pre></td></tr></table></figure> 安装依赖包 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install gcc g++ binutils patch bzip2 flex bison make autoconf gettext texinfo unzip sharutils subversion libncurses5-dev ncurses-term zlib1g-dev libssl-dev python</span><br></pre></td></tr></table></figure> 编译过程中会有报错缺少intltool这个工具执行以下命令安装即可 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install intltool</span><br></pre></td></tr></table></figure> 更新并编译 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">./scripts/feeds update -a</span><br><span class="line">./scripts/feeds install -a</span><br><span class="line">make menuconfig</span><br><span class="line">make -j1 V=s</span><br></pre></td></tr></table></figure>
+          <h2 id="1-openwrt编译流程（vocore为例）"><a href="#1-openwrt编译流程（vocore为例）" class="headerlink" title="1. openwrt编译流程（vocore为例）"></a>1. openwrt编译流程（vocore为例）</h2><p>clone源码并解压<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget http://vonger.cn/misc/vocore2/openwrt.tar.bz2</span><br><span class="line">tar -jxvf openwrt.tar.bz2</span><br></pre></td></tr></table></figure><br>安装依赖包<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install gcc g++ binutils patch bzip2 flex bison make autoconf gettext texinfo unzip sharutils subversion libncurses5-dev ncurses-term zlib1g-dev libssl-dev python</span><br></pre></td></tr></table></figure><br>编译过程中会有报错缺少intltool这个工具执行以下命令安装即可<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install intltool</span><br></pre></td></tr></table></figure><br>更新并编译<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">./scripts/feeds update -a</span><br><span class="line">./scripts/feeds install -a</span><br><span class="line">make menuconfig</span><br><span class="line">make -j1 V=s</span><br></pre></td></tr></table></figure><br>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2020/openwrt/#more" rel="contents">
@@ -1423,7 +1405,7 @@ IO引脚上下两边两个二极体用于防止引脚外部过高、过低的电
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">912k</span>
+    <span title="站点总字数">883k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

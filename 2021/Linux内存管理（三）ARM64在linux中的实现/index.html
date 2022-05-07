@@ -292,23 +292,22 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p><img src="/picture/linux/brief/内存管理-ARM64在linux中的实现.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MTc1NjFlMDg1MzA2ZjhjNGRlZDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+        <p><img src="/picture/linux/brief/内存管理-ARM64在linux中的实现.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MTc1NjFlMDg1MzA2ZjhjNGRlZDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="arm64内存管理">1. arm64内存管理</h2>
-<p>如图所示，ARM处理器内核的MMU包括TLB和页表遍历单元（Table Walk Unit）两个部件。TLB是一个高速缓存，用于缓存页表转换的结果，从而减少页表查询的时间。一个完整的页表翻译和查找的过程叫作页表查询，页表查询的过程由硬件自动完成，但是页表的维护需要软件来完成。页表查询是一个较耗时的过程，理想的状态下，TLB里应存有页表的相关信息。当TLB未命中时，MMU才会查询页表，从而得到翻译后的物理地址。而页表通常存储在主存储器中。得到物理地址之后，首先需要查询该物理地址的内容是否在高速缓存中有最新的副本。如果没有，则说明高速缓存未命中，需要访问主存储器。 <img src="/picture/linux/kernel/arm64/mmu.png" /></p>
-<p>对于多任务操作系统，每个进程都拥有独立的进程地址空间。这些进程地址空间在虚拟地址空间内是相互隔离的，但是在物理地址空间可能映射同一个物理页面，那么这些进程地址空间是如何映射到物理地址空间的呢？这就需要处理器的MMU提供页表映射和管理的功能。下图所示为进程地址空间和物理地址空间的映射关系，左边是进程地址空间视图，右边是物理地址空间视图。进程地址空间又分成内核空间（Kermel Space）和用户空间（User Space）。无论是内核空间还是用户空间都可以通过处理器提供的页表机制映射到实际的物理地址。 <img src="/picture/linux/kernel/mem/process_address.png" /></p>
-<h3 id="页表">1.1 页表</h3>
-<p>在AArch64架构中的MMU支持单一阶段的页表转换，同样也支持虚拟化扩展中两阶段的页表转换。</p>
+<h2 id="1-arm64内存管理"><a href="#1-arm64内存管理" class="headerlink" title="1. arm64内存管理"></a>1. arm64内存管理</h2><p>如图所示，ARM处理器内核的MMU包括TLB和页表遍历单元（Table Walk Unit）两个部件。TLB是一个高速缓存，用于缓存页表转换的结果，从而减少页表查询的时间。一个完整的页表翻译和查找的过程叫作页表查询，页表查询的过程由硬件自动完成，但是页表的维护需要软件来完成。页表查询是一个较耗时的过程，理想的状态下，TLB里应存有页表的相关信息。当TLB未命中时，MMU才会查询页表，从而得到翻译后的物理地址。而页表通常存储在主存储器中。得到物理地址之后，首先需要查询该物理地址的内容是否在高速缓存中有最新的副本。如果没有，则说明高速缓存未命中，需要访问主存储器。<br><img src="/picture/linux/kernel/arm64/mmu.png" alt=""></p>
+<p>对于多任务操作系统，每个进程都拥有独立的进程地址空间。这些进程地址空间在虚拟地址空间内是相互隔离的，但是在物理地址空间可能映射同一个物理页面，那么这些进程地址空间是如何映射到物理地址空间的呢？这就需要处理器的MMU提供页表映射和管理的功能。下图所示为进程地址空间和物理地址空间的映射关系，左边是进程地址空间视图，右边是物理地址空间视图。进程地址空间又分成内核空间（Kermel Space）和用户空间（User Space）。无论是内核空间还是用户空间都可以通过处理器提供的页表机制映射到实际的物理地址。<br><img src="/picture/linux/kernel/mem/process_address.png" alt=""></p>
+<h3 id="1-1-页表"><a href="#1-1-页表" class="headerlink" title="1.1 页表"></a>1.1 页表</h3><p>在AArch64架构中的MMU支持单一阶段的页表转换，同样也支持虚拟化扩展中两阶段的页表转换。</p>
 <ul>
-<li><p>单一阶段的页表转换，把虑虚拟地址（VA）翻译成物理地址（PA）</p></li>
-<li><p>两阶段的页表转换：包括两个阶段。在阶段1，把虚拟地址翻译成中间物 （Intermediate Phvsical Address，IPA）；在阶段2，把IPA翻译成最终PA 另外，ARMv8架构支持多种页表格式。具体如下。</p></li>
-<li><p>ARMv8架构的长描述符页表格式（Long Descriptor Translation Table Format）</p></li>
-<li><p>ARMv7架构的长描述符页表格式，需要打开大物理地址扩展（Large PhysicalA Extention, LPAE）</p></li>
-<li><p>ARMv7加构的短描述符页表格式（Short Descriptor Translation Table Format）</p></li>
+<li>单一阶段的页表转换，把虑虚拟地址（VA）翻译成物理地址（PA）</li>
+<li><p>两阶段的页表转换：包括两个阶段。在阶段1，把虚拟地址翻译成中间物 （Intermediate Phvsical Address，IPA）；在阶段2，把IPA翻译成最终PA 另外，ARMv8架构支持多种页表格式。具体如下。</p>
+</li>
+<li><p>ARMv8架构的长描述符页表格式（Long Descriptor Translation Table Format）</p>
+</li>
+<li>ARMv7架构的长描述符页表格式，需要打开大物理地址扩展（Large PhysicalA Extention, LPAE）</li>
+<li>ARMv7加构的短描述符页表格式（Short Descriptor Translation Table Format）</li>
 </ul>
 <p>当使用AArch32处理器时，使用ARMv7架构的短描述符页表格式或长描述符页表 运行32位的应用程序，当使用AArch64处理器时，使用ARMv8架构的长描述符页表格行64位的应用程序。另外，ARMv8架构还支持4KB、16KB或64KB这3种页面粒度。</p>
-<h3 id="页表映射">1.2 页表映射</h3>
-<p>在AArch64架构中，因为地址总线位宽最多支持48位，所以VA被划分为两个空间，每个空间最多支持256TB。</p>
+<h3 id="1-2-页表映射"><a href="#1-2-页表映射" class="headerlink" title="1.2 页表映射"></a>1.2 页表映射</h3><p>在AArch64架构中，因为地址总线位宽最多支持48位，所以VA被划分为两个空间，每个空间最多支持256TB。</p>
 <ul>
 <li>低位的虚拟地址空间位于0x0000 0000 0000 0000到0x0000 FFFF FFFF FFFF。虚拟地址的最高位等于0，就使用这个虚拟地址空间，并且使用TTBRO_ELx来存放的基地址</li>
 <li>高位的虚拟地址空间位于0xFFFF 0000 0000 0000到0xFFFF FFFF FFFF FFFF。虚拟地址的最高位等于1，就使用这个虚拟地址空间，并且使用TTBR1_ELx来存放的基地址</li>
@@ -320,7 +319,7 @@
 <li>输出地址的最大有效位宽为48位</li>
 <li>翻译的页面粒度可以是4KB、16KB或64KB</li>
 </ul>
-<p>注意，本文以4KB大小的页面和48位地址宽度为例来说明AArch64架构页表映射的过类似。当然，读者也可以在Linux内核中配置其他大小的页面粒度，如16KB、64KB等。如下图所示为AArch64架构的地址映射，其中页面是4KB的小页面。当TLB未命中时，处理器查询页表的过程如下。 <img src="/picture/linux/kernel/mem/aarch64_addr.png" /></p>
+<p>注意，本文以4KB大小的页面和48位地址宽度为例来说明AArch64架构页表映射的过类似。当然，读者也可以在Linux内核中配置其他大小的页面粒度，如16KB、64KB等。如下图所示为AArch64架构的地址映射，其中页面是4KB的小页面。当TLB未命中时，处理器查询页表的过程如下。<br><img src="/picture/linux/kernel/mem/aarch64_addr.png" alt=""></p>
 <ul>
 <li>处理器根据页表基地址控制寄存器和虚拟地址来判断使用哪个页表基地址寄存器 TTBRO还是TTBR1。当虚拟地址第63位简称VA[63]为1时选择TTBR1；当VA[63]为0时选择TTBR0。页表基地址寄存器中存放着1级页表</li>
 <li>处理器将VA[47:39]作为L0索引，在1级页表（L0页表）中找到页表项，1级页表有512个页表项</li>
@@ -329,82 +328,78 @@
 <li>3级页表的页表项中存放着4级页表（L3页表）的物理基地址。处理器以VA[20:12]作为L3索引，在4级页表（L3页表）中找到相应的页表项，4级页表有512个页表项</li>
 <li>4级页表的页表项里存放着4KB页面的物理基地址，然后加上VA[11：0]，就构成了新的物理地址，因此处理器就完成了页表的查询和翻译工作</li>
 </ul>
-<h3 id="页表项描述符">1.3 页表项描述符</h3>
-<p>从下图可知，AArch64架构页表分成4级页表，每一级页表都有页表项，我们把它们称为页表项描述符，每个页表项描述符占8字节，那么这些页表项描述符的格式和内容是否都一样？</p>
-<h4 id="l0l2页表项描述符">L0~L2页表项描述符</h4>
-<p>AArch64架构中L0 ~ L3页表项描述符的格式不完全一样，其中L0 ~ L2页表项的内容比较类似，如下图所示。 <img src="/picture/linux/kernel/mem/l0_l2.png" /></p>
+<h3 id="1-3-页表项描述符"><a href="#1-3-页表项描述符" class="headerlink" title="1.3 页表项描述符"></a>1.3 页表项描述符</h3><p>从下图可知，AArch64架构页表分成4级页表，每一级页表都有页表项，我们把它们称为页表项描述符，每个页表项描述符占8字节，那么这些页表项描述符的格式和内容是否都一样？</p>
+<h4 id="L0-L2页表项描述符"><a href="#L0-L2页表项描述符" class="headerlink" title="L0~L2页表项描述符"></a>L0~L2页表项描述符</h4><p>AArch64架构中L0 ~ L3页表项描述符的格式不完全一样，其中L0 ~ L2页表项的内容比较类似，如下图所示。<br><img src="/picture/linux/kernel/mem/l0_l2.png" alt=""></p>
 <p>L0~L2页表项根据内容可以分成3类，一是无效的页表项，二是块（block）类型的页表项，三是页表（table）类型的页表项。</p>
 <ul>
 <li>当页表项描述符Bit[0]为1时，表示有效的描述符；当Bit[0]为0时，表示无效描述符</li>
-<li>页表项描述符Bit[1]用来表示类型
-<ul>
+<li>页表项描述符Bit[1]用来表示类型<ul>
 <li>页表类型：当Bit[1]为1时，表示该描述符包含了指向下一级页表的基地址，是一个页表类型的页表项</li>
 <li>块类型，当Bit[1]为0时表示一个大内存块（memory block）的页表项，其中包含了最终的物理地址。大内存块通常是用来描述大的连续的物理内存，如2MBit或者1GB大小的连续物理内存</li>
-</ul></li>
-<li>在块类型的页表项中，Bit[47：n]表示最终输出的物理地址
-<ul>
+</ul>
+</li>
+<li>在块类型的页表项中，Bit[47：n]表示最终输出的物理地址 <ul>
 <li>若页面粒度是4KB，在L1页表项描述符中n为30，表示1GB大小的连续物存。在L2页表项描述符中n为21，用来表示2MB大小的连续物理内存</li>
 <li>若页面粒度为16KB，在L2页表项描述符中n为25，用来表示32MB大小的连续物理内存</li>
-</ul></li>
+</ul>
+</li>
 <li>在块类型的页表项中，Bit[11：2]是低位属性（lower attribute），Bit[63:52]是高位属性(upper attribute)</li>
-<li>在页表类型的页表项描述符中，Bit[47：m]用来指向下一级页表的基地址
-<ul>
+<li>在页表类型的页表项描述符中，Bit[47：m]用来指向下一级页表的基地址<ul>
 <li>当页面粒度为4KB时m为12</li>
 <li>当页面粒度为16KB时m为14</li>
 <li>当页面粒度为64KB时m为16</li>
-</ul></li>
 </ul>
-<h4 id="l3页表项描述符">L3页表项描述符</h4>
-<p>如下图所示，L3页表项描述符包含5种页表项，分别是无效的页表项、保留的页表项4KB粒度的页表项、16KB粒度的页表项、64KB粒度的页表项。 <img src="/picture/linux/kernel/mem/l3.png" /></p>
+</li>
+</ul>
+<h4 id="L3页表项描述符"><a href="#L3页表项描述符" class="headerlink" title="L3页表项描述符"></a>L3页表项描述符</h4><p>如下图所示，L3页表项描述符包含5种页表项，分别是无效的页表项、保留的页表项4KB粒度的页表项、16KB粒度的页表项、64KB粒度的页表项。<br><img src="/picture/linux/kernel/mem/l3.png" alt=""></p>
 <p>L3页表项描述符的格式如下。</p>
 <ul>
 <li>当页表项描述符Bit[0]为1时，表示有效的描述符；当Bit[0]为0时，表示无效描述符</li>
 <li>当页表项描述符Bit[1]为0时，表示保留页表项；当Bit[1]为1时，表示页表类型的页表项</li>
 <li>页表描述符Bit[11：2]是低位属性，Bit[63:51]是高位属性</li>
-<li>页表描述符中间的位域中包含了输出地址（output address），也就是最终物理页面的高地址段
-<ul>
+<li>页表描述符中间的位域中包含了输出地址（output address），也就是最终物理页面的高地址段<ul>
 <li>当页面粒度为4KB时输出地址为Bit[47:12]</li>
 <li>当页面粒度为16KB时输出地址为Bit[47:14]</li>
 <li>当页面粒度为64KB时输出地址为Bit[47:16]</li>
-</ul></li>
 </ul>
-<p><img src="/picture/linux/kernel/mem/page_attr.png" /></p>
+</li>
+</ul>
+<p><img src="/picture/linux/kernel/mem/page_attr.png" alt=""></p>
 <ul>
-<li><p>UXN or XN, bit[54]<br />
-该 bit 为 Execute-never，决定了 descriptor 所指向的 region 是否 executable，更多信息参考 Access permissions for instruction execution 章节。 在 EL1&amp;0 translation regime 中，该 bit 为 UXN (Unprivileged execute never)，确定了从 descriptor 所指向的 region 取出的指令是否可以在 EL0 上执行。在其他的 translation regimes 中，该 bit 命名为 XN (Execute never)。</p></li>
-<li><p>PXN, bit[53]<br />
-该 bit 为 Privileged execute-never，决定了 descriptor 所指向的 region 在 EL1 中是否 executable，更多信息参考 Access permissions for instruction execution 章节。 在 EL2 和 EL3 translation regimes 中，该 bit 为 RES0。</p></li>
-<li><p>Contiguous, bit[52]<br />
-该 bit 用于指示 translation table entry 是否属于 contiguous set or entries。contiguous set or entries cache 到 TLB 中时只占用一个 entry，更多信息参考 The Contiguous bit 章节。</p></li>
-<li><p>nG, bit[11]<br />
-该 bit 为 not global，当 entry 被加载到 TLB 时，该 bit 用于指示 TLB entry 是属于当前 ASID 还是属于所有的 ASID，更多细节可以参考 Global and process-specific translation table entries 章节。 该 bit 只在 EL1&amp;0 translation regime 中有效，在其他 regimes 中为 RES0。</p></li>
-<li><p>AF, bit[10]<br />
-该 bit 为 Access flag，更多细节参考 Access flag 章节。</p></li>
-<li><p>SH, bits[9:8]<br />
-该 bit 为 Shareability field，更多细节参考 Memory region attributes 章节。</p></li>
-<li><p>AP[2:1], bits[7:6]<br />
-该 bit 为 Data Access Permissions，更多细节参考 Memory access control 章节。</p></li>
+<li><p>UXN or XN, bit[54]<br>  该 bit 为 Execute-never，决定了 descriptor 所指向的 region 是否 executable，更多信息参考 Access permissions for instruction execution 章节。 在 EL1&amp;0 translation regime 中，该 bit 为 UXN (Unprivileged execute never)，确定了从 descriptor 所指向的 region 取出的指令是否可以在 EL0 上执行。在其他的 translation regimes 中，该 bit 命名为 XN (Execute never)。</p>
+</li>
+<li><p>PXN, bit[53]<br>  该 bit 为 Privileged execute-never，决定了 descriptor 所指向的 region 在 EL1 中是否 executable，更多信息参考 Access permissions for instruction execution 章节。 在 EL2 和 EL3 translation regimes 中，该 bit 为 RES0。</p>
+</li>
+<li><p>Contiguous, bit[52]<br>  该 bit 用于指示 translation table entry 是否属于 contiguous set or entries。contiguous set or entries cache 到 TLB 中时只占用一个 entry，更多信息参考 The Contiguous bit 章节。</p>
+</li>
+<li><p>nG, bit[11]<br>  该 bit 为 not global，当 entry 被加载到 TLB 时，该 bit 用于指示 TLB entry 是属于当前 ASID 还是属于所有的 ASID，更多细节可以参考 Global and process-specific translation table entries 章节。 该 bit 只在 EL1&amp;0 translation regime 中有效，在其他 regimes 中为 RES0。</p>
+</li>
+<li><p>AF, bit[10]<br>  该 bit 为 Access flag，更多细节参考 Access flag 章节。</p>
+</li>
+<li><p>SH, bits[9:8]<br>  该 bit 为 Shareability field，更多细节参考 Memory region attributes 章节。</p>
+</li>
+<li><p>AP[2:1], bits[7:6]<br>  该 bit 为 Data Access Permissions，更多细节参考 Memory access control 章节。</p>
+</li>
 </ul>
 <blockquote>
 <p>NOTE: 在 ARMv8 中，translation table descriptor 格式定义了 AP[2:1] 作为 Access Permission，AP[0] 没有被使用。</p>
 </blockquote>
 <p>AP[1] 只在 EL1&amp;0 translation regime 有效，在其他 regimes 中，该 bit 为 RES1。</p>
 <ul>
-<li><p>NS, bit[5]<br />
-Non-secure bit. For memory accesses from Secure state, specifies whether the output address is in the Secure or Non-secure address map, see Control of Secure or Non-secure memory access on page D4-1702. For memory accesses from Non-secure state, this bit is RES0 and is ignored by the PE. This field is RES1 in the AArch64 EL2 translation regime. 该 bit 为 Non-secure，用于指示在 Secure state 下发起的内存访问的 translation 的 output address 指向 Secure world 还是 Non-secure world，更多细节参考 Control of Secure or Non-secure memory access 章节。 对于在 Non-secure state 下发起的内存访问中，该 bit 为 RES0，PE 不对其做处理。在 AArch64 EL2 translation regime 中，该 bit 为 RES1。</p></li>
-<li><p>AttrIndx[2:0], bits[4:2]<br />
-该 bit 为 Stage 1 memory attributes index，即 MAIR_ELx，更多细节参考 Memory region type and attributes, for stage 1 translations 章节。</p>
-<p>被定义为 IGNORED 的比特位，在 PE 处理过程中会被忽略，不参与地址转换过程，更多信息可以参考 Glossary 章节中的 IGNORED 。 Other fields in the VMSAv8-64 translation table format descriptors 章节则介绍了除上述属性外的其他比特位的详细信息。</p></li>
+<li><p>NS, bit[5]<br>  Non-secure bit. For memory accesses from Secure state, specifies whether the output address is in the Secure or Non-secure address map, see Control of Secure or Non-secure memory access on page D4-1702. For memory accesses from Non-secure state, this bit is RES0 and is ignored by the PE. This field is RES1 in the AArch64 EL2 translation regime. 该 bit 为 Non-secure，用于指示在 Secure state 下发起的内存访问的 translation 的 output address 指向 Secure world 还是 Non-secure world，更多细节参考 Control of Secure or Non-secure memory access 章节。 对于在 Non-secure state 下发起的内存访问中，该 bit 为 RES0，PE 不对其做处理。在 AArch64 EL2 translation regime 中，该 bit 为 RES1。</p>
+</li>
+<li><p>AttrIndx[2:0], bits[4:2]<br>  该 bit 为 Stage 1 memory attributes index，即 MAIR_ELx，更多细节参考 Memory region type and attributes, for stage 1 translations 章节。</p>
+<p>  被定义为 IGNORED 的比特位，在 PE 处理过程中会被忽略，不参与地址转换过程，更多信息可以参考 Glossary 章节中的 IGNORED 。 Other fields in the VMSAv8-64 translation table format descriptors 章节则介绍了除上述属性外的其他比特位的详细信息。</p>
+</li>
 </ul>
-<h2 id="linux内核中的页表">2. Linux内核中的页表</h2>
-<p>在ARM64的Linux内核中采用以下4级分页模型：</p>
+<h2 id="2-Linux内核中的页表"><a href="#2-Linux内核中的页表" class="headerlink" title="2. Linux内核中的页表"></a>2. Linux内核中的页表</h2><p>在ARM64的Linux内核中采用以下4级分页模型：</p>
 <ul>
 <li>页全局目录（Page Global Directory，PGD）</li>
 <li>页上级目录（Page Upper Directory，PUD）</li>
 <li>页中间目录（Page Middle Directory，PMD）</li>
 <li>页表（Page Table，PT）</li>
 </ul>
-<p>上述4级分页模型分别对应ARMv8架构页表的L0~L3页表。上述4级分页模型在64位虚拟地址的划分如下图所示。 <img src="/picture/linux/kernel/mem/Linux_page.png" /></p>
+<p>上述4级分页模型分别对应ARMv8架构页表的L0~L3页表。上述4级分页模型在64位虚拟地址的划分如下图所示。<br><img src="/picture/linux/kernel/mem/Linux_page.png" alt=""></p>
 <p>64位的虚拟地址分成如下几个部分。</p>
 <ul>
 <li>Bit[63]：用来选择页表基地址寄存器</li>
@@ -417,32 +412,31 @@ Non-secure bit. For memory accesses from Secure state, specifies whether the out
 </ul>
 <p>对于ARM64架构来说，目前基于ARMv8-A架构的处理器最多可以支持到48根地址也就是寻址2^48的虚拟地址空间，即虚拟地址的范围为0x0000 0000 0000 0000 ~ 0x0000 FFFF FFFF FFFF共256TB。理论上完全可以支持64根地址线，于是最多就可以寻址2^64B的虚拟地址空间。但是对于目前的应用来说，256TB的虚拟地址空间已经足够使用了。因为如果支持 64位虚拟地址空间，意味着处理器设计需要考虑更多的地址线，CPU的设计复杂度会增大。基于ARMv8-A架构的处理器的虚拟地址分成两个区域。一个是0x0000 0000 0000 0000 ~ 0x0000 FFFF FFFF FFFF，另外一个是0xFFFF 0000 0000 0000~0xFFFF FFFF FFFF FFFF。基于ARMv8-A架构的处理器可以通过配置ARM64_VA_BITS宏来设置虚拟地址的宽度。</p>
 <figure class="highlight apache"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">&lt;arch/arm64/Kconfig&gt;</span></span><br><span class="line"><span class="attribute">config</span> ARM<span class="number">64</span>_VA_BITS</span><br><span class="line">    <span class="attribute">int</span></span><br><span class="line">    <span class="attribute">default</span> <span class="number">39</span> if ARM<span class="number">64</span>_VA_BITS_<span class="number">39</span></span><br><span class="line">    <span class="attribute">default</span> <span class="number">42</span> if ARM<span class="number">64</span>_VA_BITS_<span class="number">42</span></span><br><span class="line">    <span class="attribute">default</span> <span class="number">48</span> if ARM<span class="number">64</span>_VA_BITS_<span class="number">48</span></span><br></pre></td></tr></table></figure>
-<p>另外，基于ARMv8-A架构的处理器支持的最大物理地址宽度也是48位。 Linux内存空间布局与地址映射的粒度和地址映射的层级有关。基于ARMv8-A架构的处理器支持的页面粒度可以是4KB、16KB或者64KB。映射的层级可以是3级或者4级。</p>
-<h3 id="linux-在-aarch64-中的内存布局">2.1 Linux 在 AArch64 中的内存布局</h3>
-<p>本文档描述 AArch64 Linux 内核所使用的虚拟内存布局。此构架可以实现页大小为 4KB 的 4 级转换表和页大小为 64KB 的 3 级转换表。</p>
+<p>另外，基于ARMv8-A架构的处理器支持的最大物理地址宽度也是48位。<br>Linux内存空间布局与地址映射的粒度和地址映射的层级有关。基于ARMv8-A架构的处理器支持的页面粒度可以是4KB、16KB或者64KB。映射的层级可以是3级或者4级。</p>
+<h3 id="2-1-Linux-在-AArch64-中的内存布局"><a href="#2-1-Linux-在-AArch64-中的内存布局" class="headerlink" title="2.1 Linux 在 AArch64 中的内存布局"></a>2.1 Linux 在 AArch64 中的内存布局</h3><p>本文档描述 AArch64 Linux 内核所使用的虚拟内存布局。此构架可以实现页大小为 4KB 的 4 级转换表和页大小为 64KB 的 3 级转换表。</p>
 <p>AArch64 Linux 使用 3 级或 4 级转换表，其页大小配置为 4KB，对于用户和内核分别都有 39-bit (512GB) 或 48-bit (256TB) 的虚拟地址空间。对于页大小为 64KB的配置，仅使用 2 级转换表，有 42-bit (4TB) 的虚拟地址空间，但内存布局相同。</p>
 <p>用户地址空间的 63:48 位为 0，而内核地址空间的相应位为 1。TTBRx 的选择由虚拟地址的 63 位给出。swapper_pg_dir 仅包含内核（全局）映射，而用户 pgd 仅包含用户（非全局）映射。swapper_pg_dir 地址被写入TTBR1 中，且从不写入 TTBR0。</p>
 <p>AArch64 Linux 在页大小为 4KB，并使用 3 级转换表时的内存布局：</p>
-<pre><code>起始地址            结束地址            大小      用途
+<pre><code>起始地址            结束地址            大小        用途
 -----------------------------------------------------------------------
-0000000000000000    0000007fffffffff     512GB      用户空间
-ffffff8000000000    ffffffffffffffff     512GB      内核空间</code></pre>
-<p>AArch64 Linux 在页大小为 4KB，并使用 4 级转换表时的内存布局：</p>
-<pre><code>起始地址            结束地址            大小      用途
+0000000000000000    0000007fffffffff     512GB        用户空间
+ffffff8000000000    ffffffffffffffff     512GB        内核空间
+</code></pre><p>AArch64 Linux 在页大小为 4KB，并使用 4 级转换表时的内存布局：</p>
+<pre><code>起始地址            结束地址            大小        用途
 -----------------------------------------------------------------------
-0000000000000000    0000ffffffffffff     256TB      用户空间
-ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
-<p>AArch64 Linux 在页大小为 64KB，并使用 2 级转换表时的内存布局：</p>
-<pre><code>起始地址            结束地址            大小      用途
+0000000000000000    0000ffffffffffff     256TB        用户空间
+ffff000000000000    ffffffffffffffff     256TB        内核空间
+</code></pre><p>AArch64 Linux 在页大小为 64KB，并使用 2 级转换表时的内存布局：</p>
+<pre><code>起始地址            结束地址            大小        用途
 -----------------------------------------------------------------------
-0000000000000000    000003ffffffffff       4TB      用户空间
-fffffc0000000000    ffffffffffffffff       4TB      内核空间</code></pre>
-<p>AArch64 Linux 在页大小为 64KB，并使用 3 级转换表时的内存布局：</p>
-<pre><code>起始地址            结束地址            大小      用途
+0000000000000000    000003ffffffffff       4TB        用户空间
+fffffc0000000000    ffffffffffffffff       4TB        内核空间
+</code></pre><p>AArch64 Linux 在页大小为 64KB，并使用 3 级转换表时的内存布局：</p>
+<pre><code>起始地址            结束地址            大小        用途
 -----------------------------------------------------------------------
-0000000000000000    0000ffffffffffff     256TB      用户空间
-ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
-<p>更详细的内核虚拟内存布局，请参阅内核启动信息。</p>
+0000000000000000    0000ffffffffffff     256TB        用户空间
+ffff000000000000    ffffffffffffffff     256TB        内核空间
+</code></pre><p>更详细的内核虚拟内存布局，请参阅内核启动信息。</p>
 <p>4KB 页大小的转换表查找：</p>
 <pre><code>+--------+--------+--------+--------+--------+--------+--------+--------+
 |63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
@@ -454,8 +448,8 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
  |                 |         |         +-----------&gt; [29:21] L2 索引
  |                 |         +---------------------&gt; [38:30] L1 索引
  |                 +-------------------------------&gt; [47:39] L0 索引
- +-------------------------------------------------&gt; [63] TTBR0/1</code></pre>
-<p>64KB 页大小的转换表查找：</p>
+ +-------------------------------------------------&gt; [63] TTBR0/1
+</code></pre><p>64KB 页大小的转换表查找：</p>
 <pre><code>+--------+--------+--------+--------+--------+--------+--------+--------+
 |63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
 +--------+--------+--------+--------+--------+--------+--------+--------+
@@ -465,13 +459,12 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
  |                 |    |               +----------&gt; [28:16] L3 索引
  |                 |    +--------------------------&gt; [41:29] L2 索引
  |                 +-------------------------------&gt; [47:42] L1 索引
- +-------------------------------------------------&gt; [63] TTBR0/1</code></pre>
-<p>当使用 KVM 时, 管理程序（hypervisor）在 EL2 中通过相对内核虚拟地址的一个固定偏移来映射内核页（内核虚拟地址的高 24 位设为零）:</p>
-<pre><code>起始地址            结束地址            大小      用途
+ +-------------------------------------------------&gt; [63] TTBR0/1
+</code></pre><p>当使用 KVM 时, 管理程序（hypervisor）在 EL2 中通过相对内核虚拟地址的一个固定偏移来映射内核页（内核虚拟地址的高 24 位设为零）:</p>
+<pre><code>起始地址            结束地址            大小        用途
 -----------------------------------------------------------------------
-0000004000000000    0000007fffffffff     256GB      在 HYP 中映射的内核对象</code></pre>
-<h2 id="高速缓存管理">3. 高速缓存管理</h2>
-<p>ARM64指今集提供了对高速缓存进行管理的指令，包括管理无效高速缓存和清除高速缓存的指令。在某些情况下，操作系统或者应用程序会主动调用高速缓存管理指令对高速缓存进行干预和管理。例如，当进程改变了地址空间的访问权限、高速缓存策略或者虚拟地址到物理址的映射时，通常需要对高速缓存做一些同步管理，如清除对应高速缓存中旧的内容。高速缓存的管理主要有如下3种情况。</p>
+0000004000000000    0000007fffffffff     256GB        在 HYP 中映射的内核对象
+</code></pre><h2 id="3-高速缓存管理"><a href="#3-高速缓存管理" class="headerlink" title="3. 高速缓存管理"></a>3. 高速缓存管理</h2><p>ARM64指今集提供了对高速缓存进行管理的指令，包括管理无效高速缓存和清除高速缓存的指令。在某些情况下，操作系统或者应用程序会主动调用高速缓存管理指令对高速缓存进行干预和管理。例如，当进程改变了地址空间的访问权限、高速缓存策略或者虚拟地址到物理址的映射时，通常需要对高速缓存做一些同步管理，如清除对应高速缓存中旧的内容。高速缓存的管理主要有如下3种情况。</p>
 <ul>
 <li>使整个高速缓存或者某个高速缓存行无效。之后，高速缓存上的数据会丢弃</li>
 <li>清除（clean）整个高速缓存或者某个高速缓存行。之后，相应的高速缓存行会被标为脏的，数据会写回到下一级高速缓存中或者主存储器中</li>
@@ -485,15 +478,17 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 </ul>
 <p>另外，在ARMv8架构中最多可以支持7级的高速缓存，即L1~L7高速缓存。当对一个高速缓存行进行操作时，我们需要知道高速缓存操作的范围。ARMv8架构中将从以下角度观察内存。</p>
 <ul>
-<li><p>全局缓存一致性角度（Point of Coherency，PoC）：系统中所有可以发起内存访问的硬件单元（如处理器、DMA设备、GPU等）都能保证观察到的某一个地址上的数据是一致的或者是相同的副本。通常PoC表示站在系统的角度来看高速缓存的一致性问题</p></li>
-<li><p>处理器缓存一致性角度（Point of Unification，PoU）：表示站在处理器角度来看高速缓存的一致性问题。对于一个内部共享（inner shareable）的PoU，所有的处理器都能看到相同的内存副本 假设在一个双核处理器系统中，每一个处理器都有独自的L1高速缓存，它们共享一个L2高速缓存，它们都可以共同访问DDR4内存。另外，系统中还有GPU等硬件单元。</p></li>
-<li><p>如果以PoU看高速缓存，那么这个观察点就是L2高速缓存，因为两个处理器都可以在L2高速缓存中看到相同的副本。</p></li>
-<li><p>如果以PoC看高速缓存，那么这个观察点是DDR4内存，因为CPU和GPU都能共同访问DDR4内存。</p></li>
+<li>全局缓存一致性角度（Point of Coherency，PoC）：系统中所有可以发起内存访问的硬件单元（如处理器、DMA设备、GPU等）都能保证观察到的某一个地址上的数据是一致的或者是相同的副本。通常PoC表示站在系统的角度来看高速缓存的一致性问题</li>
+<li><p>处理器缓存一致性角度（Point of Unification，PoU）：表示站在处理器角度来看高速缓存的一致性问题。对于一个内部共享（inner shareable）的PoU，所有的处理器都能看到相同的内存副本<br>假设在一个双核处理器系统中，每一个处理器都有独自的L1高速缓存，它们共享一个L2高速缓存，它们都可以共同访问DDR4内存。另外，系统中还有GPU等硬件单元。</p>
+</li>
+<li><p>如果以PoU看高速缓存，那么这个观察点就是L2高速缓存，因为两个处理器都可以在L2高速缓存中看到相同的副本。</p>
+</li>
+<li>如果以PoC看高速缓存，那么这个观察点是DDR4内存，因为CPU和GPU都能共同访问DDR4内存。</li>
 </ul>
 <p>ARMv8架构提供DC和IC两条与高速缓存相关的指令，它们根据不同的辅助操作符可以有不同的含义，如下所示。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">//DC指令的格式</span><br><span class="line">DC &lt;dc_op&gt;, &lt;Xt&gt;</span><br><span class="line">//IC指令的格式</span><br><span class="line">Ic &lt;ic_op&gt; &lt;Xt&gt;</span><br></pre></td></tr></table></figure>
 <ul>
-<li>DC
+<li><p>DC   </p>
 <ul>
 <li>cisw：清除并使指定的组和路的高速缓存无效</li>
 <li>civac：从PoC，清除并使指定的虚拟地址对应的高速缓存无效</li>
@@ -503,30 +498,30 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 <li>isw：使指定的组或路的高速缓存无效</li>
 <li>ivac：从PoC，使指定的虚拟地址中对应的高速缓存无效</li>
 <li>zva：把虚拟地址中的高速缓存清零</li>
-</ul></li>
-<li>IC
+</ul>
+</li>
+<li><p>IC   </p>
 <ul>
 <li>ialluis：从PoU，使所有的指令高速缓存无效，内部共享属性</li>
 <li>iallu：从PoU，使所有的指令高速缓存无效</li>
 <li>ivau：从PoU，使指定虚拟地址对应的指令高速缓存无效</li>
-</ul></li>
+</ul>
+</li>
 </ul>
 <p>Linux内核提供了多个与高速缓存管理相关的接口函数，它们定义在arch/arm64/include/asm/cacheflush.h头文件中，它们实现在arch/arm64/mm/cache.S汇编文件中，如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">flush_cache_mm(mm) <span class="comment">//在修改页表之前清除和无效该进程的进程地址空间中所有的高速缓存页表项</span></span><br><span class="line">flush_icache_range(start, end)<span class="comment">//用于同步由虚拟地址start和end组成的区域的指令高速缓存与数据高速缓存的-致性</span></span><br><span class="line">flush_cache_page(vma, addr, pfin)<span class="comment">//用于清除由虚拟地址addr和页帧号pfn对应的高速缓存页表项</span></span><br><span class="line">flush_cache_range(vma, start, end)<span class="comment">//用于清除由虚拟地址 start和end组成的区域中所有的高速缓存</span></span><br></pre></td></tr></table></figure>
-<h2 id="tlb管理">4. TLB管理</h2>
-<p>TLB是高速缓存的一种，把虚拟地址到物理地址翻译的结果存储在TLB表项中，因此有的教科书把TLB称为快表。当处理器需要访问内存时首先从TLB中查询是否有对应的表项。TLB项中存放了转换后的物理地址，当TLB命中时，处理器就不需要到MMU中查询页表了。查询页表是一个非常慢的过程，而TLB命中则大大加快了地址翻译的速度。 每一个TLB项不仅存放了虚拟地址到物理地址转换的结果，还包含了一些属性，如内存类型、高速缓存策略、访问权限、进程地址空间ID（Address Space ID，ASID）以及虚拟机器ID（Virtual Machine ID，VMID）等。 当TLB未命中（也就是处理器没有在TLB找到对应的表项）时，处理器就需要访问页表，遵循多级页表规范来查询页表。因为页表通常存储在内存中，所以完整访问一次页表，需要访问多次内存，如ARMv8的页表是4级页表，因此完整访问一次页表需要访问内存4次。当处理器完整访问页表后会把这次虚拟地址到物理地址翻译的结果存储到TLB表项中，后续处理器再访问该虚拟地址时就不需要再访问页表，从而提高系统性能。 如果操作系统修改了页表，需要使这些旧的TLB表项无效。ARMv8架构提供了TLBI指令。</p>
-<h3 id="tlbi指令">4.1. TLBI指令</h3>
-<p>ARMv8架构提供了TLBI指令，其指令格式如下。</p>
+<h2 id="4-TLB管理"><a href="#4-TLB管理" class="headerlink" title="4. TLB管理"></a>4. TLB管理</h2><p>TLB是高速缓存的一种，把虚拟地址到物理地址翻译的结果存储在TLB表项中，因此有的教科书把TLB称为快表。当处理器需要访问内存时首先从TLB中查询是否有对应的表项。TLB项中存放了转换后的物理地址，当TLB命中时，处理器就不需要到MMU中查询页表了。查询页表是一个非常慢的过程，而TLB命中则大大加快了地址翻译的速度。<br>每一个TLB项不仅存放了虚拟地址到物理地址转换的结果，还包含了一些属性，如内存类型、高速缓存策略、访问权限、进程地址空间ID（Address Space ID，ASID）以及虚拟机器ID（Virtual Machine ID，VMID）等。<br>当TLB未命中（也就是处理器没有在TLB找到对应的表项）时，处理器就需要访问页表，遵循多级页表规范来查询页表。因为页表通常存储在内存中，所以完整访问一次页表，需要访问多次内存，如ARMv8的页表是4级页表，因此完整访问一次页表需要访问内存4次。当处理器完整访问页表后会把这次虚拟地址到物理地址翻译的结果存储到TLB表项中，后续处理器再访问该虚拟地址时就不需要再访问页表，从而提高系统性能。<br>如果操作系统修改了页表，需要使这些旧的TLB表项无效。ARMv8架构提供了TLBI指令。</p>
+<h3 id="4-1-TLBI指令"><a href="#4-1-TLBI指令" class="headerlink" title="4.1. TLBI指令"></a>4.1. TLBI指令</h3><p>ARMv8架构提供了TLBI指令，其指令格式如下。</p>
 <figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">TLBI <span class="tag">&lt;<span class="name">operation</span>&gt;</span> &#123;, <span class="tag">&lt;<span class="name">Xt</span>&gt;</span>&#125;</span><br></pre></td></tr></table></figure>
 <p>其中相关内容的解释如下。</p>
 <ul>
 <li>operation：表示TLBI指令的操作符。</li>
-<li>Xt:由虚拟地址和ASID组成的参数
-<ul>
+<li>Xt:由虚拟地址和ASID组成的参数   <ul>
 <li>Bit[63:48]:ASID</li>
 <li>Bit[47:44]：TTL，用于指明使哪一级的页表保存的地址无效。若为0，表示需要使所有级别的页表无效。在Linux内核实现中，该域设置为0</li>
 <li>Bit[43：0]：虚拟地址的Bit[55:12]</li>
-</ul></li>
+</ul>
+</li>
 </ul>
 <p>ARMv8架构中的TLBI指令的操作符如下。</p>
 <ul>
@@ -543,10 +538,9 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 <li>VMALLS12E1：在当前VMID中，使EL1中指定的TLB无效，这里包括虚拟化场景下阶段1和阶段2的页表项</li>
 </ul>
 <p>前面提到的阶段1和阶段2的页表项指的是虚拟化场景下的两阶段映射中的页表项。</p>
-<h3 id="linux内核对tlbi的支持">4.2. Linux内核对TLBI的支持</h3>
-<p>Linux内核中定义了一个__tlbi()宏来实现上述的TLBI指令。</p>
+<h3 id="4-2-Linux内核对TLBI的支持"><a href="#4-2-Linux内核对TLBI的支持" class="headerlink" title="4.2. Linux内核对TLBI的支持"></a>4.2. Linux内核对TLBI的支持</h3><p>Linux内核中定义了一个__tlbi()宏来实现上述的TLBI指令。</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Raw TLBI operations.</span><br><span class="line"> *</span><br><span class="line"> * Where necessary, use the __tlbi() macro to avoid asm()</span><br><span class="line"> * boilerplate. Drivers and most kernel code should use the TLB</span><br><span class="line"> * management routines in preference to the macro below.</span><br><span class="line"> *</span><br><span class="line"> * The macro can be used as __tlbi(op) or __tlbi(op, arg), depending</span><br><span class="line"> * on whether a particular TLBI operation takes an argument or</span><br><span class="line"> * not. The macros handles invoking the asm with or without the</span><br><span class="line"> * register argument as appropriate.</span><br><span class="line"> */</span><br><span class="line">#define __TLBI_0(op, arg) asm (ARM64_ASM_PREAMBLE			       \</span><br><span class="line">             &quot;tlbi &quot; #op &quot;\n&quot;				       \</span><br><span class="line">       ALTERNATIVE(&quot;nop\n			nop&quot;,		       \</span><br><span class="line">             &quot;dsb ish\n		tlbi &quot; #op,	       \</span><br><span class="line">             ARM64_WORKAROUND_REPEAT_TLBI,		       \</span><br><span class="line">             CONFIG_ARM64_WORKAROUND_REPEAT_TLBI)	       \</span><br><span class="line">          : : )</span><br><span class="line"></span><br><span class="line">#define __TLBI_1(op, arg) asm (ARM64_ASM_PREAMBLE			       \</span><br><span class="line">             &quot;tlbi &quot; #op &quot;, %0\n&quot;			       \</span><br><span class="line">       ALTERNATIVE(&quot;nop\n			nop&quot;,		       \</span><br><span class="line">             &quot;dsb ish\n		tlbi &quot; #op &quot;, %0&quot;,     \</span><br><span class="line">             ARM64_WORKAROUND_REPEAT_TLBI,		       \</span><br><span class="line">             CONFIG_ARM64_WORKAROUND_REPEAT_TLBI)	       \</span><br><span class="line">          : : &quot;r&quot; (arg))</span><br></pre></td></tr></table></figure>
-<p>上述tlbi()宏主要通过TLBI指令来实现。需要特别注意的是AITERNATIVE宏的实现系统定义了CONFIG_ARM64_WORKAROUND_REPEAT_TLBI，说明使用了一个折中的方法来修复处理器中的硬件故障，它会重复执行TLBI指令两次，中间还执行一次DSB指令。 Linux内核中提供了多个管理TLB的接口函数，如下所示，这些接口函数定义在arch/arm64/include/asm/tlbflush.h文件中。</p>
+<p>上述tlbi()宏主要通过TLBI指令来实现。需要特别注意的是AITERNATIVE宏的实现系统定义了CONFIG_ARM64_WORKAROUND_REPEAT_TLBI，说明使用了一个折中的方法来修复处理器中的硬件故障，它会重复执行TLBI指令两次，中间还执行一次DSB指令。<br>Linux内核中提供了多个管理TLB的接口函数，如下所示，这些接口函数定义在arch/arm64/include/asm/tlbflush.h文件中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//使所有处理器上的整个TLB（包括内核空间和用户空间的TLB）无效</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">flush_tlb_all</span><span class="params">(<span class="keyword">void</span>)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//使一个进程中整个用户空间地址的TLB无效</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">flush_tlb_mm</span><span class="params">(struct mm_struct *mm)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//使进程地址空间的某段虚拟地址区间（从start到end）对应的TLB无效</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __flush_tlb_range(struct vm_area_struct *vma,</span><br><span class="line">             <span class="keyword">unsigned</span> <span class="keyword">long</span> start, <span class="keyword">unsigned</span> <span class="keyword">long</span> end,</span><br><span class="line">             <span class="keyword">unsigned</span> <span class="keyword">long</span> stride, <span class="keyword">bool</span> last_level,</span><br><span class="line">             <span class="keyword">int</span> tlb_level);</span><br><span class="line"></span><br><span class="line"><span class="comment">//使内核地址空间的某段虚拟地址区间（从start到end）对应的TLB无效</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">flush_tlb_kernel_range</span><span class="params">(<span class="keyword">unsigned</span> <span class="keyword">long</span> start, <span class="keyword">unsigned</span> <span class="keyword">long</span> end)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//使虚拟地址addr所映射页面的TLB页表项无效</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">flush_tlb_page</span><span class="params">(struct vm_area_struct *vma,</span></span></span><br><span class="line"><span class="params"><span class="function">				  <span class="keyword">unsigned</span> <span class="keyword">long</span> uaddr)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">//使本地CPU对应的整个TLB无效</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">local_flush_tlb_all</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br></pre></td></tr></table></figure>
 <ul>
 <li>mm表示进程的内存描述符mm_struct</li>
@@ -557,17 +551,15 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 </ul>
 <p>下面举两个例子来看这些接口函数是如何实现的。flush_tlb_all() 函数的实现如下。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/tlbflush.h&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">flush_tlb_all</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  dsb(ishst);</span><br><span class="line">  __tlbi(vmalle1is);</span><br><span class="line">  dsb(ish);</span><br><span class="line">  isb();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>首先，调用dsb()来保证内存访问指令已经完成，如修改页表等操作。 __tlbi()是一个TLB的宏操作，参数 vmalle1is 表示使EL1中所有VMID指定的TLB无效这里仅仅指的是内部共享的TLB。然后，再次调用dsb()，保证前面的TLBI指令执行完成。最后，调用isb()，在流水线中丢弃已经从旧的页表映射中获取的指令。 所有的过程可以概括为下面的伪代码。</p>
+<p>首先，调用dsb()来保证内存访问指令已经完成，如修改页表等操作。<br>__tlbi()是一个TLB的宏操作，参数 vmalle1is 表示使EL1中所有VMID指定的TLB无效这里仅仅指的是内部共享的TLB。然后，再次调用dsb()，保证前面的TLBI指令执行完成。最后，调用isb()，在流水线中丢弃已经从旧的页表映射中获取的指令。<br>所有的过程可以概括为下面的伪代码。</p>
 <figure class="highlight awk"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">dsb ishst   <span class="regexp">//</span>确保之前更新页表的操作已经完成</span><br><span class="line">tlbi..      <span class="regexp">//</span>使TLB无效</span><br><span class="line">dsbish      <span class="regexp">//</span>确保使TLB无效的操作已经完成</span><br><span class="line"><span class="keyword">if</span> (invalidated kernel mappings)</span><br><span class="line">    isb     <span class="regexp">//</span>丢弃所有从旧页表映射中获取的指令</span><br></pre></td></tr></table></figure>
 <p>另外一个常用的TLB管理函数是_flush_tlb_range()，它用于使进程地址空间中某一段区间对应的TLB无效，其代码片段如下。</p>
 <figure class="highlight nim"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/<span class="keyword">include</span>/<span class="keyword">asm</span>/t1bflush.h&gt;</span><br><span class="line"><span class="keyword">static</span> inline <span class="built_in">void</span> __flush_tlb_range(struct vm_area_struct *vma,</span><br><span class="line">             unsigned long start, unsigned long <span class="keyword">end</span>,</span><br><span class="line">             unsigned long stride, <span class="built_in">bool</span> last_level,</span><br><span class="line">             <span class="built_in">int</span> tlb_level)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="built_in">int</span> num = <span class="number">0</span>;</span><br><span class="line">  <span class="built_in">int</span> scale = <span class="number">0</span>;</span><br><span class="line">  unsigned long asid, <span class="keyword">addr</span>, pages;</span><br><span class="line"></span><br><span class="line">  start = round_down(start, stride);</span><br><span class="line">  <span class="keyword">end</span> = round_up(<span class="keyword">end</span>, stride);</span><br><span class="line">  pages = (<span class="keyword">end</span> - start) &gt;&gt; <span class="type">PAGE_SHIFT</span>;</span><br><span class="line"></span><br><span class="line">  /*</span><br><span class="line">   * <span class="type">When</span> <span class="keyword">not</span> uses <span class="type">TLB</span> <span class="built_in">range</span> ops, we can handle up to</span><br><span class="line">   * (<span class="type">MAX_TLBI_OPS</span> - <span class="number">1</span>) pages;</span><br><span class="line">   * <span class="type">When</span> uses <span class="type">TLB</span> <span class="built_in">range</span> ops, we can handle up to</span><br><span class="line">   * (<span class="type">MAX_TLBI_RANGE_PAGES</span> - <span class="number">1</span>) pages.</span><br><span class="line">   */</span><br><span class="line">  <span class="keyword">if</span> ((!system_supports_tlb_range() &amp;&amp;</span><br><span class="line">       (<span class="keyword">end</span> - start) &gt;= (<span class="type">MAX_TLBI_OPS</span> * stride)) ||</span><br><span class="line">      pages &gt;= <span class="type">MAX_TLBI_RANGE_PAGES</span>) &#123;</span><br><span class="line">    flush_tlb_mm(vma-&gt;vm_mm);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  dsb(ishst);</span><br><span class="line">  asid = <span class="type">ASID</span>(vma-&gt;vm_mm);</span><br><span class="line"></span><br><span class="line">  /*</span><br><span class="line">   * <span class="type">When</span> the <span class="type">CPU</span> does <span class="keyword">not</span> support <span class="type">TLB</span> <span class="built_in">range</span> operations, flush the <span class="type">TLB</span></span><br><span class="line">   * entries one by one at the granularity <span class="keyword">of</span> &#x27;stride&#x27;. <span class="type">If</span> the <span class="type">TLB</span></span><br><span class="line">   * <span class="built_in">range</span> ops are supported, then:</span><br><span class="line">   *</span><br><span class="line">   * <span class="number">1</span>. <span class="type">If</span> &#x27;pages&#x27; <span class="keyword">is</span> odd, flush the first page through non-<span class="built_in">range</span></span><br><span class="line">   *    operations;</span><br><span class="line">   *</span><br><span class="line">   * <span class="number">2</span>. <span class="type">For</span> remaining pages: the minimum <span class="built_in">range</span> granularity <span class="keyword">is</span> decided</span><br><span class="line">   *    by &#x27;scale&#x27;, so multiple <span class="built_in">range</span> <span class="type">TLBI</span> operations may be required.</span><br><span class="line">   *    <span class="type">Start</span> <span class="keyword">from</span> scale = <span class="number">0</span>, flush the corresponding number <span class="keyword">of</span> pages</span><br><span class="line">   *    ((num+<span class="number">1</span>)*<span class="number">2</span>^(<span class="number">5</span>*scale+<span class="number">1</span>) starting <span class="keyword">from</span> &#x27;<span class="keyword">addr</span>&#x27;), then increase it</span><br><span class="line">   *    until no pages left.</span><br><span class="line">   *</span><br><span class="line">   * <span class="type">Note</span> that certain ranges can be represented by either num = <span class="number">31</span> <span class="keyword">and</span></span><br><span class="line">   * scale <span class="keyword">or</span> num = <span class="number">0</span> <span class="keyword">and</span> scale + <span class="number">1</span>. <span class="type">The</span> loop below favours the latter</span><br><span class="line">   * since num <span class="keyword">is</span> limited to <span class="number">30</span> by the __TLBI_RANGE_NUM() <span class="keyword">macro</span>.</span><br><span class="line">   */</span><br><span class="line">  <span class="keyword">while</span> (pages &gt; <span class="number">0</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (!system_supports_tlb_range() ||</span><br><span class="line">        pages % <span class="number">2</span> == <span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">addr</span> = __TLBI_VADDR(start, asid);</span><br><span class="line">      <span class="keyword">if</span> (last_level) &#123;</span><br><span class="line">        __tlbi_level(vale1is, <span class="keyword">addr</span>, tlb_level);</span><br><span class="line">        __tlbi_user_level(vale1is, <span class="keyword">addr</span>, tlb_level);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        __tlbi_level(vae1is, <span class="keyword">addr</span>, tlb_level);</span><br><span class="line">        __tlbi_user_level(vae1is, <span class="keyword">addr</span>, tlb_level);</span><br><span class="line">      &#125;</span><br><span class="line">      start += stride;</span><br><span class="line">      pages -= stride &gt;&gt; <span class="type">PAGE_SHIFT</span>;</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    num = __TLBI_RANGE_NUM(pages, scale);</span><br><span class="line">    <span class="keyword">if</span> (num &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">addr</span> = __TLBI_VADDR_RANGE(start, asid, scale,</span><br><span class="line">              num, tlb_level);</span><br><span class="line">      <span class="keyword">if</span> (last_level) &#123;</span><br><span class="line">        __tlbi(rvale1is, <span class="keyword">addr</span>);</span><br><span class="line">        __tlbi_user(rvale1is, <span class="keyword">addr</span>);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        __tlbi(rvae1is, <span class="keyword">addr</span>);</span><br><span class="line">        __tlbi_user(rvae1is, <span class="keyword">addr</span>);</span><br><span class="line">      &#125;</span><br><span class="line">      start += __TLBI_RANGE_PAGES(num, scale) &lt;&lt; <span class="type">PAGE_SHIFT</span>;</span><br><span class="line">      pages -= __TLBI_RANGE_PAGES(num, scale);</span><br><span class="line">    &#125;</span><br><span class="line">    scale++;</span><br><span class="line">  &#125;</span><br><span class="line">  dsb(ish);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>ASID()宏用于获取当前进程对应的ASID，__TLBI_VADDR通过虚拟地址ID和ASID来组成TLBI指令需要的参数，然后通过tlbi()宏来执行TLBI指令。TLBI指令使用的操作符VAEIS用干使EL1中所有由虚拟地址指定的TLB无效，这里指的是内部共享的TLB。</p>
-<h3 id="asid">4.3. ASID</h3>
-<p>Linux内核中关于TLB操作另一个重要的地方就是ASID。ASID方案让每个TLB项包含一个ASID，ASID用于为每个进程分配进程地址空间标识，TLB命中查询的标准由原来的虚拟地址判断再加上ASID条件。ASID软件计数存放在mm-&gt;context.id的Bit[31:8]中。</p>
+<h3 id="4-3-ASID"><a href="#4-3-ASID" class="headerlink" title="4.3. ASID"></a>4.3. ASID</h3><p>Linux内核中关于TLB操作另一个重要的地方就是ASID。ASID方案让每个TLB项包含一个ASID，ASID用于为每个进程分配进程地址空间标识，TLB命中查询的标准由原来的虚拟地址判断再加上ASID条件。ASID软件计数存放在mm-&gt;context.id的Bit[31:8]中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> ASID(mm) ((mm)-&gt;context.id.counter &amp; Oxffff)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* This macro creates a properly formatted VA operand for the TLBI */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __TLBI_VADDR(addr, asid)				\</span></span><br><span class="line"><span class="meta">	(&#123;							\</span></span><br><span class="line"><span class="meta">		unsigned long __ta = (addr) &gt;&gt; 12;		\</span></span><br><span class="line"><span class="meta">		__ta &amp;= GENMASK_ULL(43, 0);			\</span></span><br><span class="line"><span class="meta">		__ta |= (unsigned long)(asid) &lt;&lt; 48;		\</span></span><br><span class="line"><span class="meta">		__ta;						\</span></span><br><span class="line"><span class="meta">	&#125;)</span></span><br></pre></td></tr></table></figure>
 <p>在一个TLB项中，ASID存放在TLB项的Bit[63:48]中。__TLBI_VADDR()宏通过虚址ID和ASID来组成TLBI指令需要的参数Xt。</p>
-<h2 id="内存属性">5. 内存属性</h2>
-<p>ARMv8架构处理器实现了弱一致性内存模型，在某些情况下，处理器在执行指令时不一定完全按照程序员编写的指令顺序来执行。处理器为了提高指令执行效率会乱序执行指令和预测指令。现代处理器为了提高系统吞吐率都会做如下优化。</p>
+<h2 id="5-内存属性"><a href="#5-内存属性" class="headerlink" title="5. 内存属性"></a>5. 内存属性</h2><p>ARMv8架构处理器实现了弱一致性内存模型，在某些情况下，处理器在执行指令时不一定完全按照程序员编写的指令顺序来执行。处理器为了提高指令执行效率会乱序执行指令和预测指令。现代处理器为了提高系统吞吐率都会做如下优化。</p>
 <ul>
 <li>并发执行多条指令（multiple issue ofinstructions）。处理器可以在一个时钟周期内发射和执行多条指令</li>
 <li>乱序执行（out of order execution）。处理器可以乱序执行没有依赖关系的指令</li>
@@ -576,12 +568,9 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 <li>加载和存储优化。读写外部内存是一个耗时的操作，处理器应该尽量减少读写次数，如处理器将多次访问内存的操作合并为一次传输，这样可以提高系统效率</li>
 </ul>
 <p>在一个单核处理器系统中，指令乱序和并发执行对于程序员来说是透明的，因为处理器会处理这些数据依赖关系。但是，在多核处理器系统中，多个处理器内核同时访问共享数据或内存时，与处理器相关的乱序和预测执行等优化手段就可能会对程序造成意想不到的麻烦。因此，了解内存属性和内存屏障就显得非常重要。</p>
-<h3 id="内存属性-1">5.1 内存属性</h3>
-<p>ARMv8架构处理器主要提供两种类型的内存属性，分别是普通（normal）内存和设备（device）内存。</p>
-<h4 id="普通内存">普通内存</h4>
-<p>普通内存是弱一致性的（weakly ordered），没有额外的约束，可以提供最高的内存访问性能。通常代码段、数据段以及其他数据都会放在普通内存中。普通内存可以让处理器做很多的优化，如分支预测、数据预取、高速缓存行预取和填充、乱序加载等硬件优化。</p>
-<h4 id="设备内存">设备内存</h4>
-<p>处理器访问设备内存会有很多限制，如不能进行预测访问等。设备内存是严格按照指令顺序来执行的。通常设备内存留给设备来访问。若系统中所有内存都设置为设备内存，就会有很大的副作用。ARMv8架构定义了多种设备内存的属性：</p>
+<h3 id="5-1-内存属性"><a href="#5-1-内存属性" class="headerlink" title="5.1 内存属性"></a>5.1 内存属性</h3><p>ARMv8架构处理器主要提供两种类型的内存属性，分别是普通（normal）内存和设备（device）内存。</p>
+<h4 id="普通内存"><a href="#普通内存" class="headerlink" title="普通内存"></a>普通内存</h4><p>普通内存是弱一致性的（weakly ordered），没有额外的约束，可以提供最高的内存访问性能。通常代码段、数据段以及其他数据都会放在普通内存中。普通内存可以让处理器做很多的优化，如分支预测、数据预取、高速缓存行预取和填充、乱序加载等硬件优化。</p>
+<h4 id="设备内存"><a href="#设备内存" class="headerlink" title="设备内存"></a>设备内存</h4><p>处理器访问设备内存会有很多限制，如不能进行预测访问等。设备内存是严格按照指令顺序来执行的。通常设备内存留给设备来访问。若系统中所有内存都设置为设备内存，就会有很大的副作用。ARMv8架构定义了多种设备内存的属性：</p>
 <ul>
 <li>Device-nGnRnE</li>
 <li>Device-nGnRE</li>
@@ -590,65 +579,68 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 </ul>
 <p>Device后的字母是有特殊含义的。</p>
 <ul>
-<li>G和nG：分别表示聚合（Gathering）与不聚合（non Gathering）。聚合表示在同一个内存属性的区域中允许把多次访问内存的操作合并成一次总线传输
+<li><p>G和nG：分别表示聚合（Gathering）与不聚合（non Gathering）。聚合表示在同一个内存属性的区域中允许把多次访问内存的操作合并成一次总线传输   </p>
 <ul>
 <li>若一个内存地址标记为“nG”，则会严格按照访问内存的次数和大小来访问内存，不会做合并优化</li>
 <li>若一个内存地址标记为“G”，则会做总线合并访问，如合并两个相邻的字节访问为一次多字节访问。若程序访问同一个内存地址两次，那么处理器只会访问内存一次，但是在第二次访问内存指令后返回相同的值。若这个内存区域标记为“nG”，那么处理器则会访问内存两次</li>
-</ul></li>
-<li>R和nR：分别表示指令重排（Re-ordering）与不重排（non Re-ordering）。</li>
-<li>E和nE：分别表示提前写应答（Early Write Acknowledgement）与不提前写应答Early Write Acknowledgement）往外部设备写数据时，处理器先把数据写入写终 （write huffer）中，若使能了提前写应答，则数据到达写缓冲区时会发送写应答： 有使能提前写应答，则数据到达外设时才发送写应答 Linux内核中定义了如下几个内存属性。</li>
+</ul>
+</li>
+<li><p>R和nR：分别表示指令重排（Re-ordering）与不重排（non Re-ordering）。</p>
+</li>
+<li>E和nE：分别表示提前写应答（Early Write Acknowledgement）与不提前写应答Early Write Acknowledgement）往外部设备写数据时，处理器先把数据写入写终 （write huffer）中，若使能了提前写应答，则数据到达写缓冲区时会发送写应答： 有使能提前写应答，则数据到达外设时才发送写应答<br>Linux内核中定义了如下几个内存属性。</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MT_NORMAL		    0</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MT_NORMAL_TAGGED	1</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MT_NORMAL_NC		2</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MT_DEVICE_nGnRnE	3</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MT_DEVICE_nGnRE		4</span></span><br></pre></td></tr></table></figure>
 <ul>
 <li>MT_DEVICE_nGnRnE：设备内存属性，不支持聚合操作，不支持指令重排，不支提前写应答</li>
 <li>MT_DEVICE_nGnRE：设备内存属性，不支持聚合操作，不支持指令重排，支持提写应答</li>
-<li>MT_DEVICE_GRE：设备内存属性，支持聚合操作，支持指令重排，支持提前写应</li>
+<li>MT_DEVICE_GRE：设备内存属性，支持聚合操作，支持指令重排，支持提前写应 </li>
 <li>MT_NORMAL_NC：普通内存属性，关闭高速缓存，其中NC是Non-Cacheable 意思</li>
 <li>MT_NORMAL：普通内存属性</li>
 <li>MT_NORMAL_WT：普通内存属性，高速缓存的回写策略为直写（write through）策内存属性并没有存放在页表项中，而是存放在MAIR_ELn （Memory Attribute IndirectRegister Eln）中。页表项中使用一个3位的索引值来查找MAIR_ELn</li>
 </ul>
 <p>MAIR_ELn分成8段，每一段都可以用于描述不同的内存属性。</p>
-<h3 id="高速缓存共享属性">5.2 高速缓存共享属性</h3>
-<p>普通内存可以设置高速缓存为可缓存的和不可缓存的。进一步地，我们可以设置高速缓为内部共享和外部共享的高速缓存。一个处理器系统中，除了处理器之外，还有其他的可以访问内存的硬件单元，这些硬件单元通常具有访问内存总线（bus master）的能力，如DMA设备、GPU等，这些硬件单元可以称为处理器之外的观察点。在一个多核系统中，DMA设备和GPU通过系统总线连接到DDR内存，而处理器也通过系统总线连接到DDR内存，它们都能同时通过系统总线访问到内存。</p>
+<h3 id="5-2-高速缓存共享属性"><a href="#5-2-高速缓存共享属性" class="headerlink" title="5.2 高速缓存共享属性"></a>5.2 高速缓存共享属性</h3><p>普通内存可以设置高速缓存为可缓存的和不可缓存的。进一步地，我们可以设置高速缓为内部共享和外部共享的高速缓存。一个处理器系统中，除了处理器之外，还有其他的可以访问内存的硬件单元，这些硬件单元通常具有访问内存总线（bus master）的能力，如DMA设备、GPU等，这些硬件单元可以称为处理器之外的观察点。在一个多核系统中，DMA设备和GPU通过系统总线连接到DDR内存，而处理器也通过系统总线连接到DDR内存，它们都能同时通过系统总线访问到内存。</p>
 <ul>
 <li>如果一个内存区域被标记为“不可共享的”表示它只能被一个处理器访问，其他处理器不能访问这个内存区域。</li>
 <li>如果一个内存区域被标记为“内部共享的”，表示它可以被多个处理器访问和共享，但是系统中其他的访问内存的硬件单元就不能访问了，如DMA设备、GPU等。</li>
 <li>如果一个内存区域被标记为“外部共享的”，表示系统中很多访问内存的单元（如DMA设备、GPU等）都可以和处理器一样访问这个内存区域。</li>
 </ul>
-<h2 id="内存屏障">6. 内存屏障</h2>
-<h3 id="内存屏障指令">6.1 内存屏障指令</h3>
-<p>ARMv8指令集提供了3条内存屏障指令。</p>
+<h2 id="6-内存屏障"><a href="#6-内存屏障" class="headerlink" title="6. 内存屏障"></a>6. 内存屏障</h2><h3 id="6-1-内存屏障指令"><a href="#6-1-内存屏障指令" class="headerlink" title="6.1 内存屏障指令"></a>6.1 内存屏障指令</h3><p>ARMv8指令集提供了3条内存屏障指令。</p>
 <ul>
-<li><p>数据存储屏障（Data Memory Barrier，DMB）指令：仅当所有在它前面的存储器访问操作都执行完毕后，才提交（commit）在它后面的访问指令。DMB指令保证的是DMB指令之前的所有内存访问指令和DMB指令之后的所有内存访问指令的顺序。也就是说，DMB指令之后的内存访问指令不会被处理器重排到DMB指令的前面。DMB指令不会保证内存访问指令在内存屏障指令之前必须完成，它仅仅保证内存屏障指令前后的内存访问指令的执行顺序。DMB指令仅仅影响内存访问指令、数据高速缓存指令以及高速缓存管理指令等，并不会影响其他指令的顺序</p></li>
-<li><p>数据同步屏障（Data synchronization Barrier，DSB）指令：比DMB指令要严格一些，仅当所有在它前面的访问指令都执行完毕后，才会执行在它后面的指令，即任何指令都要等待DSB指令前面的访问指令完成。位于此指令前的所有缓存，如分支预测和TLB维护操作需全部完成</p></li>
-<li><p>指令同步屏障（Instruction synchronization Barrier，ISB）指令：比DMB指令和DSB指令严格，刷新流水线（flush pipeline）和预取缓冲区后，才会从高速缓存或者内存中预取ISB指令之后的指令。ISB指令通常用来保证上下文切换的效果，如ASID更改、TLB维护操作和C15寄存器的修改等 DMB指令和DSB指令还可以带参数，来指定内存屏障指令的顺序以及共享属性等信息。 内存屏障指令参数如下所示。</p></li>
-<li><p>全系统共享</p>
+<li>数据存储屏障（Data Memory Barrier，DMB）指令：仅当所有在它前面的存储器访问操作都执行完毕后，才提交（commit）在它后面的访问指令。DMB指令保证的是DMB指令之前的所有内存访问指令和DMB指令之后的所有内存访问指令的顺序。也就是说，DMB指令之后的内存访问指令不会被处理器重排到DMB指令的前面。DMB指令不会保证内存访问指令在内存屏障指令之前必须完成，它仅仅保证内存屏障指令前后的内存访问指令的执行顺序。DMB指令仅仅影响内存访问指令、数据高速缓存指令以及高速缓存管理指令等，并不会影响其他指令的顺序</li>
+<li>数据同步屏障（Data synchronization Barrier，DSB）指令：比DMB指令要严格一些，仅当所有在它前面的访问指令都执行完毕后，才会执行在它后面的指令，即任何指令都要等待DSB指令前面的访问指令完成。位于此指令前的所有缓存，如分支预测和TLB维护操作需全部完成</li>
+<li><p>指令同步屏障（Instruction synchronization Barrier，ISB）指令：比DMB指令和DSB指令严格，刷新流水线（flush pipeline）和预取缓冲区后，才会从高速缓存或者内存中预取ISB指令之后的指令。ISB指令通常用来保证上下文切换的效果，如ASID更改、TLB维护操作和C15寄存器的修改等<br>DMB指令和DSB指令还可以带参数，来指定内存屏障指令的顺序以及共享属性等信息。 内存屏障指令参数如下所示。</p>
+</li>
+<li><p>全系统共享    </p>
 <ul>
 <li>SY：内存读写指令</li>
 <li>ST：内存写指令</li>
 <li>LD：内存读指令</li>
-</ul></li>
-<li><p>内部共享</p>
+</ul>
+</li>
+<li><p>内部共享   </p>
 <ul>
 <li>ISH：内存读写指令</li>
 <li>ISHST：内存写指令</li>
 <li>ISHLD：内存读指令</li>
-</ul></li>
-<li><p>不共享</p>
+</ul>
+</li>
+<li><p>不共享   </p>
 <ul>
 <li>NSH：内存读写指令</li>
 <li>NSHST：内存写指令</li>
 <li>NSHLD：内存读指令</li>
-</ul></li>
-<li><p>外部共享</p>
+</ul>
+</li>
+<li><p>外部共享   </p>
 <ul>
 <li>OSH：内存读写指令</li>
 <li>OSHST：内存写指令</li>
 <li>OSHLD：内存读指令</li>
-</ul></li>
 </ul>
-<h3 id="加载-获取屏障原语与存储-释放屏障原语">6.2 加载-获取屏障原语与存储-释放屏障原语</h3>
-<p>ARMv8指令集还支持隐含内存屏障原语的加载和存储指令，这些内存屏障原语影响了加和存储指令的执行顺序，它们对执行顺序的影响是单方向的。</p>
+</li>
+</ul>
+<h3 id="6-2-加载-获取屏障原语与存储-释放屏障原语"><a href="#6-2-加载-获取屏障原语与存储-释放屏障原语" class="headerlink" title="6.2 加载-获取屏障原语与存储-释放屏障原语"></a>6.2 加载-获取屏障原语与存储-释放屏障原语</h3><p>ARMv8指令集还支持隐含内存屏障原语的加载和存储指令，这些内存屏障原语影响了加和存储指令的执行顺序，它们对执行顺序的影响是单方向的。</p>
 <ul>
 <li>获取（acquire）屏障原语：该屏障原语之后的读写操作不能重排到该屏障原语前面，通常该屏障原语和加载指令结合</li>
 <li>释放（release）屏障原语：该屏障原语之前的读写操作不能重排到该屏障原语后面通常该屏障原语和存储指令结合</li>
@@ -656,15 +648,13 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 <li>存储-释放（store-release）屏障原语：含有释放屏障原语的写操作，相当于单方向前的屏障指令。只有所有存储-释放屏障原语之前的指令完成了，才能执行存储-释屏障原语之后的指令，这样其他CPU可以观察到存储-释放屏障原语之前的指令已执行完。普通的读和写可以向前越过存储-释放屏障指令，但是之前的读和写操作不能向后越过存储-释放屏障指令</li>
 </ul>
 <p>加载-获取和存储-释放屏障指令相当于是单方向的半条DMB指令，而DMB指令相当于是全方向的栅障。任何读写操作都不能跨越该栅障。它们组合使用可以增强代码灵活性并提高执行效率。</p>
-<p>如图所示，加载-获取屏障指令和存储-释放屏障指令组成了一个临界区，这相当于一个栅栏。在加载-获取屏障指令之前的内存访问指令（如读指令1和写指令1）可以挪到加载-获取屏障指令后面执行，但是不能向前越过存储-释放屏障指令。而存储-释放屏障指令后面的内存访问指令（如读指令2和写指令2）不能向前穿越过加载-获取屏障指令。在临界区中的内存不能越过临界区，如读指令2必须在加载-获取屏障指令后开始执行；如读指令2和写指令2必须在存储-释放屏障指令之前完成，即保证其他CPU在存储-释放屏障指令执行完成时能观察到读指令1和写指令1、读指令2和写指令2已经完成。 <img src="/picture/linux/kernel/mem/mem_barrier.png" /></p>
+<p>如图所示，加载-获取屏障指令和存储-释放屏障指令组成了一个临界区，这相当于一个栅栏。在加载-获取屏障指令之前的内存访问指令（如读指令1和写指令1）可以挪到加载-获取屏障指令后面执行，但是不能向前越过存储-释放屏障指令。而存储-释放屏障指令后面的内存访问指令（如读指令2和写指令2）不能向前穿越过加载-获取屏障指令。在临界区中的内存不能越过临界区，如读指令2必须在加载-获取屏障指令后开始执行；如读指令2和写指令2必须在存储-释放屏障指令之前完成，即保证其他CPU在存储-释放屏障指令执行完成时能观察到读指令1和写指令1、读指令2和写指令2已经完成。<br><img src="/picture/linux/kernel/mem/mem_barrier.png" alt=""></p>
 <p>ARM64指令集中提供了如下指令。</p>
 <ul>
 <li>LDAR和STLR指令：用于加载和存储</li>
 <li>CAS指令：用于比较和交换</li>
 </ul>
-<h3 id="参考文献">参考文献</h3>
-<p>《奔跑吧Linux内核》<br />
-<span class="exturl" data-url="aHR0cHM6Ly9hcm12OC1yZWYuY29kaW5nYmVsaWVmLmNvbS96aC9jaGFwdGVyX2Q0L2Q0M18zX21lbW9yeV9hdHRyaWJ1dGVfZmllbGRzX2luX3RoZV92bXNhdjgtNjRfdHJhbnNsYXRpb25fdGFibGVfZm9ybWF0c19kZXNjcmlwdG9ycy5odG1s">https://armv8-ref.codingbelief.com/zh/chapter_d4/d43_3_memory_attribute_fields_in_the_vmsav8-64_translation_table_formats_descriptors.html<i class="fa fa-external-link-alt"></i></span></p>
+<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p>《奔跑吧Linux内核》<br><span class="exturl" data-url="aHR0cHM6Ly9hcm12OC1yZWYuY29kaW5nYmVsaWVmLmNvbS96aC9jaGFwdGVyX2Q0L2Q0M18zX21lbW9yeV9hdHRyaWJ1dGVfZmllbGRzX2luX3RoZV92bXNhdjgtNjRfdHJhbnNsYXRpb25fdGFibGVfZm9ybWF0c19kZXNjcmlwdG9ycy5odG1s">https://armv8-ref.codingbelief.com/zh/chapter_d4/d43_3_memory_attribute_fields_in_the_vmsav8-64_translation_table_formats_descriptors.html<i class="fa fa-external-link-alt"></i></span>   </p>
 
     </div>
 
@@ -773,7 +763,7 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#arm64%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">1. arm64内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8"><span class="nav-text">1.1 页表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E6%98%A0%E5%B0%84"><span class="nav-text">1.2 页表映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">1.3 页表项描述符</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#l0l2%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">L0~L2页表项描述符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#l3%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">L3页表项描述符</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E5%86%85%E6%A0%B8%E4%B8%AD%E7%9A%84%E9%A1%B5%E8%A1%A8"><span class="nav-text">2. Linux内核中的页表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-%E5%9C%A8-aarch64-%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="nav-text">2.1 Linux 在 AArch64 中的内存布局</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E9%80%9F%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">3. 高速缓存管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tlb%E7%AE%A1%E7%90%86"><span class="nav-text">4. TLB管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#tlbi%E6%8C%87%E4%BB%A4"><span class="nav-text">4.1. TLBI指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#linux%E5%86%85%E6%A0%B8%E5%AF%B9tlbi%E7%9A%84%E6%94%AF%E6%8C%81"><span class="nav-text">4.2. Linux内核对TLBI的支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#asid"><span class="nav-text">4.3. ASID</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%9E%E6%80%A7"><span class="nav-text">5. 内存属性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%9E%E6%80%A7-1"><span class="nav-text">5.1 内存属性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%99%AE%E9%80%9A%E5%86%85%E5%AD%98"><span class="nav-text">普通内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E5%86%85%E5%AD%98"><span class="nav-text">设备内存</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E9%80%9F%E7%BC%93%E5%AD%98%E5%85%B1%E4%BA%AB%E5%B1%9E%E6%80%A7"><span class="nav-text">5.2 高速缓存共享属性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C"><span class="nav-text">6. 内存屏障</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C%E6%8C%87%E4%BB%A4"><span class="nav-text">6.1 内存屏障指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD-%E8%8E%B7%E5%8F%96%E5%B1%8F%E9%9A%9C%E5%8E%9F%E8%AF%AD%E4%B8%8E%E5%AD%98%E5%82%A8-%E9%87%8A%E6%94%BE%E5%B1%8F%E9%9A%9C%E5%8E%9F%E8%AF%AD"><span class="nav-text">6.2 加载-获取屏障原语与存储-释放屏障原语</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-arm64%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">1. arm64内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E9%A1%B5%E8%A1%A8"><span class="nav-text">1.1 页表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E9%A1%B5%E8%A1%A8%E6%98%A0%E5%B0%84"><span class="nav-text">1.2 页表映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">1.3 页表项描述符</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#L0-L2%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">L0~L2页表项描述符</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#L3%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">L3页表项描述符</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Linux%E5%86%85%E6%A0%B8%E4%B8%AD%E7%9A%84%E9%A1%B5%E8%A1%A8"><span class="nav-text">2. Linux内核中的页表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-Linux-%E5%9C%A8-AArch64-%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="nav-text">2.1 Linux 在 AArch64 中的内存布局</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E9%AB%98%E9%80%9F%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">3. 高速缓存管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-TLB%E7%AE%A1%E7%90%86"><span class="nav-text">4. TLB管理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-TLBI%E6%8C%87%E4%BB%A4"><span class="nav-text">4.1. TLBI指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-Linux%E5%86%85%E6%A0%B8%E5%AF%B9TLBI%E7%9A%84%E6%94%AF%E6%8C%81"><span class="nav-text">4.2. Linux内核对TLBI的支持</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3-ASID"><span class="nav-text">4.3. ASID</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E5%86%85%E5%AD%98%E5%B1%9E%E6%80%A7"><span class="nav-text">5. 内存属性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E5%86%85%E5%AD%98%E5%B1%9E%E6%80%A7"><span class="nav-text">5.1 内存属性</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%99%AE%E9%80%9A%E5%86%85%E5%AD%98"><span class="nav-text">普通内存</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E5%86%85%E5%AD%98"><span class="nav-text">设备内存</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E9%AB%98%E9%80%9F%E7%BC%93%E5%AD%98%E5%85%B1%E4%BA%AB%E5%B1%9E%E6%80%A7"><span class="nav-text">5.2 高速缓存共享属性</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C"><span class="nav-text">6. 内存屏障</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C%E6%8C%87%E4%BB%A4"><span class="nav-text">6.1 内存屏障指令</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E5%8A%A0%E8%BD%BD-%E8%8E%B7%E5%8F%96%E5%B1%8F%E9%9A%9C%E5%8E%9F%E8%AF%AD%E4%B8%8E%E5%AD%98%E5%82%A8-%E9%87%8A%E6%94%BE%E5%B1%8F%E9%9A%9C%E5%8E%9F%E8%AF%AD"><span class="nav-text">6.2 加载-获取屏障原语与存储-释放屏障原语</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -858,7 +848,7 @@ ffff000000000000    ffffffffffffffff     256TB      内核空间</code></pre>
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">912k</span>
+    <span title="站点总字数">883k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

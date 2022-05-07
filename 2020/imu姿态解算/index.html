@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. imu通过加速度计解算姿态角  通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中\(\alpha\),\(\beta\)和\(\gamma\)（\(\gamma\)是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示： \[ \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D; arcsin(">
+  <meta name="description" content="1. imu通过加速度计解算姿态角 通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中$\alpha$,$\beta$和$\gamma$（$\gamma$是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示：  \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D; arcsin(\frac{a_y}{g}) \end">
 <meta property="og:type" content="article">
 <meta property="og:title" content="imu姿态解算">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/imu%E5%A7%BF%E6%80%81%E8%A7%A3%E7%AE%97/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. imu通过加速度计解算姿态角  通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中\(\alpha\),\(\beta\)和\(\gamma\)（\(\gamma\)是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示： \[ \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D; arcsin(">
+<meta property="og:description" content="1. imu通过加速度计解算姿态角 通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中$\alpha$,$\beta$和$\gamma$（$\gamma$是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示：  \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D; arcsin(\frac{a_y}{g}) \end">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/imu/imu.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/imu/kalman.png">
@@ -268,14 +268,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>17k</span>
+              <span>16k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>15 分钟</span>
+              <span>14 分钟</span>
             </span>
 
         </div>
@@ -287,279 +287,233 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="imu通过加速度计解算姿态角">1. imu通过加速度计解算姿态角</h3>
-<p><img src="/picture/algorithm/imu/imu.png" /></p>
-<p>通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中<span class="math inline">\(\alpha\)</span>,<span class="math inline">\(\beta\)</span>和<span class="math inline">\(\gamma\)</span>（<span class="math inline">\(\gamma\)</span>是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示： <span class="math display">\[
+        <h3 id="1-imu通过加速度计解算姿态角"><a href="#1-imu通过加速度计解算姿态角" class="headerlink" title="1. imu通过加速度计解算姿态角"></a>1. imu通过加速度计解算姿态角</h3><p><img src="/picture/algorithm/imu/imu.png" alt=""></p>
+<p>通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中$\alpha$,$\beta$和$\gamma$（$\gamma$是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;\beta = arcsin(\frac{a_x}{g}) \\
-&amp;\gamma  = arcsin(\frac{a_y}{g})
-\end{aligned}
-\]</span> 其中重力加速度g的取值使用三轴角速度的矢量和即： <span class="math display">\[ 
-g = \sqrt{a_x^{2} + a_y^{2} + a_z^{2}}
-\]</span> 将g的值带入上式可以得到： <span class="math display">\[
+&\beta = arcsin(\frac{a_x}{g}) \\
+&\gamma  = arcsin(\frac{a_y}{g})
+\end{aligned}</script><p>其中重力加速度g的取值使用三轴角速度的矢量和即：</p>
+<script type="math/tex; mode=display">
+g = \sqrt{a_x^{2} + a_y^{2} + a_z^{2}}</script><p>将g的值带入上式可以得到：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;\beta = arctan(\frac{a_x}{\sqrt{a_y^{2} + a_z^{2}}}) \\
-&amp;\gamma  = arctan(\frac{a_y}{\sqrt{a_x^{2} + a_z^{2}}})
-\end{aligned} 
-\]</span> 其中α为俯仰角pitch，β为滚转角roll，其中航向角是没有办法通过加速度计来计算的。</p>
+&\beta = arctan(\frac{a_x}{\sqrt{a_y^{2} + a_z^{2}}}) \\
+&\gamma  = arctan(\frac{a_y}{\sqrt{a_x^{2} + a_z^{2}}})
+\end{aligned}</script><p>其中α为俯仰角pitch，β为滚转角roll，其中航向角是没有办法通过加速度计来计算的。</p>
 <span id="more"></span>
-<h3 id="陀螺仪积分得到角度">2. 陀螺仪积分得到角度</h3>
-<p>陀螺仪积分最直接的就是将陀螺仪输出的角速度与时间相乘做累加实现对角速度的积分得到角度，数据精度较高但是漂移很严重。在积分算法上常用龙格库塔法计算积分。</p>
-<h3 id="数据融合">3. 数据融合</h3>
-<h5 id="一阶互补滤波">3.1 一阶互补滤波</h5>
-<p><strong>推导：</strong><br />
-角速度计和陀螺仪都可以解算得到姿态角，如下： <span class="math display">\[
+<h3 id="2-陀螺仪积分得到角度"><a href="#2-陀螺仪积分得到角度" class="headerlink" title="2. 陀螺仪积分得到角度"></a>2. 陀螺仪积分得到角度</h3><p>陀螺仪积分最直接的就是将陀螺仪输出的角速度与时间相乘做累加实现对角速度的积分得到角度，数据精度较高但是漂移很严重。在积分算法上常用龙格库塔法计算积分。</p>
+<h3 id="3-数据融合"><a href="#3-数据融合" class="headerlink" title="3. 数据融合"></a>3. 数据融合</h3><h5 id="3-1-一阶互补滤波"><a href="#3-1-一阶互补滤波" class="headerlink" title="3.1 一阶互补滤波"></a>3.1 一阶互补滤波</h5><p><strong>推导：</strong><br>角速度计和陀螺仪都可以解算得到姿态角，如下：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;z_1 = x + u \\
-&amp;z_2 = x + v
-\end{aligned}
-\]</span> 其中<span class="math inline">\(z_1\)</span>和<span class="math inline">\(z_2\)</span>分别是加速度通过三角函数计算得到的欧拉角和陀螺仪积分得到的欧拉角，<span class="math inline">\(x\)</span>是真实欧拉角，<span class="math inline">\(u\)</span>和<span class="math inline">\(v\)</span>分别是测量噪声符合高斯噪声其中<span class="math inline">\(u\)</span>为高频噪声v是低频噪声.<span class="math inline">\(x\)</span>的估计值为： <span class="math display">\[
+&z_1 = x + u \\
+&z_2 = x + v
+\end{aligned}</script><p>其中$z_1$和$z_2$分别是加速度通过三角函数计算得到的欧拉角和陀螺仪积分得到的欧拉角，$x$是真实欧拉角，$u$和$v$分别是测量噪声符合高斯噪声其中$u$为高频噪声v是低频噪声.$x$的估计值为：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;\hat{x} = k_1 * z_1 + k_2 * z_2 \\
-&amp;k_1 + k_2 = 1
-\end{aligned}
-\]</span> 将k1、k2用一阶滤波传递函数表示 <span class="math display">\[
+&\hat{x} = k_1 * z_1 + k_2 * z_2 \\
+&k_1 + k_2 = 1
+\end{aligned}</script><p>将k1、k2用一阶滤波传递函数表示</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;k_1(s) = \frac{1}{fs + 1} \\
-&amp;k_2(s) = \frac{fs}{fs + 1}
-\end{aligned}
-\]</span> 其中s是拉普拉斯变换的s域即频域，<span class="math inline">\(\frac{1}{f}\)</span>是截止频率。于是得到： <span class="math display">\[
-\hat{x}(s) = k_1(s)z_1(s) + k_2(s)z_2(s) = \frac{1}{fs+1}z_1(s) + \frac{fs}{fs+1}z_2(s)
-\]</span> 根据拉普拉斯变换微分定理变换公式 <span class="math display">\[
-L[\frac{d^{n}f(t)}{dt^{n}}] = s^{n} F(s)
-\]</span> 用拉普拉斯反变换回去得到： <span class="math display">\[
-f\dot{\hat{x}}(t) + \hat{x}(t) = z_1(t) + f\dot{\hat{z_2}}(t)
-\]</span> 离散化后得到： <span class="math display">\[
-f\frac{\hat{x}(k) - \hat{x}(k-1)}{dt} + \hat{x}_k = z_1(k) + f\frac{\hat{z_2}(k) - \hat{z_2}(k-1)}{dt}
-\]</span> 化简整理后得： <span class="math display">\[
-\hat{x}(k) = \frac{f}{f+dt}[\hat{x}(k-1) + z_2(k) - z_2(k-1)] + \frac{dt}{f+dt}z_1(k)
-\]</span> 取 <span class="math display">\[
-K=\frac{dt}{f+dt}
-\]</span> 得到： <span class="math display">\[
-\hat{x}(k) = (1-K)[\hat{x}(k-1) + z_2(k) - z_2(k-1)] + K z_1(k)
-\]</span> 这就是一阶互补滤波的最终公式。</p>
-<p><strong>代码：</strong><br />
-将上面推导出的公式写成代码如下， <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/** </span><br><span class="line"> * @brief 一阶互补滤波器单轴</span><br><span class="line"> * @param acc_angle 通过三角函数计算加速度计的值得到的角度值</span><br><span class="line"> * @param gyro_rate 陀螺仪输出的角速度值</span><br><span class="line"> * @param K1 滤波器系数，远小于1</span><br><span class="line"> * @<span class="built_in">return</span> 返回融合后角度值</span><br><span class="line"> */</span><br><span class="line">static void firstOrderComplementaryFiltering(<span class="built_in">float</span> acc_angle, <span class="built_in">float</span> gyro_rate, <span class="built_in">float</span>* angle)</span><br><span class="line">&#123;</span><br><span class="line">  *angle = K * acc_angle + (1 - K) * (*angle + gyro_rate * dt);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure> <strong>调参：</strong><br />
-陀螺仪采样率是1kHZ，dt为0.001则算法涉及的参数只有一个就是K参数，假如取截止频率为100的话 <span class="math display">\[
-K = \frac{dt}{f + dt} = \frac{0.001}{\frac{1}{100} + 0.001} \doteq 0.1
-\]</span></p>
-<h5 id="kalman滤波">3.2 kalman滤波</h5>
-<strong>原理：</strong><br />
-卡尔曼滤波包括预测和更新两个过程，下面是两个过程的详细推导： <em>预测过程</em> 预测阶段主要是根据陀螺仪数据预测角度值，系统状态量是角度值和角速度偏差，而不是角度值和角速度值 <span class="math display">\[
+&k_1(s) = \frac{1}{fs + 1} \\
+&k_2(s) = \frac{fs}{fs + 1}
+\end{aligned}</script><p>其中s是拉普拉斯变换的s域即频域，$\frac{1}{f}$是截止频率。于是得到：</p>
+<script type="math/tex; mode=display">
+\hat{x}(s) = k_1(s)z_1(s) + k_2(s)z_2(s) = \frac{1}{fs+1}z_1(s) + \frac{fs}{fs+1}z_2(s)</script><p>根据拉普拉斯变换微分定理变换公式</p>
+<script type="math/tex; mode=display">
+L[\frac{d^{n}f(t)}{dt^{n}}] = s^{n} F(s)</script><p>用拉普拉斯反变换回去得到：</p>
+<script type="math/tex; mode=display">
+f\dot{\hat{x}}(t) + \hat{x}(t) = z_1(t) + f\dot{\hat{z_2}}(t)</script><p>离散化后得到：</p>
+<script type="math/tex; mode=display">
+f\frac{\hat{x}(k) - \hat{x}(k-1)}{dt} + \hat{x}_k = z_1(k) + f\frac{\hat{z_2}(k) - \hat{z_2}(k-1)}{dt}</script><p>化简整理后得：</p>
+<script type="math/tex; mode=display">
+\hat{x}(k) = \frac{f}{f+dt}[\hat{x}(k-1) + z_2(k) - z_2(k-1)] + \frac{dt}{f+dt}z_1(k)</script><p>取</p>
+<script type="math/tex; mode=display">
+K=\frac{dt}{f+dt}</script><p>得到：</p>
+<script type="math/tex; mode=display">
+\hat{x}(k) = (1-K)[\hat{x}(k-1) + z_2(k) - z_2(k-1)] + K z_1(k)</script><p>这就是一阶互补滤波的最终公式。</p>
+<p><strong>代码：</strong><br>将上面推导出的公式写成代码如下，<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/** </span><br><span class="line"> * @brief 一阶互补滤波器单轴</span><br><span class="line"> * @param acc_angle 通过三角函数计算加速度计的值得到的角度值</span><br><span class="line"> * @param gyro_rate 陀螺仪输出的角速度值</span><br><span class="line"> * @param K1 滤波器系数，远小于1</span><br><span class="line"> * @<span class="built_in">return</span> 返回融合后角度值</span><br><span class="line"> */</span><br><span class="line">static void firstOrderComplementaryFiltering(<span class="built_in">float</span> acc_angle, <span class="built_in">float</span> gyro_rate, <span class="built_in">float</span>* angle)</span><br><span class="line">&#123;</span><br><span class="line">  *angle = K * acc_angle + (1 - K) * (*angle + gyro_rate * dt);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br><strong>调参：</strong><br>陀螺仪采样率是1kHZ，dt为0.001则算法涉及的参数只有一个就是K参数，假如取截止频率为100的话</p>
+<script type="math/tex; mode=display">
+K = \frac{dt}{f + dt} = \frac{0.001}{\frac{1}{100} + 0.001} \doteq 0.1</script><h5 id="3-2-kalman滤波"><a href="#3-2-kalman滤波" class="headerlink" title="3.2 kalman滤波"></a>3.2 kalman滤波</h5><p><strong>原理：</strong><br>卡尔曼滤波包括预测和更新两个过程，下面是两个过程的详细推导：<br><em>预测过程</em><br>预测阶段主要是根据陀螺仪数据预测角度值，系统状态量是角度值和角速度偏差，而不是角度值和角速度值</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;\hat{x}(k|k-1) = \hat{x}(k-1|k-1) + (\acute{\theta} - \acute{\theta }_b) \bigtriangleup t + w_\theta \\
-&amp;\acute{\theta }_b(k|k-1) = \acute{\theta }_b(k-1|k-1) + w_{\acute{\theta }_b}  \\
-&amp;w(k) = \begin{bmatrix}w_{\theta } &amp;w_{\acute{\theta}_b}\end{bmatrix} 
-\end{aligned}
-\]</span> 其中<span class="math inline">\(\acute{\theta}_b\)</span>是角度偏差，<span class="math inline">\(\acute{\theta }\)</span>是角速度， <span class="math inline">\(w(k)\)</span>是预测过程噪声符合高斯噪声写成矩阵的形式： <span class="math display">\[
+&\hat{x}(k|k-1) = \hat{x}(k-1|k-1) + (\acute{\theta} - \acute{\theta }_b) \bigtriangleup t + w_\theta \\
+&\acute{\theta }_b(k|k-1) = \acute{\theta }_b(k-1|k-1) + w_{\acute{\theta }_b}  \\
+&w(k) = \begin{bmatrix}w_{\theta } &w_{\acute{\theta}_b}\end{bmatrix} 
+\end{aligned}</script><p>其中$\acute{\theta}_b$是角度偏差，$\acute{\theta }$是角速度， $w(k)$是预测过程噪声符合高斯噪声写成矩阵的形式：</p>
+<script type="math/tex; mode=display">
 \hat{x}(k|k-1) = F\hat{x}(k-1|k-1) + B\acute{\theta }(k) +W(K)  \tag{1} \\
-F = \begin{bmatrix}1 &amp; - \bigtriangleup t\\  0&amp;1 \end{bmatrix} \\
-B=\begin{bmatrix}\bigtriangleup T \\ 0\end{bmatrix}
-\]</span> 将矩阵写成展开形式： <span class="math display">\[
-\begin{bmatrix}\theta_k\\ \acute{\theta }_b\end{bmatrix} = \begin{bmatrix}1 &amp; -\bigtriangleup t\\  0&amp;1 \end{bmatrix}\begin{bmatrix}\theta_{k-1}\\ \acute{\theta }_{k-1}\end{bmatrix} + \begin{bmatrix}\bigtriangleup t\\ 0\end{bmatrix}\acute{\theta }_k + w_k
-\]</span> <strong>代码：</strong><br />
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman公式一、角度的先验状态估计 x(k|k-1) = F * x(k-1|k-1) + B* u </span><br><span class="line"> * x为角度和角速度的列向量 F=（[1,-dt],</span><br><span class="line"> *                           [0, 1]）</span><br><span class="line"> */</span><br><span class="line"> gyro_rate-=q_bias;</span><br><span class="line"> *angle+=gyro_rate * dt;  </span><br></pre></td></tr></table></figure> 协方差矩阵的更新如下： 协方差矩阵为向量$
-<span class="math display">\[\begin{bmatrix}\theta_k\\ \acute{\theta }_b\end{bmatrix}\]</span>
-<p>$的协方差矩阵，该协方差矩阵会随着系统变换而变换，其原理是一个矩阵作用到向量后的矩阵协方差求法，如下： <span class="math display">\[
+F = \begin{bmatrix}1 & - \bigtriangleup t\\  0&1 \end{bmatrix} \\
+B=\begin{bmatrix}\bigtriangleup T \\ 0\end{bmatrix}</script><p>将矩阵写成展开形式：</p>
+<script type="math/tex; mode=display">
+\begin{bmatrix}\theta_k\\ \acute{\theta }_b\end{bmatrix} = \begin{bmatrix}1 & -\bigtriangleup t\\  0&1 \end{bmatrix}\begin{bmatrix}\theta_{k-1}\\ \acute{\theta }_{k-1}\end{bmatrix} + \begin{bmatrix}\bigtriangleup t\\ 0\end{bmatrix}\acute{\theta }_k + w_k</script><p><strong>代码：</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman公式一、角度的先验状态估计 x(k|k-1) = F * x(k-1|k-1) + B* u </span><br><span class="line"> * x为角度和角速度的列向量 F=（[1,-dt],</span><br><span class="line"> *                           [0, 1]）</span><br><span class="line"> */</span><br><span class="line"> gyro_rate-=q_bias;</span><br><span class="line"> *angle+=gyro_rate * dt;  </span><br></pre></td></tr></table></figure><br>协方差矩阵的更新如下：<br>协方差矩阵为向量$ \begin{bmatrix}\theta_k\\ \acute{\theta }_b\end{bmatrix}$的协方差矩阵，该协方差矩阵会随着系统变换而变换，其原理是一个矩阵作用到向量后的矩阵协方差求法，如下：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;Cov(x) = \Sigma \\
-&amp;cov(Ax) = A\Sigma A^{T} \\
-cov(Ax)&amp; = E[(Ax - E[Ax])(Ax - E[Ax])^{T}] \\
-        &amp;= E[Ax -AE[x](Ax - AE[x])^{T}]  \\
-        &amp;= E(A(x-E[x])(x-E[x])^{T}A^{T}) \\
-        &amp;= AE[(X-E[x])(X-E[x])^{T}]A^{T} \\
-        &amp;= A\Sigma A^{T}  
-\end{aligned}
-\]</span> 故协方差方程为： <span class="math display">\[
-P_{expect}(K|K-1) = FP(K-1|K-1)F^{T} + Q_k  \tag{2}
-\]</span> 这个方程表达的是新的协方差由上一次的协方差通过矩阵变换而来且再加上外部干扰，而协方差矩阵表征的是一个误差范围也就是不确定性，每次的不确定性由上一次的不确定性通过矩阵变换加上新的不确定性而来。将矩阵写为展开形式并化简得到： <span class="math display">\[
+&Cov(x) = \Sigma \\
+&cov(Ax) = A\Sigma A^{T} \\
+cov(Ax)& = E[(Ax - E[Ax])(Ax - E[Ax])^{T}] \\
+        &= E[Ax -AE[x](Ax - AE[x])^{T}]  \\
+        &= E(A(x-E[x])(x-E[x])^{T}A^{T}) \\
+        &= AE[(X-E[x])(X-E[x])^{T}]A^{T} \\
+        &= A\Sigma A^{T}  
+\end{aligned}</script><p>故协方差方程为：</p>
+<script type="math/tex; mode=display">
+P_{expect}(K|K-1) = FP(K-1|K-1)F^{T} + Q_k  \tag{2}</script><p>这个方程表达的是新的协方差由上一次的协方差通过矩阵变换而来且再加上外部干扰，而协方差矩阵表征的是一个误差范围也就是不确定性，每次的不确定性由上一次的不确定性通过矩阵变换加上新的不确定性而来。将矩阵写为展开形式并化简得到：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-\begin{bmatrix}P_{00} &amp;P_{01} \\ P_{10}&amp; P_{11}\end{bmatrix}_{k|k-1} &amp;= \begin{bmatrix}1 &amp; -\bigtriangleup t\\  0&amp;1 \end{bmatrix}\begin{bmatrix}P_{00} &amp;P_{01} \\ P_{10}&amp; P_{11}\end{bmatrix}_{k-1|k-1}\begin{bmatrix}1 &amp; 0\\  -\bigtriangleup t&amp;1 \end{bmatrix} + \begin{bmatrix}Q_\theta  &amp; 0\\ 0&amp;Q_{\acute{\theta }} \end{bmatrix}\bigtriangleup t \\
-  &amp;=\begin{bmatrix}P_{00}-\bigtriangleup tP_{10} &amp;P_{01}-\bigtriangleup tP_{11} \\ P_{10}&amp;P_{11} \end{bmatrix}_{k-1|k-1}\begin{bmatrix}1 &amp; \\ 0-\bigtriangleup t &amp; 1\end{bmatrix} + \begin{bmatrix}Q_\theta  &amp; 0\\ 0&amp;Q_{\acute{\theta }} \end{bmatrix}\bigtriangleup t \\
-  &amp;=\begin{bmatrix}P_{00}-\bigtriangleup tP_{10}-\bigtriangleup t(P_{01}-\bigtriangleup tP_{11}) &amp;P_{01}-\bigtriangleup tP_{11} \\ P_{10}-\bigtriangleup tP_{11}&amp;P_{11} \end{bmatrix}_{k-1|k-1} + \begin{bmatrix}Q_\theta  &amp; 0\\ 0&amp;Q_{\acute{\theta }} \end{bmatrix}\bigtriangleup t \\
-  &amp;=\begin{bmatrix}P_{00}-\bigtriangleup tP_{10}-\bigtriangleup t(P_{01}-\bigtriangleup tP_{11}) +Q_\theta \bigtriangleup t&amp;P_{01}-\bigtriangleup tP_{11} \\ P_{10}-\bigtriangleup tP_{11}&amp;P_{11}+Q_{\acute{\theta }}\bigtriangleup t \end{bmatrix} \\
-  &amp;=\begin{bmatrix}P_{00}-\bigtriangleup t(\bigtriangleup tP_{11}-P_{10}-P_{01} +Q_\theta )&amp;P_{01}-\bigtriangleup tP_{11} \\ P_{10}-\bigtriangleup tP_{11}&amp;P_{11}+Q_{\acute{\theta }}\bigtriangleup t \end{bmatrix}
-\end{aligned}
-\]</span> <span class="math inline">\(Q_k\)</span>是过程噪声协方差矩阵，由于加速度计的误差与陀螺仪之间的误差是相互独立的，不存在相关性（实际使用的时候角度值每次都是使用上次的最优值因此两者实际是有一定的相关性的），因此该矩阵是一个对称矩阵。其中陀螺仪的误差为累积误差，与时间<span class="math inline">\(\bigtriangleup t\)</span>有关，其表达式如下： <span class="math display">\[
-Q_k = \begin{bmatrix}Q_\theta &amp; 0\\ 0&amp; Q_{\acute{\theta }_b}\end{bmatrix}\bigtriangleup t \\
-\]</span> 其中<span class="math inline">\(Q_{\acute{\theta }_b}\)</span>表征了陀螺仪的漂移误差，<span class="math inline">\(Q_\theta\)</span>表征了姿态角的误差。 <strong>代码：</strong><br />
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman公式二、预测协方差矩阵 P(k|k-1) = F * P(k-1|k-1) * F<span class="string">&#x27; + Q(k)</span></span><br><span class="line"><span class="string"> */ </span></span><br><span class="line"><span class="string"> P[0][0] += (Q_angle - P[0][1] - P[1][0] + P[1][1] * dt) * dt;  </span></span><br><span class="line"><span class="string"> P[0][1] += (-P[1][1]) * dt;  </span></span><br><span class="line"><span class="string"> P[1][0] += (-P[1][1]) * dt;  </span></span><br><span class="line"><span class="string"> P[1][1] += Q_gyro * dt; </span></span><br></pre></td></tr></table></figure> <em>更新过程</em> 观测值<span class="math inline">\(z_k\)</span>为： <span class="math display">\[
-z_k = H * x_k + v_k
-\]</span></p>
-<p>这里<span class="math inline">\(z_k\)</span>为观测值，是通过加速度计解算的姿态角，<span class="math inline">\(H\)</span>为观测矩阵这里只能获取角度值，不能直接获取角度偏差值因此<span class="math inline">\(H=[\begin{bmatrix}1 &amp;0 \end{bmatrix}]\)</span>（当然如果你将原始的加速度计值输入到kalman方程里，这里的<span class="math inline">\(H\)</span>就是由加速度值到姿态角的变换矩阵，这里提前将加速度解算为姿态角后输入到kalman方程），<span class="math inline">\(v_k\)</span>为测量噪声符合高斯分布。 <span class="math display">\[
-z_k \sim N(0,R)
-\]</span> 本系统中测量值只有一个角速度值，因此<span class="math inline">\(R\)</span>可以用一个方差来表示。而加速度计解算姿态角是与时间无关的，该误差不会被累加到系统因此<span class="math inline">\(v_k = v\)</span>,这个值设置的比较大代表测量噪声比较大，则系统相信预测值大一些，如果这个值设置的比较小代表测量噪声很小，相信测量值大一些在本系统中加速度计解算的姿态角代表测量值也就是相信加速度值大一些。 观测量与预测量一样有一个对不确定性的更新，就是预测过程的协方差，测量过程的协方差基于上一次的协方差来计算，如下： <span class="math display">\[
-P_{measure}(k|k) = H*P(k|k-1)H^{T} + R
-\]</span> 将其写成矩阵展开形式并化简得到如下： <span class="math display">\[
-P_{measure}(k|k) =\begin{bmatrix}1 &amp;0 \end{bmatrix} * \begin{bmatrix}P_{00} &amp;P_{01} \\ P_{10} &amp;P_{11} \end{bmatrix}_{k|k-1} * 
+\begin{bmatrix}P_{00} &P_{01} \\ P_{10}& P_{11}\end{bmatrix}_{k|k-1} &= \begin{bmatrix}1 & -\bigtriangleup t\\  0&1 \end{bmatrix}\begin{bmatrix}P_{00} &P_{01} \\ P_{10}& P_{11}\end{bmatrix}_{k-1|k-1}\begin{bmatrix}1 & 0\\  -\bigtriangleup t&1 \end{bmatrix} + \begin{bmatrix}Q_\theta  & 0\\ 0&Q_{\acute{\theta }} \end{bmatrix}\bigtriangleup t \\
+  &=\begin{bmatrix}P_{00}-\bigtriangleup tP_{10} &P_{01}-\bigtriangleup tP_{11} \\ P_{10}&P_{11} \end{bmatrix}_{k-1|k-1}\begin{bmatrix}1 & \\ 0-\bigtriangleup t & 1\end{bmatrix} + \begin{bmatrix}Q_\theta  & 0\\ 0&Q_{\acute{\theta }} \end{bmatrix}\bigtriangleup t \\
+  &=\begin{bmatrix}P_{00}-\bigtriangleup tP_{10}-\bigtriangleup t(P_{01}-\bigtriangleup tP_{11}) &P_{01}-\bigtriangleup tP_{11} \\ P_{10}-\bigtriangleup tP_{11}&P_{11} \end{bmatrix}_{k-1|k-1} + \begin{bmatrix}Q_\theta  & 0\\ 0&Q_{\acute{\theta }} \end{bmatrix}\bigtriangleup t \\
+  &=\begin{bmatrix}P_{00}-\bigtriangleup tP_{10}-\bigtriangleup t(P_{01}-\bigtriangleup tP_{11}) +Q_\theta \bigtriangleup t&P_{01}-\bigtriangleup tP_{11} \\ P_{10}-\bigtriangleup tP_{11}&P_{11}+Q_{\acute{\theta }}\bigtriangleup t \end{bmatrix} \\
+  &=\begin{bmatrix}P_{00}-\bigtriangleup t(\bigtriangleup tP_{11}-P_{10}-P_{01} +Q_\theta )&P_{01}-\bigtriangleup tP_{11} \\ P_{10}-\bigtriangleup tP_{11}&P_{11}+Q_{\acute{\theta }}\bigtriangleup t \end{bmatrix}
+\end{aligned}</script><p>$Q_k$是过程噪声协方差矩阵，由于加速度计的误差与陀螺仪之间的误差是相互独立的，不存在相关性（实际使用的时候角度值每次都是使用上次的最优值因此两者实际是有一定的相关性的），因此该矩阵是一个对称矩阵。其中陀螺仪的误差为累积误差，与时间$\bigtriangleup t$有关，其表达式如下：</p>
+<script type="math/tex; mode=display">
+Q_k = \begin{bmatrix}Q_\theta & 0\\ 0& Q_{\acute{\theta }_b}\end{bmatrix}\bigtriangleup t \\</script><p>其中$Q_{\acute{\theta }_b}$表征了陀螺仪的漂移误差，$Q_\theta$表征了姿态角的误差。<br><strong>代码：</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman公式二、预测协方差矩阵 P(k|k-1) = F * P(k-1|k-1) * F<span class="string">&#x27; + Q(k)</span></span><br><span class="line"><span class="string"> */ </span></span><br><span class="line"><span class="string"> P[0][0] += (Q_angle - P[0][1] - P[1][0] + P[1][1] * dt) * dt;  </span></span><br><span class="line"><span class="string"> P[0][1] += (-P[1][1]) * dt;  </span></span><br><span class="line"><span class="string"> P[1][0] += (-P[1][1]) * dt;  </span></span><br><span class="line"><span class="string"> P[1][1] += Q_gyro * dt; </span></span><br></pre></td></tr></table></figure><br><em>更新过程</em><br>观测值$z_k$为：</p>
+<script type="math/tex; mode=display">
+z_k = H * x_k + v_k</script><p>这里$z_k$为观测值，是通过加速度计解算的姿态角，$H$为观测矩阵这里只能获取角度值，不能直接获取角度偏差值因此$H=[\begin{bmatrix}1 &amp;0 \end{bmatrix}]$（当然如果你将原始的加速度计值输入到kalman方程里，这里的$H$就是由加速度值到姿态角的变换矩阵，这里提前将加速度解算为姿态角后输入到kalman方程），$v_k$为测量噪声符合高斯分布。</p>
+<script type="math/tex; mode=display">
+z_k \sim N(0,R)</script><p>本系统中测量值只有一个角速度值，因此$R$可以用一个方差来表示。而加速度计解算姿态角是与时间无关的，该误差不会被累加到系统因此$v_k = v$,这个值设置的比较大代表测量噪声比较大，则系统相信预测值大一些，如果这个值设置的比较小代表测量噪声很小，相信测量值大一些在本系统中加速度计解算的姿态角代表测量值也就是相信加速度值大一些。<br>观测量与预测量一样有一个对不确定性的更新，就是预测过程的协方差，测量过程的协方差基于上一次的协方差来计算，如下：</p>
+<script type="math/tex; mode=display">
+P_{measure}(k|k) = H*P(k|k-1)H^{T} + R</script><p>将其写成矩阵展开形式并化简得到如下：</p>
+<script type="math/tex; mode=display">
+P_{measure}(k|k) =\begin{bmatrix}1 &0 \end{bmatrix} * \begin{bmatrix}P_{00} &P_{01} \\ P_{10} &P_{11} \end{bmatrix}_{k|k-1} * 
 \begin{bmatrix}1\\ 0\end{bmatrix} + R
- = P_{00 k|k-1} +R
-\]</span> <strong>代码：</strong><br />
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * 中间变量 E = H * P(k|k-1) H<span class="string">&#x27; + R </span></span><br><span class="line"><span class="string"> */</span></span><br><span class="line"><span class="string"> PCt_0 = C_0 * P[0][0];  </span></span><br><span class="line"><span class="string"> PCt_1 = C_0 * P[1][0];  </span></span><br><span class="line"><span class="string"> E = R_angle + C_0 * PCt_0;  </span></span><br></pre></td></tr></table></figure> 测量过程的协方差结果就是一个数值（看到这应该很庆幸不用对矩阵进行求逆，这个参数其实就是卡尔曼增益里面求逆矩阵那一项），其实就是方差值。到这里有两个协方差，一个是预测过程的协方差另一个是测量过程的协方差，两个协方差代表了两个数据源的噪声，哪个值大代表哪个过程的噪声越大，对其信任度就会降低。 下面终于到了卡尔曼增益的计算，先看下卡尔曼增益张什么样子吧： <span class="math display">\[
-K = H_k*P_k*H^{T}_k (H_k*P_k*H^{T}_k + R)^{-1}
-\]</span> 这个公式看起来非常不友好，其实卡尔曼系数是将上面通过预测和测量得到的两个高斯方程相乘而得到的。具体可以参考以下链接，其中之一是中文翻译版： 英文原版链接<span class="exturl" data-url="aHR0cDovL3d3dy5iemFyZy5jb20vcC9ob3ctYS1rYWxtYW4tZmlsdGVyLXdvcmtzLWluLXBpY3R1cmVzLw==">How a Kalman filter works, in pictures<i class="fa fa-external-link-alt"></i></span> 中文翻译版: <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTA3MjA2NjEvYXJ0aWNsZS9kZXRhaWxzLzYzMjUzNTA5">详解卡尔曼滤波原理<i class="fa fa-external-link-alt"></i></span> 为了这里公式的完整性，还是决定把与之相关的内容搬过来吧，如下图： <img src="/picture/algorithm/imu/kalman.png" /></p>
+ = P_{00 k|k-1} +R</script><p><strong>代码：</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * 中间变量 E = H * P(k|k-1) H<span class="string">&#x27; + R </span></span><br><span class="line"><span class="string"> */</span></span><br><span class="line"><span class="string"> PCt_0 = C_0 * P[0][0];  </span></span><br><span class="line"><span class="string"> PCt_1 = C_0 * P[1][0];  </span></span><br><span class="line"><span class="string"> E = R_angle + C_0 * PCt_0;  </span></span><br></pre></td></tr></table></figure><br>测量过程的协方差结果就是一个数值（看到这应该很庆幸不用对矩阵进行求逆，这个参数其实就是卡尔曼增益里面求逆矩阵那一项），其实就是方差值。到这里有两个协方差，一个是预测过程的协方差另一个是测量过程的协方差，两个协方差代表了两个数据源的噪声，哪个值大代表哪个过程的噪声越大，对其信任度就会降低。<br>下面终于到了卡尔曼增益的计算，先看下卡尔曼增益张什么样子吧：</p>
+<script type="math/tex; mode=display">
+K = H_k*P_k*H^{T}_k (H_k*P_k*H^{T}_k + R)^{-1}</script><p>这个公式看起来非常不友好，其实卡尔曼系数是将上面通过预测和测量得到的两个高斯方程相乘而得到的。具体可以参考以下链接，其中之一是中文翻译版：<br>英文原版链接<span class="exturl" data-url="aHR0cDovL3d3dy5iemFyZy5jb20vcC9ob3ctYS1rYWxtYW4tZmlsdGVyLXdvcmtzLWluLXBpY3R1cmVzLw==">How a Kalman filter works, in pictures<i class="fa fa-external-link-alt"></i></span><br>中文翻译版: <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTA3MjA2NjEvYXJ0aWNsZS9kZXRhaWxzLzYzMjUzNTA5">详解卡尔曼滤波原理<i class="fa fa-external-link-alt"></i></span><br>为了这里公式的完整性，还是决定把与之相关的内容搬过来吧，如下图：<br><img src="/picture/algorithm/imu/kalman.png" alt=""></p>
 <p>这张图是原作者的图但是有些不准确，蓝色的融合后的曲线应该是更高的曲线才对。将红色和绿色两个高斯方程相乘可以得到蓝色曲线代表的高斯方程，这就是估计的最优值。先看一维数据下的高斯方程相乘的结果如下:</p>
-<p><span class="math display">\[
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;{\mu }&#39; = \mu_0 + \frac{\sigma_0 ^{2} (\mu_1 - \mu_0)}{\sigma_0 ^{2} + \sigma_1 ^{2}} \\
-&amp;{\sigma}&#39;^{2} = \sigma_0^{2} - \frac{\sigma_0^{4}}{\sigma_0 ^{2} + \sigma_1 ^{2}}
-\end{aligned}
-\]</span> 取 <span class="math display">\[
-k = \frac{\sigma_0^{2}}{\sigma_0 ^{2} + \sigma_1 ^{2}}
-\]</span> 得到: <span class="math display">\[
+&{\mu }' = \mu_0 + \frac{\sigma_0 ^{2} (\mu_1 - \mu_0)}{\sigma_0 ^{2} + \sigma_1 ^{2}} \\
+&{\sigma}'^{2} = \sigma_0^{2} - \frac{\sigma_0^{4}}{\sigma_0 ^{2} + \sigma_1 ^{2}}
+\end{aligned}</script><p>取</p>
+<script type="math/tex; mode=display">
+k = \frac{\sigma_0^{2}}{\sigma_0 ^{2} + \sigma_1 ^{2}}</script><p>得到:</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;{\mu }&#39; = \mu_0 + k(\mu_1 - \mu_0) \\
-&amp;{\sigma}&#39;^{2} = \sigma_0 ^{2} - k \sigma_0 ^{2}
-\end{aligned}
-\]</span> 用<span class="math inline">\(\Sigma\)</span>表示协方差，写成矩阵的形式如下: <span class="math display">\[ 
+&{\mu }' = \mu_0 + k(\mu_1 - \mu_0) \\
+&{\sigma}'^{2} = \sigma_0 ^{2} - k \sigma_0 ^{2}
+\end{aligned}</script><p>用$\Sigma$表示协方差，写成矩阵的形式如下:</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;K = \Sigma_0 (\Sigma_0 + \Sigma_1)^{-1} \\
-&amp;\vec{\mu&#39;} = \vec{\mu_0} + K (\vec{\mu_1} - \vec{\mu_0}) \\
-&amp;{\Sigma}&#39; = \Sigma_0 - K \Sigma_0
-\end{aligned}
-\]</span> 将我们前面推导的预测和测量带入到上面的公式就得到下面卡尔曼滤波的后三个公式如下： <span class="math display">\[
+&K = \Sigma_0 (\Sigma_0 + \Sigma_1)^{-1} \\
+&\vec{\mu'} = \vec{\mu_0} + K (\vec{\mu_1} - \vec{\mu_0}) \\
+&{\Sigma}' = \Sigma_0 - K \Sigma_0
+\end{aligned}</script><p>将我们前面推导的预测和测量带入到上面的公式就得到下面卡尔曼滤波的后三个公式如下：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;K = H_k * P_k * H^{T}_k (H_k * P_k * H^{T}_k + R)^{-1} \\
-&amp;H_k * \hat{x}_{k|k} = H_k * \hat{x}_{k|k-1} + K (z_k -  H_k * \hat{x}_{k|k-1}) \\
-&amp;H_k * {P}&#39;_{k|k} * H^{T}_k = H_k * P_{k|k} * H^{T}_k - K * (H_k * P_{k|k} * H^{T}_k)
-\end{aligned}
-\]</span> 将这三个方程联系起来做运算得到如下更新方程： <span class="math display">\[
-K_k = P_{k|k-1}  * H^T * P^{-1}_{measure}(k|k)  \tag{3}
-\]</span> 将其写为矩阵展开形式并化简得到： <span class="math display">\[
+&K = H_k * P_k * H^{T}_k (H_k * P_k * H^{T}_k + R)^{-1} \\
+&H_k * \hat{x}_{k|k} = H_k * \hat{x}_{k|k-1} + K (z_k -  H_k * \hat{x}_{k|k-1}) \\
+&H_k * {P}'_{k|k} * H^{T}_k = H_k * P_{k|k} * H^{T}_k - K * (H_k * P_{k|k} * H^{T}_k)
+\end{aligned}</script><p>将这三个方程联系起来做运算得到如下更新方程：</p>
+<script type="math/tex; mode=display">
+K_k = P_{k|k-1}  * H^T * P^{-1}_{measure}(k|k)  \tag{3}</script><p>将其写为矩阵展开形式并化简得到：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k &amp;= \begin{bmatrix}P_{00} &amp;P_{01} \\ P_{10}&amp;P_{11} \end{bmatrix}_{k|k-1} * \begin{bmatrix}1\\ 0\end{bmatrix} * P^{-1}_{measure}(k|k) \\
-&amp;=\begin{bmatrix}P_{00}\\ P_{10}\end{bmatrix}_{k|k-1} * P^{-1}_{measure}(k|k)
-\end{aligned}
-\]</span> <strong>代码：</strong><br />
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman公式三、K = P(k|k-1) * H<span class="string">&#x27; / (H * P(k|k-1) H&#x27;</span> + R) </span><br><span class="line"> */</span><br><span class="line"> K_0 = PCt_0 / E;  </span><br><span class="line"> K_1 = PCt_1 / E; </span><br></pre></td></tr></table></figure> 协方差的更新： <span class="math display">\[
-P_{k|k} = (I - K_k* H_k)P_{k|k-1} \tag{4}
-\]</span> 将矩阵写为展开形式并化简得到如下： <span class="math display">\[
+\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k &= \begin{bmatrix}P_{00} &P_{01} \\ P_{10}&P_{11} \end{bmatrix}_{k|k-1} * \begin{bmatrix}1\\ 0\end{bmatrix} * P^{-1}_{measure}(k|k) \\
+&=\begin{bmatrix}P_{00}\\ P_{10}\end{bmatrix}_{k|k-1} * P^{-1}_{measure}(k|k)
+\end{aligned}</script><p><strong>代码：</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman公式三、K = P(k|k-1) * H<span class="string">&#x27; / (H * P(k|k-1) H&#x27;</span> + R) </span><br><span class="line"> */</span><br><span class="line"> K_0 = PCt_0 / E;  </span><br><span class="line"> K_1 = PCt_1 / E; </span><br></pre></td></tr></table></figure><br>协方差的更新：</p>
+<script type="math/tex; mode=display">
+P_{k|k} = (I - K_k* H_k)P_{k|k-1} \tag{4}</script><p>将矩阵写为展开形式并化简得到如下：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-\begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_k &amp;= (\begin{bmatrix}1 &amp; 0\\ 0 &amp; 1\end{bmatrix} -\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k * \begin{bmatrix}1 &amp; 0 \end{bmatrix}) * \begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} \\
-&amp;=(\begin{bmatrix}1 &amp; 0\\ 0 &amp; 1\end{bmatrix} -\begin{bmatrix}K_0 &amp;0 \\ K_1 &amp;0 \end{bmatrix}_k) * \begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} \\
-&amp;=\begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} - \begin{bmatrix}K_0P_{00} &amp;K_0P_{01} \\ K_1P_{00} &amp;K_1P_{01} \end{bmatrix}
-\end{aligned}
-\]</span> <strong>代码：</strong><br />
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman 公式四、P(k|k) = (I - K * H) * P(k|k-1)</span><br><span class="line"> */</span><br><span class="line"> t_0 = PCt_0;  </span><br><span class="line"> t_1 = C_0 * P[0][1];  </span><br><span class="line"> P[0][0] -= K_0 * t_0;  </span><br><span class="line"> P[0][1] -= K_0 * t_1;  </span><br><span class="line"> P[1][0] -= K_1 * t_0;  </span><br><span class="line"> P[1][1] -= K_1 * t_1; </span><br></pre></td></tr></table></figure> 下面是最优估计值 <span class="math display">\[
-\hat{x}_{k|k} = \hat{x}_{k|k-1} + K * (z_k  -  H_k * \hat{x}_{k|k-1})   \tag{5}
-\]</span> 写成矩阵的展开形式并化简如下： <span class="math display">\[
-\begin{bmatrix}\theta \\ \acute{\theta_b}\end{bmatrix}_{k|k} = \begin{bmatrix}\theta \\ \acute{\theta_b}\end{bmatrix}_{k|k-1} + \begin{bmatrix}K_0\\ K_1\end{bmatrix}_k * (z_k - \theta_{k|k-1})
-\]</span> <strong>代码：</strong><br />
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/* </span><br><span class="line"> * 中间变量 角度残差 z(k) - H * x(k)</span><br><span class="line"> * H = ([1,0])</span><br><span class="line"> */</span><br><span class="line"> angle_err = acc_angle - *angle;</span><br><span class="line"></span><br><span class="line">/*</span><br><span class="line"> * kalman公式五、x(k|k) = x(k|k-1) + K * (z(k) - H * x(k))</span><br><span class="line"> */</span><br><span class="line"> *angle += K_0 * angle_err; </span><br><span class="line"> q_bias += K_1 * angle_err;  </span><br></pre></td></tr></table></figure> 以上就是卡尔曼滤波的预测和更新过程。但是我们前面在说卡尔曼系数的时候是将两个卡尔曼方程相乘得到了最优解，这里有个问题就是这种方式得到的值是不是合理，或者说卡尔曼滤波是不是无偏估计的，这里贴出网上的一个推导，自行查看。<span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3F1ZXN0aW9uLzMzMTU2ODMyOC9hbnN3ZXIvNzM1Mjg3NTU2">https://www.zhihu.com/question/331568328/answer/735287556<i class="fa fa-external-link-alt"></i></span></p>
-<p><strong>调参：</strong><br />
-卡尔曼系数<span class="math inline">\(K\)</span>表征了对预测量和测量量的信任程度，如下式： <span class="math display">\[
-\hat{x}_{k|k} = \hat{x}_{k|k-1} + K * (z_k  -  H_k * \hat{x}_{k|k-1})
-\]</span> 这个式子中<span class="math inline">\(H_k\)</span>只是选取了角度信息去掉了加速度值，暂时可以忽略掉不看，当<span class="math inline">\(K\)</span>为<span class="math inline">\(0\)</span>时，最优值完全取预测值即完全相信预测值是真实值不相信测量值，当<span class="math inline">\(K\)</span>取1时最优值取<span class="math inline">\(z_k\)</span>测量值，则完全相信测量值而不相信预测值。<span class="math inline">\(K\)</span>越大则越相信测量值，<span class="math inline">\(K\)</span>越小越相信预测值。<span class="math inline">\(K\)</span>的值动态调整预测和测量之间的比例因子。对于我们的系统中一开始相信陀螺仪数据多一些，随着时间不短累积则相信加速度计数据逐渐增多，最后会收敛到一个固定的值。 接下来是系统里的几个关键参数<span class="math inline">\(Q\)</span>和<span class="math inline">\(R\)</span>，这里详细看下具体每个参数该怎么选取： 参数<span class="math inline">\(Q\)</span>的角度误差的方差<span class="math inline">\(Q_{\theta }\)</span>，该参数是预测角度的噪声，预测主要是基于上一次的最优值对陀螺仪数据进行积分得到预测值，该值代表了陀螺仪的整体误差，调试参数的时候该值一般设的比较小，对陀螺仪的信任度比较大。 角速度误差<span class="math inline">\(Q_{\acute{\theta }}\)</span>就是陀螺仪的漂移方差，这个值反应的是陀螺仪漂移的方差，即在每次的漂移量都是符合高斯噪声的，但是这个值跟环境温度等相关，在不同温度下漂移值是不同的可以对温度漂移进行多次测量修正，还有跟陀螺仪的运动状态有关，例如在一个系统中陀螺仪固定像一个方向旋转，则可以在陀螺仪以固定角速度旋转下测量该漂移。整体Q代表的是预测噪声。 测量噪声<span class="math inline">\(R\)</span>是代表了实际数据与测量值之间的误差，传感器不能100%获取到实际物理量数据测量一定是有误差的，该值可以通过imu的datasheet获取相关参数。例如icm20602的加速度误差为<span class="math inline">\(100ug/\sqrt{hz}\)</span>则对于1kz的采样率则为<span class="math inline">\(100ug * \sqrt{1000}\)</span>,但是这个值不能直接作为加速度计的观测噪声，还要看具体场景，加速度计的平移运动会产生加速度值，而这个值对计算角度来讲就是噪声，所以对于本系统<span class="math inline">\(R\)</span>不仅仅是传感器本身误差，同时还包括imu的平移运动产生的误差。在一个非常平稳的系统中加速度计的各轴平移加速度非常小，甚至可以忽略，此时加速度计的噪声是非常小的可以近似等于传感器测量噪声，相反在一个震动频率很高的场景下，加速度计的平移加速度就非常大，这个时候<span class="math inline">\(R\)</span>的取值就应该比传感器的本身误差大很多。手册上的误差值代表了最理想情况下的误差，实际系统中应该根据具体情况去调整这个值。 整体调试过程中，<span class="math inline">\(R\)</span>值的选取跟收敛速度相关，该值取的很小则收敛速度越快，因为长期来看滤波的值是像加速度计的值进行收敛的，对加速度的信任度越高则收敛越快反之则收敛越慢，但是对加速度计的信任度越高就会导致滤波效果不好有毛刺，<span class="math inline">\(Q\)</span>和<span class="math inline">\(R\)</span>的值共同决定了滤波效果。在实际的调参过程中将加速度计的曲线和滤波的曲线同时输出，对比两条曲线的关系就可以看到滤波的平滑程度以及收敛速度了。具体效果可以以缓慢旋转imu，快速旋转imu，不做旋转而左右晃动imu来看滤波后的值是否是我们期望的。</p>
-<h5 id="mahony滤波">3.3 mahony滤波</h5>
-<p><strong>陀螺仪模型：</strong><br />
-<span class="math display">\[
-\omega = \hat{\omega} + b_g + n_g
-\]</span> 这里， <span class="math inline">\(\omega\)</span>是陀螺仪测得的角速度， <span class="math inline">\(\hat{\omega}\)</span>是我们希望恢复的潜在理想角速度，<span class="math inline">\(b_g\)</span>陀螺仪偏差会随时间和温度等其他因素而变化， <span class="math inline">\(n_g\)</span>是陀螺仪高斯白噪声。</p>
-<p><strong>加速度计模型：</strong><br />
-<span class="math display">\[
-a = R^{T}(\hat{a} - g) + b_a + n_a
-\]</span> 这里<span class="math inline">\(a\)</span>是加速度测量值，<span class="math inline">\(\hat{a}\)</span>是加速度真实值，<span class="math inline">\(R\)</span>是传感器在世界坐标系下的转换矩阵，<span class="math inline">\(g\)</span>是重力加速度， $ b_a$是随时间和温度等其他因素而变化的acc偏差， <span class="math inline">\(n_a\)</span>是白色高斯acc噪声。</p>
-<p><strong>Mahony滤波器：</strong><br />
-在开始讨论mahony滤波器公式之前，让我们正式定义将要使用的坐标轴。让<span class="math inline">\(I,W,B\)</span>分别表示惯性，世界和机体坐标系。通常<span class="math inline">\(B\)</span> 和<span class="math inline">\(I\)</span> 是相同的。下标表示源坐标系，上标表示目的坐标系。下图是mahony滤波器的主要流程： <img src="/picture/algorithm/imu/mahony.png" /></p>
-<p><strong>步骤一：获取传感器值</strong><br />
-从传感器获取陀螺仪和acc测量值。让<span class="math inline">\(I_{w_t}\)</span> 和 <span class="math inline">\(I_{a_t}\)</span>分别表示陀螺仪和acc测量值。<span class="math inline">\(I_{\hat{a}_t}\)</span>表示标准化的acc测量。 代码如下: <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">recipNorm = invSqrt(ax * ax + ay * ay + az * az);	</span><br><span class="line">ax *= recipNorm;</span><br><span class="line">ay *= recipNorm;</span><br><span class="line">az *= recipNorm;   </span><br></pre></td></tr></table></figure></p>
-<p><strong>步骤二：使用acc测量计算误差</strong><br />
-根据先验估计值利用acc计算误差 <span class="math display">\[
+\begin{bmatrix}P_{00} & P_{01} \\ P_{10} & P_{11}\end{bmatrix}_k &= (\begin{bmatrix}1 & 0\\ 0 & 1\end{bmatrix} -\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k * \begin{bmatrix}1 & 0 \end{bmatrix}) * \begin{bmatrix}P_{00} & P_{01} \\ P_{10} & P_{11}\end{bmatrix}_{k-1} \\
+&=(\begin{bmatrix}1 & 0\\ 0 & 1\end{bmatrix} -\begin{bmatrix}K_0 &0 \\ K_1 &0 \end{bmatrix}_k) * \begin{bmatrix}P_{00} & P_{01} \\ P_{10} & P_{11}\end{bmatrix}_{k-1} \\
+&=\begin{bmatrix}P_{00} & P_{01} \\ P_{10} & P_{11}\end{bmatrix}_{k-1} - \begin{bmatrix}K_0P_{00} &K_0P_{01} \\ K_1P_{00} &K_1P_{01} \end{bmatrix}
+\end{aligned}</script><p><strong>代码：</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman 公式四、P(k|k) = (I - K * H) * P(k|k-1)</span><br><span class="line"> */</span><br><span class="line"> t_0 = PCt_0;  </span><br><span class="line"> t_1 = C_0 * P[0][1];  </span><br><span class="line"> P[0][0] -= K_0 * t_0;  </span><br><span class="line"> P[0][1] -= K_0 * t_1;  </span><br><span class="line"> P[1][0] -= K_1 * t_0;  </span><br><span class="line"> P[1][1] -= K_1 * t_1; </span><br></pre></td></tr></table></figure><br>下面是最优估计值</p>
+<script type="math/tex; mode=display">
+\hat{x}_{k|k} = \hat{x}_{k|k-1} + K * (z_k  -  H_k * \hat{x}_{k|k-1})   \tag{5}</script><p>写成矩阵的展开形式并化简如下：</p>
+<script type="math/tex; mode=display">
+\begin{bmatrix}\theta \\ \acute{\theta_b}\end{bmatrix}_{k|k} = \begin{bmatrix}\theta \\ \acute{\theta_b}\end{bmatrix}_{k|k-1} + \begin{bmatrix}K_0\\ K_1\end{bmatrix}_k * (z_k - \theta_{k|k-1})</script><p><strong>代码：</strong><br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/* </span><br><span class="line"> * 中间变量 角度残差 z(k) - H * x(k)</span><br><span class="line"> * H = ([1,0])</span><br><span class="line"> */</span><br><span class="line"> angle_err = acc_angle - *angle;</span><br><span class="line"></span><br><span class="line">/*</span><br><span class="line"> * kalman公式五、x(k|k) = x(k|k-1) + K * (z(k) - H * x(k))</span><br><span class="line"> */</span><br><span class="line"> *angle += K_0 * angle_err; </span><br><span class="line"> q_bias += K_1 * angle_err;  </span><br></pre></td></tr></table></figure><br>以上就是卡尔曼滤波的预测和更新过程。但是我们前面在说卡尔曼系数的时候是将两个卡尔曼方程相乘得到了最优解，这里有个问题就是这种方式得到的值是不是合理，或者说卡尔曼滤波是不是无偏估计的，这里贴出网上的一个推导，自行查看。<span class="exturl" data-url="aHR0cHM6Ly93d3cuemhpaHUuY29tL3F1ZXN0aW9uLzMzMTU2ODMyOC9hbnN3ZXIvNzM1Mjg3NTU2">https://www.zhihu.com/question/331568328/answer/735287556<i class="fa fa-external-link-alt"></i></span></p>
+<p><strong>调参：</strong><br>卡尔曼系数$K$表征了对预测量和测量量的信任程度，如下式：</p>
+<script type="math/tex; mode=display">
+\hat{x}_{k|k} = \hat{x}_{k|k-1} + K * (z_k  -  H_k * \hat{x}_{k|k-1})</script><p>这个式子中$H_k$只是选取了角度信息去掉了加速度值，暂时可以忽略掉不看，当$K$为$0$时，最优值完全取预测值即完全相信预测值是真实值不相信测量值，当$K$取1时最优值取$z_k$测量值，则完全相信测量值而不相信预测值。$K$越大则越相信测量值，$K$越小越相信预测值。$K$的值动态调整预测和测量之间的比例因子。对于我们的系统中一开始相信陀螺仪数据多一些，随着时间不短累积则相信加速度计数据逐渐增多，最后会收敛到一个固定的值。<br>接下来是系统里的几个关键参数$Q$和$R$，这里详细看下具体每个参数该怎么选取：<br>参数$Q$的角度误差的方差$Q_{\theta }$，该参数是预测角度的噪声，预测主要是基于上一次的最优值对陀螺仪数据进行积分得到预测值，该值代表了陀螺仪的整体误差，调试参数的时候该值一般设的比较小，对陀螺仪的信任度比较大。<br>角速度误差$Q_{\acute{\theta }}$就是陀螺仪的漂移方差，这个值反应的是陀螺仪漂移的方差，即在每次的漂移量都是符合高斯噪声的，但是这个值跟环境温度等相关，在不同温度下漂移值是不同的可以对温度漂移进行多次测量修正，还有跟陀螺仪的运动状态有关，例如在一个系统中陀螺仪固定像一个方向旋转，则可以在陀螺仪以固定角速度旋转下测量该漂移。整体Q代表的是预测噪声。<br>测量噪声$R$是代表了实际数据与测量值之间的误差，传感器不能100%获取到实际物理量数据测量一定是有误差的，该值可以通过imu的datasheet获取相关参数。例如icm20602的加速度误差为$100ug/\sqrt{hz}$则对于1kz的采样率则为$100ug * \sqrt{1000}$,但是这个值不能直接作为加速度计的观测噪声，还要看具体场景，加速度计的平移运动会产生加速度值，而这个值对计算角度来讲就是噪声，所以对于本系统$R$不仅仅是传感器本身误差，同时还包括imu的平移运动产生的误差。在一个非常平稳的系统中加速度计的各轴平移加速度非常小，甚至可以忽略，此时加速度计的噪声是非常小的可以近似等于传感器测量噪声，相反在一个震动频率很高的场景下，加速度计的平移加速度就非常大，这个时候$R$的取值就应该比传感器的本身误差大很多。手册上的误差值代表了最理想情况下的误差，实际系统中应该根据具体情况去调整这个值。<br>整体调试过程中，$R$值的选取跟收敛速度相关，该值取的很小则收敛速度越快，因为长期来看滤波的值是像加速度计的值进行收敛的，对加速度的信任度越高则收敛越快反之则收敛越慢，但是对加速度计的信任度越高就会导致滤波效果不好有毛刺，$Q$和$R$的值共同决定了滤波效果。在实际的调参过程中将加速度计的曲线和滤波的曲线同时输出，对比两条曲线的关系就可以看到滤波的平滑程度以及收敛速度了。具体效果可以以缓慢旋转imu，快速旋转imu，不做旋转而左右晃动imu来看滤波后的值是否是我们期望的。   </p>
+<h5 id="3-3-mahony滤波"><a href="#3-3-mahony滤波" class="headerlink" title="3.3 mahony滤波"></a>3.3 mahony滤波</h5><p><strong>陀螺仪模型：</strong>   </p>
+<script type="math/tex; mode=display">
+\omega = \hat{\omega} + b_g + n_g</script><p>这里，  $\omega$是陀螺仪测得的角速度， $\hat{\omega}$是我们希望恢复的潜在理想角速度，$b_g$陀螺仪偏差会随时间和温度等其他因素而变化， $n_g$是陀螺仪高斯白噪声。</p>
+<p><strong>加速度计模型：</strong>   </p>
+<script type="math/tex; mode=display">
+a = R^{T}(\hat{a} - g) + b_a + n_a</script><p>这里$a$是加速度测量值，$\hat{a}$是加速度真实值，$R$是传感器在世界坐标系下的转换矩阵，$g$是重力加速度， $ b_a$是随时间和温度等其他因素而变化的acc偏差， $n_a$是白色高斯acc噪声。</p>
+<p><strong>Mahony滤波器：</strong><br>在开始讨论mahony滤波器公式之前，让我们正式定义将要使用的坐标轴。让$I,W,B$分别表示惯性，世界和机体坐标系。通常$B$ 和$I$ 是相同的。下标表示源坐标系，上标表示目的坐标系。下图是mahony滤波器的主要流程：<br><img src="/picture/algorithm/imu/mahony.png" alt=""></p>
+<p><strong>步骤一：获取传感器值</strong><br>从传感器获取陀螺仪和acc测量值。让$I_{w_t}$ 和 $I_{a_t}$分别表示陀螺仪和acc测量值。$I_{\hat{a}_t}$表示标准化的acc测量。<br>代码如下:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">recipNorm = invSqrt(ax * ax + ay * ay + az * az);	</span><br><span class="line">ax *= recipNorm;</span><br><span class="line">ay *= recipNorm;</span><br><span class="line">az *= recipNorm;   </span><br></pre></td></tr></table></figure></p>
+<p><strong>步骤二：使用acc测量计算误差</strong><br>根据先验估计值利用acc计算误差</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-&amp;v(\hat{_{I}^{W}\textrm{}q_{est}},t) = \begin{bmatrix}2(q_2q_4-q_1q_3)\\ 2(q_1q_2+q_3q_4)\\ (q_1^{2} - q_2^{2} - q_3^{2} + q_4^{2})\end{bmatrix} \\
-&amp;e_{t+1} = I_{\hat{a_{t+1}}} \times v(\hat{_{I}^{W}\textrm{}q_{est}},t) \\
-&amp;e_{i,t+1} = e_{i,t} + e_{t+1}\Delta t
-\end{aligned}
-\]</span> <span class="math inline">\(\Delta t\)</span>是采样间隔，即t到t+1的时间间隔。看到这里是不是一头雾水，当时我看到这里是完全没搞懂这是什么啊，没关系，还有望不到尽头的路子要走呢，继续 先放下前面那一堆乱七八糟的东西，看点简单的东西，about复数和四元数 <img src="/picture/algorithm/imu/rotation.png" /></p>
-<p>如果有一个复数 <span class="math inline">\(z = a + bi\)</span>，那么 <span class="math inline">\(z\)</span> 与任意一个复数<span class="math inline">\(c\)</span> 相乘都会将 <span class="math inline">\(c\)</span> 逆时针旋转 <span class="math inline">\(θ = atan2(b, a)\)</span> 度，并将其缩放<span class="math inline">\(|z| = \sqrt{a^{2} + b^{2}}\)</span> 倍．如果<span class="math inline">\(|z| =1\)</span>那么久完全变成旋转了，<span class="math inline">\(z\)</span>也就变成了旋转矩阵如下: <span class="math display">\[
-z = \begin{bmatrix}cos(\theta ) &amp;-sin(\theta) \\ sin(\theta)&amp; cos(\theta)\end{bmatrix}
-\]</span> 则对应的旋转公式（矩阵型）如下： <span class="math display">\[{v}&#39; = \begin{bmatrix}cos(\theta ) &amp;-sin(\theta) \\ sin(\theta)&amp; cos(\theta)\end{bmatrix} v\]</span> 其中z可以用复数形式来表示即<span class="math inline">\(z = x + yi\)</span>构造一个<span class="math inline">\(z = cos(\theta) + sin(\theta)i\)</span>复数,则旋转可以表示为 <span class="math display">\[
-{v}&#39; = zv = (cos(\theta) + i sin(\theta))v
-\]</span> 这是二维的情况，推广到3D 空间中任意一个 <span class="math inline">\(v\)</span> 沿着单位向量 <span class="math inline">\(u\)</span> 旋转 <span class="math inline">\(θ\)</span> 角度之后的 v′ 为： <span class="math display">\[
-v′ = cos(θ)v + (1 − cos(θ))(u · v)u + sin(θ)(u × v)
-\]</span> 接着给出四元数旋转公式任意向量 <span class="math inline">\(v\)</span> 沿着以单位向量定义的旋转轴 <span class="math inline">\(u\)</span> 旋转 <span class="math inline">\(θ\)</span> 度之后的 <span class="math inline">\(v′\)</span> 可以使用四元数 乘法来获得．令 <span class="math inline">\(v = [0, v]，q = \begin{bmatrix}cos(\frac{1}{2}\theta ), sin(\frac{1}{2}\theta )u \end{bmatrix}\)</span>，那么： <span class="math display">\[
-{v}&#39; = qvq^{*} = qvq^{-1}
-\]</span> 换句话说，如果我们有 <span class="math inline">\(q = [cos(θ), sin(θ)u]\)</span>，那么 <span class="math inline">\(v′ = qvq^{*}\)</span> 可以将 <span class="math inline">\(v\)</span> 沿着 <span class="math inline">\(u\)</span> 旋 转 <span class="math inline">\(2θ\)</span> 度.写为矩阵形式如下： 任意向量 <span class="math inline">\(v\)</span> 沿着以单位向量定义的旋转轴 <span class="math inline">\(u\)</span> 旋转 <span class="math inline">\(θ\)</span> 角度之后的 <span class="math inline">\(v′\)</span> 可以使用矩阵 乘法来获得．令 <span class="math inline">\(a =cos(\frac{1}{2}\theta ), b = sin(\frac{1}{2}\theta )u_x, c = sin(\frac{1}{2}\theta )u_y, d = sin(\frac{1}{2}\theta )u_z\)</span>那么: <span class="math display">\[
-{v}&#39; = \begin{bmatrix}1-2c^2-2d^2 &amp; 2bc - 2ad &amp; 2ac+2bd \\ 2bc+2ad &amp; 1-2b^2-2d^2  &amp;2cd - 2ab \\ 2bd-2ac &amp; 2ad+2cd  &amp; 1-2b^2-2c^2 \end{bmatrix}v
-\]</span> 其中这里的四元数是归一化四元数即<span class="math inline">\(1 = q_1^2 + q_2^2 + q_3^2 + q_4^2\)</span>并用更通用的符号来表示则上面式子可以写为如下: <span class="math display">\[
-v = \begin{bmatrix}q_1^2 + q_2^2 -q_3^2 -q_4^2 &amp;2(q_2q_3 - q_1q_4)  &amp;2(q_2q_4 + q_1q_3) \\ 2(q_2q_3 + q_1q_4) &amp; q_1^2 - q_2^2 + q_3^2 -q_4^2  &amp; 2(q_3q_4 - q_1q_2) \\ 2(q_2q_4 - q_1q_3)&amp; 2(q_3q_4 + q_1q_2)  &amp; q_1^2 - q_2^2 -q_3^2 +q_4^2 \end{bmatrix}v
-\]</span> 这里其实是省略了相关推导，其中的详细推导过程我会在下面给出链接，这里我们直接使用这些已知的结论，不然东西太多，看着太累（其实是写起来太累）。到这里其实只是列出了四元数的旋转公式，好回到前面第二步中我们那个公式是怎么来的呢，下面看机体坐标系下的重力表示，将机体坐标系的三轴分量通过旋转矩阵的旋转后就是地理坐标系下的重力分量表示.而我们这里的旋转矩阵是正交矩阵即<span class="math inline">\(M*M^T = I\)</span>则有<span class="math inline">\(g = M*\hat{g}\)</span>则<span class="math inline">\(\hat{g} = M^T * g\)</span>展开了写就是如下形式 <span class="math display">\[
+&v(\hat{_{I}^{W}\textrm{}q_{est}},t) = \begin{bmatrix}2(q_2q_4-q_1q_3)\\ 2(q_1q_2+q_3q_4)\\ (q_1^{2} - q_2^{2} - q_3^{2} + q_4^{2})\end{bmatrix} \\
+&e_{t+1} = I_{\hat{a_{t+1}}} \times v(\hat{_{I}^{W}\textrm{}q_{est}},t) \\
+&e_{i,t+1} = e_{i,t} + e_{t+1}\Delta t
+\end{aligned}</script><p>$\Delta t$是采样间隔，即t到t+1的时间间隔。看到这里是不是一头雾水，当时我看到这里是完全没搞懂这是什么啊，没关系，还有望不到尽头的路子要走呢，继续<br>先放下前面那一堆乱七八糟的东西，看点简单的东西，about复数和四元数<br><img src="/picture/algorithm/imu/rotation.png" alt=""></p>
+<p>如果有一个复数 $z = a + bi$，那么 $z$ 与任意一个复数$c$ 相乘都会将 $c$ 逆时针旋转 $θ = atan2(b, a)$ 度，并将其缩放$|z| = \sqrt{a^{2} + b^{2}}$ 倍．如果$|z| =1$那么久完全变成旋转了，$z$也就变成了旋转矩阵如下:</p>
+<script type="math/tex; mode=display">
+z = \begin{bmatrix}cos(\theta ) &-sin(\theta) \\ sin(\theta)& cos(\theta)\end{bmatrix}</script><p>则对应的旋转公式（矩阵型）如下：</p>
+<script type="math/tex; mode=display">{v}' = \begin{bmatrix}cos(\theta ) &-sin(\theta) \\ sin(\theta)& cos(\theta)\end{bmatrix} v</script><p>其中z可以用复数形式来表示即$z = x + yi$构造一个$z = cos(\theta) + sin(\theta)i$复数,则旋转可以表示为</p>
+<script type="math/tex; mode=display">
+{v}' = zv = (cos(\theta) + i sin(\theta))v</script><p>这是二维的情况，推广到3D 空间中任意一个 $v$ 沿着单位向量 $u$ 旋转 $θ$ 角度之后的 v′ 为：</p>
+<script type="math/tex; mode=display">
+v′ = cos(θ)v + (1 − cos(θ))(u · v)u + sin(θ)(u × v)</script><p>接着给出四元数旋转公式任意向量 $v$ 沿着以单位向量定义的旋转轴 $u$ 旋转 $θ$ 度之后的 $v′$ 可以使用四元数<br>乘法来获得．令 $v = [0, v]，q = \begin{bmatrix}cos(\frac{1}{2}\theta ), sin(\frac{1}{2}\theta )u \end{bmatrix}$，那么：</p>
+<script type="math/tex; mode=display">
+{v}' = qvq^{*} = qvq^{-1}</script><p>换句话说，如果我们有 $q = [cos(θ), sin(θ)u]$，那么 $v′ = qvq^{*}$ 可以将 $v$ 沿着 $u$ 旋<br>转 $2θ$ 度.写为矩阵形式如下：<br>任意向量 $v$ 沿着以单位向量定义的旋转轴 $u$ 旋转 $θ$ 角度之后的 $v′$ 可以使用矩阵<br>乘法来获得．令 $a =cos(\frac{1}{2}\theta ), b = sin(\frac{1}{2}\theta )u_x, c = sin(\frac{1}{2}\theta )u_y, d = sin(\frac{1}{2}\theta )u_z$那么:</p>
+<script type="math/tex; mode=display">
+{v}' = \begin{bmatrix}1-2c^2-2d^2 & 2bc - 2ad & 2ac+2bd \\ 2bc+2ad & 1-2b^2-2d^2  &2cd - 2ab \\ 2bd-2ac & 2ad+2cd  & 1-2b^2-2c^2 \end{bmatrix}v</script><p>其中这里的四元数是归一化四元数即$1 = q_1^2 +  q_2^2 +  q_3^2 +  q_4^2$并用更通用的符号来表示则上面式子可以写为如下:</p>
+<script type="math/tex; mode=display">
+v = \begin{bmatrix}q_1^2 + q_2^2 -q_3^2 -q_4^2 &2(q_2q_3 - q_1q_4)  &2(q_2q_4 + q_1q_3) \\ 2(q_2q_3 + q_1q_4) & q_1^2 - q_2^2 + q_3^2 -q_4^2  & 2(q_3q_4 - q_1q_2) \\ 2(q_2q_4 - q_1q_3)& 2(q_3q_4 + q_1q_2)  & q_1^2 - q_2^2 -q_3^2 +q_4^2 \end{bmatrix}v</script><p>这里其实是省略了相关推导，其中的详细推导过程我会在下面给出链接，这里我们直接使用这些已知的结论，不然东西太多，看着太累（其实是写起来太累）。到这里其实只是列出了四元数的旋转公式，好回到前面第二步中我们那个公式是怎么来的呢，下面看机体坐标系下的重力表示，将机体坐标系的三轴分量通过旋转矩阵的旋转后就是地理坐标系下的重力分量表示.而我们这里的旋转矩阵是正交矩阵即$M<em>M^T = I$则有$g = M</em>\hat{g}$则$\hat{g} = M^T * g$展开了写就是如下形式</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-\hat{g} &amp;= \begin{bmatrix}q_1^2 + q_2^2 -q_3^2 -q_4^2 &amp;2(q_2q_3 - q_1q_4)  &amp;2(q_2q_4 + q_1q_3) \\ 2(q_2q_3 + q_1q_4) &amp; q_1^2 - q_2^2 + q_3^2 -q_4^2  &amp; 2(q_3q_4 - q_1q_2) \\ 2(q_2q_4 - q_1q_3)&amp;2(q_3q_4 + q_1q_2)  &amp; q_1^2 - q_2^2 -q_3^2 +q_4^2 \end{bmatrix}&#39; * \begin{bmatrix}0\\ 0\\ 1\end{bmatrix} \\
-&amp;=\begin{bmatrix}2(q_2q_4 - q_1q_3)\\  2(q_3q_4 + q_1q_2)\\ q_1^2 - q_2^2 -q_3^2 +q_4^2\end{bmatrix}
-\end{aligned}
-\]</span> 这就是上面我们第二步中的公式，在自然坐标系下的机体三轴表示。写成代码就是如下： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">// Estimated direction of gravity and vector perpendicular to magnetic flux</span><br><span class="line">halfvx = imu-&gt;q1 * imu-&gt;q3 - imu-&gt;q0 * imu-&gt;q2;</span><br><span class="line">halfvy = imu-&gt;q0 * imu-&gt;q1 + imu-&gt;q2 * imu-&gt;q3;</span><br><span class="line">//halfvz = imu-&gt;q0 * imu-&gt;q0 - 0.5f + imu-&gt;q3 * imu-&gt;q3;</span><br><span class="line">halfvz = imu-&gt;q0 * imu-&gt;q0 - imu-&gt;q1 * imu-&gt;q1 - imu-&gt;q2 * imu-&gt;q2 + imu-&gt;q3 * imu-&gt;q3;</span><br></pre></td></tr></table></figure> 这第二步还没完，后面还两个公式呢，先看第一个公式 <span class="math display">\[
-e_{t+1} = I_{\hat{a_{t+1}}} \times v(\hat{_{I}^{W}\textrm{}q_{est}},t) 
-\]</span> 这一步将加速度计获取的数据与陀螺仪准确来讲是预测值进行叉乘，来表示陀螺仪与加速度计的误差，这里为什么可以通过叉乘得到误差呢，其实是存疑的，向量的叉乘结果跟两个向量的夹角和模长相关，这里acc与gyro的数据如果是相同的那么他们之间的夹角为0则<span class="math inline">\(sin(\theta) = 0\)</span>两个向量的叉积为0向量，而acc和gyro不同则两个向量不同但是笔者认为两者不能视为线性关系，叉乘的大小可以用来表示acc与gyro的误差大小，而这个计算恰好用于pi调节器来调节gyro的数据。到现在误差也出来了两个向量的叉乘，取<span class="math inline">\(z_1 = a + bi z_2 = c + di\)</span>则两个向量叉乘结果为： <span class="math display">\[
+\hat{g} &= \begin{bmatrix}q_1^2 + q_2^2 -q_3^2 -q_4^2 &2(q_2q_3 - q_1q_4)  &2(q_2q_4 + q_1q_3) \\ 2(q_2q_3 + q_1q_4) & q_1^2 - q_2^2 + q_3^2 -q_4^2  & 2(q_3q_4 - q_1q_2) \\ 2(q_2q_4 - q_1q_3)&2(q_3q_4 + q_1q_2)  & q_1^2 - q_2^2 -q_3^2 +q_4^2 \end{bmatrix}' * \begin{bmatrix}0\\ 0\\ 1\end{bmatrix} \\
+&=\begin{bmatrix}2(q_2q_4 - q_1q_3)\\  2(q_3q_4 + q_1q_2)\\ q_1^2 - q_2^2 -q_3^2 +q_4^2\end{bmatrix}
+\end{aligned}</script><p>这就是上面我们第二步中的公式，在自然坐标系下的机体三轴表示。写成代码就是如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">// Estimated direction of gravity and vector perpendicular to magnetic flux</span><br><span class="line">halfvx = imu-&gt;q1 * imu-&gt;q3 - imu-&gt;q0 * imu-&gt;q2;</span><br><span class="line">halfvy = imu-&gt;q0 * imu-&gt;q1 + imu-&gt;q2 * imu-&gt;q3;</span><br><span class="line">//halfvz = imu-&gt;q0 * imu-&gt;q0 - 0.5f + imu-&gt;q3 * imu-&gt;q3;</span><br><span class="line">halfvz = imu-&gt;q0 * imu-&gt;q0 - imu-&gt;q1 * imu-&gt;q1 - imu-&gt;q2 * imu-&gt;q2 + imu-&gt;q3 * imu-&gt;q3;</span><br></pre></td></tr></table></figure><br>这第二步还没完，后面还两个公式呢，先看第一个公式</p>
+<script type="math/tex; mode=display">
+e_{t+1} = I_{\hat{a_{t+1}}} \times v(\hat{_{I}^{W}\textrm{}q_{est}},t)</script><p>这一步将加速度计获取的数据与陀螺仪准确来讲是预测值进行叉乘，来表示陀螺仪与加速度计的误差，这里为什么可以通过叉乘得到误差呢，其实是存疑的，向量的叉乘结果跟两个向量的夹角和模长相关，这里acc与gyro的数据如果是相同的那么他们之间的夹角为0则$sin(\theta) = 0$两个向量的叉积为0向量，而acc和gyro不同则两个向量不同但是笔者认为两者不能视为线性关系，叉乘的大小可以用来表示acc与gyro的误差大小，而这个计算恰好用于pi调节器来调节gyro的数据。到现在误差也出来了两个向量的叉乘，取$z_1 = a + bi z_2 = c + di$则两个向量叉乘结果为：</p>
+<script type="math/tex; mode=display">
 \begin{aligned}
-z_1\times z_2 &amp;= \begin{bmatrix}a &amp;-b \\ b &amp; a\end{bmatrix}  \times \begin{bmatrix}c &amp;-d \\ d &amp; c\end{bmatrix} \\
-&amp;= \begin{bmatrix}ac-bd &amp;-(bc + ad) \\ bc + ad &amp; ac-bd\end{bmatrix}
-\end{aligned}
-\]</span> 写为代码就是下面： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// Error is sum of cross product between estimated and measured direction of gravity</span><br><span class="line">halfex = (ay * halfvz - az * halfvy);</span><br><span class="line">halfey = (az * halfvx - ax * halfvz);</span><br><span class="line">halfez = (ax * halfvy - ay * halfvx);</span><br></pre></td></tr></table></figure> 第三个公式就比较简单了对误差进行累计，这里代码跟下面第三步放到一起。第二步完...<br />
-<strong>步骤三：对误差进行PI调节器调节</strong><br />
-<span class="math display">\[
-I{w_{t+1}} = I{w_{t+1}} + K_p * e_{t+1} K_i * e_{i,t+1}
-\]</span> 这个公式对于比较熟悉pid算法的人来讲应该是轻而易举的事了吧，关于pid调节这里也不是一两句话可以说的清楚的，后面专门再写一篇关于pid调节的文章吧，后续一定会用到的，这里先偷下懒，通俗点将这里就是对误差进行一个比例扩大或缩小即误差的积分累计运算，这个量会用于调节陀螺仪的数据，以纠正陀螺仪的累计误差让陀螺仪的数据最终收敛于加速度计数据。照例贴下代码如下： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">// Compute and apply integral feedback <span class="keyword">if</span> enabled</span><br><span class="line"><span class="keyword">if</span>(twoKi &gt; 0.0f) &#123;</span><br><span class="line">  imu-&gt;integralFBx += twoKi * halfex * (1.0f / sampleFreq);	// integral error scaled by Ki</span><br><span class="line">        imu-&gt;integralFBy += twoKi * halfey * (1.0f / sampleFreq);</span><br><span class="line">  imu-&gt;integralFBz += twoKi * halfez * (1.0f / sampleFreq);</span><br><span class="line">  gx += imu-&gt;integralFBx;	// apply integral feedback</span><br><span class="line">  gy += imu-&gt;integralFBy;</span><br><span class="line">  gz += imu-&gt;integralFBz;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">  imu-&gt;integralFBx = 0.0f;	// prevent integral windup</span><br><span class="line">  imu-&gt;integralFBy = 0.0f;</span><br><span class="line">  imu-&gt;integralFBz = 0.0f;</span><br><span class="line">&#125;</span><br><span class="line">// Apply proportional feedback</span><br><span class="line">gx += twoKp * halfex;</span><br><span class="line">gy += twoKp * halfey;</span><br><span class="line">gz += twoKp * halfez;</span><br></pre></td></tr></table></figure> <strong>步骤四：对陀螺仪数据进行积分</strong><br />
-前面我们对姿态角的变化量加速度进行pi调节器的调节后（使其收敛于加速度计计算的重力向量）就可以进行积分了，其积分就涉及到微分方程的求解和运算，下面会给出推导步骤如下： - 四元数微分方程 定义<span class="math inline">\(n\)</span>为自然坐标系，<span class="math inline">\(b\)</span>为机体坐标系，则<span class="math inline">\(n\)</span>系到<span class="math inline">\(b\)</span>系的旋转四元数为： <span class="math display">\[
-Q = cos( \frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u^n
-\]</span> 其中<span class="math inline">\(u^n\)</span>为旋转轴，$<span class="math inline">\(为旋转角。 将四元数\)</span>Q = cos() + sin()u$对时间进行微分则： <span class="math display">\[
+z_1\times z_2 &= \begin{bmatrix}a &-b \\ b & a\end{bmatrix}  \times \begin{bmatrix}c &-d \\ d & c\end{bmatrix} \\
+&= \begin{bmatrix}ac-bd &-(bc + ad) \\ bc + ad & ac-bd\end{bmatrix}
+\end{aligned}</script><p>写为代码就是下面：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">// Error is sum of cross product between estimated and measured direction of gravity</span><br><span class="line">halfex = (ay * halfvz - az * halfvy);</span><br><span class="line">halfey = (az * halfvx - ax * halfvz);</span><br><span class="line">halfez = (ax * halfvy - ay * halfvx);</span><br></pre></td></tr></table></figure><br>第三个公式就比较简单了对误差进行累计，这里代码跟下面第三步放到一起。第二步完…<br><strong>步骤三：对误差进行PI调节器调节</strong>   </p>
+<script type="math/tex; mode=display">
+I{w_{t+1}} = I{w_{t+1}} + K_p * e_{t+1} K_i * e_{i,t+1}</script><p>这个公式对于比较熟悉pid算法的人来讲应该是轻而易举的事了吧，关于pid调节这里也不是一两句话可以说的清楚的，后面专门再写一篇关于pid调节的文章吧，后续一定会用到的，这里先偷下懒，通俗点将这里就是对误差进行一个比例扩大或缩小即误差的积分累计运算，这个量会用于调节陀螺仪的数据，以纠正陀螺仪的累计误差让陀螺仪的数据最终收敛于加速度计数据。照例贴下代码如下：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">// Compute and apply integral feedback <span class="keyword">if</span> enabled</span><br><span class="line"><span class="keyword">if</span>(twoKi &gt; 0.0f) &#123;</span><br><span class="line">  imu-&gt;integralFBx += twoKi * halfex * (1.0f / sampleFreq);	// integral error scaled by Ki</span><br><span class="line">        imu-&gt;integralFBy += twoKi * halfey * (1.0f / sampleFreq);</span><br><span class="line">  imu-&gt;integralFBz += twoKi * halfez * (1.0f / sampleFreq);</span><br><span class="line">  gx += imu-&gt;integralFBx;	// apply integral feedback</span><br><span class="line">  gy += imu-&gt;integralFBy;</span><br><span class="line">  gz += imu-&gt;integralFBz;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">else</span> &#123;</span><br><span class="line">  imu-&gt;integralFBx = 0.0f;	// prevent integral windup</span><br><span class="line">  imu-&gt;integralFBy = 0.0f;</span><br><span class="line">  imu-&gt;integralFBz = 0.0f;</span><br><span class="line">&#125;</span><br><span class="line">// Apply proportional feedback</span><br><span class="line">gx += twoKp * halfex;</span><br><span class="line">gy += twoKp * halfey;</span><br><span class="line">gz += twoKp * halfez;</span><br></pre></td></tr></table></figure><br><strong>步骤四：对陀螺仪数据进行积分</strong><br>前面我们对姿态角的变化量加速度进行pi调节器的调节后（使其收敛于加速度计计算的重力向量）就可以进行积分了，其积分就涉及到微分方程的求解和运算，下面会给出推导步骤如下：</p>
+<ul>
+<li>四元数微分方程<br>定义$n$为自然坐标系，$b$为机体坐标系，则$n$系到$b$系的旋转四元数为：<script type="math/tex; mode=display">
+Q = cos( \frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u^n</script>其中$u^n$为旋转轴，$\theta $为旋转角。<br>将四元数$Q = cos(\frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u$对时间进行微分则：<script type="math/tex; mode=display">
 Q  = cos(\frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u^n \\
-\frac{dQ}{dt} = -\frac{1}{2}sin(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt} + \frac{du^n}{dt}\cdot sin(\frac{1}{2}\theta ) + u^n \cdot \frac{1}{2}cos(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt}
-\]</span> 其中这是一个旋转四元数，其旋转轴是固定不变的，变化的是旋转角度，因此<span class="math inline">\(\frac{du^n}{dt} = 0\)</span> 故有： <span class="math display">\[
-\frac{dQ}{dt} = -\frac{1}{2}sin(\frac{1}{2}\theta ) \cdot \frac{d\theta }{dt} + u^n \cdot \frac{1}{2}cos(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt}
-\]</span> 两边都乘以<span class="math inline">\(\frac{1}{2} u^n \frac{d\theta }{dt}\)</span>得： <span class="math display">\[
+\frac{dQ}{dt} = -\frac{1}{2}sin(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt} + \frac{du^n}{dt}\cdot sin(\frac{1}{2}\theta ) + u^n \cdot \frac{1}{2}cos(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt}</script>其中这是一个旋转四元数，其旋转轴是固定不变的，变化的是旋转角度，因此$\frac{du^n}{dt} = 0$ 故有：<script type="math/tex; mode=display">
+\frac{dQ}{dt} = -\frac{1}{2}sin(\frac{1}{2}\theta ) \cdot \frac{d\theta }{dt} + u^n \cdot \frac{1}{2}cos(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt}</script>两边都乘以$\frac{1}{2} u^n \frac{d\theta }{dt}$得：<script type="math/tex; mode=display">
 \begin{aligned}
-\frac{1}{2} u^n \frac{d\theta }{dt} \otimes Q &amp;= \frac{1}{2} u^n \frac{d\theta }{dt} * (cos(\frac{\theta }{2}) + sin(\frac{\theta }{2}) u^n) \\
-&amp; = \frac{\dot{\theta }}{2}cos(\frac{\theta }{2})u^n + u^n \otimes  u^n \frac{\dot{\theta }}{2}sin(\frac{\theta }{2})r
-\end{aligned}
-\]</span> 其中$u^n u^n = -1 $ 得： <span class="math display">\[
+\frac{1}{2} u^n \frac{d\theta }{dt} \otimes Q &= \frac{1}{2} u^n \frac{d\theta }{dt} * (cos(\frac{\theta }{2}) + sin(\frac{\theta }{2}) u^n) \\
+& = \frac{\dot{\theta }}{2}cos(\frac{\theta }{2})u^n + u^n \otimes  u^n \frac{\dot{\theta }}{2}sin(\frac{\theta }{2})r
+\end{aligned}</script>其中$u^n \otimes  u^n = -1 $ 得：<script type="math/tex; mode=display">
 \begin{aligned}
 \frac{1}{2} u^n \frac{d\theta }{dt} \otimes Q =  \frac{\dot{\theta }}{2}cos(\frac{\theta }{2})u^n - \frac{\dot{\theta }}{2}sin(\frac{\theta }{2})r
-\end{aligned}
-\]</span> 这个结果与上面推导的<span class="math inline">\(\frac{dQ}{dt}\)</span>是不是一样的，于是<span class="math inline">\(\frac{dQ}{dt}\)</span>可以写为如下： <span class="math display">\[
-\frac{dQ}{dt} = \frac{1}{2} u^n \frac{d\theta }{dt} \otimes Q = \frac{1}{2} w_{nb}^{n}\otimes Q
-\]</span> 式中<span class="math inline">\(w_{nb}^{n}\)</span>是自然坐标系下角速度，而IMU获得的角速度是机体坐标系下的角速度，因此需要转换一下如下： <span class="math display">\[
-r^n = Q  \otimes r^b  \otimes Q^*
-\]</span> 带入上式得： <span class="math display">\[
-\frac{dQ}{dt} = \frac{1}{2}  Q  \otimes w_{nb}^{b}  \otimes Q^* \otimes Q
-\]</span> 对于单位四元数有：<span class="math inline">\(Q^* \otimes Q = 1\)</span>则： <span class="math display">\[
-\frac{dQ}{dt} =  \frac{1}{2}  Q  \otimes w_{nb}^b
-\]</span> 其中<span class="math inline">\(w_{nb}^{b}\)</span>为陀螺仪测量数据，如下： <span class="math display">\[
-w_{nb}^{b} = \begin{bmatrix}0\\ w_x\\ w_y\\ w_z\end{bmatrix}
-\]</span> 由四元数乘法公式可以得到： <span class="math display">\[
+\end{aligned}</script>这个结果与上面推导的$\frac{dQ}{dt}$是不是一样的，于是$\frac{dQ}{dt}$可以写为如下：<script type="math/tex; mode=display">
+\frac{dQ}{dt} = \frac{1}{2} u^n \frac{d\theta }{dt} \otimes Q = \frac{1}{2} w_{nb}^{n}\otimes Q</script>式中$w_{nb}^{n}$是自然坐标系下角速度，而IMU获得的角速度是机体坐标系下的角速度，因此需要转换一下如下：<script type="math/tex; mode=display">
+r^n = Q  \otimes r^b  \otimes Q^*</script>带入上式得：<script type="math/tex; mode=display">
+\frac{dQ}{dt} = \frac{1}{2}  Q  \otimes w_{nb}^{b}  \otimes Q^* \otimes Q</script>对于单位四元数有：$Q^* \otimes Q = 1$则：<script type="math/tex; mode=display">
+\frac{dQ}{dt} =  \frac{1}{2}  Q  \otimes w_{nb}^b</script>其中$w_{nb}^{b}$为陀螺仪测量数据，如下：<script type="math/tex; mode=display">
+w_{nb}^{b} = \begin{bmatrix}0\\ w_x\\ w_y\\ w_z\end{bmatrix}</script>由四元数乘法公式可以得到：<script type="math/tex; mode=display">
 \begin{bmatrix}
 \dot{q_0}\\ \dot{q_1}\\ \dot{q_2}\\ \dot{q_3}\end{bmatrix} = \frac{1}{2}\begin{bmatrix}
-q_0 &amp; -q_1 &amp; -q_2 &amp; -q_3 \\ 
-q_1 &amp; q_0 &amp; -q_3 &amp; q_2\\ 
-q_2 &amp; q_3 &amp; q_0 &amp; -q_1\\ 
-q_3 &amp; -q_2 &amp; q_1 &amp; q_0
-\end{bmatrix} * \begin{bmatrix}{0}\\ w_x\\ {w_y}\\ {w_z}\end{bmatrix}
-\]</span> 或者： <span class="math display">\[
+q_0 & -q_1 & -q_2 & -q_3 \\ 
+q_1 & q_0 & -q_3 & q_2\\ 
+q_2 & q_3 & q_0 & -q_1\\ 
+q_3 & -q_2 & q_1 & q_0
+\end{bmatrix} * \begin{bmatrix}{0}\\ w_x\\ {w_y}\\ {w_z}\end{bmatrix}</script>或者：<script type="math/tex; mode=display">
 \begin{bmatrix}\dot{q_0}\\ \dot{q_1}\\ \dot{q_2}\\ \dot{q_3}\end{bmatrix} =  \frac{1}{2}\begin{bmatrix}
-0 &amp; -w_x &amp; -w_y&amp; -w_z\\ 
-w_x&amp; 0 &amp; w_z&amp; -w_y\\ 
-w_y&amp; -w_z&amp; 0 &amp; w_x\\ 
-w_z&amp; w_y&amp; -w_x&amp; 0
-\end{bmatrix} * \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}
-\]</span> 剩下的就是求解四元数微分方程了，求解方法有欧拉方法、毕卡算法，龙格库塔法，其中常用的是龙格库塔法求解，采用一阶龙格库塔法解算过程如下： 一阶龙格库塔公式<span class="math inline">\(y_{n+1} = y_n + h \cdot y^{&#39;}\)</span>其中h为步长，$y^{'} <span class="math inline">\(为斜率。则微分方程\)</span> = f(t,Q) $可以写为: <span class="math display">\[
-Q(t+\triangle t) = Q(t) + \triangle t \frac{dQ}{dt}
-\]</span> 故可以得到: <span class="math display">\[
+0 & -w_x & -w_y& -w_z\\ 
+w_x& 0 & w_z& -w_y\\ 
+w_y& -w_z& 0 & w_x\\ 
+w_z& w_y& -w_x& 0
+\end{bmatrix} * \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}</script>剩下的就是求解四元数微分方程了，求解方法有欧拉方法、毕卡算法，龙格库塔法，其中常用的是龙格库塔法求解，采用一阶龙格库塔法解算过程如下：<br>一阶龙格库塔公式$y_{n+1} = y_n + h \cdot y^{‘}$其中h为步长，$y^{‘} $为斜率。则微分方程$\frac{d Q}{dt} = f(t,Q) $可以写为:<script type="math/tex; mode=display">
+Q(t+\triangle t) = Q(t) + \triangle t \frac{dQ}{dt}</script>故可以得到:<script type="math/tex; mode=display">
 \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t+\triangle t } = \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t } + \frac{\triangle t }{2} * \begin{bmatrix}
-0 &amp; -w_x &amp; -w_y&amp; -w_z\\ 
-w_x&amp; 0 &amp; w_z&amp; -w_y\\ 
-w_y&amp; -w_z&amp; 0 &amp; w_x\\ 
-w_z&amp; w_y&amp; -w_x&amp; 0
-\end{bmatrix} * \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t}
-\]</span> 写为代码如下： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// Integrate rate of change of quaternion</span><br><span class="line">gx *= (0.5f * (1.0f / sampleFreq));		// pre-multiply common factors</span><br><span class="line">gy *= (0.5f * (1.0f / sampleFreq));</span><br><span class="line">gz *= (0.5f * (1.0f / sampleFreq));</span><br><span class="line">qa = q0;</span><br><span class="line">qb = q1;</span><br><span class="line">qc = q2;</span><br><span class="line">q0 += (-qb * gx - qc * gy - q3 * gz);</span><br><span class="line">q1 += (qa * gx + qc * gz - q3 * gy);</span><br><span class="line">q2 += (qa * gy - qb * gz + q3 * gx);</span><br><span class="line">q3 += (qa * gz + qb * gy - qc * gx); </span><br></pre></td></tr></table></figure> 最后再对四元数进行归一化，如下： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// Normalise quaternion</span><br><span class="line">recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);</span><br><span class="line">q0 *= recipNorm;</span><br><span class="line">q1 *= recipNorm;</span><br><span class="line">q2 *= recipNorm;</span><br><span class="line">q3 *= recipNorm;</span><br></pre></td></tr></table></figure> 至此所有理论推导都完成了，剩下的就是不停的循环上面的步骤就得到了四元数，剩下的任务就是将四元数转为欧拉角了，这里转欧拉角里面也是有坑的，需要考虑欧拉角的奇异性，在转化的过程中要注意对欧拉角的奇异性进行考虑就可以了。</p>
-<h4 id="参考文献">参考文献</h4>
-<p><span class="exturl" data-url="aHR0cDovL2ZpbGUuZWxlY2ZhbnMuY29tL3dlYjEvTTAwLzdGLzg5L280WUJBRndub0oyQUdkanBBQ0FYaDdKRS1fSTAwNS5wZGY=">http://file.elecfans.com/web1/M00/7F/89/o4YBAFwnoJ2AGdjpACAXh7JE-_I005.pdf<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly9rcmFzamV0LmdpdGh1Yi5pby9xdWF0ZXJuaW9uL3F1YXRlcm5pb24ucGRm">https://krasjet.github.io/quaternion/quaternion.pdf<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDM2MjM4Nzk=">https://zhuanlan.zhihu.com/p/103623879<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC81NTY4MTgwNw==">https://zhuanlan.zhihu.com/p/55681807<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly94LWlvLmNvLnVrL29wZW4tc291cmNlLWltdS1hbmQtYWhycy1hbGdvcml0aG1zLw==">https://x-io.co.uk/open-source-imu-and-ahrs-algorithms/<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly9uaXRpbmpzYW5rZXQuZ2l0aHViLmlvL3R1dG9yaWFscy9hdHRpdHVkZWVzdC9tYWhvbnk=">https://nitinjsanket.github.io/tutorials/attitudeest/mahony<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cDovL3d3dy5iemFyZy5jb20vcC9ob3ctYS1rYWxtYW4tZmlsdGVyLXdvcmtzLWluLXBpY3R1cmVzLw==">http://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/<i class="fa fa-external-link-alt"></i></span><br />
-<span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0Nhcmx5bGVMaXUvS2FsbWFuRmlsdGVy">https://github.com/CarlyleLiu/KalmanFilter<i class="fa fa-external-link-alt"></i></span></p>
+0 & -w_x & -w_y& -w_z\\ 
+w_x& 0 & w_z& -w_y\\ 
+w_y& -w_z& 0 & w_x\\ 
+w_z& w_y& -w_x& 0
+\end{bmatrix} * \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t}</script>写为代码如下：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// Integrate rate of change of quaternion</span><br><span class="line">gx *= (0.5f * (1.0f / sampleFreq));		// pre-multiply common factors</span><br><span class="line">gy *= (0.5f * (1.0f / sampleFreq));</span><br><span class="line">gz *= (0.5f * (1.0f / sampleFreq));</span><br><span class="line">qa = q0;</span><br><span class="line">qb = q1;</span><br><span class="line">qc = q2;</span><br><span class="line">q0 += (-qb * gx - qc * gy - q3 * gz);</span><br><span class="line">q1 += (qa * gx + qc * gz - q3 * gy);</span><br><span class="line">q2 += (qa * gy - qb * gz + q3 * gx);</span><br><span class="line">q3 += (qa * gz + qb * gy - qc * gx); </span><br></pre></td></tr></table></figure>
+最后再对四元数进行归一化，如下：<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// Normalise quaternion</span><br><span class="line">recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);</span><br><span class="line">q0 *= recipNorm;</span><br><span class="line">q1 *= recipNorm;</span><br><span class="line">q2 *= recipNorm;</span><br><span class="line">q3 *= recipNorm;</span><br></pre></td></tr></table></figure>
+至此所有理论推导都完成了，剩下的就是不停的循环上面的步骤就得到了四元数，剩下的任务就是将四元数转为欧拉角了，这里转欧拉角里面也是有坑的，需要考虑欧拉角的奇异性，在转化的过程中要注意对欧拉角的奇异性进行考虑就可以了。</li>
+</ul>
+<h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><p><span class="exturl" data-url="aHR0cDovL2ZpbGUuZWxlY2ZhbnMuY29tL3dlYjEvTTAwLzdGLzg5L280WUJBRndub0oyQUdkanBBQ0FYaDdKRS1fSTAwNS5wZGY=">http://file.elecfans.com/web1/M00/7F/89/o4YBAFwnoJ2AGdjpACAXh7JE-_I005.pdf<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9rcmFzamV0LmdpdGh1Yi5pby9xdWF0ZXJuaW9uL3F1YXRlcm5pb24ucGRm">https://krasjet.github.io/quaternion/quaternion.pdf<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDM2MjM4Nzk=">https://zhuanlan.zhihu.com/p/103623879<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC81NTY4MTgwNw==">https://zhuanlan.zhihu.com/p/55681807<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly94LWlvLmNvLnVrL29wZW4tc291cmNlLWltdS1hbmQtYWhycy1hbGdvcml0aG1zLw==">https://x-io.co.uk/open-source-imu-and-ahrs-algorithms/<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9uaXRpbmpzYW5rZXQuZ2l0aHViLmlvL3R1dG9yaWFscy9hdHRpdHVkZWVzdC9tYWhvbnk=">https://nitinjsanket.github.io/tutorials/attitudeest/mahony<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cDovL3d3dy5iemFyZy5jb20vcC9ob3ctYS1rYWxtYW4tZmlsdGVyLXdvcmtzLWluLXBpY3R1cmVzLw==">http://www.bzarg.com/p/how-a-kalman-filter-works-in-pictures/<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL0Nhcmx5bGVMaXUvS2FsbWFuRmlsdGVy">https://github.com/CarlyleLiu/KalmanFilter<i class="fa fa-external-link-alt"></i></span>   </p>
 
     </div>
 
@@ -668,7 +622,7 @@ w_z&amp; w_y&amp; -w_x&amp; 0
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#imu%E9%80%9A%E8%BF%87%E5%8A%A0%E9%80%9F%E5%BA%A6%E8%AE%A1%E8%A7%A3%E7%AE%97%E5%A7%BF%E6%80%81%E8%A7%92"><span class="nav-text">1. imu通过加速度计解算姿态角</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%99%80%E8%9E%BA%E4%BB%AA%E7%A7%AF%E5%88%86%E5%BE%97%E5%88%B0%E8%A7%92%E5%BA%A6"><span class="nav-text">2. 陀螺仪积分得到角度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%9E%8D%E5%90%88"><span class="nav-text">3. 数据融合</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%80%E9%98%B6%E4%BA%92%E8%A1%A5%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.1 一阶互补滤波</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#kalman%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.2 kalman滤波</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mahony%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.3 mahony滤波</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-imu%E9%80%9A%E8%BF%87%E5%8A%A0%E9%80%9F%E5%BA%A6%E8%AE%A1%E8%A7%A3%E7%AE%97%E5%A7%BF%E6%80%81%E8%A7%92"><span class="nav-text">1. imu通过加速度计解算姿态角</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E9%99%80%E8%9E%BA%E4%BB%AA%E7%A7%AF%E5%88%86%E5%BE%97%E5%88%B0%E8%A7%92%E5%BA%A6"><span class="nav-text">2. 陀螺仪积分得到角度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-%E6%95%B0%E6%8D%AE%E8%9E%8D%E5%90%88"><span class="nav-text">3. 数据融合</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#3-1-%E4%B8%80%E9%98%B6%E4%BA%92%E8%A1%A5%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.1 一阶互补滤波</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-2-kalman%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.2 kalman滤波</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#3-3-mahony%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.3 mahony滤波</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -753,7 +707,7 @@ w_z&amp; w_y&amp; -w_x&amp; 0
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">912k</span>
+    <span title="站点总字数">883k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
