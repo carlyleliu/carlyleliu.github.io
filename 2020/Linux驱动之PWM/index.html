@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. PWM概述脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下：  Ton：信号高电平持续时间 Toff：信号底电平持续时间 Period： 完整pwm周期 Duty cycle：pwm信号周期内保持为ON的时间百分比">
+  <meta name="description" content="1. PWM概述 脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下：   Ton：信号高电平持续时间 Toff：信号底电平持续时间 Period： 完整pwm周期 Duty cycle：pwm信号周期内保持为ON的时间百分比">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之PWM">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BPWM/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. PWM概述脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下：  Ton：信号高电平持续时间 Toff：信号底电平持续时间 Period： 完整pwm周期 Duty cycle：pwm信号周期内保持为ON的时间百分比">
+<meta property="og:description" content="1. PWM概述 脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下：   Ton：信号高电平持续时间 Toff：信号底电平持续时间 Period： 完整pwm周期 Duty cycle：pwm信号周期内保持为ON的时间百分比">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/PWM/PWM.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/PWM/PWM_Struct.png">
@@ -286,7 +286,8 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="1-PWM概述"><a href="#1-PWM概述" class="headerlink" title="1. PWM概述"></a>1. PWM概述</h2><p>脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下：<br><img src="/picture/linux_driver/PWM/PWM.png" alt=""></p>
+        <h2 id="pwm概述">1. PWM概述</h2>
+<p>脉宽调制（PWM）操作像不断循环开和关的开关一样。这一硬件功能用于伺服电机、灯光控制、电压调节等。PWM详细如下： <img src="/picture/linux_driver/PWM/PWM.png" /></p>
 <ul>
 <li>Ton：信号高电平持续时间</li>
 <li>Toff：信号底电平持续时间</li>
@@ -294,29 +295,38 @@
 <li>Duty cycle：pwm信号周期内保持为ON的时间百分比</li>
 </ul>
 <span id="more"></span>
-<h2 id="2-Linux下PWM驱动"><a href="#2-Linux下PWM驱动" class="headerlink" title="2. Linux下PWM驱动"></a>2. Linux下PWM驱动</h2><h3 id="2-1-数据结构"><a href="#2-1-数据结构" class="headerlink" title="2.1 数据结构"></a>2.1 数据结构</h3><p>pwm的数据结构如下图所示：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTUyODYwZTNlNzQwNmUyMDI0MTMx">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/PWM/PWM_Struct.png" alt=""></p>
+<h2 id="linux下pwm驱动">2. Linux下PWM驱动</h2>
+<h3 id="数据结构">2.1 数据结构</h3>
+<p>pwm的数据结构如下图所示：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTUyODYwZTNlNzQwNmUyMDI0MTMx">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/PWM/PWM_Struct.png" /></p>
 <ul>
 <li>pwm_chip结构体用于抽象soc的pwm控制器。</li>
 <li>pwm_device用来抽象设备。</li>
 <li>pwm_state表示pwm设备的周期、占空比、极性等信息。</li>
 <li>pwm ops结构体提供一系列回调函数。这些回调函数的操作对象是具体的pwm device（由struct pwm_device类型的指针表示）。</li>
 </ul>
-<h3 id="2-2-实现"><a href="#2-2-实现" class="headerlink" title="2.2 实现"></a>2.2 实现</h3><p>pwm驱动分为consumer和provider。其中consumer提供接口如下：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">pwm_config</span><span class="params">(struct pwm_device *pwm, <span class="keyword">int</span> duty_ns, <span class="keyword">int</span> period_ns)</span> <span class="comment">//配置pwm device的频率、占空比。</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">pwm_enable</span><span class="params">(struct pwm_device *pwm)</span> <span class="comment">//使能/禁止pwm信号输出</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">pwm_disable</span><span class="params">(struct pwm_device *pwm)</span></span></span><br></pre></td></tr></table></figure><br>这些接口实现对pwm设备的配置，使能等（这些接口最终会调用到pwm_ops结构体提供的函数），操作struct pwm_device结构体，代表了具体的pwm设备。这些struct pwm_device结构体指针由以下函数获得：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct pwm_device *<span class="title">pwm_get</span><span class="params">(struct device *dev, <span class="keyword">const</span> <span class="keyword">char</span> *con_id)</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">pwm_put</span><span class="params">(struct pwm_device *pwm)</span></span></span><br><span class="line"><span class="function">struct pwm_device *<span class="title">devm_pwm_get</span><span class="params">(struct device *dev, <span class="keyword">const</span> <span class="keyword">char</span> *con_id)</span></span></span><br></pre></td></tr></table></figure><br>其中pwm_get接口流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTUyYTUwNzkxMjkwNmIyYTQ0YTI5">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/PWM/PWM_Get.png" alt=""></p>
+<h3 id="实现">2.2 实现</h3>
+<p>pwm驱动分为consumer和provider。其中consumer提供接口如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">pwm_config</span><span class="params">(struct pwm_device *pwm, <span class="keyword">int</span> duty_ns, <span class="keyword">int</span> period_ns)</span> <span class="comment">//配置pwm device的频率、占空比。</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">int</span> <span class="title">pwm_enable</span><span class="params">(struct pwm_device *pwm)</span> <span class="comment">//使能/禁止pwm信号输出</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">pwm_disable</span><span class="params">(struct pwm_device *pwm)</span></span></span><br></pre></td></tr></table></figure> 这些接口实现对pwm设备的配置，使能等（这些接口最终会调用到pwm_ops结构体提供的函数），操作struct pwm_device结构体，代表了具体的pwm设备。这些struct pwm_device结构体指针由以下函数获得： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct pwm_device *<span class="title">pwm_get</span><span class="params">(struct device *dev, <span class="keyword">const</span> <span class="keyword">char</span> *con_id)</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">pwm_put</span><span class="params">(struct pwm_device *pwm)</span></span></span><br><span class="line"><span class="function">struct pwm_device *<span class="title">devm_pwm_get</span><span class="params">(struct device *dev, <span class="keyword">const</span> <span class="keyword">char</span> *con_id)</span></span></span><br></pre></td></tr></table></figure> 其中pwm_get接口流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTUyYTUwNzkxMjkwNmIyYTQ0YTI5">原图<i class="fa fa-external-link-alt"></i></span><br />
+<img src="/picture/linux_driver/PWM/PWM_Get.png" /></p>
 <p>pwm_get/devm_pwm_get，从指定设备（dev）的DTS节点中，获得对应的PWM句柄。可以通过con_id指定一个名称，或者会获取和该设备绑定的第一个PWM句柄。</p>
-<p>provider提供以下接口：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pwmchip_add</span><span class="params">(struct pwm_chip *chip)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pwmchip_remove</span><span class="params">(struct pwm_chip *chip)</span></span></span><br></pre></td></tr></table></figure><br>将一个pwm_chip注册到内核添加到pwm_chips链表中去。</p>
-<h2 id="3-使用"><a href="#3-使用" class="headerlink" title="3. 使用"></a>3. 使用</h2><h3 id="3-1-consumer"><a href="#3-1-consumer" class="headerlink" title="3.1 consumer"></a>3.1 consumer</h3><ul>
+<p>provider提供以下接口： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pwmchip_add</span><span class="params">(struct pwm_chip *chip)</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">pwmchip_remove</span><span class="params">(struct pwm_chip *chip)</span></span></span><br></pre></td></tr></table></figure> 将一个pwm_chip注册到内核添加到pwm_chips链表中去。</p>
+<h2 id="使用">3. 使用</h2>
+<h3 id="consumer">3.1 consumer</h3>
+<ul>
 <li>在dts中添加“pwms ”以及“pwm-names ”相关配置信息。</li>
 <li>在driver的probe接口中，调用devm_pwm_get接口，获取pwm device句柄，并保存起来。</li>
 <li>devm_pwm_get成功后，该pwm信号已经具备初始的周期和极性。后续根据需要，可以调用pwm_config和pwm_set_polarity更改该pwm信号的周期、占空比和极性。</li>
 <li>driver可以根据需要，调用pwm_enable/pwm_disable接口，打开或者关闭pwm信号的输出。</li>
 </ul>
-<h3 id="3-2-provider"><a href="#3-2-provider" class="headerlink" title="3.2 provider"></a>3.2 provider</h3><ul>
+<h3 id="provider">3.2 provider</h3>
+<ul>
 <li>建代表该pwm driver的DTS节点，并提供platform device有关的资源信息。</li>
 <li>定义一个pwm chip变量。</li>
 <li>注册相应的platform driver，并在driver的.probe()接口中，初始化pwm chip变量。初始化完成调用pwmchip_add接口，将chip添加到kernel中。</li>
 <li>每当consumer有API调用时，kernel会以pwm device为参数，调用pwm driver提供的pwm ops，相应的回调函数可以从pwm device中取出pwm number，并操作对应的寄存器即可。</li>
 </ul>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvY29tbS9wd21fb3ZlcnZpZXcuaHRtbA==">http://www.wowotech.net/comm/pwm_overview.html<i class="fa fa-external-link-alt"></i></span><br>《Linux设备驱动开发》   </p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvY29tbS9wd21fb3ZlcnZpZXcuaHRtbA==">http://www.wowotech.net/comm/pwm_overview.html<i class="fa fa-external-link-alt"></i></span><br />
+《Linux设备驱动开发》</p>
 
     </div>
 
@@ -425,7 +435,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-PWM%E6%A6%82%E8%BF%B0"><span class="nav-text">1. PWM概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Linux%E4%B8%8BPWM%E9%A9%B1%E5%8A%A8"><span class="nav-text">2. Linux下PWM驱动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.1 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.2 实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E4%BD%BF%E7%94%A8"><span class="nav-text">3. 使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-consumer"><span class="nav-text">3.1 consumer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-provider"><span class="nav-text">3.2 provider</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#pwm%E6%A6%82%E8%BF%B0"><span class="nav-text">1. PWM概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E4%B8%8Bpwm%E9%A9%B1%E5%8A%A8"><span class="nav-text">2. Linux下PWM驱动</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.1 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.2 实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-text">3. 使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#consumer"><span class="nav-text">3.1 consumer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#provider"><span class="nav-text">3.2 provider</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -510,7 +520,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">883k</span>
+    <span title="站点总字数">905k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

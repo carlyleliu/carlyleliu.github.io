@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述该框架旨在提供标准内核接口来控制电压和电流Regulator。其目的是允许系统动态控制Regulator功率输出，以节省功率并延长电池寿命。 这适用于电压Regulator（电压输出可控）和电流Regulator（电流限制可控）。">
+  <meta name="description" content="1. 概述 该框架旨在提供标准内核接口来控制电压和电流Regulator。其目的是允许系统动态控制Regulator功率输出，以节省功率并延长电池寿命。 这适用于电压Regulator（电压输出可控）和电流Regulator（电流限制可控）。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之Regulator子系统">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRegulator%E5%AD%90%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1. 概述该框架旨在提供标准内核接口来控制电压和电流Regulator。其目的是允许系统动态控制Regulator功率输出，以节省功率并延长电池寿命。 这适用于电压Regulator（电压输出可控）和电流Regulator（电流限制可控）。">
+<meta property="og:description" content="1. 概述 该框架旨在提供标准内核接口来控制电压和电流Regulator。其目的是允许系统动态控制Regulator功率输出，以节省功率并延长电池寿命。 这适用于电压Regulator（电压输出可控）和电流Regulator（电流限制可控）。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/regulator/Regulator_Struct.png">
 <meta property="article:published_time" content="2020-10-12T05:07:44.000Z">
@@ -265,7 +265,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>7.8k</span>
+              <span>7.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -284,167 +284,190 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h2><p>该框架旨在提供标准内核接口来控制电压和电流Regulator。其目的是允许系统动态控制Regulator功率输出，以节省功率并延长电池寿命。 这适用于电压Regulator（电压输出可控）和电流Regulator（电流限制可控）。</p>
+        <h2 id="概述">1. 概述</h2>
+<p>该框架旨在提供标准内核接口来控制电压和电流Regulator。其目的是允许系统动态控制Regulator功率输出，以节省功率并延长电池寿命。 这适用于电压Regulator（电压输出可控）和电流Regulator（电流限制可控）。</p>
 <span id="more"></span>
-<h3 id="1-1-命名法"><a href="#1-1-命名法" class="headerlink" title="1.1 命名法"></a>1.1 命名法</h3><ul>
-<li><p>Regulator<br>  为其他设备供电的电子设备。大多数稳压器可以启用和禁用其输出，而有些可以控制其输出电压和/或电流。输入电压 -&gt; 稳压器 -&gt; 输出电压。</p>
-</li>
-<li><p>PMIC<br>  电源管理 IC。 包含多个稳压器且通常包含其他子系统的 IC。</p>
-</li>
-<li><p>Consumer<br>  由稳压器供电的电子设备。 消费者可分为两类：</p>
-<p>  静态：消费者不会改变其电源电压或电流限制。 它只需要启用或禁用其电源。 其电源电压由硬件、引导加载程序、固件或内核板初始化代码设置。<br>  动态：消费者需要改变其电源电压或电流限制以满足操作需求。</p>
-</li>
-<li><p>Power Domain<br>  由稳压器、开关或其他电源域的输出电源提供其输入电源的电子电路。电源Regulator可能位于一个或多个开关后面，例如：</p>
+<h3 id="命名法">1.1 命名法</h3>
+<ul>
+<li><p>Regulator<br />
+为其他设备供电的电子设备。大多数稳压器可以启用和禁用其输出，而有些可以控制其输出电压和/或电流。输入电压 -&gt; 稳压器 -&gt; 输出电压。</p></li>
+<li><p>PMIC<br />
+电源管理 IC。 包含多个稳压器且通常包含其他子系统的 IC。</p></li>
+<li><p>Consumer<br />
+由稳压器供电的电子设备。 消费者可分为两类：</p>
+<p>静态：消费者不会改变其电源电压或电流限制。 它只需要启用或禁用其电源。 其电源电压由硬件、引导加载程序、固件或内核板初始化代码设置。 动态：消费者需要改变其电源电压或电流限制以满足操作需求。</p></li>
+<li><p>Power Domain<br />
+由稳压器、开关或其他电源域的输出电源提供其输入电源的电子电路。电源Regulator可能位于一个或多个开关后面，例如：</p>
 <pre><code>  Regulator -+-&gt; Switch-1 -+-&gt; Switch-2 --&gt; [Consumer A]
              |             |
              |             +-&gt; [Consumer B], [Consumer C]
              |
-             +-&gt; [Consumer D], [Consumer E]
-</code></pre><p>  这是一个稳压器和三个电源域：</p>
+             +-&gt; [Consumer D], [Consumer E]</code></pre>
+<p>这是一个稳压器和三个电源域：</p>
 <pre><code>  Domain 1: Switch-1, Consumers D &amp; E.
   Domain 2: Switch-2, Consumers B &amp; C.
-  Domain 3: Consumer A.
-</code></pre><p>  这代表了一种”supplies”关系：</p>
-<pre><code>  Domain-1 --&gt; Domain-2 --&gt; Domain-3.
-</code></pre><p>  电源域可能是由其他Regulator供电的Regulator，例如：</p>
+  Domain 3: Consumer A.</code></pre>
+<p>这代表了一种"supplies"关系：</p>
+<pre><code>  Domain-1 --&gt; Domain-2 --&gt; Domain-3.</code></pre>
+<p>电源域可能是由其他Regulator供电的Regulator，例如：</p>
 <pre><code>  Regulator-1 -+-&gt; Regulator-2 -+-&gt; [Consumer A]
                |
-               +-&gt; [Consumer B]
-</code></pre><p>  这为我们提供了两个稳压器和两个电源域：</p>
+               +-&gt; [Consumer B]</code></pre>
+<p>这为我们提供了两个稳压器和两个电源域：</p>
 <pre><code>  Domain 1: Regulator-2, Consumer B.
-  Domain 2: Consumer A.
-</code></pre><p>  和”supplies”关系：</p>
-<pre><code>  Domain-1 --&gt; Domain-2
-</code></pre></li>
-<li><p>Constraints<br>  约束用于定义性能和硬件保护的功率级别。约束存在于三个层面：<br>  1、稳压器级别：这由稳压器硬件操作参数定义，并在稳压器数据表中指定，例如：</p>
+  Domain 2: Consumer A.</code></pre>
+<p>和"supplies"关系：</p>
+<pre><code>  Domain-1 --&gt; Domain-2</code></pre></li>
+<li><p>Constraints<br />
+约束用于定义性能和硬件保护的功率级别。约束存在于三个层面： 1、稳压器级别：这由稳压器硬件操作参数定义，并在稳压器数据表中指定，例如：</p>
 <pre><code>  电压输出范围为 800mV -&gt; 3500mV。
-  稳压器电流输出限制为 20mA @ 5V，但为 10mA @ 10V。
-</code></pre><p>  2、功率域级别：这是由内核级板初始化代码在软件中定义的。 它用于将功率域限制在特定的功率范围内，例如：</p>
+  稳压器电流输出限制为 20mA @ 5V，但为 10mA @ 10V。</code></pre>
+<p>2、功率域级别：这是由内核级板初始化代码在软件中定义的。 它用于将功率域限制在特定的功率范围内，例如：</p>
 <pre><code>  Domain-1 电压为 3300mV
   Domain-2 电压为 1400mV -&gt; 1600mV
-  Domain-3 电流限制为 0mA -&gt; 20mA。
-</code></pre><p>  3、Consumer级别：这是由Consumer驱动程序动态设置电压或电流限制级别定义的。例如 消费类背光驱动器要求将电流从 5mA 增加到 10mA，以增加 LCD 亮度。 这将通过以下级别：</p>
+  Domain-3 电流限制为 0mA -&gt; 20mA。</code></pre>
+<p>3、Consumer级别：这是由Consumer驱动程序动态设置电压或电流限制级别定义的。例如 消费类背光驱动器要求将电流从 5mA 增加到 10mA，以增加 LCD 亮度。 这将通过以下级别：</p>
 <pre><code>  Consumer：需要增加LCD亮度。 在亮度表中查找并请求下一个当前 mA 值（Consumer驱动程序可用于基于相同参考设备的多个不同个性）。
   电源域：是此域和系统状态（例如电池电源、USB 电源）的域操作限制内的新电流限制
-  稳压器域：是输入/输出电压的稳压器操作参数内的新电流限制。
-</code></pre><p>  如果Regulator请求通过所有约束测试，则应用新的Regulator值。</p>
-</li>
+  稳压器域：是输入/输出电压的稳压器操作参数内的新电流限制。</code></pre>
+<p>如果Regulator请求通过所有约束测试，则应用新的Regulator值。</p></li>
 </ul>
-<h3 id="1-2-Design"><a href="#1-2-Design" class="headerlink" title="1.2 Design"></a>1.2 Design</h3><p>Regulator框架专为基于 SoC 的设备而设计，但也可能与非 SoC 设备相关，并分为以下四个接口：</p>
+<h3 id="design">1.2 Design</h3>
+<p>Regulator框架专为基于 SoC 的设备而设计，但也可能与非 SoC 设备相关，并分为以下四个接口：</p>
 <ul>
-<li><p>Consumer driver interface<br>  这使用与内核时钟接口类似的 API，因为 Consumer驱动程序可以获取和放置一个Regulator（就像他们可以使用时钟 atm）并获取/设置电压、电流限制、启用和禁用。 这应该允许 Consumer完全控制他们的电源电压和电流限制。</p>
-</li>
-<li><p>Regulator driver interface<br>  这允许Regulator驱动程序注册其Regulator并向内核提供操作。 它还具有用于向客户端传播事件的通知程序调用链。</p>
-</li>
-<li><p>Machine interface<br>  此接口用于机器特定代码，并允许为每个稳压器创建电压/电流域（带约束）。 它可以提供稳压器约束，以防止由于有缺陷的客户端驱动程序引起的过压或过流而损坏设备。 它还允许创建regulators 树，其中一些regulators 由其他regulators 提供（类似于时钟树）。</p>
-</li>
-<li><p>Userspace ABI<br> 该框架还通过 sysfs 将许多有用的电压/电流/操作模式数据导出到用户空间。 这可用于帮助监控设备功耗和状态。</p>
-</li>
+<li><p>Consumer driver interface<br />
+这使用与内核时钟接口类似的 API，因为 Consumer驱动程序可以获取和放置一个Regulator（就像他们可以使用时钟 atm）并获取/设置电压、电流限制、启用和禁用。 这应该允许 Consumer完全控制他们的电源电压和电流限制。</p></li>
+<li><p>Regulator driver interface<br />
+这允许Regulator驱动程序注册其Regulator并向内核提供操作。 它还具有用于向客户端传播事件的通知程序调用链。</p></li>
+<li><p>Machine interface<br />
+此接口用于机器特定代码，并允许为每个稳压器创建电压/电流域（带约束）。 它可以提供稳压器约束，以防止由于有缺陷的客户端驱动程序引起的过压或过流而损坏设备。 它还允许创建regulators 树，其中一些regulators 由其他regulators 提供（类似于时钟树）。</p></li>
+<li><p>Userspace ABI<br />
+该框架还通过 sysfs 将许多有用的电压/电流/操作模式数据导出到用户空间。 这可用于帮助监控设备功耗和状态。</p></li>
 </ul>
-<h2 id="2-Regulator-Consumer-Driver-Interface"><a href="#2-Regulator-Consumer-Driver-Interface" class="headerlink" title="2. Regulator Consumer Driver Interface"></a>2. Regulator Consumer Driver Interface</h2><p>本节描述了消费类设备驱动程序的调节器接口。</p>
-<h3 id="2-1-Consumer-Regulator-Access-static-amp-dynamic-drivers"><a href="#2-1-Consumer-Regulator-Access-static-amp-dynamic-drivers" class="headerlink" title="2.1 Consumer Regulator Access (static &amp; dynamic drivers)"></a>2.1 Consumer Regulator Access (static &amp; dynamic drivers)</h3><p>消费者驱动程序可以通过调用regulator_get访问其供应调节器：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">regulator = regulator_get(dev, <span class="string">&quot;Vcc&quot;</span>);</span><br></pre></td></tr></table></figure><br>消费者传入其结构设备指针和电源 ID。 然后内核通过查询特定于机器的查找表找到正确的调节器。 如果查找成功，则此调用将返回一个指向提供此使用者的结构调节器的指针。</p>
-<p>要释放调节器，消费者驱动程序应调用:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">regulator_put(regulator);</span><br></pre></td></tr></table></figure><br>消费者可以由多个调节器供电，例如 具有模拟和数字电源的编解码器消费者:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">digital = regulator_get(dev, <span class="string">&quot;Vcc&quot;</span>);  <span class="comment">/* digital core */</span></span><br><span class="line">analog = regulator_get(dev, <span class="string">&quot;Avdd&quot;</span>);  <span class="comment">/* analog */</span></span><br></pre></td></tr></table></figure><br>调节器访问函数regulator_get() 和regulator_put() 通常会分别在您的设备驱动程序probe() 和remove() 中调用。</p>
-<h3 id="2-2-Regulator-Output-Enable-amp-Disable-static-amp-dynamic-drivers"><a href="#2-2-Regulator-Output-Enable-amp-Disable-static-amp-dynamic-drivers" class="headerlink" title="2.2 Regulator Output Enable &amp; Disable (static &amp; dynamic drivers)"></a>2.2 Regulator Output Enable &amp; Disable (static &amp; dynamic drivers)</h3><p>消费者可以通过调用regulator_enable启用调节器：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_enable</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
-<blockquote>
-<p>在调用regulator_enabled() 之前，电源可能已经启用。 如果消费者共享调节器或调节器先前已由引导加载程序或内核板初始化代码启用，则可能会发生这种情况。</p>
-</blockquote>
-<p>消费者可以通过调用regulator_is_enabled判断是否启用了调节器：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_is_enabled</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure><br>当调节器启用时，这将返回大于零。</p>
-<p>消费者可以在不再需要时通过调用禁用其供应：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_disable</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<h2 id="regulator-consumer-driver-interface">2. Regulator Consumer Driver Interface</h2>
+<p>本节描述了消费类设备驱动程序的调节器接口。</p>
+<h3 id="consumer-regulator-access-static-dynamic-drivers">2.1 Consumer Regulator Access (static &amp; dynamic drivers)</h3>
+<p>消费者驱动程序可以通过调用regulator_get访问其供应调节器： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">regulator = regulator_get(dev, <span class="string">&quot;Vcc&quot;</span>);</span><br></pre></td></tr></table></figure> 消费者传入其结构设备指针和电源 ID。 然后内核通过查询特定于机器的查找表找到正确的调节器。 如果查找成功，则此调用将返回一个指向提供此使用者的结构调节器的指针。</p>
+<p>要释放调节器，消费者驱动程序应调用: <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">regulator_put(regulator);</span><br></pre></td></tr></table></figure> 消费者可以由多个调节器供电，例如 具有模拟和数字电源的编解码器消费者: <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">digital = regulator_get(dev, <span class="string">&quot;Vcc&quot;</span>);  <span class="comment">/* digital core */</span></span><br><span class="line">analog = regulator_get(dev, <span class="string">&quot;Avdd&quot;</span>);  <span class="comment">/* analog */</span></span><br></pre></td></tr></table></figure> 调节器访问函数regulator_get() 和regulator_put() 通常会分别在您的设备驱动程序probe() 和remove() 中调用。</p>
+<h3 id="regulator-output-enable-disable-static-dynamic-drivers">2.2 Regulator Output Enable &amp; Disable (static &amp; dynamic drivers)</h3>
+<p>消费者可以通过调用regulator_enable启用调节器： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_enable</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure> &gt; 在调用regulator_enabled() 之前，电源可能已经启用。 如果消费者共享调节器或调节器先前已由引导加载程序或内核板初始化代码启用，则可能会发生这种情况。</p>
+<p>消费者可以通过调用regulator_is_enabled判断是否启用了调节器： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_is_enabled</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure> 当调节器启用时，这将返回大于零。</p>
+<p>消费者可以在不再需要时通过调用禁用其供应： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_disable</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
 <blockquote>
 <p>如果它与其他消费者共享，这可能不会禁用供应。 仅当启用的参考计数为零时，才会禁用调节器。</p>
 </blockquote>
-<p>最后，在紧急情况下可以强制禁用调节器:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_force_disable</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>最后，在紧急情况下可以强制禁用调节器: <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_force_disable</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
 <blockquote>
 <p>这将立即强制关闭稳压器输出。 所有消费者都将断电。</p>
 </blockquote>
-<h3 id="2-3-Regulator-Voltage-Control-amp-Status-dynamic-drivers"><a href="#2-3-Regulator-Voltage-Control-amp-Status-dynamic-drivers" class="headerlink" title="2.3 Regulator Voltage Control &amp; Status (dynamic drivers)"></a>2.3 Regulator Voltage Control &amp; Status (dynamic drivers)</h3><p>一些消费类驱动器需要能够动态改变其电源电压以匹配系统工作点。 例如 CPUfreq 驱动程序可以随频率调整电压以节省电量，SD 驱动程序可能需要选择正确的卡电压等。</p>
-<p>消费者可以通过调用来控制他们的电源电压:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_set_voltage</span><span class="params">(regulator, min_uV, max_uV)</span></span>;</span><br></pre></td></tr></table></figure><br>其中 min_uV 和 max_uV 是以微伏为单位的最小和最大可接受电压。</p>
+<h3 id="regulator-voltage-control-status-dynamic-drivers">2.3 Regulator Voltage Control &amp; Status (dynamic drivers)</h3>
+<p>一些消费类驱动器需要能够动态改变其电源电压以匹配系统工作点。 例如 CPUfreq 驱动程序可以随频率调整电压以节省电量，SD 驱动程序可能需要选择正确的卡电压等。</p>
+<p>消费者可以通过调用来控制他们的电源电压: <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_set_voltage</span><span class="params">(regulator, min_uV, max_uV)</span></span>;</span><br></pre></td></tr></table></figure> 其中 min_uV 和 max_uV 是以微伏为单位的最小和最大可接受电压。</p>
 <blockquote>
 <p>这可以在调节器启用或禁用时调用。如果在已启用regulator时调用，则电压会立即更改，否则电压配置会更改，并且在下一次启用稳压器时会物理设置电压。</p>
 </blockquote>
-<p>调节器配置的电压输出可以通过调用找到：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_get_voltage</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>调节器配置的电压输出可以通过调用找到： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_get_voltage</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
 <blockquote>
 <p>无论调节器是启用还是禁用，get_voltage() 都将返回配置的输出电压，并且不应用于确定调节器输出状态。 然而，这可以与 is_enabled() 结合使用来确定稳压器物理输出电压。</p>
 </blockquote>
-<h3 id="2-4-Regulator-Current-Limit-Control-amp-Status-dynamic-drivers"><a href="#2-4-Regulator-Current-Limit-Control-amp-Status-dynamic-drivers" class="headerlink" title="2.4 Regulator Current Limit Control &amp; Status (dynamic drivers)"></a>2.4 Regulator Current Limit Control &amp; Status (dynamic drivers)</h3><p>一些消费类驱动程序需要能够动态更改其电源电流限制以匹配系统工作点。 例如 LCD 背光驱动程序可以更改电流限制以改变背光亮度，USB 驱动程序可能希望在供电时将限制设置为 500mA。</p>
-<p>消费者可以通过调用来控制他们的电源电流限制:<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_set_current_limit</span><span class="params">(regulator, min_uA, max_uA)</span></span>;</span><br></pre></td></tr></table></figure><br>其中 min_uA 和 max_uA 是以微安为单位的最小和最大可接受电流限制。</p>
+<h3 id="regulator-current-limit-control-status-dynamic-drivers">2.4 Regulator Current Limit Control &amp; Status (dynamic drivers)</h3>
+<p>一些消费类驱动程序需要能够动态更改其电源电流限制以匹配系统工作点。 例如 LCD 背光驱动程序可以更改电流限制以改变背光亮度，USB 驱动程序可能希望在供电时将限制设置为 500mA。</p>
+<p>消费者可以通过调用来控制他们的电源电流限制: <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_set_current_limit</span><span class="params">(regulator, min_uA, max_uA)</span></span>;</span><br></pre></td></tr></table></figure> 其中 min_uA 和 max_uA 是以微安为单位的最小和最大可接受电流限制。</p>
 <blockquote>
 <p>这可以在调节器启用或禁用时调用。如果在已启用电流限制时调用，则电流限制会立即更改，否则电流限制配置会更改，并且在下一次启用调节器时会设置电流限制。</p>
 </blockquote>
-<p>通过调用可以找到调节器电流限制：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_get_current_limit</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>通过调用可以找到调节器电流限制： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_get_current_limit</span><span class="params">(regulator)</span></span>;</span><br></pre></td></tr></table></figure></p>
 <blockquote>
 <p>无论调节器是启用还是禁用，get_current_limit() 都将返回电流限制，并且不应用于确定调节器电流负载。</p>
 </blockquote>
-<h3 id="2-5-Regulator-Operating-Mode-Control-amp-Status-dynamic-drivers"><a href="#2-5-Regulator-Operating-Mode-Control-amp-Status-dynamic-drivers" class="headerlink" title="2.5 Regulator Operating Mode Control &amp; Status (dynamic drivers)"></a>2.5 Regulator Operating Mode Control &amp; Status (dynamic drivers)</h3><p>一些消费者可以通过改变其电源调节器的工作模式来进一步节省系统功率，以便在消费者工作状态发生变化时提高效率。 例如 消费者驱动程序空闲，随后消耗较少的电流.调节器操作模式可以间接或直接改变。</p>
+<h3 id="regulator-operating-mode-control-status-dynamic-drivers">2.5 Regulator Operating Mode Control &amp; Status (dynamic drivers)</h3>
+<p>一些消费者可以通过改变其电源调节器的工作模式来进一步节省系统功率，以便在消费者工作状态发生变化时提高效率。 例如 消费者驱动程序空闲，随后消耗较少的电流.调节器操作模式可以间接或直接改变。</p>
 <ul>
-<li><p>间接操作模式控制<br>  消费者驱动程序可以通过以下调用请求更改其电源调节器操作模式：</p>
-<pre><code>  int regulator_set_load(struct regulator *regulator, int load_uA);
-</code></pre><p>  这将导致core重新计算调节器上的总负载（基于其所有消费者）并更改操作模式（如果必要和允许）以最佳匹配当前操作负载。load_uA 值可以从消费者的数据表中确定。 例如 大多数数据表都有表格显示在某些情况下消耗的最大电流。大多数消费者将使用间接操作模式控制，因为他们不了解调节器或调节器是否与其他消费者共享。</p>
-</li>
-<li><p>直接操作模式控制<br>  定制或紧密耦合的驱动器可能希望根据其工作点直接控制调节器的工作模式, 这可以通过调用：</p>
+<li><p>间接操作模式控制<br />
+消费者驱动程序可以通过以下调用请求更改其电源调节器操作模式：</p>
+<pre><code>  int regulator_set_load(struct regulator *regulator, int load_uA);</code></pre>
+<p>这将导致core重新计算调节器上的总负载（基于其所有消费者）并更改操作模式（如果必要和允许）以最佳匹配当前操作负载。load_uA 值可以从消费者的数据表中确定。 例如 大多数数据表都有表格显示在某些情况下消耗的最大电流。大多数消费者将使用间接操作模式控制，因为他们不了解调节器或调节器是否与其他消费者共享。</p></li>
+<li><p>直接操作模式控制<br />
+定制或紧密耦合的驱动器可能希望根据其工作点直接控制调节器的工作模式, 这可以通过调用：</p>
 <pre><code>  int regulator_set_mode(struct regulator *regulator, unsigned int mode);
-  unsigned int regulator_get_mode(struct regulator *regulator);
-</code></pre><p>  直接模式将仅由<em>了解</em>有关调节器且不与其他消费者共享调节器的消费者使用。</p>
-</li>
+  unsigned int regulator_get_mode(struct regulator *regulator);</code></pre>
+<p>直接模式将仅由<em>了解</em>有关调节器且不与其他消费者共享调节器的消费者使用。</p></li>
 </ul>
-<h3 id="2-6-Regulator-Events"><a href="#2-6-Regulator-Events" class="headerlink" title="2.6 Regulator Events"></a>2.6 Regulator Events</h3><p>监管机构可以将外部事件通知消费者, 在监管机构压力或故障条件下，消费者可能会收到事件。</p>
-<p>消费者调用以下接口注册感兴趣的事件：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_register_notifier</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">				struct notifier_block *nb)</span></span>;</span><br></pre></td></tr></table></figure><br>消费者调用以下接口反注册感兴趣的事件：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_unregister_notifier</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">				struct notifier_block *nb)</span></span>;</span><br></pre></td></tr></table></figure><br>监管机构使用内核通知程序框架向感兴趣的消费者发送事件。</p>
-<h3 id="2-7-Regulator-Direct-Register-Access"><a href="#2-7-Regulator-Direct-Register-Access" class="headerlink" title="2.7 Regulator Direct Register Access"></a>2.7 Regulator Direct Register Access</h3><p>某些类型的电源管理硬件或固件被设计为需要对调节器进行低级硬件访问，而无需内核参与,此类设备的示例有：</p>
+<h3 id="regulator-events">2.6 Regulator Events</h3>
+<p>监管机构可以将外部事件通知消费者, 在监管机构压力或故障条件下，消费者可能会收到事件。</p>
+<p>消费者调用以下接口注册感兴趣的事件： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_register_notifier</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">				struct notifier_block *nb)</span></span>;</span><br></pre></td></tr></table></figure> 消费者调用以下接口反注册感兴趣的事件： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_unregister_notifier</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">				struct notifier_block *nb)</span></span>;</span><br></pre></td></tr></table></figure> 监管机构使用内核通知程序框架向感兴趣的消费者发送事件。</p>
+<h3 id="regulator-direct-register-access">2.7 Regulator Direct Register Access</h3>
+<p>某些类型的电源管理硬件或固件被设计为需要对调节器进行低级硬件访问，而无需内核参与,此类设备的示例有：</p>
 <ul>
 <li>带有压控振荡器和控制逻辑的时钟源，可通过 I2C 改变电源电压，以实现所需的输出时钟速率。</li>
 <li>热管理固件，可发出任意 I2C 事务以在过热条件下执行系统断电。</li>
 </ul>
 <p>要设置这样的设备/固件，需要为其配置各种参数，例如调节器的 I2C 地址、各种调节器寄存器的地址等。 监管者框架提供了以下查询这些详细信息的帮助程序。</p>
-<p>特定于总线的详细信息，例如 I2C 地址或传输速率，由 regmap 框架处理。 要获取监管机构的 regmap（如果支持），请使用：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct regmap *<span class="title">regulator_get_regmap</span><span class="params">(struct regulator *regulator)</span></span>;</span><br></pre></td></tr></table></figure><br>要获取稳压器电压选择器寄存器的硬件寄存器偏移量和位掩码，请使用：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_get_hardware_vsel_register</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">unsigned</span> *vsel_reg,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">unsigned</span> *vsel_mask)</span></span>;</span><br></pre></td></tr></table></figure><br>要将调节器框架电压选择器代码（由调节器列表电压使用）转换为可直接写入电压选择器寄存器的特定于硬件的电压选择器，请使用：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_list_hardware_vsel</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">				<span class="keyword">unsigned</span> selector)</span></span>;</span><br></pre></td></tr></table></figure></p>
-<h2 id="3-Regulator-Driver-Interface"><a href="#3-Regulator-Driver-Interface" class="headerlink" title="3. Regulator Driver Interface"></a>3. Regulator Driver Interface</h2><p>调节器驱动程序接口相对简单，旨在允许调节器驱动程序向核心框架注册其服务。</p>
-<h3 id="3-1-Registration"><a href="#3-1-Registration" class="headerlink" title="3.1 Registration"></a>3.1 Registration</h3><p>驱动程序可以通过调用以下接口注册Regulator：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct regulator_dev *<span class="title">regulator_register</span><span class="params">(struct regulator_desc *regulator_desc,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">const</span> struct regulator_config *config)</span></span>;</span><br></pre></td></tr></table></figure><br>这会将regulator的能力和操作注册到regulator核心。</p>
-<p>注销接口如下：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">regulator_unregister</span><span class="params">(struct regulator_dev *rdev)</span></span>;</span><br></pre></td></tr></table></figure></p>
-<h3 id="3-2-Regulator-Events"><a href="#3-2-Regulator-Events" class="headerlink" title="3.2 Regulator Events"></a>3.2 Regulator Events</h3><p>调节器可以通过调用以下方式向消费者驱动程序发送事件（例如过热、欠压等）：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_notifier_call_chain</span><span class="params">(struct regulator_dev *rdev,</span></span></span><br><span class="line"><span class="params"><span class="function">				<span class="keyword">unsigned</span> <span class="keyword">long</span> event, <span class="keyword">void</span> *data)</span></span>;</span><br></pre></td></tr></table></figure></p>
-<h2 id="4-Regulator-API-design-notes"><a href="#4-Regulator-API-design-notes" class="headerlink" title="4. Regulator API design notes"></a>4. Regulator API design notes</h2><p>本节对影响调节器 API 设计的一些设计注意事项进行了简要的、部分结构化的概述。</p>
-<h3 id="4-1-Safety"><a href="#4-1-Safety" class="headerlink" title="4.1 Safety"></a>4.1 Safety</h3><ul>
+<p>特定于总线的详细信息，例如 I2C 地址或传输速率，由 regmap 框架处理。 要获取监管机构的 regmap（如果支持），请使用： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct regmap *<span class="title">regulator_get_regmap</span><span class="params">(struct regulator *regulator)</span></span>;</span><br></pre></td></tr></table></figure> 要获取稳压器电压选择器寄存器的硬件寄存器偏移量和位掩码，请使用： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_get_hardware_vsel_register</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">unsigned</span> *vsel_reg,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">unsigned</span> *vsel_mask)</span></span>;</span><br></pre></td></tr></table></figure> 要将调节器框架电压选择器代码（由调节器列表电压使用）转换为可直接写入电压选择器寄存器的特定于硬件的电压选择器，请使用： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_list_hardware_vsel</span><span class="params">(struct regulator *regulator,</span></span></span><br><span class="line"><span class="params"><span class="function">				<span class="keyword">unsigned</span> selector)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<h2 id="regulator-driver-interface">3. Regulator Driver Interface</h2>
+<p>调节器驱动程序接口相对简单，旨在允许调节器驱动程序向核心框架注册其服务。</p>
+<h3 id="registration">3.1 Registration</h3>
+<p>驱动程序可以通过调用以下接口注册Regulator： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">struct regulator_dev *<span class="title">regulator_register</span><span class="params">(struct regulator_desc *regulator_desc,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">const</span> struct regulator_config *config)</span></span>;</span><br></pre></td></tr></table></figure> 这会将regulator的能力和操作注册到regulator核心。</p>
+<p>注销接口如下： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">regulator_unregister</span><span class="params">(struct regulator_dev *rdev)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<h3 id="regulator-events-1">3.2 Regulator Events</h3>
+<p>调节器可以通过调用以下方式向消费者驱动程序发送事件（例如过热、欠压等）： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">regulator_notifier_call_chain</span><span class="params">(struct regulator_dev *rdev,</span></span></span><br><span class="line"><span class="params"><span class="function">				<span class="keyword">unsigned</span> <span class="keyword">long</span> event, <span class="keyword">void</span> *data)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<h2 id="regulator-api-design-notes">4. Regulator API design notes</h2>
+<p>本节对影响调节器 API 设计的一些设计注意事项进行了简要的、部分结构化的概述。</p>
+<h3 id="safety">4.1 Safety</h3>
+<ul>
 <li>调节器配置中的错误会对系统产生非常严重的后果，可能包括持久的硬件损坏。</li>
 <li>无法自动确定系统的电源配置 - 同一芯片的软件等效变体可能具有不同的电源要求，并且并非所有具有电源要求的组件对软件都是可见的。</li>
 </ul>
 <blockquote>
 <p>API 不应更改硬件状态，除非它知道在此特定系统上执行这些更改是安全的。</p>
 </blockquote>
-<h3 id="4-2-Consumer-use-cases"><a href="#4-2-Consumer-use-cases" class="headerlink" title="4.2 Consumer use cases"></a>4.2 Consumer use cases</h3><ul>
+<h3 id="consumer-use-cases">4.2 Consumer use cases</h3>
+<ul>
 <li>系统中的绝大多数设备除了能够打开或关闭电源外，不需要对其电源进行任何运行时配置。</li>
 <li>系统中的许多电源将在许多不同的消费者之间共享。</li>
 </ul>
 <blockquote>
 <p>消费者 API 的结构应使这些用例非常易于处理，并且消费者无需任何额外工作即可使用共享的supplies。</p>
 </blockquote>
-<h2 id="5-Regulator-Machine-Driver-Interface"><a href="#5-Regulator-Machine-Driver-Interface" class="headerlink" title="5. Regulator Machine Driver Interface"></a>5. Regulator Machine Driver Interface</h2><p>调节器机器驱动程序接口用于板/机器特定的初始化代码以配置调节器子系统。</p>
+<h2 id="regulator-machine-driver-interface">5. Regulator Machine Driver Interface</h2>
+<p>调节器机器驱动程序接口用于板/机器特定的初始化代码以配置调节器子系统。</p>
 <pre><code>Regulator-1 -+-&gt; Regulator-2 --&gt; [Consumer A @ 1.8 - 2.0V]
              |
-             +-&gt; [Consumer B @ 3.3V]
-</code></pre><p>消费者 A 和 B 的驱动器必须映射到正确的调节器，以控制它们的电源。 这种映射可以在机器初始化代码中通过为每个调节器创建一个结构体regulator_consumer_supply来实现：</p>
+             +-&gt; [Consumer B @ 3.3V]</code></pre>
+<p>消费者 A 和 B 的驱动器必须映射到正确的调节器，以控制它们的电源。 这种映射可以在机器初始化代码中通过为每个调节器创建一个结构体regulator_consumer_supply来实现：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> &#123;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">char</span> *dev_name;	<span class="comment">/* consumer dev_name() */</span></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *supply;	<span class="comment">/* consumer supply - e.g. &quot;vcc&quot; */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
-<p>对于上面的电源：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> <span class="title">regulator1_consumers</span>[] =</span> &#123;</span><br><span class="line">  REGULATOR_SUPPLY(<span class="string">&quot;Vcc&quot;</span>, <span class="string">&quot;consumer B&quot;</span>),</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> <span class="title">regulator2_consumers</span>[] =</span> &#123;</span><br><span class="line">  REGULATOR_SUPPLY(<span class="string">&quot;Vcc&quot;</span>, <span class="string">&quot;consumer A&quot;</span>),</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><br>这将 Regulator-1 映射到消费者 B 的“Vcc”电源，并将 Regulator-2 映射到消费者 A 的“Vcc”电源。</p>
-<p>现在可以通过为每个稳压器电源域定义一个结构体regulator_init_data 来注册。这种结构还将消费者映射到他们的supply regulators：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_init_data</span> <span class="title">regulator1_data</span> =</span> &#123;</span><br><span class="line">  .constraints = &#123;</span><br><span class="line">    .name = <span class="string">&quot;Regulator-1&quot;</span>,</span><br><span class="line">    .min_uV = <span class="number">3300000</span>,</span><br><span class="line">    .max_uV = <span class="number">3300000</span>,</span><br><span class="line">    .valid_modes_mask = REGULATOR_MODE_NORMAL,</span><br><span class="line">  &#125;,</span><br><span class="line">  .num_consumer_supplies = ARRAY_SIZE(regulator1_consumers),</span><br><span class="line">  .consumer_supplies = regulator1_consumers,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><br>名称字段应设置为对电路板有用的描述，以便为其他调节器配置电源以及用于日志记录和其他诊断输出。 通常，原理图中用于supply rail的名称是一个不错的选择。 如果未提供名称，则子系统将自动选择一个。</p>
-<p>Regulator-1 为 Regulator-2 供电。 这种关系必须在核心中注册，以便在消费者 A 启用其供应 (Regulator-2) 时也启用 Regulator-1。 电源调节器由下面的 supply_regulator 字段设置：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_init_data</span> <span class="title">regulator2_data</span> =</span> &#123;</span><br><span class="line">  .supply_regulator = <span class="string">&quot;Regulator-1&quot;</span>,</span><br><span class="line">  .constraints = &#123;</span><br><span class="line">    .min_uV = <span class="number">1800000</span>,</span><br><span class="line">    .max_uV = <span class="number">2000000</span>,</span><br><span class="line">    .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,</span><br><span class="line">    .valid_modes_mask = REGULATOR_MODE_NORMAL,</span><br><span class="line">  &#125;,</span><br><span class="line">  .num_consumer_supplies = ARRAY_SIZE(regulator2_consumers),</span><br><span class="line">  .consumer_supplies = regulator2_consumers,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><br>最后，必须以通常的方式注册调节器设备：<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_device</span> <span class="title">regulator_devices</span>[] =</span> &#123;</span><br><span class="line">  &#123;</span><br><span class="line">    .name = <span class="string">&quot;regulator&quot;</span>,</span><br><span class="line">    .id = DCDC_1,</span><br><span class="line">    .dev = &#123;</span><br><span class="line">      .platform_data = &amp;regulator1_data,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">    .name = <span class="string">&quot;regulator&quot;</span>,</span><br><span class="line">    .id = DCDC_2,</span><br><span class="line">    .dev = &#123;</span><br><span class="line">      .platform_data = &amp;regulator2_data,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">/* register regulator 1 device */</span></span><br><span class="line">platform_device_register(&amp;regulator_devices[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* register regulator 2 device */</span></span><br><span class="line">platform_device_register(&amp;regulator_devices[<span class="number">1</span>]);</span><br></pre></td></tr></table></figure></p>
-<h2 id="6-数据结构"><a href="#6-数据结构" class="headerlink" title="6. 数据结构"></a>6. 数据结构</h2><p>上文中已经将Regulator、PMIC、Consumer、Power Domain等概念进行了介绍，同时也将相关接口进行了介绍。在这一章中将介绍regulator的内部实现。整体的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2ODNmYzg1NjUzYmIxMzM2ZGY2YmYx">原图<i class="fa fa-external-link-alt"></i></span><br><img src="/picture/linux_driver/regulator/Regulator_Struct.png" alt=""></p>
+<p>对于上面的电源： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> <span class="title">regulator1_consumers</span>[] =</span> &#123;</span><br><span class="line">  REGULATOR_SUPPLY(<span class="string">&quot;Vcc&quot;</span>, <span class="string">&quot;consumer B&quot;</span>),</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> <span class="title">regulator2_consumers</span>[] =</span> &#123;</span><br><span class="line">  REGULATOR_SUPPLY(<span class="string">&quot;Vcc&quot;</span>, <span class="string">&quot;consumer A&quot;</span>),</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> 这将 Regulator-1 映射到消费者 B 的“Vcc”电源，并将 Regulator-2 映射到消费者 A 的“Vcc”电源。</p>
+<p>现在可以通过为每个稳压器电源域定义一个结构体regulator_init_data 来注册。这种结构还将消费者映射到他们的supply regulators： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_init_data</span> <span class="title">regulator1_data</span> =</span> &#123;</span><br><span class="line">  .constraints = &#123;</span><br><span class="line">    .name = <span class="string">&quot;Regulator-1&quot;</span>,</span><br><span class="line">    .min_uV = <span class="number">3300000</span>,</span><br><span class="line">    .max_uV = <span class="number">3300000</span>,</span><br><span class="line">    .valid_modes_mask = REGULATOR_MODE_NORMAL,</span><br><span class="line">  &#125;,</span><br><span class="line">  .num_consumer_supplies = ARRAY_SIZE(regulator1_consumers),</span><br><span class="line">  .consumer_supplies = regulator1_consumers,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> 名称字段应设置为对电路板有用的描述，以便为其他调节器配置电源以及用于日志记录和其他诊断输出。 通常，原理图中用于supply rail的名称是一个不错的选择。 如果未提供名称，则子系统将自动选择一个。</p>
+<p>Regulator-1 为 Regulator-2 供电。 这种关系必须在核心中注册，以便在消费者 A 启用其供应 (Regulator-2) 时也启用 Regulator-1。 电源调节器由下面的 supply_regulator 字段设置： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_init_data</span> <span class="title">regulator2_data</span> =</span> &#123;</span><br><span class="line">  .supply_regulator = <span class="string">&quot;Regulator-1&quot;</span>,</span><br><span class="line">  .constraints = &#123;</span><br><span class="line">    .min_uV = <span class="number">1800000</span>,</span><br><span class="line">    .max_uV = <span class="number">2000000</span>,</span><br><span class="line">    .valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,</span><br><span class="line">    .valid_modes_mask = REGULATOR_MODE_NORMAL,</span><br><span class="line">  &#125;,</span><br><span class="line">  .num_consumer_supplies = ARRAY_SIZE(regulator2_consumers),</span><br><span class="line">  .consumer_supplies = regulator2_consumers,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure> 最后，必须以通常的方式注册调节器设备： <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_device</span> <span class="title">regulator_devices</span>[] =</span> &#123;</span><br><span class="line">  &#123;</span><br><span class="line">    .name = <span class="string">&quot;regulator&quot;</span>,</span><br><span class="line">    .id = DCDC_1,</span><br><span class="line">    .dev = &#123;</span><br><span class="line">      .platform_data = &amp;regulator1_data,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">  &#123;</span><br><span class="line">    .name = <span class="string">&quot;regulator&quot;</span>,</span><br><span class="line">    .id = DCDC_2,</span><br><span class="line">    .dev = &#123;</span><br><span class="line">      .platform_data = &amp;regulator2_data,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"><span class="comment">/* register regulator 1 device */</span></span><br><span class="line">platform_device_register(&amp;regulator_devices[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* register regulator 2 device */</span></span><br><span class="line">platform_device_register(&amp;regulator_devices[<span class="number">1</span>]);</span><br></pre></td></tr></table></figure></p>
+<h2 id="数据结构">6. 数据结构</h2>
+<p>上文中已经将Regulator、PMIC、Consumer、Power Domain等概念进行了介绍，同时也将相关接口进行了介绍。在这一章中将介绍regulator的内部实现。整体的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2ODNmYzg1NjUzYmIxMzM2ZGY2YmYx">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/regulator/Regulator_Struct.png" /></p>
 <ul>
-<li><p>regulator_map<br>  组织一个系统内所有的pmic设备。将他们挂载到一个全局链表中。</p>
-</li>
-<li><p>regulator_dev<br>  struct regulator_dev是regulator设备的抽象，当driver以struct regulator_desc、struct regulator_config两个类型的参数，调用regulator_register将regulator注册到kernel之后，regulator就会分配一个struct regulator_dev变量，后续所有的regulator操作，都将以该变量为对象。</p>
-</li>
-<li><p>regulator_desc<br>  regulator_desc用于描述一个调节器（dcdc、ldo等）。<br>  在注册regulator的时候，需要使用struct regulator_desc结构提供该regulator的静态描述。所谓的静态，是指这些描述不会在运行时改变，代表了设备的一种属性。regulator_desc描述该regulator device的类型（电压、电流、电流和电压）、中断id、支持的输出电压个数、操作类型（可改变电压等）、输出模式（fast、normal、idle、standby等）；若该regulator device在注册的时候支持通过regmap进行配置（如该regulator device可通过spi、iic接口访问，则可以通过spi/iic对应的regmap接口访问该regulator device的寄存器，进行配置操作），则需要定义enable_reg、enable_mask、apply_reg等参数的信息，以便通过regmap进行配置。</p>
-</li>
-<li><p>regulator_ops<br>  这个数据结构是描述调节器的操作函数集的数据结构。对于pmic里的每一个调节器都需要有自己的操作方法，该数据结构提供对调节器的操作函数集。</p>
-</li>
-<li><p>regulator_config<br>  regulator_config保存了regulator的动态信息，所谓的动态信息，是指那些会在driver运行过程中改变、或者driver运行后才会确定的信息。</p>
-</li>
-<li><p>regulation_constraints<br>  该数据结构描述regulator device的约束信息，包括输出电压范围、输出电流范围、regulator device支持的模式（fast、normal、idle、standby等）、regulator device支持的操作模式，包括change volt、change current、change bypass mode等、regulator device支持的suspend 状态下的输出控制（如在suspend to disk状态下的输出控制等）。</p>
-</li>
-<li><p>regulator<br>  该数据结构表示一个regulator device的使用者，包括是否一直使能、是否使用bypass模式（bypass模式指regulator device输入电压直接作为输出，不做限制）、电压范围、电流值、设备属性信息、该regulator对应的supply名称等。</p>
-</li>
+<li><p>regulator_map<br />
+组织一个系统内所有的pmic设备。将他们挂载到一个全局链表中。</p></li>
+<li><p>regulator_dev<br />
+struct regulator_dev是regulator设备的抽象，当driver以struct regulator_desc、struct regulator_config两个类型的参数，调用regulator_register将regulator注册到kernel之后，regulator就会分配一个struct regulator_dev变量，后续所有的regulator操作，都将以该变量为对象。</p></li>
+<li><p>regulator_desc<br />
+regulator_desc用于描述一个调节器（dcdc、ldo等）。 在注册regulator的时候，需要使用struct regulator_desc结构提供该regulator的静态描述。所谓的静态，是指这些描述不会在运行时改变，代表了设备的一种属性。regulator_desc描述该regulator device的类型（电压、电流、电流和电压）、中断id、支持的输出电压个数、操作类型（可改变电压等）、输出模式（fast、normal、idle、standby等）；若该regulator device在注册的时候支持通过regmap进行配置（如该regulator device可通过spi、iic接口访问，则可以通过spi/iic对应的regmap接口访问该regulator device的寄存器，进行配置操作），则需要定义enable_reg、enable_mask、apply_reg等参数的信息，以便通过regmap进行配置。</p></li>
+<li><p>regulator_ops<br />
+这个数据结构是描述调节器的操作函数集的数据结构。对于pmic里的每一个调节器都需要有自己的操作方法，该数据结构提供对调节器的操作函数集。</p></li>
+<li><p>regulator_config<br />
+regulator_config保存了regulator的动态信息，所谓的动态信息，是指那些会在driver运行过程中改变、或者driver运行后才会确定的信息。</p></li>
+<li><p>regulation_constraints<br />
+该数据结构描述regulator device的约束信息，包括输出电压范围、输出电流范围、regulator device支持的模式（fast、normal、idle、standby等）、regulator device支持的操作模式，包括change volt、change current、change bypass mode等、regulator device支持的suspend 状态下的输出控制（如在suspend to disk状态下的输出控制等）。</p></li>
+<li><p>regulator<br />
+该数据结构表示一个regulator device的使用者，包括是否一直使能、是否使用bypass模式（bypass模式指regulator device输入电压直接作为输出，不做限制）、电压范围、电流值、设备属性信息、该regulator对应的supply名称等。</p></li>
 </ul>
-<h2 id="7-实现"><a href="#7-实现" class="headerlink" title="7. 实现"></a>7. 实现</h2><h3 id="7-1-regulator-device-驱动开发流程简要说明"><a href="#7-1-regulator-device-驱动开发流程简要说明" class="headerlink" title="7.1 regulator device 驱动开发流程简要说明"></a>7.1 regulator device 驱动开发流程简要说明</h3><p>创建struct regulator_desc类型的变量，包括regulator device的类型、寄存器定义、操作函数（struct regulator_ops类型的变量）。<br>创建struct regulator_config类型的变量，包括regulator device相关的约束信息、consumer信息、regmap/enable gpio等相关信息。<br>调用regulator_register，完成regulator device的注册。</p>
+<h2 id="实现">7. 实现</h2>
+<h3 id="regulator-device-驱动开发流程简要说明">7.1 regulator device 驱动开发流程简要说明</h3>
+<p>创建struct regulator_desc类型的变量，包括regulator device的类型、寄存器定义、操作函数（struct regulator_ops类型的变量）。 创建struct regulator_config类型的变量，包括regulator device相关的约束信息、consumer信息、regmap/enable gpio等相关信息。 调用regulator_register，完成regulator device的注册。</p>
 <p>这里最重要的是regulator_register的实现，该函数根据regulator_desc和regulator_config结构体构造一个regulator_dev结构体，然后注册进内核之后consumer就可以通过regulator提供的接口去使用pmu了。详细流程这里不做分析了，感兴趣的可以去查源码linux/drivers/regulator/core.c。</p>
-<h3 id="7-2-Regulator-consumer的开发"><a href="#7-2-Regulator-consumer的开发" class="headerlink" title="7.2 Regulator consumer的开发"></a>7.2 Regulator consumer的开发</h3><p>通过regulator_get接口，依据supply name、device name在regulator_map查找是否存在对应的regulator_map信息，若存在则获取到对应的regulator_dev，并创建struct regulator 类型的变量。<br>通过regulator_get获取到struct regulator类型的变量后，则可以进行regulator的enable/disable等操作。<br>通过regulator_put释放regulator。</p>
-<h3 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h3><p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL3JlZ3VsYXRvcl9kcml2ZXIuaHRtbA==">http://www.wowotech.net/pm_subsystem/regulator_driver.html<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDcxMjg4MTg/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107128818?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDcxMjg4NTc/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107128857?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>《Linux内核文档》  </p>
+<h3 id="regulator-consumer的开发">7.2 Regulator consumer的开发</h3>
+<p>通过regulator_get接口，依据supply name、device name在regulator_map查找是否存在对应的regulator_map信息，若存在则获取到对应的regulator_dev，并创建struct regulator 类型的变量。 通过regulator_get获取到struct regulator类型的变量后，则可以进行regulator的enable/disable等操作。 通过regulator_put释放regulator。</p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL3JlZ3VsYXRvcl9kcml2ZXIuaHRtbA==">http://www.wowotech.net/pm_subsystem/regulator_driver.html<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDcxMjg4MTg/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107128818?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDcxMjg4NTc/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107128857?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br />
+《Linux内核文档》</p>
 
     </div>
 
@@ -553,7 +576,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E5%91%BD%E5%90%8D%E6%B3%95"><span class="nav-text">1.1 命名法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-Design"><span class="nav-text">1.2 Design</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-Regulator-Consumer-Driver-Interface"><span class="nav-text">2. Regulator Consumer Driver Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-Consumer-Regulator-Access-static-amp-dynamic-drivers"><span class="nav-text">2.1 Consumer Regulator Access (static &amp; dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-Regulator-Output-Enable-amp-Disable-static-amp-dynamic-drivers"><span class="nav-text">2.2 Regulator Output Enable &amp; Disable (static &amp; dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-Regulator-Voltage-Control-amp-Status-dynamic-drivers"><span class="nav-text">2.3 Regulator Voltage Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-Regulator-Current-Limit-Control-amp-Status-dynamic-drivers"><span class="nav-text">2.4 Regulator Current Limit Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-5-Regulator-Operating-Mode-Control-amp-Status-dynamic-drivers"><span class="nav-text">2.5 Regulator Operating Mode Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-6-Regulator-Events"><span class="nav-text">2.6 Regulator Events</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-7-Regulator-Direct-Register-Access"><span class="nav-text">2.7 Regulator Direct Register Access</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Regulator-Driver-Interface"><span class="nav-text">3. Regulator Driver Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-Registration"><span class="nav-text">3.1 Registration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-Regulator-Events"><span class="nav-text">3.2 Regulator Events</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-Regulator-API-design-notes"><span class="nav-text">4. Regulator API design notes</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-Safety"><span class="nav-text">4.1 Safety</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-Consumer-use-cases"><span class="nav-text">4.2 Consumer use cases</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-Regulator-Machine-Driver-Interface"><span class="nav-text">5. Regulator Machine Driver Interface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#6-%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">6. 数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#7-%E5%AE%9E%E7%8E%B0"><span class="nav-text">7. 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#7-1-regulator-device-%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B%E7%AE%80%E8%A6%81%E8%AF%B4%E6%98%8E"><span class="nav-text">7.1 regulator device 驱动开发流程简要说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#7-2-Regulator-consumer%E7%9A%84%E5%BC%80%E5%8F%91"><span class="nav-text">7.2 Regulator consumer的开发</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E6%B3%95"><span class="nav-text">1.1 命名法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#design"><span class="nav-text">1.2 Design</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-consumer-driver-interface"><span class="nav-text">2. Regulator Consumer Driver Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#consumer-regulator-access-static-dynamic-drivers"><span class="nav-text">2.1 Consumer Regulator Access (static &amp; dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-output-enable-disable-static-dynamic-drivers"><span class="nav-text">2.2 Regulator Output Enable &amp; Disable (static &amp; dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-voltage-control-status-dynamic-drivers"><span class="nav-text">2.3 Regulator Voltage Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-current-limit-control-status-dynamic-drivers"><span class="nav-text">2.4 Regulator Current Limit Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-operating-mode-control-status-dynamic-drivers"><span class="nav-text">2.5 Regulator Operating Mode Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-events"><span class="nav-text">2.6 Regulator Events</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-direct-register-access"><span class="nav-text">2.7 Regulator Direct Register Access</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-driver-interface"><span class="nav-text">3. Regulator Driver Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#registration"><span class="nav-text">3.1 Registration</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-events-1"><span class="nav-text">3.2 Regulator Events</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-api-design-notes"><span class="nav-text">4. Regulator API design notes</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#safety"><span class="nav-text">4.1 Safety</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#consumer-use-cases"><span class="nav-text">4.2 Consumer use cases</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-machine-driver-interface"><span class="nav-text">5. Regulator Machine Driver Interface</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">6. 数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">7. 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-device-%E9%A9%B1%E5%8A%A8%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B%E7%AE%80%E8%A6%81%E8%AF%B4%E6%98%8E"><span class="nav-text">7.1 regulator device 驱动开发流程简要说明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#regulator-consumer%E7%9A%84%E5%BC%80%E5%8F%91"><span class="nav-text">7.2 Regulator consumer的开发</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -638,7 +661,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">883k</span>
+    <span title="站点总字数">905k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

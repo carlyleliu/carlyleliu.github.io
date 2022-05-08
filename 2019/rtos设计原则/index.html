@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1 任务划分1.1 任务特性动态性： “任务”的状态是动态变化的,通常有“就绪态”、“运行态”、“等待态”(“挂起态”、“阻塞态”) 等。这意味着“任务”并不是随时都可以运行的,而一个已经开始运行的“任务”并不能保证直占有CPU的使用权。 独立性： 任务”的“独立性”表现为逻辑上的“平等性”和信息传输的“异步性”。 并发性： 不同任务运行时间段有重叠部分,这种运行方式称之为“并发运行”。从宏观上看">
+  <meta name="description" content="1 任务划分 1.1 任务特性 动态性： “任务”的状态是动态变化的,通常有“就绪态”、“运行态”、“等待态”(“挂起态”、“阻塞态”) 等。这意味着“任务”并不是随时都可以运行的,而一个已经开始运行的“任务”并不能保证直占有CPU的使用权。 独立性： 任务”的“独立性”表现为逻辑上的“平等性”和信息传输的“异步性”。 并发性： 不同任务运行时间段有重叠部分,这种运行方式称之为“并发运行”。从宏观">
 <meta property="og:type" content="article">
 <meta property="og:title" content="rtos程序设计原则">
 <meta property="og:url" content="http://carlyleliu.github.io/2019/rtos%E8%AE%BE%E8%AE%A1%E5%8E%9F%E5%88%99/index.html">
 <meta property="og:site_name" content="量子范式">
-<meta property="og:description" content="1 任务划分1.1 任务特性动态性： “任务”的状态是动态变化的,通常有“就绪态”、“运行态”、“等待态”(“挂起态”、“阻塞态”) 等。这意味着“任务”并不是随时都可以运行的,而一个已经开始运行的“任务”并不能保证直占有CPU的使用权。 独立性： 任务”的“独立性”表现为逻辑上的“平等性”和信息传输的“异步性”。 并发性： 不同任务运行时间段有重叠部分,这种运行方式称之为“并发运行”。从宏观上看">
+<meta property="og:description" content="1 任务划分 1.1 任务特性 动态性： “任务”的状态是动态变化的,通常有“就绪态”、“运行态”、“等待态”(“挂起态”、“阻塞态”) 等。这意味着“任务”并不是随时都可以运行的,而一个已经开始运行的“任务”并不能保证直占有CPU的使用权。 独立性： 任务”的“独立性”表现为逻辑上的“平等性”和信息传输的“异步性”。 并发性： 不同任务运行时间段有重叠部分,这种运行方式称之为“并发运行”。从宏观">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/rtos/任务间单向通信.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/rtos/任务间双向通信.png">
@@ -285,25 +285,38 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="1-任务划分"><a href="#1-任务划分" class="headerlink" title="1 任务划分"></a>1 任务划分</h2><h3 id="1-1-任务特性"><a href="#1-1-任务特性" class="headerlink" title="1.1 任务特性"></a>1.1 任务特性</h3><p><strong>动态性：</strong> “任务”的状态是动态变化的,通常有“就绪态”、“运行态”、“等待态”(“挂起态”、“阻塞态”) 等。这意味着“任务”并不是随时都可以运行的,而一个已经开始运行的“任务”并不能保证直占有CPU的使用权。</p>
+        <h2 id="任务划分">1 任务划分</h2>
+<h3 id="任务特性">1.1 任务特性</h3>
+<p><strong>动态性：</strong> “任务”的状态是动态变化的,通常有“就绪态”、“运行态”、“等待态”(“挂起态”、“阻塞态”) 等。这意味着“任务”并不是随时都可以运行的,而一个已经开始运行的“任务”并不能保证直占有CPU的使用权。</p>
 <p><strong>独立性：</strong> 任务”的“独立性”表现为逻辑上的“平等性”和信息传输的“异步性”。</p>
 <p><strong>并发性：</strong> 不同任务运行时间段有重叠部分,这种运行方式称之为“并发运行”。从宏观上看,不同的任务可以并发运行,好像每个任务都有自己的CPU一样。在多CPU系统中,并发运行着的任务都有自己的CPU,它们的运行状态就是真正的“并发运行”。而在单CPU系统中,通过实时操作系统进行任务调度而实现的“并发运行”,只能称之为“伪并发运行”,即宏观上的“并发运行”。</p>
 <span id="more"></span>
-<h3 id="1-2-任务划分目标"><a href="#1-2-任务划分目标" class="headerlink" title="1.2 任务划分目标"></a>1.2 任务划分目标</h3><ul>
+<h3 id="任务划分目标">1.2 任务划分目标</h3>
+<ul>
 <li>实时性指标</li>
 <li>任务数合理</li>
 <li>简化软件系统</li>
 <li>降低资源要求</li>
 </ul>
-<h3 id="1-3-任务划分方法"><a href="#1-3-任务划分方法" class="headerlink" title="1.3 任务划分方法"></a>1.3 任务划分方法</h3><h4 id="1-3-1-设备依赖性任务的划分"><a href="#1-3-1-设备依赖性任务的划分" class="headerlink" title="1.3.1 设备依赖性任务的划分"></a>1.3.1 设备依赖性任务的划分</h4><p>与CPU执行指令的速度相比,输入/输出设备的运行速度都比较低,这导致相关的控制程序(即相关的“任务”程序)为了配合相关设备只能“走走停停”。这种运行状态正是操作系统进行任务调度所需要的。通过任务调度, 使得各种设备可以“并发运行”,实现“边听边说”和“边写边看”。输入/输出设备与CPU的速度差别是“并发运行”的前提和基础,也是个通常都满足的事实。</p>
-<h4 id="1-3-2-关键任务的划分"><a href="#1-3-2-关键任务的划分" class="headerlink" title="1.3.2 关键任务的划分"></a>1.3.2 关键任务的划分</h4><p>“关键性”是指某种功能在应用系统中的重要性。如果这种功能不能正常实现,将造成重大影响,甚至引发灾难性的后果。包含“关键”功能的任务称为“关键任务”,关键任务必须得到运行机会,即使遗执行一次也不行。<br>把关键操作与其他操作打包在一起,会使关键任务受到其他操作的拖累。由此,我们得到一条原则:对于关键功能,必须尽可能与其他功能剩离,独立成为个任务,通过通信方式再触发其他任务,完成后续操作。</p>
-<h4 id="1-3-3-紧迫任务的划分"><a href="#1-3-3-紧迫任务的划分" class="headerlink" title="1.3.3 紧迫任务的划分"></a>1.3.3 紧迫任务的划分</h4><p>“紧迫性”是指某种功能必须在规定的时间内得到运行权(及时运行),并在规定的时刻前执行完毕(按时完成),可见这类功能有严格的实时性要求。将“关键任务”划分出去以后,剩下的对实时性有严格要求的功能作为“紧迫任务”来划分。<br>大多数紧迫任务是由异步事件触发的,这些异步事件一般能够引发某种中断。在这种情况下,将紧迫任务安排在相应的ISR中是最有效的方法。如果紧迫任务不能安排在ISR中, 则为它安排尽可能高的优先级是解决“及时性”的有效方法。要达到“按时完成”的目的,必须使“紧迫任务”需要的执行时间尽可能短。其办法是对紧迫任务进行“瘦身”,尽可能剥离“不太紧迫”的操作,只剩下“必须立刻做”的操作,将被剥离的不太紧迫”的操作另外封装为一个任务。</p>
-<h4 id="1-3-4-数据处理任务的划分"><a href="#1-3-4-数据处理任务的划分" class="headerlink" title="1.3.4 数据处理任务的划分"></a>1.3.4 数据处理任务的划分</h4><p>用户应用程序中消耗机时最多的是各种数据处理程序单元,这种单元通常不只一个,它们分别为不同的功能服务。应该将这些单元划分出来,分别包装成不同的任务。由于这类任务需要消耗较多机时,所以它们的优先级必须安排得比较低,以便使用其他任务剩余的机时。</p>
-<h4 id="1-3-5-功能聚合任务的划分"><a href="#1-3-5-功能聚合任务的划分" class="headerlink" title="1.3.5 功能聚合任务的划分"></a>1.3.5 功能聚合任务的划分</h4><p>将关系密切的若干功能组合成为一个任务,达到功能聚合的效果。关系密切有两个含义: 数据关联紧密和(或)时序关联紧密。如果将关系密切的若干功能分别用不同的任务來实现, 则需要进行大量的数据通信和(或)同步通信。这对系统是一个很大的负担。而将关系密切的岩干功能组合成为一个任务,相关数据为各个功能共享,同步机制通过合理安排各个功能在任务中的时序来实现。</p>
-<h4 id="1-3-6-触发条件相同任务的划分"><a href="#1-3-6-触发条件相同任务的划分" class="headerlink" title="1.3.6 触发条件相同任务的划分"></a>1.3.6 触发条件相同任务的划分</h4><p>如果若于功能由相同的事件触发,就可以将这些功能组合成为一个任务,从而免除将事件分发给多个任务的工作量。但这样做是有条件的:当以某种次序顺序执行这些功能时,各个功能的实时性要求仍然可以得到满足,且各个功能在执行中不会出问题。</p>
-<h4 id="1-3-7-运行周期相同任务的划分"><a href="#1-3-7-运行周期相同任务的划分" class="headerlink" title="1.3.7 运行周期相同任务的划分"></a>1.3.7 运行周期相同任务的划分</h4><p>绝大多数功能都需要不停地重复执行,如果重复执行的条件是固定的时间间隔,则这个功能具有周期性。我们应该将周期相同的功能组合在一起封装为一个任务,就可以避免一个时间事件触发几个任务,省去“事件分发”操作与它们之间的通信。</p>
-<h4 id="1-3-8-顺序操作任务的划分"><a href="#1-3-8-顺序操作任务的划分" class="headerlink" title="1.3.8 顺序操作任务的划分"></a>1.3.8 顺序操作任务的划分</h4><p>如果若干功能按固定颀序进行流水作业,相互之间完全没有“并发性”,则应该将这些功能组合为一个任务。如果将它们分别用不同的任务封装,则必须在这些任务之间进行频繁的同步通信,以实现低务之间的“接力赛”,完成规定的操作顺序。因此将顺序操作功能封装为一个任务是有利的。</p>
-<h4 id="1-3-9-总结"><a href="#1-3-9-总结" class="headerlink" title="1.3.9 总结"></a>1.3.9 总结</h4><ul>
+<h3 id="任务划分方法">1.3 任务划分方法</h3>
+<h4 id="设备依赖性任务的划分">1.3.1 设备依赖性任务的划分</h4>
+<p>与CPU执行指令的速度相比,输入/输出设备的运行速度都比较低,这导致相关的控制程序(即相关的“任务”程序)为了配合相关设备只能“走走停停”。这种运行状态正是操作系统进行任务调度所需要的。通过任务调度, 使得各种设备可以“并发运行”,实现“边听边说”和“边写边看”。输入/输出设备与CPU的速度差别是“并发运行”的前提和基础,也是个通常都满足的事实。</p>
+<h4 id="关键任务的划分">1.3.2 关键任务的划分</h4>
+<p>“关键性”是指某种功能在应用系统中的重要性。如果这种功能不能正常实现,将造成重大影响,甚至引发灾难性的后果。包含“关键”功能的任务称为“关键任务”,关键任务必须得到运行机会,即使遗执行一次也不行。 把关键操作与其他操作打包在一起,会使关键任务受到其他操作的拖累。由此,我们得到一条原则:对于关键功能,必须尽可能与其他功能剩离,独立成为个任务,通过通信方式再触发其他任务,完成后续操作。</p>
+<h4 id="紧迫任务的划分">1.3.3 紧迫任务的划分</h4>
+<p>“紧迫性”是指某种功能必须在规定的时间内得到运行权(及时运行),并在规定的时刻前执行完毕(按时完成),可见这类功能有严格的实时性要求。将“关键任务”划分出去以后,剩下的对实时性有严格要求的功能作为“紧迫任务”来划分。 大多数紧迫任务是由异步事件触发的,这些异步事件一般能够引发某种中断。在这种情况下,将紧迫任务安排在相应的ISR中是最有效的方法。如果紧迫任务不能安排在ISR中, 则为它安排尽可能高的优先级是解决“及时性”的有效方法。要达到“按时完成”的目的,必须使“紧迫任务”需要的执行时间尽可能短。其办法是对紧迫任务进行“瘦身”,尽可能剥离“不太紧迫”的操作,只剩下“必须立刻做”的操作,将被剥离的不太紧迫”的操作另外封装为一个任务。</p>
+<h4 id="数据处理任务的划分">1.3.4 数据处理任务的划分</h4>
+<p>用户应用程序中消耗机时最多的是各种数据处理程序单元,这种单元通常不只一个,它们分别为不同的功能服务。应该将这些单元划分出来,分别包装成不同的任务。由于这类任务需要消耗较多机时,所以它们的优先级必须安排得比较低,以便使用其他任务剩余的机时。</p>
+<h4 id="功能聚合任务的划分">1.3.5 功能聚合任务的划分</h4>
+<p>将关系密切的若干功能组合成为一个任务,达到功能聚合的效果。关系密切有两个含义: 数据关联紧密和(或)时序关联紧密。如果将关系密切的若干功能分别用不同的任务來实现, 则需要进行大量的数据通信和(或)同步通信。这对系统是一个很大的负担。而将关系密切的岩干功能组合成为一个任务,相关数据为各个功能共享,同步机制通过合理安排各个功能在任务中的时序来实现。</p>
+<h4 id="触发条件相同任务的划分">1.3.6 触发条件相同任务的划分</h4>
+<p>如果若于功能由相同的事件触发,就可以将这些功能组合成为一个任务,从而免除将事件分发给多个任务的工作量。但这样做是有条件的:当以某种次序顺序执行这些功能时,各个功能的实时性要求仍然可以得到满足,且各个功能在执行中不会出问题。</p>
+<h4 id="运行周期相同任务的划分">1.3.7 运行周期相同任务的划分</h4>
+<p>绝大多数功能都需要不停地重复执行,如果重复执行的条件是固定的时间间隔,则这个功能具有周期性。我们应该将周期相同的功能组合在一起封装为一个任务,就可以避免一个时间事件触发几个任务,省去“事件分发”操作与它们之间的通信。</p>
+<h4 id="顺序操作任务的划分">1.3.8 顺序操作任务的划分</h4>
+<p>如果若干功能按固定颀序进行流水作业,相互之间完全没有“并发性”,则应该将这些功能组合为一个任务。如果将它们分别用不同的任务封装,则必须在这些任务之间进行频繁的同步通信,以实现低务之间的“接力赛”,完成规定的操作顺序。因此将顺序操作功能封装为一个任务是有利的。</p>
+<h4 id="总结">1.3.9 总结</h4>
+<ul>
 <li>首先,以CPU为中心,将与各种输入/输出设备(或端ロ)相关的功能分别划分为独立的任务。</li>
 <li>发现“关键”功能,将其最“关键”部分“剥离”出来,用一个独立任务(或ISR)完成,剩余部分用另外一个任务实现,两者之间通过通信机制沟通。</li>
 <li>发现“紧迫”功能,将其最“紧迫”部分“剥离”出来,用一个独立的高优先级任务(或ISR) 完成,剩余部分用另外一个任务实现,两者之间通过通信机制沟通。</li>
@@ -313,7 +326,8 @@
 <li>将由相同事件触发的若干功能组合成为一个任务,从而免除事件分发机制将运行周期相同的功能组合成为一个任务,从而免除时间事件分发机制。</li>
 <li>将若干按固定顺序执行的功能组合为一个任务,从而免除同步接力通信的麻频。</li>
 </ul>
-<h3 id="1-4-任务的可调度性分析"><a href="#1-4-任务的可调度性分析" class="headerlink" title="1.4 任务的可调度性分析"></a>1.4 任务的可调度性分析</h3><p>任务划分后,需要进行“任务的可调度性分析”,以便确定这些任务是否可以在操作系统的调度下正常运行。对于实时系统,普遍采用的分析方法是速率单调分析(RMA)。该分析方法基于以下假设:</p>
+<h3 id="任务的可调度性分析">1.4 任务的可调度性分析</h3>
+<p>任务划分后,需要进行“任务的可调度性分析”,以便确定这些任务是否可以在操作系统的调度下正常运行。对于实时系统,普遍采用的分析方法是速率单调分析(RMA)。该分析方法基于以下假设:</p>
 <ul>
 <li>所有任务都是周期性的。</li>
 <li>任务相互独立运行,不发生交又。</li>
@@ -321,57 +335,72 @@
 <li>每个任务每次执行的时间是固定的。</li>
 <li>所有任务的“关键”程度相同限制非周期任务初始化和失败恢复工作,这类非周期任务没有紧迫性要求。</li>
 </ul>
-<p>RMA的测试公式为：</p>
-<script type="math/tex; mode=display">
-\sum_{1\leqslant i\leqslant n}\frac{C_i}{T_i}\leqslant U(n) = n(2^{\frac{1}{n}} - 1) \tag1</script><p>式中n为任务数，$C_i$为任务i执行一次的最长时间，$T_i$为任务i的周期,U(n)为CPU利用系数的上限。<br>如果RMA的测试公式得到充分满足,则系统可以正常调度;否则系统的正常运行难以保证。</p>
-<h2 id="2-任务设计"><a href="#2-任务设计" class="headerlink" title="2 任务设计"></a>2 任务设计</h2><h3 id="2-1-任务函数的结构"><a href="#2-1-任务函数的结构" class="headerlink" title="2.1 任务函数的结构"></a>2.1 任务函数的结构</h3><h4 id="2-1-1-单次执行的任务"><a href="#2-1-1-单次执行的任务" class="headerlink" title="2.1.1 单次执行的任务"></a>2.1.1 单次执行的任务</h4><p>此类任务在创建后只氿行一次,执行结束后即自行尉除。<br>单次执行的任务采用“创建任务函数”来启动,真正使用“单次执行”任务函数结构的场合反而是可以多次执行的任务,每当需要执行该任务时就将该任务创建一次。由键盘操作来启动的任务常采用这种结构。采用“创建任务”的方式来启动任务,可以省略用通信手段触发任务的麻烦,还可以通过pdata来传递原始参数,使得每次启动任务时可以有不同的工作状态。<br>虽然用“创建任务”的方式来启动一个任务有以上方便之处,但每次启动任务都要调用“任务创建函数”需要对¨“任务控制块”进行全面初始化,并对“任务控制块链表”和“任务就绪表”进行操作,比较耗时,故只适用于实时性要求不高的任务(如键盘操作启动的任务)。采用“创建任务”的方式来启动一个任务,除了实时性差外,还可能在任务自我刷除后出现以下后遗症:</p>
+<p>RMA的测试公式为： <span class="math display">\[
+\sum_{1\leqslant i\leqslant n}\frac{C_i}{T_i}\leqslant U(n) = n(2^{\frac{1}{n}} - 1) \tag1
+\]</span></p>
+<p>式中n为任务数，<span class="math inline">\(C_i\)</span>为任务i执行一次的最长时间，<span class="math inline">\(T_i\)</span>为任务i的周期,U(n)为CPU利用系数的上限。 如果RMA的测试公式得到充分满足,则系统可以正常调度;否则系统的正常运行难以保证。</p>
+<h2 id="任务设计">2 任务设计</h2>
+<h3 id="任务函数的结构">2.1 任务函数的结构</h3>
+<h4 id="单次执行的任务">2.1.1 单次执行的任务</h4>
+<p>此类任务在创建后只氿行一次,执行结束后即自行尉除。 单次执行的任务采用“创建任务函数”来启动,真正使用“单次执行”任务函数结构的场合反而是可以多次执行的任务,每当需要执行该任务时就将该任务创建一次。由键盘操作来启动的任务常采用这种结构。采用“创建任务”的方式来启动任务,可以省略用通信手段触发任务的麻烦,还可以通过pdata来传递原始参数,使得每次启动任务时可以有不同的工作状态。 虽然用“创建任务”的方式来启动一个任务有以上方便之处,但每次启动任务都要调用“任务创建函数”需要对¨“任务控制块”进行全面初始化,并对“任务控制块链表”和“任务就绪表”进行操作,比较耗时,故只适用于实时性要求不高的任务(如键盘操作启动的任务)。采用“创建任务”的方式来启动一个任务,除了实时性差外,还可能在任务自我刷除后出现以下后遗症:</p>
 <ul>
 <li>占用的共字资源尚未释放,使其他需要使用该资源的任务不能运行。</li>
 <li>通信关系的上家”任务(或ISR)发出的信号量或消息,将被积压而得不到响应。</li>
 <li>通信关系的“下家”任务因为得不到信号量或消息而被遗弃(被永远挂起)。</li>
 <li>可能留下未删除千浄的废弃变量。</li>
-<li>如果该任务使用了共亭资源·则必须在自我删除之前释放(如释放内存块,发送互斥信号量) </li>
-<li>如果该任务有关联任务(或ISR),则必须在自我删除之前将这种关联关系解除;而解除关联关系需要删除关联仼务和通信工具,这是得不偿失而又非常麻烦的事情。<br>适合采用“创建任务”的方式来启动的任务,通常是“孤立任务”,它们不和其他任务进行通信(ISR除外),只使用共享资源来获取信息和输出信息。如果不满足这个条件,则应该采用周期性执行和事件触发执行两种任务函数机构,并在系统启动时就创建好。</li>
+<li>如果该任务使用了共亭资源·则必须在自我删除之前释放(如释放内存块,发送互斥信号量)</li>
+<li>如果该任务有关联任务(或ISR),则必须在自我删除之前将这种关联关系解除;而解除关联关系需要删除关联仼务和通信工具,这是得不偿失而又非常麻烦的事情。 适合采用“创建任务”的方式来启动的任务,通常是“孤立任务”,它们不和其他任务进行通信(ISR除外),只使用共享资源来获取信息和输出信息。如果不满足这个条件,则应该采用周期性执行和事件触发执行两种任务函数机构,并在系统启动时就创建好。</li>
 </ul>
-<h4 id="2-1-2-周期性执行的任务"><a href="#2-1-2-周期性执行的任务" class="headerlink" title="2.1.2 周期性执行的任务"></a>2.1.2 周期性执行的任务</h4><p>周期性执行的任务函数编程比较单纯,只要创建一次,就能周期运行。在实际应用中,很多任务都具有周期性,它们的任务函数都使用这种结构。</p>
-<h4 id="2-1-3-事件触发执行的任务"><a href="#2-1-3-事件触发执行的任务" class="headerlink" title="2.1.3 事件触发执行的任务"></a>2.1.3 事件触发执行的任务</h4><p>此类任务在创建后,虽然很快可以获得运行权,但任务实体代码的执行需要等待某种事件的发生,在相关事件发生之前,则被操作系统挂起。相关事件发生一次,该任务实体代码就执行一次,故该类型任务称为事件触发执行的任务。</p>
-<h3 id="2-2-任务优先级安排"><a href="#2-2-任务优先级安排" class="headerlink" title="2.2 任务优先级安排"></a>2.2 任务优先级安排</h3><p>任务的优先级安排原则如下：</p>
+<h4 id="周期性执行的任务">2.1.2 周期性执行的任务</h4>
+<p>周期性执行的任务函数编程比较单纯,只要创建一次,就能周期运行。在实际应用中,很多任务都具有周期性,它们的任务函数都使用这种结构。</p>
+<h4 id="事件触发执行的任务">2.1.3 事件触发执行的任务</h4>
+<p>此类任务在创建后,虽然很快可以获得运行权,但任务实体代码的执行需要等待某种事件的发生,在相关事件发生之前,则被操作系统挂起。相关事件发生一次,该任务实体代码就执行一次,故该类型任务称为事件触发执行的任务。</p>
+<h3 id="任务优先级安排">2.2 任务优先级安排</h3>
+<p>任务的优先级安排原则如下：</p>
 <p><strong>中断关联性:</strong> 与中断服务程序(ISR)有关联的任务应该安排尽可能高的优先级,以便及时处理异步事件,提高系统的实时性。如果优先级安排得比较低,则CPU有可能被优先级比较高的任务长期占用,以致于在第二次中断发生时连第一次中断还没有处理, 从而产生信号丢失现象。</p>
-<p><strong>紧迫性:</strong> 因为紧迫任务对响应时间有严格要求,在所有紧迫任务中,按响应时间要求排序,越紧迫的任务安排的优先级越高。紧迫任务通常与ISR关联。<br><strong>关键性:</strong> 任务越关键安排的优先级越高,以保障其执行机会。</p>
+<p><strong>紧迫性:</strong> 因为紧迫任务对响应时间有严格要求,在所有紧迫任务中,按响应时间要求排序,越紧迫的任务安排的优先级越高。紧迫任务通常与ISR关联。 <strong>关键性:</strong> 任务越关键安排的优先级越高,以保障其执行机会。</p>
 <p><strong>频繁性:</strong> 对于周期性任务,执行越频繁,则周期越短,允许耽误的时间也越短,故应该安排的优先级也越高,以保障及时得到执行。</p>
 <p><strong>快捷性:</strong> 在前面各项条件相近时,越快捷(耗时短)的任务安排的优先级越高,以使其他就绪任务的延时缩短。</p>
 <p><strong>传递性:</strong> 信息传递的上游任务的优先级高于下游任务的优先级,如信号采集任务的优先级高于数据处理任务的优先级。</p>
-<h3 id="2-3-任务的数据结构设计"><a href="#2-3-任务的数据结构设计" class="headerlink" title="2.3 任务的数据结构设计"></a>2.3 任务的数据结构设计</h3><h4 id="2-3-1-与操作系统有关的数据结构"><a href="#2-3-1-与操作系统有关的数据结构" class="headerlink" title="2.3.1 与操作系统有关的数据结构"></a>2.3.1 与操作系统有关的数据结构</h4><ul>
-<li>任务参数表:由用户定义的参数表,可用来向任务传输原始参数(即任务函数代码中的参数void<em> pdata)。通常设为空表,即(void</em>)0 </li>
+<h3 id="任务的数据结构设计">2.3 任务的数据结构设计</h3>
+<h4 id="与操作系统有关的数据结构">2.3.1 与操作系统有关的数据结构</h4>
+<ul>
+<li>任务参数表:由用户定义的参数表,可用来向任务传输原始参数(即任务函数代码中的参数void* pdata)。通常设为空表,即(void*)0</li>
 <li>任务堆找:其容量由用户设置,必须保证足够大</li>
 <li>任务控制块:由操作系统设置。</li>
 </ul>
-<h4 id="2-3-2-与操作系统无关的数据结构"><a href="#2-3-2-与操作系统无关的数据结构" class="headerlink" title="2.3.2 与操作系统无关的数据结构"></a>2.3.2 与操作系统无关的数据结构</h4><p>当某个信息的生产者和消费者都是同一个任务(与其他任务无关)时,保存这个信息的数据结枘应该在该任务函数内部定义,使它成为私有资源,如局部变量。但一些大型数组(如字库、参数表格和数据缓冲区)也可以被定义为全局数组,这可以使任务代码简洁一些。<br>当某个信息的生产者和消费者不是同一个任务(包括ISR)时,保存这个信息的数据结构应该在任务函数的外部定义,使它成为共事资源,如全局变量。对这部分数据结构的访问需要特别小心,必须保证访问的互斥性。</p>
-<h3 id="2-4-任务设计中的问题"><a href="#2-4-任务设计中的问题" class="headerlink" title="2.4 任务设计中的问题"></a>2.4 任务设计中的问题</h3><h4 id="2-4-1-公共函数调用"><a href="#2-4-1-公共函数调用" class="headerlink" title="2.4.1 公共函数调用"></a>2.4.1 公共函数调用</h4><ul>
+<h4 id="与操作系统无关的数据结构">2.3.2 与操作系统无关的数据结构</h4>
+<p>当某个信息的生产者和消费者都是同一个任务(与其他任务无关)时,保存这个信息的数据结枘应该在该任务函数内部定义,使它成为私有资源,如局部变量。但一些大型数组(如字库、参数表格和数据缓冲区)也可以被定义为全局数组,这可以使任务代码简洁一些。 当某个信息的生产者和消费者不是同一个任务(包括ISR)时,保存这个信息的数据结构应该在任务函数的外部定义,使它成为共事资源,如全局变量。对这部分数据结构的访问需要特别小心,必须保证访问的互斥性。</p>
+<h3 id="任务设计中的问题">2.4 任务设计中的问题</h3>
+<h4 id="公共函数调用">2.4.1 公共函数调用</h4>
+<ul>
 <li>互斥调用：将公共函数作为…种共享资源看待.以互斥方式调用公共函数。</li>
 <li>可重人设计：将公共函数设计成为“可重入函数”的关键是不使用全局资源，另外,如果“可重入函数”调用了其他函数,则这些被调用的函数也必须是“可重入函数”</li>
 </ul>
-<h4 id="2-4-2-与其他任务的协调，数据通信"><a href="#2-4-2-与其他任务的协调，数据通信" class="headerlink" title="2.4.2 与其他任务的协调，数据通信"></a>2.4.2 与其他任务的协调，数据通信</h4><h2 id="3-行为同步"><a href="#3-行为同步" class="headerlink" title="3 行为同步"></a>3 行为同步</h2><h3 id="3-1-用于行为同步的通信手段"><a href="#3-1-用于行为同步的通信手段" class="headerlink" title="3.1 用于行为同步的通信手段"></a>3.1 用于行为同步的通信手段</h3><ul>
+<h4 id="与其他任务的协调数据通信">2.4.2 与其他任务的协调，数据通信</h4>
+<h2 id="行为同步">3 行为同步</h2>
+<h3 id="用于行为同步的通信手段">3.1 用于行为同步的通信手段</h3>
+<ul>
 <li>值信号量：二值信号量的使用范围是:被控制方总能够及时响应控制方发出的信号,完成相应处理任务,并在下一次信号来到之前进入等待状态。</li>
 <li>计数信号量：计数信号量的使用范围是:被控制方不能保证在下一次信号到来之前处理完本次控制方发出的信号,但总体上可以响应所有信号。</li>
 <li>事件标志组：“件标志组”可以实现多个任务(包括ISR)协同控制一个任务,当各个相关任务(包括ISR)先后发出自己的信号后(使事件标志组的对应标志有效),预定的逻辑运算结果有效,触发被控制的任务。</li>
-<li>消息邮箱：由于“消息邮箱”里只能存放一条消息,所以在用“消息邮箱”进行同步控制时,必须满足一个前提:任何时候消息的生产速度都比消息的消费速度慢,即被控制任务总是在等待消息。<br>这和二值信号量的情况类似。</li>
+<li>消息邮箱：由于“消息邮箱”里只能存放一条消息,所以在用“消息邮箱”进行同步控制时,必须满足一个前提:任何时候消息的生产速度都比消息的消费速度慢,即被控制任务总是在等待消息。 这和二值信号量的情况类似。</li>
 <li>消息队列：“消息队列”可以存放多个消息,能够有效解决消息的“临时堆积”问题。与计数信号量的情况类似,“消息队列”的使用仍然需要满足一个条件:消息的平均生产时间比消息的平均消费时间长;否则,再长的“消息队列”也会“滥出”。</li>
 </ul>
-<p>将以上通信手段用于任务之间的行为同步时·需要根据实际情况来选择: </p>
+<p>将以上通信手段用于任务之间的行为同步时·需要根据实际情况来选择: - 当同步过程不需要传输具体内容时,可选择信号量类手段(二值倌号量、计数信号量和事件标志组)。 - 当同步过程需要传输具体内容时,可选择消息类手段(消息邮箱和消息队列) - 当满足“任何时候同步信息的生产速度都比同步信息的消赞速度慢”时,可选择简单的通信手段(二值信号量、事件标志组和消息邮箱)。 - 对于非周期性同步信息,当不能保证“任何时候同步信息的生产速度都比同步信息的消速度慢”时,可选择有缓冲功能的通信手段(计数信号量和消息队列) - 当同步信号为多个信号的逻辑运算结果时,采用事件标志组作为同步手段。</p>
+<h3 id="行为同步-1">3.2 行为同步</h3>
+<h4 id="isr与任务之间的同步">3.2.1 ISR与任务之间的同步</h4>
+<p>最简单的行为同步就是两个任务之间的单向同步,这种行为同步发生在信息处理链的相邻任务之间。其中一个任务(或ISR)为控制方,它发出控制信息;另一个任务为被控制方,它得到控制信息后即进人就绪状态,只要优先级足够高就可以很快进入运行状态。</p>
+<h4 id="两个任务之间的单向同步">3.2.2 两个任务之间的单向同步</h4>
+<p>如果单向同步发生在两个任务之间,那么实际同步效果与两个任务的优先级有很大关系当控制方任务的优先级低于被控制方任务的优先级时,控制方任务发出信息后使被控制方任务进入就绪状态,并立即发生任务切换,使被控制方任务直接进人运行状态,瞬时同步效果较好。 当控制方任务的优先级高于被控制方任务的优先级时(大多如此),控制方任务发出信息后虽然使被控制方任务进入就绪状态,但并不发生任务切换,只有当控制方再次调用系统服务函数(如延时函数)并使自己挂起时,被控制方任务オ有运行机会,瞬时同步效果较差。 <img src="/picture/rtos/任务间单向通信.png" /></p>
+<h4 id="两个任务之间的双向同步">3.2.3 两个任务之间的双向同步</h4>
+<p>如果消息的生产者是系统内部的某个任务,则可以通过协调生产者与消贵者的关系来建立一个“产销平衡”的理想状态。通信的双方相互制约,生产者通过“提供消息”来同步消费者,消费者通过“回复消息”来同步生产者,即生产者必须得到消费者的回复后オ能进行下一个消息的生产。这种运行方式称为“双向同步”。它使生产者的生产速度受到消费者的反向控制,达到“产销平衡”的理想状态。 <img src="/picture/rtos/任务间双向通信.png" /></p>
+<h4 id="两个以上任务同步一个任务">3.2.4 两个以上任务同步一个任务</h4>
+<p>“逻辑与”的控制功能具有“安全控制”的特点,可用来保障一个重要任务必须在“万事俱备”的前提下才可以执行 “逻辑或”的控制功能具有“补充控制”的特点,可用来在一个基本控制方式下增加若干“补充”控制,以满足某些“特殊情况”的需要。</p>
+<h4 id="多个任务相互同步">3.2.5 多个任务相互同步</h4>
+<p>多任务相互同步”可以将若干相关任务的运行频度保持一致</p>
+<h2 id="资源同步">4 资源同步</h2>
 <ul>
-<li>当同步过程不需要传输具体内容时,可选择信号量类手段(二值倌号量、计数信号量和事件标志组)。</li>
-<li>当同步过程需要传输具体内容时,可选择消息类手段(消息邮箱和消息队列) </li>
-<li>当满足“任何时候同步信息的生产速度都比同步信息的消赞速度慢”时,可选择简单的通信手段(二值信号量、事件标志组和消息邮箱)。</li>
-<li>对于非周期性同步信息,当不能保证“任何时候同步信息的生产速度都比同步信息的消速度慢”时,可选择有缓冲功能的通信手段(计数信号量和消息队列) </li>
-<li>当同步信号为多个信号的逻辑运算结果时,采用事件标志组作为同步手段。</li>
-</ul>
-<h3 id="3-2-行为同步"><a href="#3-2-行为同步" class="headerlink" title="3.2 行为同步"></a>3.2 行为同步</h3><h4 id="3-2-1-ISR与任务之间的同步"><a href="#3-2-1-ISR与任务之间的同步" class="headerlink" title="3.2.1 ISR与任务之间的同步"></a>3.2.1 ISR与任务之间的同步</h4><p>最简单的行为同步就是两个任务之间的单向同步,这种行为同步发生在信息处理链的相邻任务之间。其中一个任务(或ISR)为控制方,它发出控制信息;另一个任务为被控制方,它得到控制信息后即进人就绪状态,只要优先级足够高就可以很快进入运行状态。</p>
-<h4 id="3-2-2-两个任务之间的单向同步"><a href="#3-2-2-两个任务之间的单向同步" class="headerlink" title="3.2.2 两个任务之间的单向同步"></a>3.2.2 两个任务之间的单向同步</h4><p>如果单向同步发生在两个任务之间,那么实际同步效果与两个任务的优先级有很大关系当控制方任务的优先级低于被控制方任务的优先级时,控制方任务发出信息后使被控制方任务进入就绪状态,并立即发生任务切换,使被控制方任务直接进人运行状态,瞬时同步效果较好。<br>当控制方任务的优先级高于被控制方任务的优先级时(大多如此),控制方任务发出信息后虽然使被控制方任务进入就绪状态,但并不发生任务切换,只有当控制方再次调用系统服务函数(如延时函数)并使自己挂起时,被控制方任务オ有运行机会,瞬时同步效果较差。<br><img src="/picture/rtos/任务间单向通信.png" alt=""></p>
-<h4 id="3-2-3-两个任务之间的双向同步"><a href="#3-2-3-两个任务之间的双向同步" class="headerlink" title="3.2.3 两个任务之间的双向同步"></a>3.2.3 两个任务之间的双向同步</h4><p>如果消息的生产者是系统内部的某个任务,则可以通过协调生产者与消贵者的关系来建立一个“产销平衡”的理想状态。通信的双方相互制约,生产者通过“提供消息”来同步消费者,消费者通过“回复消息”来同步生产者,即生产者必须得到消费者的回复后オ能进行下一个消息的生产。这种运行方式称为“双向同步”。它使生产者的生产速度受到消费者的反向控制,达到“产销平衡”的理想状态。<br><img src="/picture/rtos/任务间双向通信.png" alt=""></p>
-<h4 id="3-2-4-两个以上任务同步一个任务"><a href="#3-2-4-两个以上任务同步一个任务" class="headerlink" title="3.2.4 两个以上任务同步一个任务"></a>3.2.4 两个以上任务同步一个任务</h4><p>“逻辑与”的控制功能具有“安全控制”的特点,可用来保障一个重要任务必须在“万事俱备”的前提下才可以执行<br>“逻辑或”的控制功能具有“补充控制”的特点,可用来在一个基本控制方式下增加若干“补充”控制,以满足某些“特殊情况”的需要。</p>
-<h4 id="3-2-5-多个任务相互同步"><a href="#3-2-5-多个任务相互同步" class="headerlink" title="3.2.5 多个任务相互同步"></a>3.2.5 多个任务相互同步</h4><p>多任务相互同步”可以将若干相关任务的运行频度保持一致</p>
-<h2 id="4-资源同步"><a href="#4-资源同步" class="headerlink" title="4 资源同步"></a>4 资源同步</h2><ul>
 <li>保障数据的可靠性，多线程对同一个数据进行操作保障原子性（表现为对单一数据进行读写）</li>
 <li>保障数据的完整性，多线程对复杂数据对操作保证原子性（对一段连续内存数据进行读写）</li>
 </ul>
@@ -379,14 +408,15 @@
 <p><strong>关调度：</strong> 关调度的快点是:使与该共享资源无关的任务受到牵连。</p>
 <p><strong>使用互斥信号量：</strong> 使用互斥倌号量进行共享资源访问对系统实时性影响最小。</p>
 <p><strong>使用计数信号量：</strong> 与用于行为问步的计数信号量不同,用于资源同步的计数信号量的初始化值为共享资源的实体总数。在系统运行过程中,计数信号量的個动态反映了当前闲置共享资源实体的个数。</p>
-<h2 id="5-数据通信"><a href="#5-数据通信" class="headerlink" title="5 数据通信"></a>5 数据通信</h2><h3 id="5-1-全局变量与内存数据块"><a href="#5-1-全局变量与内存数据块" class="headerlink" title="5.1 全局变量与内存数据块"></a>5.1 全局变量与内存数据块</h3><p>在没有行为同步要求的前提下,当传输的数据量不大时,采用全局变量并配合关中断的资源同步揹施是一种经济、有效的方法。</p>
-<h3 id="5-2-消息邮箱"><a href="#5-2-消息邮箱" class="headerlink" title="5.2 消息邮箱"></a>5.2 消息邮箱</h3><p>“消息邮箱”就是具有行为同步功能的通信手段。在用”消息邮箱”进行数据传输时,要求接收消息的任务总是在等待消息,一得到消息总能在下一个消息产生之前处理完毕。当通信双方的执行均具有周期性(且周期相同)时,“消息邮箱”是合适的通信工具</p>
-<h3 id="5-3-消息队列"><a href="#5-3-消息队列" class="headerlink" title="5.3 消息队列"></a>5.3 消息队列</h3><p>消息队列”是具有行为同步功能和缓冲功能的数据通信手段,适用于以下场合：</p>
-<ul>
-<li>通信双方至少有一方没有稳定的执行周期:消息的产生是随机的,或者消息的处理速度与消息内容有关,某些消息的处理时间有可能较长</li>
-<li>通信双方的执行周期不同:消息的产生周期较短,消息的处理周期较长,但一次可以连续处理几条消息。<br>要使用消息队列,需要准备两个数组:一个是“消息指针数组”,供实时操作系统用来排队使用;另一个是“消息内容数组”,用来保存消息队列,供用户使用。这两个数组的单元应该一样多。<br>使用消息队列的最简单方法是利用实时操作系统的“动态内存管理”功能来管理“消息内容数组”。</li>
-</ul>
-<h4 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h4><p>《周慈航-基于嵌入式实时操作系统的程序设计技术》</p>
+<h2 id="数据通信">5 数据通信</h2>
+<h3 id="全局变量与内存数据块">5.1 全局变量与内存数据块</h3>
+<p>在没有行为同步要求的前提下,当传输的数据量不大时,采用全局变量并配合关中断的资源同步揹施是一种经济、有效的方法。</p>
+<h3 id="消息邮箱">5.2 消息邮箱</h3>
+<p>“消息邮箱”就是具有行为同步功能的通信手段。在用”消息邮箱”进行数据传输时,要求接收消息的任务总是在等待消息,一得到消息总能在下一个消息产生之前处理完毕。当通信双方的执行均具有周期性(且周期相同)时,“消息邮箱”是合适的通信工具</p>
+<h3 id="消息队列">5.3 消息队列</h3>
+<p>消息队列”是具有行为同步功能和缓冲功能的数据通信手段,适用于以下场合： - 通信双方至少有一方没有稳定的执行周期:消息的产生是随机的,或者消息的处理速度与消息内容有关,某些消息的处理时间有可能较长 - 通信双方的执行周期不同:消息的产生周期较短,消息的处理周期较长,但一次可以连续处理几条消息。 要使用消息队列,需要准备两个数组:一个是“消息指针数组”,供实时操作系统用来排队使用;另一个是“消息内容数组”,用来保存消息队列,供用户使用。这两个数组的单元应该一样多。 使用消息队列的最简单方法是利用实时操作系统的“动态内存管理”功能来管理“消息内容数组”。</p>
+<h4 id="参考文献">参考文献</h4>
+<p>《周慈航-基于嵌入式实时操作系统的程序设计技术》</p>
 
     </div>
 
@@ -495,7 +525,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BB%BB%E5%8A%A1%E5%88%92%E5%88%86"><span class="nav-text">1 任务划分</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E4%BB%BB%E5%8A%A1%E7%89%B9%E6%80%A7"><span class="nav-text">1.1 任务特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-%E4%BB%BB%E5%8A%A1%E5%88%92%E5%88%86%E7%9B%AE%E6%A0%87"><span class="nav-text">1.2 任务划分目标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E4%BB%BB%E5%8A%A1%E5%88%92%E5%88%86%E6%96%B9%E6%B3%95"><span class="nav-text">1.3 任务划分方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-1-%E8%AE%BE%E5%A4%87%E4%BE%9D%E8%B5%96%E6%80%A7%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.1 设备依赖性任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-2-%E5%85%B3%E9%94%AE%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.2 关键任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-3-%E7%B4%A7%E8%BF%AB%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.3 紧迫任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-4-%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.4 数据处理任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-5-%E5%8A%9F%E8%83%BD%E8%81%9A%E5%90%88%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.5 功能聚合任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-6-%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6%E7%9B%B8%E5%90%8C%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.6 触发条件相同任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-7-%E8%BF%90%E8%A1%8C%E5%91%A8%E6%9C%9F%E7%9B%B8%E5%90%8C%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.7 运行周期相同任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-8-%E9%A1%BA%E5%BA%8F%E6%93%8D%E4%BD%9C%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.8 顺序操作任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#1-3-9-%E6%80%BB%E7%BB%93"><span class="nav-text">1.3.9 总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-4-%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%8F%AF%E8%B0%83%E5%BA%A6%E6%80%A7%E5%88%86%E6%9E%90"><span class="nav-text">1.4 任务的可调度性分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E4%BB%BB%E5%8A%A1%E8%AE%BE%E8%AE%A1"><span class="nav-text">2 任务设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#2-1-%E4%BB%BB%E5%8A%A1%E5%87%BD%E6%95%B0%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-text">2.1 任务函数的结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-1-%E5%8D%95%E6%AC%A1%E6%89%A7%E8%A1%8C%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-text">2.1.1 单次执行的任务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-2-%E5%91%A8%E6%9C%9F%E6%80%A7%E6%89%A7%E8%A1%8C%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-text">2.1.2 周期性执行的任务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-1-3-%E4%BA%8B%E4%BB%B6%E8%A7%A6%E5%8F%91%E6%89%A7%E8%A1%8C%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-text">2.1.3 事件触发执行的任务</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-2-%E4%BB%BB%E5%8A%A1%E4%BC%98%E5%85%88%E7%BA%A7%E5%AE%89%E6%8E%92"><span class="nav-text">2.2 任务优先级安排</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-3-%E4%BB%BB%E5%8A%A1%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E8%AE%BE%E8%AE%A1"><span class="nav-text">2.3 任务的数据结构设计</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-1-%E4%B8%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%9C%89%E5%85%B3%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.3.1 与操作系统有关的数据结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-3-2-%E4%B8%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%97%A0%E5%85%B3%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.3.2 与操作系统无关的数据结构</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-4-%E4%BB%BB%E5%8A%A1%E8%AE%BE%E8%AE%A1%E4%B8%AD%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text">2.4 任务设计中的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-1-%E5%85%AC%E5%85%B1%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="nav-text">2.4.1 公共函数调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-4-2-%E4%B8%8E%E5%85%B6%E4%BB%96%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%8D%8F%E8%B0%83%EF%BC%8C%E6%95%B0%E6%8D%AE%E9%80%9A%E4%BF%A1"><span class="nav-text">2.4.2 与其他任务的协调，数据通信</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E8%A1%8C%E4%B8%BA%E5%90%8C%E6%AD%A5"><span class="nav-text">3 行为同步</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E7%94%A8%E4%BA%8E%E8%A1%8C%E4%B8%BA%E5%90%8C%E6%AD%A5%E7%9A%84%E9%80%9A%E4%BF%A1%E6%89%8B%E6%AE%B5"><span class="nav-text">3.1 用于行为同步的通信手段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#3-2-%E8%A1%8C%E4%B8%BA%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2 行为同步</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-1-ISR%E4%B8%8E%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E7%9A%84%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.1 ISR与任务之间的同步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-2-%E4%B8%A4%E4%B8%AA%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E7%9A%84%E5%8D%95%E5%90%91%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.2 两个任务之间的单向同步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-3-%E4%B8%A4%E4%B8%AA%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E7%9A%84%E5%8F%8C%E5%90%91%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.3 两个任务之间的双向同步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-4-%E4%B8%A4%E4%B8%AA%E4%BB%A5%E4%B8%8A%E4%BB%BB%E5%8A%A1%E5%90%8C%E6%AD%A5%E4%B8%80%E4%B8%AA%E4%BB%BB%E5%8A%A1"><span class="nav-text">3.2.4 两个以上任务同步一个任务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-2-5-%E5%A4%9A%E4%B8%AA%E4%BB%BB%E5%8A%A1%E7%9B%B8%E4%BA%92%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.5 多个任务相互同步</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E8%B5%84%E6%BA%90%E5%90%8C%E6%AD%A5"><span class="nav-text">4 资源同步</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#5-%E6%95%B0%E6%8D%AE%E9%80%9A%E4%BF%A1"><span class="nav-text">5 数据通信</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#5-1-%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F%E4%B8%8E%E5%86%85%E5%AD%98%E6%95%B0%E6%8D%AE%E5%9D%97"><span class="nav-text">5.1 全局变量与内存数据块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-2-%E6%B6%88%E6%81%AF%E9%82%AE%E7%AE%B1"><span class="nav-text">5.2 消息邮箱</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-3-%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97"><span class="nav-text">5.3 消息队列</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E5%88%92%E5%88%86"><span class="nav-text">1 任务划分</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%89%B9%E6%80%A7"><span class="nav-text">1.1 任务特性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E5%88%92%E5%88%86%E7%9B%AE%E6%A0%87"><span class="nav-text">1.2 任务划分目标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E5%88%92%E5%88%86%E6%96%B9%E6%B3%95"><span class="nav-text">1.3 任务划分方法</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E4%BE%9D%E8%B5%96%E6%80%A7%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.1 设备依赖性任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%B3%E9%94%AE%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.2 关键任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%B4%A7%E8%BF%AB%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.3 紧迫任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.4 数据处理任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD%E8%81%9A%E5%90%88%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.5 功能聚合任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%A7%A6%E5%8F%91%E6%9D%A1%E4%BB%B6%E7%9B%B8%E5%90%8C%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.6 触发条件相同任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E5%91%A8%E6%9C%9F%E7%9B%B8%E5%90%8C%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.7 运行周期相同任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%A1%BA%E5%BA%8F%E6%93%8D%E4%BD%9C%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%88%92%E5%88%86"><span class="nav-text">1.3.8 顺序操作任务的划分</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">1.3.9 总结</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%8F%AF%E8%B0%83%E5%BA%A6%E6%80%A7%E5%88%86%E6%9E%90"><span class="nav-text">1.4 任务的可调度性分析</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%AE%BE%E8%AE%A1"><span class="nav-text">2 任务设计</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E5%87%BD%E6%95%B0%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-text">2.1 任务函数的结构</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%95%E6%AC%A1%E6%89%A7%E8%A1%8C%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-text">2.1.1 单次执行的任务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%91%A8%E6%9C%9F%E6%80%A7%E6%89%A7%E8%A1%8C%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-text">2.1.2 周期性执行的任务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E8%A7%A6%E5%8F%91%E6%89%A7%E8%A1%8C%E7%9A%84%E4%BB%BB%E5%8A%A1"><span class="nav-text">2.1.3 事件触发执行的任务</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E4%BC%98%E5%85%88%E7%BA%A7%E5%AE%89%E6%8E%92"><span class="nav-text">2.2 任务优先级安排</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E8%AE%BE%E8%AE%A1"><span class="nav-text">2.3 任务的数据结构设计</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%9C%89%E5%85%B3%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.3.1 与操作系统有关的数据结构</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E6%97%A0%E5%85%B3%E7%9A%84%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.3.2 与操作系统无关的数据结构</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E8%AE%BE%E8%AE%A1%E4%B8%AD%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text">2.4 任务设计中的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%85%AC%E5%85%B1%E5%87%BD%E6%95%B0%E8%B0%83%E7%94%A8"><span class="nav-text">2.4.1 公共函数调用</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%8E%E5%85%B6%E4%BB%96%E4%BB%BB%E5%8A%A1%E7%9A%84%E5%8D%8F%E8%B0%83%E6%95%B0%E6%8D%AE%E9%80%9A%E4%BF%A1"><span class="nav-text">2.4.2 与其他任务的协调，数据通信</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA%E5%90%8C%E6%AD%A5"><span class="nav-text">3 行为同步</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%A8%E4%BA%8E%E8%A1%8C%E4%B8%BA%E5%90%8C%E6%AD%A5%E7%9A%84%E9%80%9A%E4%BF%A1%E6%89%8B%E6%AE%B5"><span class="nav-text">3.1 用于行为同步的通信手段</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA%E5%90%8C%E6%AD%A5-1"><span class="nav-text">3.2 行为同步</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#isr%E4%B8%8E%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E7%9A%84%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.1 ISR与任务之间的同步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E7%9A%84%E5%8D%95%E5%90%91%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.2 两个任务之间的单向同步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E4%BB%BB%E5%8A%A1%E4%B9%8B%E9%97%B4%E7%9A%84%E5%8F%8C%E5%90%91%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.3 两个任务之间的双向同步</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%A4%E4%B8%AA%E4%BB%A5%E4%B8%8A%E4%BB%BB%E5%8A%A1%E5%90%8C%E6%AD%A5%E4%B8%80%E4%B8%AA%E4%BB%BB%E5%8A%A1"><span class="nav-text">3.2.4 两个以上任务同步一个任务</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E4%BB%BB%E5%8A%A1%E7%9B%B8%E4%BA%92%E5%90%8C%E6%AD%A5"><span class="nav-text">3.2.5 多个任务相互同步</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B5%84%E6%BA%90%E5%90%8C%E6%AD%A5"><span class="nav-text">4 资源同步</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%80%9A%E4%BF%A1"><span class="nav-text">5 数据通信</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E5%8F%98%E9%87%8F%E4%B8%8E%E5%86%85%E5%AD%98%E6%95%B0%E6%8D%AE%E5%9D%97"><span class="nav-text">5.1 全局变量与内存数据块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E9%82%AE%E7%AE%B1"><span class="nav-text">5.2 消息邮箱</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97"><span class="nav-text">5.3 消息队列</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -580,7 +610,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">883k</span>
+    <span title="站点总字数">905k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
