@@ -33,7 +33,7 @@
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/program/C++11为改变思考方式而改变.png">
 <meta property="article:published_time" content="2022-01-27T15:19:24.000Z">
-<meta property="article:modified_time" content="2022-03-17T14:58:39.108Z">
+<meta property="article:modified_time" content="2022-05-08T12:06:22.170Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="C++11">
 <meta name="twitter:card" content="summary">
@@ -288,20 +288,20 @@
 <span id="more"></span>
 <h2 id="nullptr">1. nullptr</h2>
 <h3 id="nullptrnull和0">1.1 nullptr、NULL和0</h3>
-<p>般情况下，NUL是一个宏定义。在传统的C头文件（ stddef.h）里我们可以找到如下代码</p>
+<p>般情况下，NULL是一个宏定义。在传统的C头文件（ stddef.h）里我们可以找到如下代码</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">undef</span> NULL</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">if</span> defined(__cplusplus)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NULL O</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> NULL ((void *)0)</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br></pre></td></tr></table></figure>
-<p>可以看到，NUL可能被定义为字面常量0，或者是定义为无类型指针（void*）常量。不过无论采用什么样的定义，我们在使用空值的指针时，都不可避免地会遇到↓些麻烦。</p>
+<p>可以看到，NULL可能被定义为字面常量0，或者是定义为无类型指针（void*）常量。不过无论采用什么样的定义，我们在使用空值的指针时，都不可避免地会遇到一些麻烦。</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">int</span> i)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;int&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">func</span><span class="params">(<span class="keyword">void</span>* p)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    std::cout &lt;&lt; <span class="string">&quot;ptr&quot;</span> &lt;&lt; std::endl;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">func</span>(<span class="number">0</span>);                   <span class="comment">// int</span></span><br><span class="line">    <span class="built_in">func</span>(<span class="literal">NULL</span>);                <span class="comment">// int，本意是调用指针函数，实际却调用了int函数</span></span><br><span class="line">    <span class="built_in">func</span>((<span class="keyword">void</span>*)<span class="number">0</span>);            <span class="comment">// ptr</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">getchar</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>以上的代码中func(NULL);本意是调用指针函数，实际却调用了int函数，因为NULL被定义成了0。虽然在前面加上(void*)强制转换能解决这个问题，但是某些编译器缺会在产生这种二义性时报错，多以对于代码移植来说会有一定限制。于是C++11中新增了nullptr来代表指针空值，以上问题就得到了解决：</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">func</span>(<span class="number">0</span>);                   <span class="comment">// int</span></span><br><span class="line">    <span class="built_in">func</span>(<span class="literal">nullptr</span>);             <span class="comment">// ptr</span></span><br><span class="line">    <span class="built_in">func</span>((<span class="keyword">void</span>*)<span class="number">0</span>);            <span class="comment">// ptr</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">getchar</span>();</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="nullptr和nullptr_t">1.2 nullptr和nullptr_t</h3>
 <p>同时，C++11还定义了指针空值类型nullptr_t，就是说指针空值并非只有nullptr一个实例，也可以通过nullptr_t来声明一个空指针类型的变量，虽然好像没什么用。另外，nullptr_t也规定了一些规则：</p>
 <ul>
-<li>所有定义为nullptr_t类型的数据都是等价的，行为也完全一致。</li>
-<li>nullptr_t类型数据可以隐式转换成任意一个指针类型。</li>
-<li>nullptr_t类型数据不能转换成非指针类型。</li>
-<li>nullptr_t类型数据不适用于算术运算表达式。</li>
-<li>nullptr_t类型数据可以用于关系运算表达式，但是只能和nullptr_t类型或者指针类型进行比较。</li>
+<li>所有定义为nullptr_t类型的数据都是等价的，行为也完全一致</li>
+<li>nullptr_t类型数据可以隐式转换成任意一个指针类型</li>
+<li>nullptr_t类型数据不能转换成非指针类型</li>
+<li>nullptr_t类型数据不适用于算术运算表达式</li>
+<li>nullptr_t类型数据可以用于关系运算表达式，但是只能和nullptr_t类型或者指针类型进行比较</li>
 </ul>
 <p>nullptr_t类型还是比较有意思的，它的定义是从nullptr反推而来，从这点又能看出C++11用法的灵活性：</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">typedef</span> <span class="title">decltype</span><span class="params">(<span class="literal">nullptr</span>)</span> <span class="keyword">nullptr_t</span></span>;</span><br></pre></td></tr></table></figure>
@@ -573,7 +573,7 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">905k</span>
+    <span title="站点总字数">903k</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
