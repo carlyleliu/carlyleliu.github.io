@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux进程管理（三）CFS调度器">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89CFS%E8%B0%83%E5%BA%A6%E5%99%A8/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-CFS调度器.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/scheduler_layer.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/vruntime.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/context.png">
+<meta property="article:published_time" content="2021-10-31T01:49:26.000Z">
+<meta property="article:modified_time" content="2024-01-30T16:38:58.906Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="进程管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/进程管理-CFS调度器.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89CFS%E8%B0%83%E5%BA%A6%E5%99%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux进程管理（三）CFS调度器 | Matrix</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Matrix</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89CFS%E8%B0%83%E5%BA%A6%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux进程管理（三）CFS调度器
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-10-31 09:49:26" itemprop="dateCreated datePublished" datetime="2021-10-31T09:49:26+08:00">2021-10-31</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/%E5%86%85%E6%A0%B8/" itemprop="url" rel="index"><span itemprop="name">内核</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89CFS%E8%B0%83%E5%BA%A6%E5%99%A8/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux进程管理（三）CFS调度器/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>6.8k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>6 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="/picture/linux/brief/进程管理-CFS调度器.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2OTgxMzBlM2U3NDA3NGNmMGU2NGU=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="公平调度思想的引入">1. 公平调度思想的引入</h2>
+<h3 id="传统调度器时间片悖论">1.1 传统调度器时间片悖论</h3>
+<p>在O（n）和O（1）调度器中，时间片是固定分配的，静态优先级高的进程获取更大的time slice。高优先级的进程会获得更多的连续执行的机会，这是CPU-bound进程期望的，但是实际上，CPU-bound进程往往在后台执行，其优先级都是比较低的。</p>
+<h3 id="rsdl调度器">1.2 RSDL调度器</h3>
+<p>RSDL调度器仍然沿用了O（1）调度的数据结构和软件结构，当然删除了那些令人毛骨悚然的评估进程交互指数的代码。我们这一小节不可能详细描述RSDL算法，不过只讲清楚Rotating、Staircase和Deadline这三个基本概念。</p>
+<p>首先看Staircase概念，它更详细表述应该是priority staircase，即在进程调度过程中，其优先级会像下楼梯那样一点点的降低。在传统的调度概念中，一个进程有一个和其静态优先级相匹配的时间片，在RSDL中，同样也存在这样的时间片，但是时间片是散布在很多优先级中。例如如果一个进程的优先级是120，那么整个时间片散布在120～139的优先级中，在一个调度周期，进程开始是挂入120的优先级队列，并在其上运行6ms，一旦在120级别的时间配额使用完毕之后，该进程会转入121的队列中，发生一次Rotating，更准确的说是Priority minor rotating。之后，该进程沿阶而下，直到139的优先级，在这个优先级上如果耗尽了6ms的时间片，这时候，该进程所有的时间片就都耗尽了，就会被挂入到expired队列中去等待下一个调度周期。这次rotating被称为major rotating。当然，这时候该进程会挂入其静态优先级对应的expired队列，即一切又回到了调度的起点。</p>
+<p>Deadline是指在RSDL算法中，任何一个进程可以准确的预估其调度延迟。一个简单的例子，假设runqueue中有两个task，静态优先级分别是130的A进程和139的B进程。对于A进程，只有在进程沿着优先级楼梯从130走到139的时候，B进程才有机会执行，其调度延迟是9 x 6ms ＝ 54ms。</p>
+<p>多么简洁的算法，只需要维持公平，没有对进程睡眠/运行时间的统计，没有对用户交互指数的计算，没有那些奇奇怪怪的常数……调度，就是这么简单。</p>
+<h2 id="cfs调度器">2. CFS调度器</h2>
+<p>Con Kolivas的RSDL调度器始终没有能够进入kernel mainline，取而代之的是同样基于公平调度思想的CFS调度器，在CFS调度器并入主线的同时，仍然提供了模块化的设计，为RSDL或者其他的调度器可以进入内核提供了方便。本章我们唯一需要描述的是Ingo Molnar如何把完全公平调度的理想照进现实。</p>
+<h3 id="模块化思想的引入">2.1 模块化思想的引入</h3>
+<p>从2.6.23内核开始，调度器采用了模块化设计的思想，从而把进程调度的软件分成了两个层次，一个是core scheduler layer，另外一个是specific scheduler layer： <img src="/picture/linux/kernel/task/scheduler_layer.png" /></p>
+<p>从功能层面上看，进程调度仍然分成两个部分，第一个部分是通过负载均衡模块将各个runnable task根据负载情况平均分配到各个CPU runqueue上去。第二部分的功能是在各个CPU的Main scheduler和Tick scheduler的驱动下进行单个CPU上的调度。</p>
+<h3 id="时间粒度">2.2 时间粒度</h3>
+<p>Linux内核的CFS调度器已经摒弃了传统的固定时间片的概念了，O（1）调度器会为每一个进程分配一个缺省的时间片。CFS调度器没有传统的静态时间片的概念，她的时间片是动态的，和当前CPU的可运行状态的进程以及它们的优先级相关，因此CFS调度器中，时间片是动态变化的。</p>
+<p>CFS调度器是有一个时间粒度的定义，我们称之调度周期。也就是说，在一个调度周期内，CFS调度器可以保证所有的可运行状态的进程平均分配CPU时间。</p>
+<h3 id="如何保证有界的调度延迟">2.3 如何保证有界的调度延迟？</h3>
+<p>传统的调度器无法保证调度延迟，为了说明这个问题我们设想这样一个场景：CPU runqueue中有两个nice value等于0的runnable进程A和B，传统调度器会为每一个进程分配一个固定的时间片100ms，这时候A先运行，直到100ms的时间片耗尽，然后B运行。这两个进程会交替运行，调度延迟就是100ms。随着系统负荷的加重，例如又有两个两个nice value等于0的runnable进程C和D挂入runqueue，这时候，A、B、C、D交替运行，调度延迟就是300ms。因此，传统调度器的调度延迟是和系统负载相关的，当系统负载增加的时候，用户更容易观察到卡顿现象。</p>
+<p>CFS调度器设计之初就确定了调度延迟的参数，我们称之targeted latency，这个概念类似传统调度器中的调度周期的概念，只不过在过去，一个调度周期中的时间片被固定分配给了runnable的进程，而在CFS中，调度器会不断的检查在一个targeted latency中，公平性是否得到了保证。下面的代码说明了targeted latency的计算过程：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> u64 __sched_period(<span class="keyword">unsigned</span> <span class="keyword">long</span> nr_running)</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">if</span> (unlikely(nr_running &gt; sched_nr_latency))</span><br><span class="line">    <span class="keyword">return</span> nr_running * sysctl_sched_min_granularity;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="keyword">return</span> sysctl_sched_latency;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当runqueue中的runnable进程的数目小于sched_nr_latency（8个）的时候，targeted latency就是sysctl_sched_latency（6ms），当runqueue中的runnable进程的数目大于等于sched_nr_latency的时候，targeted latency等于runnable进程数目乘以sysctl_sched_min_granularity（0.75ms）。显然sysctl_sched_min_granularity这个参数就是一段一个进程被调度执行，它需要至少执行的时间片大小，设立这个参数是为了防止overscheduling而产生的性能下降。</p>
+<p>CFS调度器保证了在一个targeted latency中，所有的runnable进程都会至少执行一次，从而保证了有界的、可预测的调度延迟。</p>
+<h3 id="为何引入虚拟时间">2.4 为何引入虚拟时间？</h3>
+<p>虽然Con Kolivas提出了精采绝伦的设计思想，但是在具体实现的时候相对保守。CFS调度器则不然，它采用了相对激进的方法，把runqueue中管理task的优先级链表变成了红黑树结构。有了这样一颗runnable进程的红黑树，在插入操作的时候如何确定进程在红黑树中的位置？也就是说这棵树的“key”是什么？</p>
+<p>CFS的红黑树使用vruntime（virtual runtime）作为key，为了理解vruntime，这里需要引入一个虚拟时间轴的概念。在上一章中，我们已经清楚的表述了公平的含义：按照进程的静态优先级来分配CPU资源，当然，CPU资源也就是CPU的时间片，因此在物理世界中，公平就是分配和静态优先级匹配的CPU时间片。但是红黑树需要一个单一数轴上的量进行比对，而这里有两个度量因素：静态优先级和物理时间片，因此我们需要把它们映射到一个虚拟的时间轴上，屏蔽掉静态优先级的影响：</p>
+<h3 id="如何计算virtual-runtime">2.5 如何计算virtual runtime</h3>
+<p>具体的计算公式如下：</p>
+<p><span class="math display">\[
+Virtual runtime ＝ （physical runtime） * （nice value 0的权重）/ 当前线程的权重
+\]</span></p>
+<p>为了计算方便，Linux内核约定nice值0对应的权值为1024，其他nice值对应的权重值可以通过查表的方式来获取。内核预先计算好了sched_prio_to_weight[40]，表的下标对应nice值。CFS调度器规定nice值为0的进程具有基准权重，并且其值每增加1则减少10%的CPU权重，每减少1则增加10%的CPU权重（1024-1024*20% = 820）。其中线程的权重定义如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="keyword">int</span> sched_prio_to_weight[<span class="number">40</span>] = &#123;</span><br><span class="line">    <span class="comment">/* -20 */</span>     <span class="number">88761</span>,     <span class="number">71755</span>,     <span class="number">56483</span>,     <span class="number">46273</span>,     <span class="number">36291</span>,</span><br><span class="line">    <span class="comment">/* -15 */</span>     <span class="number">29154</span>,     <span class="number">23254</span>,     <span class="number">18705</span>,     <span class="number">14949</span>,     <span class="number">11916</span>,</span><br><span class="line">    <span class="comment">/* -10 */</span>      <span class="number">9548</span>,      <span class="number">7620</span>,      <span class="number">6100</span>,      <span class="number">4904</span>,      <span class="number">3906</span>,</span><br><span class="line">    <span class="comment">/*  -5 */</span>      <span class="number">3121</span>,      <span class="number">2501</span>,      <span class="number">1991</span>,      <span class="number">1586</span>,      <span class="number">1277</span>,</span><br><span class="line">    <span class="comment">/*   0 */</span>      <span class="number">1024</span>,       <span class="number">820</span>,       <span class="number">655</span>,       <span class="number">526</span>,       <span class="number">423</span>,</span><br><span class="line">    <span class="comment">/*   5 */</span>       <span class="number">335</span>,       <span class="number">272</span>,       <span class="number">215</span>,       <span class="number">172</span>,       <span class="number">137</span>,</span><br><span class="line">    <span class="comment">/*  10 */</span>       <span class="number">110</span>,        <span class="number">87</span>,        <span class="number">70</span>,        <span class="number">56</span>,        <span class="number">45</span>,</span><br><span class="line">    <span class="comment">/*  15 */</span>        <span class="number">36</span>,        <span class="number">29</span>,        <span class="number">23</span>,        <span class="number">18</span>,        <span class="number">15</span>,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>通过上面的公式，我们构造了一个虚拟的世界。二维的（load weight，physical runtime）物理世界变成了一维的virtual runtime的虚拟世界。在这个虚拟的世界中，各个进程的vruntime可以比较大小，以便确定其在红黑树中的位置，而CFS调度器的公平也就是维护虚拟世界vruntime的公平，即各个进程的vruntime是相等的。</p>
+<p>根据上面的公式，我们可以看出：实际上对于静态优先级是120（即nice value等于0）的进程，其物理时间轴等于虚拟时间轴，而其他的静态优先级的虚拟时间都是根据其权重和nice 0的权重进行尺度缩放。对于更高优先级的进程，其虚拟时间轴过的比较慢，而对于优先级比较低的进程，其虚拟时间轴过的比较快。 <img src="/picture/linux/kernel/task/vruntime.png" /></p>
+<p>在进行进程调度时候，调度器需要选择下一个占用CPU资源的那个next thread。对于CFS而言，其算法就是从红黑树中找到left most的那个task并调度其运行。这时候，失去CPU执行权的那个task会被重新插入红黑树，其在红黑树中的位置是由task的vruntime值决定的。</p>
+<h2 id="进程切换">3. 进程切换</h2>
+<h3 id="调度时机">3.1 调度时机</h3>
+<p>内核中实现调度的统一策略是：检查进程是否需要调度和实际的调度行为是分离的，比如在 tick 中断或者唤醒进程时检查到存在高优先级进程可以抢占当前执行进程，此时只是设置抢占标志(TIF_NEED_RESCHED)，在特定的时间点再执行调度行为，而不是直接执行调度。毕竟在中断中是绝对不能直接执行调度的。schedule()（调用__schedule()）是调度器的核心函数，作用是让调度器选择和切换到一个合适的进程并运行。调度的时机可以分为如下3种。</p>
+<ul>
+<li>阻塞操作：比如互斥量（mutex）、信号量（semaphore）、等待队列（wait queue）sleep等</li>
+<li>在中断返回前和系统调用返回用户空间时，检查TIF_NEED_RESCHED标志判断是否需要调度</li>
+<li>将要被唤醒的进程不会马上调用schedule()，而是会被添加到CFS就绪队列中，并且设置TIF_NEED_RESCHED标志位。那么被唤醒的进程什么时候被调度呢？这要根据内核是否具有可抢占功能（CONFIG_PREEMPT=y）分两种情况
+<ul>
+<li>内核可抢占
+<ul>
+<li>如果唤醒动作发生在系统调用或者异常处理上下文中，那么在下一次调用preempt_enable()时会检查是否需要抢占调度</li>
+<li>如果唤醒动作发生在硬中断处理上下文中，那么在硬件中断处理返回前会检查是否要抢占当前进程</li>
+</ul></li>
+<li>内核不可抢占
+<ul>
+<li>当前进程调用cond_resched时会检查是否需要调度</li>
+<li>主动调用schedule()</li>
+<li>系统调用或者异常处理完后返回用户空间时</li>
+<li>中断处理完成后返回用户空间时</li>
+</ul></li>
+</ul></li>
+</ul>
+<p>前文提到的硬件中断返回前和硬件中断返回用户空间前是两个不同的概念。前者在每次硬件中断返回前都会检查是否有进程需要被抢占调度，而不管中断发生点是在内核空间还是用户空间；后者仅当中断发生点在用户空间时才会检查。</p>
+<p>在Linux内核里，schedule()是内部使用的接口函数，有不少其他函数会直接调用该函数。除此之外，schedule()函数还有不少变种。</p>
+<ul>
+<li>preempt_schedule()用于可抢占内核的调度</li>
+<li>preempt_schedule_irq()用于可抢占内核的调度，在中断结束返回时会调用该函数。</li>
+<li>schedule_timeout（signed long timeout），进程睡眠到timeout指定的超时时间为止。 schedule()函数的核心代码片段如下</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">asmlinkage __visible <span class="keyword">void</span> __sched <span class="title">schedule</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">tsk</span> =</span> current;</span><br><span class="line"></span><br><span class="line">  sched_submit_work(tsk);</span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    preempt_disable();</span><br><span class="line">    __schedule(SM_NONE);</span><br><span class="line">    sched_preempt_enable_no_resched();</span><br><span class="line">  &#125; <span class="keyword">while</span> (need_resched());</span><br><span class="line">  sched_update_worker(tsk);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL(schedule);</span><br></pre></td></tr></table></figure>
+<h3 id="进程切换-1">3.2 进程切换</h3>
+<p>操作系统会把当前正在运行的进程挂起并且恢复以前挂起的某个进程的执行，这个过程称为进程切换或者上下文切换。Linux内核实现进程切换的核心函数是context_switch()每个进程可以拥有属于自己的进程地址空间，但是所有进程都必须共享CPU的寄存器等资源。所以，在切换进程时必须把next进程在上一次挂起时保存的寄存器值重新装载到CPU里。在进程恢复执行前必须装入CPU寄存器的数据，则称为硬件上下文。进程的切执可以总结为如下两步。</p>
+<ul>
+<li>切换进程的进程地址空间，也就是切换next进程的页表到硬件页表中，这是switch_mm()函数实现的</li>
+<li>切换到next进程的内核态栈和硬件上下文，这是由switch_to()函数实现的。硬件上下文提供了内核执行next进程所需要的所有硬件信息</li>
+</ul>
+<h4 id="switch_mm函数">switch_mm()函数</h4>
+<p>switch_mm()函数实质上是把新进程的页表基地址设置到页表基地址寄存器。对于ARM64处理器，switch_mm()函数的主要作用是完成ARM架构相关的硬件设置，例如刷新TLB以及设置硬件页表等。</p>
+<p>在运行进程时，除了高速缓存（cache）会缓存进程的数据外，MMU内部还有叫作TLB（Translation Lookaside Buffer，快表）的硬件单元，TLB会为了加快虚拟地址到物理地址的转换速度而将部分页表项内容缓存起来，避免频繁访问页表。因此刚切换完进程时会出现很严重的TLB未命中和高速缓存未命中，导致系统性能下降。</p>
+<p>如何提高TLB的性能？这是最近几十年来芯片设计人员和操作系统设计人员共同努力的方向。从Linux内核角度看，地址空间可以划分为内核地址空间和用户空间；对于TLB来说，可以划分成全局（global）类型和进程独有（process-specific）类型。</p>
+<ul>
+<li>全局类型的TLB：内核空间是所有进程共享的空间，因此这部分空间的虚拟地址至物理地址的翻译是不会变化的，可以理解为全局的</li>
+<li>进程独有类型的TLB：用户地址空间是每个进程独有的地址空间。将prev进程切换到next进程时，TLB中缓存的prev进程的相关数据对于next进程是无用的，因此可以刷新，这就是所谓的进程独有类型的TLB</li>
+</ul>
+<p>为了支持进程独有类型的TLB，ARM架构提出了一种硬件解决方案，叫ASID（Address Space ID），这样TLB就可以识别哪些TLB项是属于某个进程的。ASID方案使得每个TLB项包含一个ASID，ASID用于标识每个进程的地址空间。因此，有了ASID硬件机制的支持，进程的切换就不需要刷新整个TLB，只需要刷新进程独有的TLB。</p>
+<h4 id="switch_to函数">switch_to()函数</h4>
+<p>处理完TLB和页表基地址后，还需要进行栈空间的切换，这样next进程才能开始运行，这正是switch_to()函数的目的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/<span class="keyword">asm</span>-generic/switch_to.h&gt;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> switch_to(prev, next, last)					\</span></span><br><span class="line"><span class="meta">	do &#123;								\</span></span><br><span class="line"><span class="meta">		((last) = __switch_to((prev), (next)));			\</span></span><br><span class="line"><span class="meta">	&#125; while (0)</span></span><br></pre></td></tr></table></figure>
+<p>switch_to()函数一共有3个参数，第一个表示将要被调度出去的进程prev，第二个表示将要被调度进来的进程next，第三个参数last是什么意思呢？为什么switch_to()函数有3个参数？prev和next就够了，为何还需要last？</p>
+<p>switch_to宏由旧进程调用，在新进程结束，新进程如果想获取旧进程描述符地址，不能直接读取局部变量prev（因为prev存放在该宏调用者，即旧进程的内核栈中，新进程无法访问旧进程的内核栈），所以就需要一个输出参数将旧进程描述符地址传递给新进程（实现方法就是利用cpu寄存器%eax，在切换过程中该寄存器的值不变，也就是说，在旧进程中，将prev存入%eax，在新进程恢复执行后，将%eax的内容放入last）。</p>
+<p>task_struct数据结构里的thread_struct用来存放和具体架构相关的一些信息。对于ARM64 架构来说，thread_struct数据结构定义在arch/arm64/include/asm/processor.h文件中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/processor.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">thread_struct</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">cpu_context</span>	<span class="title">cpu_context</span>;</span>	<span class="comment">/* cpu context */</span></span><br><span class="line"></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span>	tp_value;	<span class="comment">/* TLS register */</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span>	tp2_value;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">user_fpsimd_state</span> <span class="title">fpsimd_state</span>;</span></span><br><span class="line">  &#125; uw;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		fpsimd_cpu;</span><br><span class="line">  <span class="keyword">void</span>			*sve_state;	<span class="comment">/* SVE registers, if any */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		sve_vl;		<span class="comment">/* SVE vector length */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span>		sve_vl_onexec;	<span class="comment">/* SVE vl after next exec */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		fault_address;	<span class="comment">/* fault info */</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span>		fault_code;	<span class="comment">/* ESR_EL1 value */</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">debug_info</span>	<span class="title">debug</span>;</span>		<span class="comment">/* debugging */</span></span><br><span class="line">  u64			sctlr_user;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>cpu_context：保存进程上下文相关的信息到CPU相关的通用寄存器中</li>
+<li>tp_value：TLS寄存器。</li>
+<li>tp2_value：TLS寄存器。</li>
+<li>fpsimd_state：与FP和SMID相关的状态。</li>
+<li>fpsimd_cpu：FP和SMID的相关信息。</li>
+<li>sve_state：SVE寄存器。</li>
+<li>sve_vl：SVE向量的长度。</li>
+<li>sve_vl_onexec：下一次执行之后SVE向量的长度。</li>
+<li>fault_address：异常地址。</li>
+<li>fault_code：异常错误值，从ESREL1中读出。</li>
+</ul>
+<p>cpu_context是一种非常重要的数据结构，它勾画了在切换进程时，CPU需要保存哪些寄存器，我们称为进程硬件上下文。对于ARM64处理器来说，在切换进程时，我们需要把prev进程的x19~x28寄存器以及fp、sp和pc寄存器保存到cpu_context数据结构中，然后把next进程中上一次保存的cpu_context数据结构的值恢复到实际硬件的寄存器中，这样就完成了进程的上下文切换。 cpu_context数据结构的定义如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/processor.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cpu_context</span> &#123;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x19;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x20;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x21;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x22;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x23;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x24;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x25;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x26;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x27;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x28;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> fp;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> sp;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> pc;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>进程的上下文切换的流程如图所示。在进程切换过程中，进程硬件上下文中重要的寄存器已保存到prev进程的cpu_context数据结构中，进程硬件上下文包括x19~x28寄存器、fp寄存器、sp寄存器以及pc寄存器，如图（a）所示。然后，把next进程存储的上下文恢复到CPU中，如图（b）所示。 <img src="/picture/linux/kernel/task/context.png" /></p>
+<h3 id="参考文献">参考文献</h3>
+<p>《奔跑吧Linux内核》<br />
+《Linux内核设计与实现》</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89CFS%E8%B0%83%E5%BA%A6%E5%99%A8/" title="Linux进程管理（三）CFS调度器">http://carlyleliu.github.io/2021/Linux进程管理（三）CFS调度器/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/" rel="tag"><i class="fa fa-tag"></i> 进程管理</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E5%A4%9A%E6%A0%B8%E8%B0%83%E5%BA%A6/" rel="prev" title="Linux进程管理（四）多核调度">
+      <i class="fa fa-chevron-left"></i> Linux进程管理（四）多核调度
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%BA%8C%EF%BC%89%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA%E5%92%8C%E7%BB%88%E6%AD%A2/" rel="next" title="Linux进程管理（二）进程的创建和终止">
+      Linux进程管理（二）进程的创建和终止 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AC%E5%B9%B3%E8%B0%83%E5%BA%A6%E6%80%9D%E6%83%B3%E7%9A%84%E5%BC%95%E5%85%A5"><span class="nav-text">1. 公平调度思想的引入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E8%B0%83%E5%BA%A6%E5%99%A8%E6%97%B6%E9%97%B4%E7%89%87%E6%82%96%E8%AE%BA"><span class="nav-text">1.1 传统调度器时间片悖论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rsdl%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">1.2 RSDL调度器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cfs%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">2. CFS调度器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%8C%96%E6%80%9D%E6%83%B3%E7%9A%84%E5%BC%95%E5%85%A5"><span class="nav-text">2.1 模块化思想的引入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%B2%92%E5%BA%A6"><span class="nav-text">2.2 时间粒度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%9C%89%E7%95%8C%E7%9A%84%E8%B0%83%E5%BA%A6%E5%BB%B6%E8%BF%9F"><span class="nav-text">2.3 如何保证有界的调度延迟？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BD%95%E5%BC%95%E5%85%A5%E8%99%9A%E6%8B%9F%E6%97%B6%E9%97%B4"><span class="nav-text">2.4 为何引入虚拟时间？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AE%A1%E7%AE%97virtual-runtime"><span class="nav-text">2.5 如何计算virtual runtime</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%88%87%E6%8D%A2"><span class="nav-text">3. 进程切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E6%97%B6%E6%9C%BA"><span class="nav-text">3.1 调度时机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%88%87%E6%8D%A2-1"><span class="nav-text">3.2 进程切换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#switch_mm%E5%87%BD%E6%95%B0"><span class="nav-text">switch_mm()函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#switch_to%E5%87%BD%E6%95%B0"><span class="nav-text">switch_to()函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">112</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">602k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">9:08</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2021/Linux%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89CFS%E8%B0%83%E5%BA%A6%E5%99%A8/";
+    this.page.identifier = "2021/Linux进程管理（三）CFS调度器/";
+    this.page.title = "Linux进程管理（三）CFS调度器";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

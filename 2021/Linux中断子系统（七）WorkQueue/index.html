@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux中断子系统（七）WorkQueue">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-WorkQueue.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/workqueue_bind.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/workqueue_unbind.png">
+<meta property="article:published_time" content="2021-09-21T07:10:33.000Z">
+<meta property="article:modified_time" content="2024-01-30T16:38:58.902Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="中断子系统">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/中断子系统-WorkQueue.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux中断子系统（七）WorkQueue | Matrix</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Matrix</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux中断子系统（七）WorkQueue
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-09-21 15:10:33" itemprop="dateCreated datePublished" datetime="2021-09-21T15:10:33+08:00">2021-09-21</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/%E5%86%85%E6%A0%B8/" itemprop="url" rel="index"><span itemprop="name">内核</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux中断子系统（七）WorkQueue/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>2.3k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>2 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="/picture/linux/brief/中断子系统-WorkQueue.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OTA4ZTA3OTEyOTA2ZjUwODBjYjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="概述">1. 概述</h2>
+<p>工作队列不完全是中断处理程序的下半部。内核的很多模块需要异步执行函数，这些模块也可以创建一个内核线程来异步执行函数。但是，如果每个模块都创建自己的内核线程，会造成内核线程的数量过多，内存消耗比较大，影响系统性能。所以，最好的方法是提供一种通用机制，让这些模块把需要异步执行的函数交给工作队列执行，共享内核线程，节省资源。</p>
+<hr />
+<h2 id="实现扩展">2. 实现（扩展🙈）</h2>
+<p>首先介绍一下工作队列使用的术语。</p>
+<ul>
+<li>work：工作，也称为工作项</li>
+<li>work_queue：工作队列，就是工作的集合，work_queue和work是一对多的关系</li>
+<li>worker：工人，一个工人对应一个内核线程，我们把工人对应的内核线程称为工人线程</li>
+<li>worker_pool：工人池，就是工人的集合，工人池和工人是一对多的关系</li>
+<li>pool_workqueue：中介，负责建立工作队列和工人池之间的关系。工作队列和 pool_workqueue是一对多的关系，pool_workqueue和工人池是一对一的关系</li>
+</ul>
+<h3 id="数据结构">2.1 数据结构</h3>
+<p>工作队列分为两种。</p>
+<ul>
+<li>绑定处理器的工作队列：默认创建绑定处理器的工作队列，每个工人线程绑定到一个处理器</li>
+<li>不绑定处理器的工作队列：创建工作队列的时候需要指定标志位WO_UNBOUND，工人线程不绑定到某个处理器，可以在处理器之间迁移</li>
+</ul>
+<p>绑定处理器的工作队列的数据结构如下图所示，工作队列在每个处理器上有一个pool_workqueue实例，一个pool_workqueue实例对应一个工人池，一个工人池有一条工人链表，每个工人对应一个内核线程。向工作队列中添加工作项的时候，选择当前处理器的pool_workqueue实例、工人池和工人线程。 <img src="/picture/linux/kernel/workqueue_bind.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE0ZWNkMTM1NjUzYmIyZWE2ZTIzOTUw">原图<i class="fa fa-external-link-alt"></i></span></p>
+<p>不绑定处理器的工作队列的数据结构如下图所示，工作队列在每个内存节点上有一个pool_workqueue实例，一个pool_workqueue实例对应一个工人池，一个工人池有一条工人链表，每个工人对应一个内核线程。向工作队列中添加工作项的时候，选择当前处理器所属的内存节点的pool_workqueue实例、工人池和工人线程。 <img src="/picture/linux/kernel/workqueue_unbind.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE0ZWNjZDE2Mzc2ODk0ODFiNjYxMzI0">原图<i class="fa fa-external-link-alt"></i></span></p>
+<p>不绑定处理器的工作队列还有一个默认的pool_workaueue 实例（workqueue_struct.dfl_pwq），当某个处理器下线的时候，使用默认的pool_workqueue实例。</p>
+<h3 id="添加工作项">2.2 添加工作项</h3>
+<p>函数queue_work()用来向工作队列中添加一个工作项，把主要工作委托给函数queue_work_on()，把第一个参数“int cpu”设置为WORK_CPU_UNBOUND，意思是不绑定到任何处理器，优先选择当前处理器。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/workqueue.h&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">bool</span> <span class="title">queue_work</span><span class="params">(struct workqueue_struct *wq,</span></span></span><br><span class="line"><span class="params"><span class="function">			      struct work_struct *work)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> queue_work_on(WORK_CPU_UNBOUND, wq, work);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>函数queue_work_on的代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/workqueue.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">bool</span> <span class="title">queue_work_on</span><span class="params">(<span class="keyword">int</span> cpu, struct workqueue_struct *wq,</span></span></span><br><span class="line"><span class="params"><span class="function">		   struct work_struct *work)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">bool</span> ret = <span class="literal">false</span>;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> flags;</span><br><span class="line"></span><br><span class="line">  local_irq_save(flags);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!test_and_set_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work))) &#123;</span><br><span class="line">    __queue_work(cpu, wq, work);</span><br><span class="line">    ret = <span class="literal">true</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  local_irq_restore(flags);</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果工作项没有添加过，那么给工作项设置标志位WORK_STRUCT_PENDING_BIT然后把主要工作委托给函数__queue_work()。函数queue_work的代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">void</span> __queue_work(<span class="keyword">int</span> cpu, struct workqueue_struct *wq,</span><br><span class="line">       struct work_struct *work)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">pool_workqueue</span> *<span class="title">pwq</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">worker_pool</span> *<span class="title">last_pool</span>;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> *<span class="title">worklist</span>;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> work_flags;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> req_cpu = cpu;</span><br><span class="line"></span><br><span class="line">  lockdep_assert_irqs_disabled();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (unlikely(wq-&gt;flags &amp; __WQ_DRAINING) &amp;&amp;</span><br><span class="line">      WARN_ON_ONCE(!is_chained_work(wq)))</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  rcu_read_lock();</span><br><span class="line">retry:</span><br><span class="line">  <span class="comment">/* 1. 从工作队列中选择pool_workqueue实例。如果是绑定处理器的工作队列，</span></span><br><span class="line"><span class="comment">     *    那么选择当前处理器的pool_workqueue实例如果是不绑定处理器的工作队列</span></span><br><span class="line"><span class="comment">     *    那么选择当前处理器所属的内存节点的pool_workqueue实例。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">  <span class="keyword">if</span> (wq-&gt;flags &amp; WQ_UNBOUND) &#123;</span><br><span class="line">    <span class="keyword">if</span> (req_cpu == WORK_CPU_UNBOUND)</span><br><span class="line">      cpu = wq_select_unbound_cpu(raw_smp_processor_id());</span><br><span class="line">    pwq = unbound_pwq_by_node(wq, cpu_to_node(cpu));</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (req_cpu == WORK_CPU_UNBOUND)</span><br><span class="line">      cpu = raw_smp_processor_id();</span><br><span class="line">    pwq = per_cpu_ptr(wq-&gt;cpu_pwqs, cpu);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 2. 如果@work 之前在其他pool_workaueue中，它可能仍在那里运行，在这种情况下，</span></span><br><span class="line"><span class="comment">     *    工作需要在该池上排队以保证不可重入。</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  last_pool = get_work_pool(work);</span><br><span class="line">  <span class="keyword">if</span> (last_pool &amp;&amp; last_pool != pwq-&gt;pool) &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">worker</span> *<span class="title">worker</span>;</span></span><br><span class="line"></span><br><span class="line">    raw_spin_lock(&amp;last_pool-&gt;lock);</span><br><span class="line"></span><br><span class="line">    worker = find_worker_executing_work(last_pool, work);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (worker &amp;&amp; worker-&gt;current_pwq-&gt;wq == wq) &#123;</span><br><span class="line">      pwq = worker-&gt;current_pwq;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">/* meh... not running there, queue here */</span></span><br><span class="line">      raw_spin_unlock(&amp;last_pool-&gt;lock);</span><br><span class="line">      raw_spin_lock(&amp;pwq-&gt;pool-&gt;lock);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    raw_spin_lock(&amp;pwq-&gt;pool-&gt;lock);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 3. 如果pool_workqueue实例的未处理工作数量小于限制，那么把工作添加到pool_workqueue实例</span></span><br><span class="line"><span class="comment">     *    对应的工人池的链表worklist中；如果pool_workqueue实例的未处理工作数量达到限制，那么给</span></span><br><span class="line"><span class="comment">     *    工作设置标志位WORK_STRUCT_DELAYED，并把工作添加到pool_workqueue实例的链表delayed_works中。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">  <span class="keyword">if</span> (unlikely(!pwq-&gt;refcnt)) &#123;</span><br><span class="line">    <span class="keyword">if</span> (wq-&gt;flags &amp; WQ_UNBOUND) &#123;</span><br><span class="line">      raw_spin_unlock(&amp;pwq-&gt;pool-&gt;lock);</span><br><span class="line">      cpu_relax();</span><br><span class="line">      <span class="keyword">goto</span> retry;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* oops */</span></span><br><span class="line">    WARN_ONCE(<span class="literal">true</span>, <span class="string">&quot;workqueue: per-cpu pwq for %s on cpu%d has 0 refcnt&quot;</span>,</span><br><span class="line">        wq-&gt;name, cpu);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* pwq determined, queue */</span></span><br><span class="line">  trace_workqueue_queue_work(req_cpu, pwq, work);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (WARN_ON(!list_empty(&amp;work-&gt;entry)))</span><br><span class="line">    <span class="keyword">goto</span> out;</span><br><span class="line"></span><br><span class="line">  pwq-&gt;nr_in_flight[pwq-&gt;work_color]++;</span><br><span class="line">  work_flags = work_color_to_flags(pwq-&gt;work_color);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (likely(pwq-&gt;nr_active &lt; pwq-&gt;max_active)) &#123;</span><br><span class="line">    trace_workqueue_activate_work(work);</span><br><span class="line">    pwq-&gt;nr_active++;</span><br><span class="line">    worklist = &amp;pwq-&gt;pool-&gt;worklist;</span><br><span class="line">    <span class="keyword">if</span> (list_empty(worklist))</span><br><span class="line">      pwq-&gt;pool-&gt;watchdog_ts = jiffies;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    work_flags |= WORK_STRUCT_DELAYED;</span><br><span class="line">    worklist = &amp;pwq-&gt;delayed_works;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  debug_work_activate(work);</span><br><span class="line">    <span class="comment">/* 4. 把工作添加到注释3中描述的链表中 */</span></span><br><span class="line">  insert_work(pwq, work, worklist, work_flags);</span><br><span class="line"></span><br><span class="line">out:</span><br><span class="line">  raw_spin_unlock(&amp;pwq-&gt;pool-&gt;lock);</span><br><span class="line">  rcu_read_unlock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="工人处理工作">2.3 工人处理工作</h3>
+<p>每个工人对应一个内核线程，一个工人池对应一个或多个工人。多个工人从工人池的未处理工作链表（worker_pool.worklist）中取工作并处理。工人线程的处理函数是worker_thread()，调用函数process_one_work()处理一个工作项。函数worker_thread()的代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/workqueue.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">worker_thread</span><span class="params">(<span class="keyword">void</span> *__worker)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">worker</span> *<span class="title">worker</span> =</span> __worker;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">worker_pool</span> *<span class="title">pool</span> =</span> worker-&gt;pool;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* tell the scheduler that this is a workqueue worker */</span></span><br><span class="line">  set_pf_worker(<span class="literal">true</span>);</span><br><span class="line">woke_up:</span><br><span class="line">  raw_spin_lock_irq(&amp;pool-&gt;lock);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 1. 如果工人太多，想要减少工人的数量，那么当前工人线程退出 */</span></span><br><span class="line">  <span class="comment">/* am I supposed to die? */</span></span><br><span class="line">  <span class="keyword">if</span> (unlikely(worker-&gt;flags &amp; WORKER_DIE)) &#123;</span><br><span class="line">    raw_spin_unlock_irq(&amp;pool-&gt;lock);</span><br><span class="line">    WARN_ON_ONCE(!list_empty(&amp;worker-&gt;entry));</span><br><span class="line">    set_pf_worker(<span class="literal">false</span>);</span><br><span class="line"></span><br><span class="line">    set_task_comm(worker-&gt;task, <span class="string">&quot;kworker/dying&quot;</span>);</span><br><span class="line">    ida_simple_remove(&amp;pool-&gt;worker_ida, worker-&gt;id);</span><br><span class="line">    worker_detach_from_pool(worker);</span><br><span class="line">    kfree(worker);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 2. 工人退出空闲状态 */</span></span><br><span class="line">  worker_leave_idle(worker);</span><br><span class="line">recheck:</span><br><span class="line">    <span class="comment">/* 3. 如果不需要本工人执行工作，那么本工人进入空闲状态 */</span></span><br><span class="line">  <span class="comment">/* no more worker necessary? */</span></span><br><span class="line">  <span class="keyword">if</span> (!need_more_worker(pool))</span><br><span class="line">    <span class="keyword">goto</span> sleep;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 4. 如果工人池中没有空闲的工人，那么创建一些工人使用*/</span></span><br><span class="line">  <span class="comment">/* do we need to manage? */</span></span><br><span class="line">  <span class="keyword">if</span> (unlikely(!may_start_working(pool)) &amp;&amp; manage_workers(worker))</span><br><span class="line">    <span class="keyword">goto</span> recheck;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * -&gt;scheduled list can only be filled while a worker is</span></span><br><span class="line"><span class="comment">	 * preparing to process a work or actually processing it.</span></span><br><span class="line"><span class="comment">	 * Make sure nobody diddled with it while I was sleeping.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  WARN_ON_ONCE(!list_empty(&amp;worker-&gt;scheduled));</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * 5. 完成准备阶段。 我们保证至少有一名闲置工人或其他人已经担任管理角色。</span></span><br><span class="line"><span class="comment">     *    这是@worker 开始参与并发管理（如果适用）并在反弹后恢复并发管理的地方。</span></span><br><span class="line"><span class="comment">     *    有关详细信息，请参阅 rebind_workers()。</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  worker_clr_flags(worker, WORKER_PREP | WORKER_REBOUND);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 6. 从工人池的链表worklist中取一个工作 */</span></span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">work_struct</span> *<span class="title">work</span> =</span></span><br><span class="line">      list_first_entry(&amp;pool-&gt;worklist,</span><br><span class="line">           struct work_struct, entry);</span><br><span class="line"></span><br><span class="line">    pool-&gt;watchdog_ts = jiffies;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/* 7. 如果是正常工作，那么调用函数process_one_work()执行正常工作，</span></span><br><span class="line"><span class="comment">         *    然后执行工人的链表scheduled中的特殊工作</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">    <span class="keyword">if</span> (likely(!(*work_data_bits(work) &amp; WORK_STRUCT_LINKED))) &#123;</span><br><span class="line">      <span class="comment">/* optimization path, not strictly necessary */</span></span><br><span class="line">      process_one_work(worker, work);</span><br><span class="line">      <span class="keyword">if</span> (unlikely(!list_empty(&amp;worker-&gt;scheduled)))</span><br><span class="line">        process_scheduled_works(worker);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">/* 8. 如果是特殊工作，那么首先把工作添加到工人的链表scheduled的尾部，</span></span><br><span class="line"><span class="comment">             *    然后执行工人的链表scheduled中的特殊工作</span></span><br><span class="line"><span class="comment">             */</span></span><br><span class="line">      move_linked_works(work, &amp;worker-&gt;scheduled, <span class="literal">NULL</span>);</span><br><span class="line">      process_scheduled_works(worker);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">while</span> (keep_working(pool)); <span class="comment">//如果有工作需要处理，并且处于运行状态的工人数量不超过1，那么本工人继续执行工作</span></span><br><span class="line"></span><br><span class="line">  worker_set_flags(worker, WORKER_PREP);</span><br><span class="line">sleep: <span class="comment">//工人进入空闲状态，睡眠</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * pool-&gt;lock is held and there&#x27;s no work to process and no need to</span></span><br><span class="line"><span class="comment">	 * manage, sleep.  Workers are woken up only while holding</span></span><br><span class="line"><span class="comment">	 * pool-&gt;lock or from local cpu, so setting the current state</span></span><br><span class="line"><span class="comment">	 * before releasing pool-&gt;lock is enough to prevent losing any</span></span><br><span class="line"><span class="comment">	 * event.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  worker_enter_idle(worker);</span><br><span class="line">  __set_current_state(TASK_IDLE);</span><br><span class="line">  raw_spin_unlock_irq(&amp;pool-&gt;lock);</span><br><span class="line">  schedule();</span><br><span class="line">  <span class="keyword">goto</span> woke_up;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>下面解释一下正常工作和特殊工作。 向工作队列中添加正常工作，是直接添加到工人池的链表worklist中。 调用函数flush_work(t)等待工作t执行完，实现方法是添加一个特殊工作：屏障工作，执行这个屏障工作的时候就可以确定工作t执行完。如果工作t正在被工人p执行，那么把屏障工作直接添加到工人p的链表scheduled中；如果工作t没有执行，那么把屏障工作添加到工人池的链表worklist中，并且给屏障工作设置标志位WORK_STRUCT_LINKED。函数process_one_work()负责处理一个工作，其代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/workqueue.c&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">process_one_work</span><span class="params">(struct worker *worker, struct work_struct *work)</span></span></span><br><span class="line"><span class="function">__<span class="title">releases</span><span class="params">(&amp;pool-&gt;lock)</span></span></span><br><span class="line"><span class="function">__<span class="title">acquires</span><span class="params">(&amp;pool-&gt;lock)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">pool_workqueue</span> *<span class="title">pwq</span> =</span> get_work_pwq(work);</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">worker_pool</span> *<span class="title">pool</span> =</span> worker-&gt;pool;</span><br><span class="line">  <span class="keyword">bool</span> cpu_intensive = pwq-&gt;wq-&gt;flags &amp; WQ_CPU_INTENSIVE;</span><br><span class="line">  <span class="keyword">int</span> work_color;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">worker</span> *<span class="title">collision</span>;</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">/* ensure we&#x27;re on the correct CPU */</span></span><br><span class="line">  WARN_ON_ONCE(!(pool-&gt;flags &amp; POOL_DISASSOCIATED) &amp;&amp;</span><br><span class="line">         raw_smp_processor_id() != pool-&gt;cpu);</span><br><span class="line"></span><br><span class="line">     <span class="comment">/* 1. 一个工作不应该被多个工人并发执行。如果一个工作正在被工人的其他工人执行，</span></span><br><span class="line"><span class="comment">      *    那么把这个工作添加到这个工人的链表scheduled中延后执行</span></span><br><span class="line"><span class="comment">      */</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * A single work shouldn&#x27;t be executed concurrently by</span></span><br><span class="line"><span class="comment">	 * multiple workers on a single cpu.  Check whether anyone is</span></span><br><span class="line"><span class="comment">	 * already processing the work.  If so, defer the work to the</span></span><br><span class="line"><span class="comment">	 * currently executing one.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  collision = find_worker_executing_work(pool, work);</span><br><span class="line">  <span class="keyword">if</span> (unlikely(collision)) &#123;</span><br><span class="line">    move_linked_works(work, &amp;collision-&gt;scheduled, <span class="literal">NULL</span>);</span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* 2. 把工人添加到工人池的散列表busy_hash中. 工人的成员current_work指向当前工作，</span></span><br><span class="line"><span class="comment">     *    成员current_func指向当前工作的处理函数，成员current_pwq指向当前pool_workqueue实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">  debug_work_deactivate(work);</span><br><span class="line">  hash_add(pool-&gt;busy_hash, &amp;worker-&gt;hentry, (<span class="keyword">unsigned</span> <span class="keyword">long</span>)work);</span><br><span class="line">  worker-&gt;current_work = work;</span><br><span class="line">  worker-&gt;current_func = work-&gt;func;</span><br><span class="line">  worker-&gt;current_pwq = pwq;</span><br><span class="line">  work_color = get_work_color(work);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Record wq name for cmdline and debug reporting, may get</span></span><br><span class="line"><span class="comment">	 * overridden through set_worker_desc().</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  strscpy(worker-&gt;desc, pwq-&gt;wq-&gt;name, WORKER_DESC_LEN);</span><br><span class="line"></span><br><span class="line">  list_del_init(&amp;work-&gt;entry);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 3. 如果工作队列是处理器密集型的，那么给工人设置标志位WORKER_CPU_INTENSIVE，</span></span><br><span class="line"><span class="comment">     *    工人不再被工人池动态调度。这使@worker 脱离了并发管理，下一个代码块将链接</span></span><br><span class="line"><span class="comment">     *    执行待处理的工作项</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * CPU intensive works don&#x27;t participate in concurrency management.</span></span><br><span class="line"><span class="comment">	 * They&#x27;re the scheduler&#x27;s responsibility.  This takes @worker out</span></span><br><span class="line"><span class="comment">	 * of concurrency management and the next code block will chain</span></span><br><span class="line"><span class="comment">	 * execution of the pending work items.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">if</span> (unlikely(cpu_intensive))</span><br><span class="line">    worker_set_flags(worker, WORKER_CPU_INTENSIVE);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 4. 对于不绑定处理器或处理器密集型的工作队列，唤醒更多空闲的工人处理工作 */</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Wake up another worker if necessary.  The condition is always</span></span><br><span class="line"><span class="comment">	 * false for normal per-cpu workers since nr_running would always</span></span><br><span class="line"><span class="comment">	 * be &gt;= 1 at this point.  This is used to chain execution of the</span></span><br><span class="line"><span class="comment">	 * pending work items for WORKER_NOT_RUNNING workers such as the</span></span><br><span class="line"><span class="comment">	 * UNBOUND and CPU_INTENSIVE ones.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">if</span> (need_more_worker(pool))</span><br><span class="line">    wake_up_worker(pool);</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 5. 记录最后一个池并清除 PENDING，这应该是对@work 的最后一次更新。 此外，</span></span><br><span class="line"><span class="comment">     *    在@pool-&gt;lock中执行此操作，以便在禁用IRQ时同时发生PENDING和排队状态更改</span></span><br><span class="line"><span class="comment">    */</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Record the last pool and clear PENDING which should be the last</span></span><br><span class="line"><span class="comment">	 * update to @work.  Also, do this inside @pool-&gt;lock so that</span></span><br><span class="line"><span class="comment">	 * PENDING and queued state changes happen together while IRQ is</span></span><br><span class="line"><span class="comment">	 * disabled.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  set_work_pool_and_clear_pending(work, pool-&gt;id);</span><br><span class="line"></span><br><span class="line">  raw_spin_unlock_irq(&amp;pool-&gt;lock);</span><br><span class="line"></span><br><span class="line">  lock_map_acquire(&amp;pwq-&gt;wq-&gt;lockdep_map);</span><br><span class="line">  lock_map_acquire(&amp;lockdep_map);</span><br><span class="line"></span><br><span class="line">  lockdep_invariant_state(<span class="literal">true</span>);</span><br><span class="line">  trace_workqueue_execute_start(work);</span><br><span class="line">    <span class="comment">/* 6. 执行工作的处理函数 */</span></span><br><span class="line">  worker-&gt;current_func(work);</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * While we must be careful to not use &quot;work&quot; after this, the trace</span></span><br><span class="line"><span class="comment">	 * point will only record its address.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  trace_workqueue_execute_end(work, worker-&gt;current_func);</span><br><span class="line">  lock_map_release(&amp;lockdep_map);</span><br><span class="line">  lock_map_release(&amp;pwq-&gt;wq-&gt;lockdep_map);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (unlikely(in_atomic() || lockdep_depth(current) &gt; <span class="number">0</span>)) &#123;</span><br><span class="line">    pr_err(<span class="string">&quot;BUG: workqueue leaked lock or atomic: %s/0x%08x/%d\n&quot;</span></span><br><span class="line">           <span class="string">&quot;     last function: %ps\n&quot;</span>,</span><br><span class="line">           current-&gt;comm, preempt_count(), task_pid_nr(current),</span><br><span class="line">           worker-&gt;current_func);</span><br><span class="line">    debug_show_held_locks(current);</span><br><span class="line">    dump_stack();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * The following prevents a kworker from hogging CPU on !PREEMPTION</span></span><br><span class="line"><span class="comment">	 * kernels, where a requeueing work item waiting for something to</span></span><br><span class="line"><span class="comment">	 * happen could deadlock with stop_machine as such work item could</span></span><br><span class="line"><span class="comment">	 * indefinitely requeue itself while all other CPUs are trapped in</span></span><br><span class="line"><span class="comment">	 * stop_machine. At the same time, report a quiescent RCU state so</span></span><br><span class="line"><span class="comment">	 * the same condition doesn&#x27;t freeze RCU.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  cond_resched();</span><br><span class="line"></span><br><span class="line">  raw_spin_lock_irq(&amp;pool-&gt;lock);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* clear cpu intensive status */</span></span><br><span class="line">  <span class="keyword">if</span> (unlikely(cpu_intensive))</span><br><span class="line">    worker_clr_flags(worker, WORKER_CPU_INTENSIVE);</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* tag the worker for identification in schedule() */</span></span><br><span class="line">  worker-&gt;last_func = worker-&gt;current_func;</span><br><span class="line"></span><br><span class="line">  <span class="comment">/* we&#x27;re done with it, release */</span></span><br><span class="line">  hash_del(&amp;worker-&gt;hentry);</span><br><span class="line">  worker-&gt;current_work = <span class="literal">NULL</span>;</span><br><span class="line">  worker-&gt;current_func = <span class="literal">NULL</span>;</span><br><span class="line">  worker-&gt;current_pwq = <span class="literal">NULL</span>;</span><br><span class="line">  pwq_dec_nr_in_flight(pwq, work_color);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="工人池动态管理工人">2.4 工人池动态管理工人</h3>
+<p>工人池可以动态增加和删除工人，算法如下：</p>
+<ul>
+<li>工人有3种状态：空闲（idle）、运行（running）和挂起（suspend）。空闲是指没有执行工作，运行是指正在执行工作，挂起是指在执行工作的过程中睡眠</li>
+<li>如果工人池中有工作需要处理，至少保持一个处在运行状态的工人来处理</li>
+<li>如果处在运行状态的工人在执行工作的过程中进入挂起状态，为了保证其他工作的执行，需要唤醒空闲的工人处理工作</li>
+<li>如果有工作需要执行，并且处在运行状态的工人数量大于1，会让多余的工人进入空闲状态</li>
+<li>如果没有工作需要执行，会让所有工人进入空闲状态</li>
+<li>如果创建的工人过多，工人池把空闲时间超过300秒（IDLE_WORKER_TIMEOUT）的工人删除</li>
+</ul>
+<p>工人池的调度思想是如果有工作需要处理，保持一个处在运行状态的工人来处理，不多也不少。 这种做法有个问题：如果工作是处理器密集型的，虽然工人没有进入挂起状态，但是会长时间占用处理器，让后续的工作阻塞太长时间。 为了解决这个问题，可以在创建工作队列的时候设置标志位WQ_CPUINTENSIVE，声明工作队列是处理器密集的。当一个工人执行工作的时候，让这个工人不受工人池动态调度，像是进入了挂起状态，工人池创建新的工人来执行后续的工作。</p>
+<h3 id="参考文献">参考文献</h3>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC85MTEwNjg0NA==">https://zhuanlan.zhihu.com/p/91106844<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC85NDU2MTYzMQ==">https://zhuanlan.zhihu.com/p/94561631<i class="fa fa-external-link-alt"></i></span> <span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vYXJub2xkbHUvcC84NjU5OTg4Lmh0bWw=">https://www.cnblogs.com/arnoldlu/p/8659988.html<i class="fa fa-external-link-alt"></i></span> 《Linux内核深度解析》</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/" title="Linux中断子系统（七）WorkQueue">http://carlyleliu.github.io/2021/Linux中断子系统（七）WorkQueue/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F/" rel="tag"><i class="fa fa-tag"></i> 中断子系统</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/ARM64%E6%9E%B6%E6%9E%84%E5%9F%BA%E7%A1%80/" rel="prev" title="ARM64架构基础">
+      <i class="fa fa-chevron-left"></i> ARM64架构基础
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E5%85%AD%EF%BC%89Tasklet/" rel="next" title="Linux中断子系统（六）Tasklet">
+      Linux中断子系统（六）Tasklet <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%89%A9%E5%B1%95"><span class="nav-text">2. 实现（扩展🙈）</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.1 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E5%B7%A5%E4%BD%9C%E9%A1%B9"><span class="nav-text">2.2 添加工作项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E4%BA%BA%E5%A4%84%E7%90%86%E5%B7%A5%E4%BD%9C"><span class="nav-text">2.3 工人处理工作</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E4%BA%BA%E6%B1%A0%E5%8A%A8%E6%80%81%E7%AE%A1%E7%90%86%E5%B7%A5%E4%BA%BA"><span class="nav-text">2.4 工人池动态管理工人</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">112</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">602k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">9:08</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2021/Linux%E4%B8%AD%E6%96%AD%E5%AD%90%E7%B3%BB%E7%BB%9F%EF%BC%88%E4%B8%83%EF%BC%89WorkQueue/";
+    this.page.identifier = "2021/Linux中断子系统（七）WorkQueue/";
+    this.page.title = "Linux中断子系统（七）WorkQueue";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>

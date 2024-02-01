@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux并发与同步（一）自旋锁">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E8%87%AA%E6%97%8B%E9%94%81/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-自旋锁.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/slock.png">
+<meta property="article:published_time" content="2021-12-08T06:13:52.000Z">
+<meta property="article:modified_time" content="2024-01-30T16:38:58.906Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="并发与同步">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/并发与同步-自旋锁.png">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E8%87%AA%E6%97%8B%E9%94%81/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux并发与同步（一）自旋锁 | Matrix</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Matrix</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E8%87%AA%E6%97%8B%E9%94%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux并发与同步（一）自旋锁
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-12-08 14:13:52" itemprop="dateCreated datePublished" datetime="2021-12-08T14:13:52+08:00">2021-12-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/%E5%86%85%E6%A0%B8/" itemprop="url" rel="index"><span itemprop="name">内核</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E8%87%AA%E6%97%8B%E9%94%81/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2021/Linux并发与同步（一）自旋锁/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>3.6k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>3 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><img src="/picture/linux/brief/并发与同步-自旋锁.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5ODMzMDFlZmFkNDA3NTI1N2M2ZDA=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h2 id="经典自旋锁">1. 经典自旋锁</h2>
+<p>如果临界区中只有一个変量，那么原子变量可以解決问题，但是临界区有一个数据操作的集合，需要通过锁机制来保障，自旋锁（ spinlock）是 Linux内核中最常见的锁机制。</p>
+<ul>
+<li>忙等待的锁机制。操作系统中锁的机制分为两类，一类是忙等待，另一类是睡眠等待</li>
+<li>同一时刻只能有一个内核代码路径可以获得该锁</li>
+<li>要求自旋锁持有者尽快完成临界区的执行任务，特别是自旋锁临界区里不能睡眠</li>
+<li>自旋锁可以在中断上下文中使用</li>
+</ul>
+<h3 id="自旋锁的实现">1.1 自旋锁的实现</h3>
+<p>先看 spinlock数据结构的定义：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/spinlock_types.h&gt;</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">spinlock</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">raw_spinlock</span> <span class="title">rlock</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line"><span class="meta"># <span class="meta-keyword">define</span> LOCK_PADSIZE (offsetof(struct raw_spinlock, dep_map))</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">      u8 __padding[LOCK_PADSIZE];</span><br><span class="line">      <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span> <span class="title">dep_map</span>;</span></span><br><span class="line">    &#125;;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  &#125;;</span><br><span class="line">&#125; <span class="keyword">spinlock_t</span>;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">raw_spinlock</span> &#123;</span></span><br><span class="line">  <span class="keyword">arch_spinlock_t</span> raw_lock;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_SPINLOCK</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> magic, owner_cpu;</span><br><span class="line">  <span class="keyword">void</span> *owner;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span> <span class="title">dep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">&#125; <span class="keyword">raw_spinlock_t</span>;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">    u32 slock;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">raw_tickets</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> __ARMEB__</span></span><br><span class="line">      u16 next;</span><br><span class="line">      u16 owner;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">else</span></span></span><br><span class="line">      u16 owner;</span><br><span class="line">      u16 next;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">    &#125; tickets;</span><br><span class="line">  &#125;;</span><br><span class="line">&#125; <span class="keyword">arch_spinlock_t</span>;</span><br></pre></td></tr></table></figure>
+<p>spinlock数据结构的定义既考虑到了不同处理器架构的支持和实时性内核的要求，还定义了raw_spinlock和arch_spinlock_t数据结构，其中arch_spinlock_t数据结构和架构有关。在 Linux2.6.25内核之前， spinlock数据结构就是一个简单的无符号类型变量。若 slock值为1，表示锁未被持有；若为0，表示锁被持有。这会存在两个严重问题，不公平和效率低下。因此在 Liux2.6.25内核后，自旋锁实现了“基于排队的FIFO”算法的自旋锁机制，称为基于排队的自旋锁。</p>
+<p>基于排队的自旋锁仍然使用原来的数据结构，但slock域被拆分成两个部分，如下图： <img src="/picture/linux/kernel/mem/slock.png" /></p>
+<p>owner表示自旋锁持有者的牌号，next表示外面排队的队列中末尾者的牌号。当有线程要获取锁时next++，当持有锁的线程释放锁时owner++。当owner和next相等时，该线程将获得自旋锁。</p>
+<p>自旋锁的原型定义在 include/linux/spinlock.h头文件中.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/spin_lock. h&gt;</span><br><span class="line"><span class="function"><span class="keyword">static</span> __always_inline <span class="keyword">void</span> <span class="title">spin_lock</span><span class="params">(<span class="keyword">spinlock_t</span> *lock)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  raw_spin_lock(&amp;lock-&gt;rlock);</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> raw_spin_lock(lock)	_raw_spin_lock(lock)</span></span><br><span class="line"><span class="keyword">void</span> __lockfunc _raw_spin_lock(<span class="keyword">raw_spinlock_t</span> *lock)</span><br><span class="line">&#123;</span><br><span class="line">  __raw_spin_lock(lock);</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __raw_spin_lock(<span class="keyword">raw_spinlock_t</span> *lock)</span><br><span class="line">&#123;</span><br><span class="line">  preempt_disable();</span><br><span class="line">  spin_acquire(&amp;lock-&gt;dep_map, <span class="number">0</span>, <span class="number">0</span>, _RET_IP_);</span><br><span class="line">  LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>spin_locke函数最终调用 __raw_spin_lock()函数来实現。首先关闭内核抢占，这是自旋锁实现的关键点之一。那么为什么自旋锁临界区中不允许发生抢占呢？如果自旋锁临界区中允许抢占，假设在临界区内发生中断，中断返回时会检查抢占调度，这里将有两个问题、一是抢占调度会导致持有锁的进程睡眠，这违背了自旋锁不能睡眠和快速执行完成的设计语义；二是抢占调度进程也可能会申请自旋锁，这样会导致发生死锁。</p>
+<h3 id="自旋锁的变体">1.2 自旋锁的变体</h3>
+<p>在驱动中很多操作都需要访问和更新链表，如open、 ioctl等，因此操作链表的地方就是一个临界区，需要自旋锁来保护。若在临界区中发生了外部硬件中断，系统暂停当前进程的执行转而处理该中断。假设中断处理程序恰巧也要操作该链表，链表的操作是一个临界区，所以在操作之前要调用spin_lock()函数来对该链表进行保护。中断处理程序试图获取该自旋锁，但因为它己经被其他CPU持有了，于是中断处理程序进入忙等待状态或者wfe睡眠状态。在中断上下文中出现忙等待或者睡眠状态是致命的，中断处理程序要求“短”和“快”，自旋锁的持有者因为被中断打断而不能尽快释放锁，而中断处理程序一直在忙等待该锁，从而导致死锁的发生。 Linux内核的自旋锁的变体 spin_lock_irq()函数通过在获取自旋锁时关闭本地CPU中断，可以解决该问题。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> __always_inline <span class="keyword">void</span> <span class="title">spin_lock_irq</span><span class="params">(<span class="keyword">spinlock_t</span> *lock)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  raw_spin_lock_irq(&amp;lock-&gt;rlock);</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> raw_spin_lock_irq(lock)		_raw_spin_lock_irq(lock)</span></span><br><span class="line">...</span><br><span class="line"><span class="keyword">void</span> __lockfunc _raw_spin_lock_irq(<span class="keyword">raw_spinlock_t</span> *lock)</span><br><span class="line">&#123;</span><br><span class="line">  __raw_spin_lock_irq(lock);</span><br><span class="line">&#125;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> __raw_spin_lock_irq(<span class="keyword">raw_spinlock_t</span> *lock)</span><br><span class="line">&#123;</span><br><span class="line">  local_irq_disable();</span><br><span class="line">  preempt_disable();</span><br><span class="line">  spin_acquire(&amp;lock-&gt;dep_map, <span class="number">0</span>, <span class="number">0</span>, _RET_IP_);</span><br><span class="line">  LOCK_CONTENDED(lock, do_raw_spin_trylock, do_raw_spin_lock);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>spin_lock_irq()函数的实现比 spin_lock()函数多了一个local_irq_disable()函数。local_irq_disable()函数用于关闭本地处理器中断，这样在获取自旋锁时可以确保不会发生中断，从而避免发生死锁问题，即 local_irq_disable()函数主要防止本地中断处理程序和自旋锁持有者之间产生锁的争用。</p>
+<p>可能有的读者会有疑问，既然关闭了本地CPU的中断，那么别的CPU依然可以响应外部中断，这会不会也可能导致死锁呢？自旋锁持有者在CPUO上，CPU1响应了外部中断且中断处理程序同样试图去获取该锁，因为CPU0上的自旋锁持有者也在继续执行，所以它很快会离开临界区并释放锁，这样CPU1上的中断处理程序可以很快获得该锁。</p>
+<p>自旋锁还有另外一个常用的变体-- spin_lock_bh()函数，用于处理进程和延迟处理机制导致的并发访问的互斥问题。</p>
+<h3 id="spin_lock和-raw_spin_lock函数">1.3 spin_lock()和 raw_spin_lock()函数</h3>
+<p>这要从Linux内核的实时补丁（ Rt-patch）说起。实时补丁旨在提升Linux内核的实时性它允许在自旋锁的临界区内抢占锁，且在临界区内允许进程睡眠。这样会导致自旋锁语义被修改。当时内核中大约有10000处使用了自旋锁，直接修改自旋锁的工作量巨大，但是可以修改那些真正不允许抢占和睡眠的地方，大概有100处，因此改为使用 raw_spin_lock()。</p>
+<p>spin_lock()和 raw_spin_lock()函数的区别如下：</p>
+<ul>
+<li>在绝对不允许抢占和睡眠的临界区，应该使用raw_spin_lock()函数，否则使用 spin_lock()</li>
+<li>对于没有更新实时补丁的 Linux内核来说，spin_lock()函数可以直接调用raw_spin_lock()，对于更新实时补丁的 Linux内核来说， spin_lock()会变成可抢占和睡眠的锁，这需要特别注意</li>
+</ul>
+<h3 id="效率">1.4 效率</h3>
+<p>根据硬件维护的cache一致性协议，如果spinlock的值没有更改，那么在busy wait时，试图获取spinlock的CPU，只需要不断地读取自己包含这个spinlock变量的cache line上的值就可以了，不需要从spinlock变量所在的内存位置读取。</p>
+<p>但是，当spinlock的值被更改时，所有试图获取spinlock的CPU对应的cache line都会被invalidate，因为这些CPU会不停地读取这个spinlock的值，所以"invalidate"状态意味着此时，它们必须重新从内存读取新的spinlock的值到自己的cache line中。</p>
+<p>而事实上，其中只会有一个CPU，也就是队列中最先达到的那个CPU，接下来可以获得spinlock，也只有它的cache line被invalidate才是有意义的，对于其他的CPU来说，这就是做无用功。内存比cache慢那么多，开销可不小。</p>
+<h2 id="mcs锁">2. MCS锁</h2>
+<p>假设在一个锁争用激烈的系统中，所有等待自旋锁的线程都在同一个共享变量上自旋，申请和释放锁都在同一个变量上修改，高速内存一致性原理（如MESI协议）导致参与自旋的CPU中的高速缓存行变得无效。在锁争用的激烈过程中，可能导致严重的CPU高速缓存行颠簸现象（ CPU cacheline bouncing），即多个CPU上的高速缓存行反复失效，大大降低系统整体性能。</p>
+<blockquote>
+<p>MCS算法可以解决自旋锁遇到的问题，显著缓解CPU高速缓存行颠簸问题。</p>
+</blockquote>
+<p>MCS算法的核心思想是每个锁的申请者只在本地CPU的变量上自旋，而不是全局的变量上，大大降低锁的争用。</p>
+<h2 id="osq锁">3. OSQ锁</h2>
+<p>早期MCS算法的实现需要比较大的数据结构，在 Linux4.2内核中引进了基于MCS算法的排队自旋锁（One Spinlock, Qspinlock）OSQ锁的实现需要两个数据结构:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/osq_lock.h&gt;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * An MCS like lock especially tailored for optimistic spinning for sleeping</span></span><br><span class="line"><span class="comment"> * lock implementations (mutex, rwsem, etc).</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">optimistic_spin_node</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">optimistic_spin_node</span> *<span class="title">next</span>, *<span class="title">prev</span>;</span></span><br><span class="line">  <span class="keyword">int</span> locked; <span class="comment">/* 1 if lock acquired */</span></span><br><span class="line">  <span class="keyword">int</span> cpu; <span class="comment">/* encoded CPU # + 1 value */</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">optimistic_spin_queue</span> &#123;</span></span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Stores an encoded value of the CPU # of the tail node in the queue.</span></span><br><span class="line"><span class="comment">	 * If the queue is empty, then it&#x27;s set to OSQ_UNLOCKED_VAL.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">  <span class="keyword">atomic_t</span> tail;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>每个MCS锁有一个optimistic_spin_queue数据结构，该数据结构只有一个成员tail,初始化为0。 optimistic_spin_node数据结构表示本地CPU上的节点，它可以组织成一个双向链表包含next和prev指针， locked成员用于表示加锁状态，cpu成员用于重新编码CPU编号，表示该节点在哪个CPU上。 optimistic_spin_node数据结构会定义成per-CPU变量，即每个CPU有一个节点结构。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/locking/osq_lock.c&gt;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * An MCS like lock especially tailored for optimistic spinning for sleeping</span></span><br><span class="line"><span class="comment"> * lock implementations (mutex, rwsem, etc).</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Using a single mcs node per CPU is safe because sleeping locks should not be</span></span><br><span class="line"><span class="comment"> * called from interrupt context and we have preemption disabled while</span></span><br><span class="line"><span class="comment"> * spinning.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">DEFINE_PER_CPU_SHARED_ALIGNED</span><span class="params">(struct optimistic_spin_node, osq_node)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>MCS锁在 osq_lock_init()函数中初始化。如互斥锁会初始化为一个MCS锁，因为 __mutex_init()函数会调用 osq_lock_init()函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/locking/mutex.c&gt;</span><br><span class="line"><span class="keyword">void</span></span><br><span class="line">__mutex_init(struct mutex *lock, <span class="keyword">const</span> <span class="keyword">char</span> *name, struct lock_class_key *key)</span><br><span class="line">&#123;</span><br><span class="line">  atomic_long_set(&amp;lock-&gt;owner, <span class="number">0</span>);</span><br><span class="line">  raw_spin_lock_init(&amp;lock-&gt;wait_lock);</span><br><span class="line">  INIT_LIST_HEAD(&amp;lock-&gt;wait_list);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_MUTEX_SPIN_ON_OWNER</span></span><br><span class="line">  osq_lock_init(&amp;lock-&gt;osq);</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">  debug_mutex_init(lock, name, key);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL(__mutex_init);</span><br></pre></td></tr></table></figure>
+<p>OSQ自旋锁的特点：</p>
+<ul>
+<li>集成MCS算法到自旋锁中，继承了MCS算法的所有优点，有效解决了CPU高速缓存行颠簸问题</li>
+<li>没有增加 spinlock数据结构的大小，把val细分成多个域，完美实现了MCS算法</li>
+<li>当只有两个CPU试图获取自旋锁时，使用 pending域就可以完美解决问题，第2CPU只需要设置 pending域，然后自旋等待锁释放。当有第3个或者更多CPU来争用时，则需要使用额外的MCS节点。第3个CPU会自旋等待锁被释放，即 pending域和 locked域被清零，而第4个CPU和后面的CPU只能在MCS节点中自旋等待 locked域被置1，直到前继节点把 locked控制器过继给自己才能有机会自旋等待自旋锁的释放，从而完美解决激烈锁争用带来的高速缓存行颠簸问题16信号量</li>
+<li>解决MCS锁占内存大的问题</li>
+</ul>
+<h3 id="参考文献">参考文献</h3>
+<p>《奔跑吧Linux内核》<br />
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC84MDcyNzExMQ==">https://zhuanlan.zhihu.com/p/80727111<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC84OTA1ODcyNg==">https://zhuanlan.zhihu.com/p/89058726<i class="fa fa-external-link-alt"></i></span><br />
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDA1NDY5MzU=">https://zhuanlan.zhihu.com/p/100546935<i class="fa fa-external-link-alt"></i></span></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E8%87%AA%E6%97%8B%E9%94%81/" title="Linux并发与同步（一）自旋锁">http://carlyleliu.github.io/2021/Linux并发与同步（一）自旋锁/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5/" rel="tag"><i class="fa fa-tag"></i> 并发与同步</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%BA%8C%EF%BC%89%E4%BF%A1%E5%8F%B7%E9%87%8F/" rel="prev" title="Linux并发与同步（二）信号量">
+      <i class="fa fa-chevron-left"></i> Linux并发与同步（二）信号量
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2021/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%8D%81%E4%B8%80%EF%BC%89%E5%86%85%E5%AD%98%E8%B0%83%E4%BC%98/" rel="next" title="Linux内存管理（十一）内存调优">
+      Linux内存管理（十一）内存调优 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%8F%E5%85%B8%E8%87%AA%E6%97%8B%E9%94%81"><span class="nav-text">1. 经典自旋锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E6%97%8B%E9%94%81%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-text">1.1 自旋锁的实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%87%AA%E6%97%8B%E9%94%81%E7%9A%84%E5%8F%98%E4%BD%93"><span class="nav-text">1.2 自旋锁的变体</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#spin_lock%E5%92%8C-raw_spin_lock%E5%87%BD%E6%95%B0"><span class="nav-text">1.3 spin_lock()和 raw_spin_lock()函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%88%E7%8E%87"><span class="nav-text">1.4 效率</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mcs%E9%94%81"><span class="nav-text">2. MCS锁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#osq%E9%94%81"><span class="nav-text">3. OSQ锁</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">112</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">602k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">9:08</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2021/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%80%EF%BC%89%E8%87%AA%E6%97%8B%E9%94%81/";
+    this.page.identifier = "2021/Linux并发与同步（一）自旋锁/";
+    this.page.title = "Linux并发与同步（一）自旋锁";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>
