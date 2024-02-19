@@ -24,18 +24,20 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="平台驱动程序可以注册PCM驱动程序、CPU DAI驱动程序及其操作函数，为PCM组件预分配缓冲区，并根据需要设置回放和采集操作。换言之，平台驱动程序包含该平台的音频引擎和音频接口驱动程序（如I2S、AC97和PCM）。">
+  <meta name="description" content="平台驱动程序可以注册PCM驱动程序、CPU DAI驱动程序及其操作函数，为PCM组件预分配缓冲区，并根据需要设置回放和采集操作。换言之，平台驱动程序包含该平台的音频引擎和音频接口驱动程序（如I2S、AC97和PCM）。 平台驱动程序以构成平台的SoC为目标。它涉及平台的DMA（即音频数据在SoC中的每个块之间如何传输）和CPU DAI（即CPU向编解码器发送音频数据的路径或CPU从编解码器获得音频">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之ALSA（四）Platform驱动">
 <meta property="og:url" content="http://carlyleliu.github.io/2024/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E5%9B%9B%EF%BC%89Platform%E9%A9%B1%E5%8A%A8/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="平台驱动程序可以注册PCM驱动程序、CPU DAI驱动程序及其操作函数，为PCM组件预分配缓冲区，并根据需要设置回放和采集操作。换言之，平台驱动程序包含该平台的音频引擎和音频接口驱动程序（如I2S、AC97和PCM）。">
+<meta property="og:description" content="平台驱动程序可以注册PCM驱动程序、CPU DAI驱动程序及其操作函数，为PCM组件预分配缓冲区，并根据需要设置回放和采集操作。换言之，平台驱动程序包含该平台的音频引擎和音频接口驱动程序（如I2S、AC97和PCM）。 平台驱动程序以构成平台的SoC为目标。它涉及平台的DMA（即音频数据在SoC中的每个块之间如何传输）和CPU DAI（即CPU向编解码器发送音频数据的路径或CPU从编解码器获得音频">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/stm32_i2s_probe.png">
 <meta property="article:published_time" content="2024-01-26T14:42:52.000Z">
-<meta property="article:modified_time" content="2024-02-19T02:28:43.736Z">
+<meta property="article:modified_time" content="2024-02-19T05:46:33.738Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Linux驱动">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/stm32_i2s_probe.png">
 
 <link rel="canonical" href="http://carlyleliu.github.io/2024/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E5%9B%9B%EF%BC%89Platform%E9%A9%B1%E5%8A%A8/">
 
@@ -274,14 +276,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>132</span>
+              <span>2.8k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>1 分钟</span>
+              <span>3 分钟</span>
             </span>
 
         </div>
@@ -293,7 +295,57 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>平台驱动程序可以注册PCM驱动程序、CPU DAI驱动程序及其操作函数，为PCM组件预分配缓冲区，并根据需要设置回放和采集操作。换言之，平台驱动程序包含该平台的音频引擎和音频接口驱动程序（如I2S、AC97和PCM）。 <span id="more"></span></p>
+        <p>平台驱动程序可以注册PCM驱动程序、CPU DAI驱动程序及其操作函数，为PCM组件预分配缓冲区，并根据需要设置回放和采集操作。换言之，平台驱动程序包含该平台的音频引擎和音频接口驱动程序（如I2S、AC97和PCM）。</p>
+<p>平台驱动程序以构成平台的SoC为目标。它涉及平台的DMA（即音频数据在SoC中的每个块之间如何传输）和CPU DAI（即CPU向编解码器发送音频数据的路径或CPU从编解码器获得音频数据的路径）。</p>
+<p>平台驱动程序有两个重要的数据结构体：structsnd_soc_component_driver和structsnd_soc_dai_driver。前者负责DMA数据管理，后者负责DAI的参数配置。当然，前文在讨论编解码器类驱动程序时已经描述过这两种数据结构体，因此，本节将仅介绍与平台代码相关的附加概念。</p>
+<span id="more"></span>
+<h1 id="cpu-dai驱动程序">CPU DAI驱动程序</h1>
+<p>在平台侧，大部分工作都可以由core完成，尤其是与DMA相关的工作。因此，CPU DAI驱动程序通常只提供组件驱动程序结构中的接口名称，而让core完成其余的工作。以下是STM SPDIF驱动程序的示例，它在<code>sound/soc/stm/stm32_spdif.c</code>中实现：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dai_ops</span> <span class="title">stm32_spdifrx_pcm_dai_ops</span> =</span> &#123;</span><br><span class="line">  .startup	= stm32_spdifrx_startup,</span><br><span class="line">  .hw_params	= stm32_spdifrx_hw_params,</span><br><span class="line">  .trigger	= stm32_spdifrx_trigger,</span><br><span class="line">  .shutdown	= stm32_spdifrx_shutdown,</span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dai_driver</span> <span class="title">stm32_spdifrx_dai</span>[] =</span> &#123;</span><br><span class="line">  &#123;</span><br><span class="line">    .probe = stm32_spdifrx_dai_probe,</span><br><span class="line">    .capture = &#123;</span><br><span class="line">      .stream_name = <span class="string">&quot;CPU-Capture&quot;</span>,</span><br><span class="line">      .channels_min = <span class="number">1</span>,</span><br><span class="line">      .channels_max = <span class="number">2</span>,</span><br><span class="line">      .rates = SNDRV_PCM_RATE_8000_192000,</span><br><span class="line">      .formats = SNDRV_PCM_FMTBIT_S32_LE |</span><br><span class="line">           SNDRV_PCM_FMTBIT_S16_LE,</span><br><span class="line">    &#125;,</span><br><span class="line">    .ops = &amp;stm32_spdifrx_pcm_dai_ops,</span><br><span class="line">  &#125;</span><br><span class="line">&#125;;</span><br><span class="line">...</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_component_driver</span> <span class="title">stm32_spdifrx_component</span> =</span> &#123;</span><br><span class="line">  .name = <span class="string">&quot;stm32-spdifrx&quot;</span>,</span><br><span class="line">&#125;;</span><br><span class="line">...</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">stm32_spdifrx_probe</span><span class="params">(struct platform_device *pdev)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    ret = snd_dmaengine_pcm_register(&amp;pdev-&gt;dev, pcm_config, <span class="number">0</span>);</span><br><span class="line">  <span class="keyword">if</span> (ret) &#123;</span><br><span class="line">    <span class="keyword">if</span> (ret != -EPROBE_DEFER)</span><br><span class="line">      dev_err(&amp;pdev-&gt;dev, <span class="string">&quot;PCM DMA register error %d\n&quot;</span>, ret);</span><br><span class="line">    <span class="keyword">return</span> ret;</span><br><span class="line">  &#125;</span><br><span class="line">  ret = snd_soc_register_component(&amp;pdev-&gt;dev,</span><br><span class="line">           &amp;stm32_spdifrx_component,</span><br><span class="line">           stm32_spdifrx_dai,</span><br><span class="line">           ARRAY_SIZE(stm32_spdifrx_dai));</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中snd_soc_component_driver只提供了name信息，件驱动程序和DAI驱动程序都和往常一样通过snd_soc_register_component()注册。 struct snd_soc_dai_driver必须根据实际的DAI属性设置，如果需要，应该设置dai_ops。当然，该设置的很大一部分是由snd_dmaengine_pcm_register()完成的，它将根据提供的设置组件驱动程序的PCM操作。</p>
+<h1 id="platform-dma驱动程序">Platform DMA驱动程序</h1>
+<p>在声音生态系统中，我们有多种类型的设备：PCM、MIDI、混音器、音序器、计时器等。这里的PCM指的是脉冲编码调制（pulse code modulation），即对连续变化的模拟信号进行采样、量化和编码以产生数字信号。但要注意，这里它是指处理基于采样的数字音频的设备，而不是MIDI等。PCM层（ALSA核心的一部分）负责完成所有数字音频工作，例如，准备板卡以进行采集或回放、启动与设备之间的传输等。简而言之，如果你想回放或采集声音，那么你就需要一个PCM设备。</p>
+<p>PCM驱动程序通过覆盖由struct snd_pcm_ops结构体公开的函数指针来帮助执行DMA操作。它与平台无关，仅与SOC DMA引擎上游API交互。然后，DMA引擎与特定于平台的DMA驱动程序交互以获得正确的DMA设置。struct snd_pcm_ops是一个包含一组回调函数的结构体，这些回调函数与有关PCM接口的不同事件相关。在处理ASoC（不是纯粹的ALSA）时，只要你使用通用PCM DMA引擎框架，就永远不需要按原样实例化此结构体。核心会为你完成这项工作。</p>
+<h1 id="音频dma接口">音频DMA接口</h1>
+<p>音频DMA驱动程序通过snd_dmaengine_pcm_register()注册。此函数可以为设备注册一个struct snd_dmaengine_pcm_config。下面是它的原型：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * snd_dmaengine_pcm_register - Register a dmaengine based PCM device</span></span><br><span class="line"><span class="comment"> * @dev: The parent device for the PCM device</span></span><br><span class="line"><span class="comment"> * @config: Platform specific PCM configuration</span></span><br><span class="line"><span class="comment"> * @flags: Platform specific quirks</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">snd_dmaengine_pcm_register</span><span class="params">(struct device *dev,</span></span></span><br><span class="line"><span class="params"><span class="function">	<span class="keyword">const</span> struct snd_dmaengine_pcm_config *config, <span class="keyword">unsigned</span> <span class="keyword">int</span> flags)</span></span></span><br></pre></td></tr></table></figure>
+<ul>
+<li><p>dev是PCM设备的父设备，通常是&amp;pdev-&gt;dev<br />
+</p></li>
+<li><p>config是特定于平台的PCM配置，其类型为struct snd_dmaengine_pcm_config。下文将详细介绍这个结构体<br />
+</p></li>
+<li><p>flags表示描述如何处理DMA通道的附加标志。大多数情况下，它取值为0。但是，其可能的值已在include/sound/dmaengine_pcm.h中定义并且均以SND_DMAENGINE_为前缀。经常使用的标志包括以下3个</p>
+<ul>
+<li>SND_DMAENGINE_PCM_FLAG_COMPAT /* 表示将使用自定义回调函数来请求通道 */</li>
+<li>SND_DMAENGINE_PCM_FLAG_NO_DT /* 要求核心不要尝试通过设备树（DT）请求DMA通道 */</li>
+<li>SND_DMAENGINE_PCM_FLAG_HALF_DUPLEX /* 示PCM是半双工（half-duplex）的，DMA通道在采集和回放之间共享 */</li>
+</ul></li>
+</ul>
+<p>在注册之后，通用PCM DMA引擎框架将构建合适的snd_pcm_ops并设置组件驱动程序的.ops字段。</p>
+<p>Linux中经典的DMA操作流程如下：</p>
+<ul>
+<li>dma_request_channel:用于分配slave通道（slave channel）</li>
+<li>dmaengine_slave_config:设置与slave通道和控制器相关参数</li>
+<li>dma_prep_xxx:获取事务的描述符</li>
+<li>dma_cookie = dmaengine_submit(tx):提交事务并抓取DMA cookie</li>
+<li>dma_async_issue_pending(chan):开始传输并等待回调函数通知</li>
+</ul>
+<p>在ASOC中，设备树用于将DMA通道映射到PCM设备。 snd_dmaengine_pcm_register（）可以通过dmaengine_pcm_request_chan_of（）请求DMA通道，为了执行上述前3个步骤，需要为PCM DMA引擎核心提供附加信息，可以通过填充struct snd_dmaengine_pcm_config 来完成。后两步由PCM DMA引擎核心透明处理。</p>
+<p>struct snd_dmaengine_pcm_config结构体如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_dmaengine_pcm_config</span> &#123;</span></span><br><span class="line">  <span class="keyword">int</span> (*prepare_slave_config)(struct snd_pcm_substream *substream,</span><br><span class="line">      struct snd_pcm_hw_params *params,</span><br><span class="line">      struct dma_slave_config *slave_config);</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">dma_chan</span> *(*<span class="title">compat_request_channel</span>)(</span></span><br><span class="line"><span class="class">			<span class="keyword">struct</span> <span class="title">snd_soc_pcm_runtime</span> *<span class="title">rtd</span>,</span></span><br><span class="line"><span class="class">			<span class="keyword">struct</span> <span class="title">snd_pcm_substream</span> *<span class="title">substream</span>);</span></span><br><span class="line">  <span class="keyword">int</span> (*process)(struct snd_pcm_substream *substream,</span><br><span class="line">           <span class="keyword">int</span> channel, <span class="keyword">unsigned</span> <span class="keyword">long</span> hwoff,</span><br><span class="line">           <span class="keyword">void</span> *buf, <span class="keyword">unsigned</span> <span class="keyword">long</span> bytes);</span><br><span class="line">  dma_filter_fn compat_filter_fn;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">dma_dev</span>;</span></span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *chan_names[SNDRV_PCM_STREAM_LAST + <span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_pcm_hardware</span> *<span class="title">pcm_hardware</span>;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> prealloc_buffer_size;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p>该结构体主要处理DMA通道管理、缓冲区管理和通道配置，具体参数如下：</p>
+<ul>
+<li>prepare_slave_config: 用于为PCM子流填充DMA slave_config。它将从PCM驱动程序的hwparams回调函数中调用。</li>
+<li>compat_request_channel：用于为不使用设备树的platform请求DMA channel。如果设置了它，则.compat_filter_fn将被忽略</li>
+<li>compat_filter_fn：当为不使用设备树的platform请求DMA通道时，它发挥过滤功能，过滤的参数将是DAI的DMA数据</li>
+<li>dma_dev：允许为注册PCM驱动程序的设备以外的设备请求DMA通道，如果设置了它，则将在此设备而不是DAI设备上请求DMA通道</li>
+<li>chan_names：这是请求采集/回放DMA通道时使用的名称数组，如果设备有多个通道，则每个通道具有不同的DMA通道名称</li>
+<li>pcm_hardware：描述了PCM硬件功能</li>
+<li>prealloc_buffer_size：表示预分配音频缓冲区的大小</li>
+</ul>
+<p>PCM DMA配置可能不会提供注册API（可能是NULL），在这种情况下你应该通过snd_soc_dai_init_dma_data（）提供采集和回放DAI DMA通道配置。通过这种方法，其他元素将从系统核心派生。</p>
+<h1 id="流程梳理">流程梳理</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjVkMmViMDIyOGJmMWQwMGQwOGM3NzVm">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/ALSA/stm32_i2s_probe.png" /></p>
 <h1 id="参考文献">参考文献</h1>
 <p>《Linux设备驱动开发-约翰-马德奥》</p>
 
@@ -401,7 +453,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#cpu-dai%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F"><span class="nav-text">CPU DAI驱动程序</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#platform-dma%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F"><span class="nav-text">Platform DMA驱动程序</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%9F%B3%E9%A2%91dma%E6%8E%A5%E5%8F%A3"><span class="nav-text">音频DMA接口</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E6%A2%B3%E7%90%86"><span class="nav-text">流程梳理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -486,13 +538,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">609k</span>
+    <span title="站点总字数">612k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:14</span>
+    <span title="站点阅读时长">9:16</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
