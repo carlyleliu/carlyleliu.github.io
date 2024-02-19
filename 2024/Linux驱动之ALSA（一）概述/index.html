@@ -38,7 +38,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/pdm_source.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/ALSA_Framework1.png">
 <meta property="article:published_time" content="2024-01-05T22:42:52.000Z">
-<meta property="article:modified_time" content="2024-02-03T09:07:19.057Z">
+<meta property="article:modified_time" content="2024-02-19T14:43:34.813Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Linux驱动">
 <meta name="twitter:card" content="summary">
@@ -281,14 +281,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.6k</span>
+              <span>3.8k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>2 分钟</span>
+              <span>3 分钟</span>
             </span>
 
         </div>
@@ -357,6 +357,74 @@
 </ul>
 <h1 id="框架">框架</h1>
 <p><img src="/picture/linux_driver/ALSA/ALSA_Framework1.png" /></p>
+<ul>
+<li><p>alsa-utils（用户空间） ALSA实用程序包由Linux社区提供，包含ALSA项目的命令行实用程序（aplay、arecord、amixer、alsamixer ...）。</p></li>
+<li><p>alsa-lib（用户空间） ALSA库包含需要访问ALSA声音接口的程序（例如 alsa-utils 程序）使用的ALSA库。ALSA库在内核模块提供的音频设备上提供了一定程度的抽象，例如 PCM 和控制抽象 。</p></li>
+<li><p>ALSA Framework（内核空间） ALSA核心提供了一个API来实现音频驱动程序和 PCM/控制接口，以在用户空间上公开音频设备。PCM 接口处理数据流和控制。该界面管理ALSA驱动程序导出的控件（音频路径、音量...）。</p></li>
+<li><p>ASoC Framework（内核空间） ALSA片上系统 ( ASoC ) 层的目标是改进ALSA对嵌入式片上系统处理器和音频编解码器的支持。ASoC框架提供了一个DMA引擎，它与DMA框架连接以处理音频样本的传输。ASoC还通过DAPM驱动程序支持音频路径的动态电源管理。ASoC充当ALSA驱动程序，它将嵌入式音频系统分为三种类型的独立于平台的驱动程序：CPU DAI、编解码器和机器驱动程序。</p></li>
+<li><p>ASoC driver（内核空间） ASoC驱动程序允许为ASoC驱动程序类实现硬件相关代码 ：</p>
+<ul>
+<li>编解码器驱动程序</li>
+<li>CPU DAI驱动程序</li>
+<li>机器驱动程序</li>
+</ul></li>
+</ul>
+<h1 id="debug">Debug</h1>
+<h2 id="procfs-filesystem">Procfs filesystem</h2>
+<ul>
+<li>List PCM audio devices:</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /proc/asound/pcm</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Get hardware parameters of a PCM audio device (device "0" of card "0" here):</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /proc/asound/card0/pcm0p/sub0/hw_params</span><br></pre></td></tr></table></figure>
+<h2 id="debugfs-filesystem">Debugfs filesystem</h2>
+<ul>
+<li>List DAIs</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /sys/kernel/debug/asoc/dais</span><br></pre></td></tr></table></figure>
+<ul>
+<li>List DAPMs of "xxx.audio-controller" CPU DAI of "STM32MP1-EV" soundcard</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ls /sys/kernel/debug/asoc/STM32MP1-EV/xxx.audio-controller/dapm</span><br></pre></td></tr></table></figure>
+<h2 id="how-to-trace">How to trace</h2>
+<h3 id="dynamic-traces">Dynamic traces</h3>
+<p>ALSA framework and driver debug traces can be added to the kernel logs by using the dynamic debug mechanism.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> -n <span class="string">&#x27;file stm32_sai.c +p; file stm32_sai_sub.c +p&#x27;</span> &gt; /sys/kernel/debug/dynamic_debug/control; </span><br><span class="line">$ dmesg -n8;</span><br></pre></td></tr></table></figure>
+<h3 id="tracing-filesystem">Tracing filesystem</h3>
+<h4 id="activate-dapm-traces">Activate DAPM traces</h4>
+<ul>
+<li>Enable trace</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="string">&#x27;1&#x27;</span> &gt; /sys/kernel/debug/tracing/events/asoc/<span class="built_in">enable</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>Check log</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></table></figure>
+<h4 id="activate-pcm-hardware-parameter-traces">Activate PCM hardware parameter traces</h4>
+<ul>
+<li>Enable trace</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="string">&#x27;1&#x27;</span> &gt; /sys/kernel/debug/tracing/events/snd_pcm/<span class="built_in">enable</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>Check log</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></table></figure>
+<h4 id="activate-pcm-buffer-state-traces">Activate PCM buffer state traces</h4>
+<p>Prerequisite: the CONFIG_FUNCTION_TRACER, CONFIG_SND_DEBUG, CONFIG_SND_DEBUG_VERBOSE and SND_PCM_XRUN_DEBUG configurations must first be enabled in the Linux kernel configuration</p>
+<ul>
+<li>Set XRUN trace verbosity</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> 3 &gt; /proc/asound/card0/pcm0p/xrun_debug</span><br></pre></td></tr></table></figure>
+<ul>
+<li>Enable trace</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> <span class="string">&#x27;1&#x27;</span> &gt; /sys/kernel/debug/tracing/events/snd_pcm/<span class="built_in">enable</span></span><br></pre></td></tr></table></figure>
+<ul>
+<li>Check log</li>
+</ul>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ cat /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></table></figure>
 <h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTI0ODkyMzYvYXJ0aWNsZS9kZXRhaWxzLzk4MDQwOTg1P3NwbT0xMDAxLjIwMTQuMzAwMS41NTAx">https://blog.csdn.net/u012489236/article/details/98040985?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTI0ODkyMzYvYXJ0aWNsZS9kZXRhaWxzLzk4MDY4MTIyP3NwbT0xMDAxLjIwMTQuMzAwMS41NTAx">https://blog.csdn.net/u012489236/article/details/98068122?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br />
@@ -470,7 +538,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc"><span class="nav-text">ASOC</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc%E6%95%B0%E5%AD%97%E9%9F%B3%E9%A2%91%E6%8E%A5%E5%8F%A3"><span class="nav-text">ASoC数字音频接口</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#i2s"><span class="nav-text">I2S</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pcmtdm"><span class="nav-text">PCM&#x2F;TDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pdm"><span class="nav-text">PDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spdif"><span class="nav-text">S&#x2F;PDIF</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc%E5%AD%90%E5%85%83%E7%B4%A0"><span class="nav-text">ASOC子元素</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6"><span class="nav-text">框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc"><span class="nav-text">ASOC</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc%E6%95%B0%E5%AD%97%E9%9F%B3%E9%A2%91%E6%8E%A5%E5%8F%A3"><span class="nav-text">ASoC数字音频接口</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#i2s"><span class="nav-text">I2S</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pcmtdm"><span class="nav-text">PCM&#x2F;TDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pdm"><span class="nav-text">PDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spdif"><span class="nav-text">S&#x2F;PDIF</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc%E5%AD%90%E5%85%83%E7%B4%A0"><span class="nav-text">ASOC子元素</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6"><span class="nav-text">框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#debug"><span class="nav-text">Debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#procfs-filesystem"><span class="nav-text">Procfs filesystem</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debugfs-filesystem"><span class="nav-text">Debugfs filesystem</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#how-to-trace"><span class="nav-text">How to trace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dynamic-traces"><span class="nav-text">Dynamic traces</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tracing-filesystem"><span class="nav-text">Tracing filesystem</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-dapm-traces"><span class="nav-text">Activate DAPM traces</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-pcm-hardware-parameter-traces"><span class="nav-text">Activate PCM hardware parameter traces</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-pcm-buffer-state-traces"><span class="nav-text">Activate PCM buffer state traces</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -555,13 +623,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">616k</span>
+    <span title="站点总字数">617k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:20</span>
+    <span title="站点阅读时长">9:21</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
