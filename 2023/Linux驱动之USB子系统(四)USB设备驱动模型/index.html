@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/hacker-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/hacker-16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Monda:300,300italic,400,400italic,700,700italic|Roboto Slab:300,300italic,400,400italic,700,700italic|PT Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="BUS&#x2F;DEV&#x2F;DRV模型  &quot;USB接口&quot;是逻辑上的USB设备，我们编写的usb_driver驱动程序，支持的是&quot;USB接口&quot;： USB控制器或Hub识别出USB设备后，会创建、注册usb_deive usb_device被&quot;drivers.c&quot;驱动认领后，会选择、设置某个配置 这个配置下面的接口，都会分配、设置、注册一个usb_interface 左边的usb_driver和右边的usb_in">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之USB子系统(四)USB设备驱动模型">
+<meta property="og:url" content="http://carlyleliu.github.io/2023/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUSB%E5%AD%90%E7%B3%BB%E7%BB%9F(%E5%9B%9B)USB%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="BUS&#x2F;DEV&#x2F;DRV模型  &quot;USB接口&quot;是逻辑上的USB设备，我们编写的usb_driver驱动程序，支持的是&quot;USB接口&quot;： USB控制器或Hub识别出USB设备后，会创建、注册usb_deive usb_device被&quot;drivers.c&quot;驱动认领后，会选择、设置某个配置 这个配置下面的接口，都会分配、设置、注册一个usb_interface 左边的usb_driver和右边的usb_in">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-10-08T14:11:23.000Z">
+<meta property="article:modified_time" content="2024-02-25T15:34:53.612Z">
+<meta property="article:author" content="刘帅">
+<meta property="article:tag" content="Linux驱动">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://carlyleliu.github.io/2023/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUSB%E5%AD%90%E7%B3%BB%E7%BB%9F(%E5%9B%9B)USB%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Linux驱动之USB子系统(四)USB设备驱动模型 | Matrix</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Matrix</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-sitemap">
+
+    <a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="Follow me on GitHub" aria-label="Follow me on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2023/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUSB%E5%AD%90%E7%B3%BB%E7%BB%9F(%E5%9B%9B)USB%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="刘帅">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之USB子系统(四)USB设备驱动模型
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-10-08 22:11:23" itemprop="dateCreated datePublished" datetime="2023-10-08T22:11:23+08:00">2023-10-08</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">驱动</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2023/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUSB%E5%AD%90%E7%B3%BB%E7%BB%9F(%E5%9B%9B)USB%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2023/Linux驱动之USB子系统(四)USB设备驱动模型/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  <br>
+            <span class="post-meta-item" title="本文字数">
+              <span class="post-meta-item-icon">
+                <i class="far fa-file-word"></i>
+              </span>
+                <span class="post-meta-item-text">本文字数：</span>
+              <span>1.1k</span>
+            </span>
+            <span class="post-meta-item" title="阅读时长">
+              <span class="post-meta-item-icon">
+                <i class="far fa-clock"></i>
+              </span>
+                <span class="post-meta-item-text">阅读时长 &asymp;</span>
+              <span>1 分钟</span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="busdevdrv模型">BUS/DEV/DRV模型</h1>
+<ul>
+<li>"USB接口"是逻辑上的USB设备，我们编写的usb_driver驱动程序，支持的是"USB接口"：</li>
+<li>USB控制器或Hub识别出USB设备后，会创建、注册usb_deive</li>
+<li>usb_device被"drivers.c"驱动认领后，会选择、设置某个配置</li>
+<li>这个配置下面的接口，都会分配、设置、注册一个usb_interface</li>
+<li>左边的usb_driver和右边的usb_interface如果匹配，则调用usb_driver.probe</li>
+</ul>
+<h1 id="接口函数">接口函数</h1>
+<p>在USB设备驱动程序中，能使用的USB函数都在这个头文件里：include.h。</p>
+<h2 id="pipe">pipe</h2>
+<p>使用这些接口函数的主要目的是传输数据，传输数据的对象是USB设备里的某个endpoint，这被称为pipe：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">/* Create various pipes... */<span class="comment">#define usb_sndctrlpipe(dev, endpoint)	\</span></span><br><span class="line">  ((PIPE_CONTROL &lt;&lt; <span class="string">30) | __create_pipe(dev, endpoint))</span></span><br><span class="line"><span class="string">#define usb_rcvctrlpipe(dev, endpoint)	\</span></span><br><span class="line"><span class="string">	((PIPE_CONTROL &lt;&lt; 30</span>) | __create_pipe(dev, endpoint) | USB_DIR_IN)</span><br><span class="line"><span class="comment">#define usb_sndisocpipe(dev, endpoint)	\</span></span><br><span class="line">  ((PIPE_ISOCHRONOUS &lt;&lt; <span class="string">30) | __create_pipe(dev, endpoint))</span></span><br><span class="line"><span class="string">#define usb_rcvisocpipe(dev, endpoint)	\</span></span><br><span class="line"><span class="string">	((PIPE_ISOCHRONOUS &lt;&lt; 30</span>) | __create_pipe(dev, endpoint) | USB_DIR_IN)</span><br><span class="line"><span class="comment">#define usb_sndbulkpipe(dev, endpoint)	\</span></span><br><span class="line">  ((PIPE_BULK &lt;&lt; <span class="string">30) | __create_pipe(dev, endpoint))</span></span><br><span class="line"><span class="string">#define usb_rcvbulkpipe(dev, endpoint)	\</span></span><br><span class="line"><span class="string">	((PIPE_BULK &lt;&lt; 30</span>) | __create_pipe(dev, endpoint) | USB_DIR_IN)</span><br><span class="line"><span class="comment">#define usb_sndintpipe(dev, endpoint)	\</span></span><br><span class="line">  ((PIPE_INTERRUPT &lt;&lt; <span class="string">30) | __create_pipe(dev, endpoint))</span></span><br><span class="line"><span class="string">#define usb_rcvintpipe(dev, endpoint)	\</span></span><br><span class="line"><span class="string">	((PIPE_INTERRUPT &lt;&lt; 30</span>) | __create_pipe(dev, endpoint) | USB_DIR_IN)</span><br></pre></td></tr></table></figure>
+<h2 id="同步传输函数">同步传输函数</h2>
+<p>对于控制传输、批量传输、中断传输，有3个同步函数可以用来直接发起传输。这些函数内部会创建、填充、提交一个URB("usb request block")，并等待它完成或超时。</p>
+<p>函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_control_msg - Builds a control urb, sends it off and waits for completion</span></span><br><span class="line"><span class="comment"> * @dev: pointer to the usb device to send the message to</span></span><br><span class="line"><span class="comment"> * @pipe: endpoint &quot;pipe&quot; to send the message to</span></span><br><span class="line"><span class="comment"> * @request: USB message request value</span></span><br><span class="line"><span class="comment"> * @requesttype: USB message request type value</span></span><br><span class="line"><span class="comment"> * @value: USB message value</span></span><br><span class="line"><span class="comment"> * @index: USB message index value</span></span><br><span class="line"><span class="comment"> * @data: pointer to the data to send</span></span><br><span class="line"><span class="comment"> * @size: length in bytes of the data to send</span></span><br><span class="line"><span class="comment"> * @timeout: time in msecs to wait for the message to complete before timing</span></span><br><span class="line"><span class="comment"> *	out (if 0 the wait is forever)</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Context: !in_interrupt ()</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This function sends a simple control message to a specified endpoint and</span></span><br><span class="line"><span class="comment"> * waits for the message to complete, or timeout.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Don&#x27;t use this function from within an interrupt context, like a bottom half</span></span><br><span class="line"><span class="comment"> * handler.  If you need an asynchronous message, or need to send a message</span></span><br><span class="line"><span class="comment"> * from within interrupt context, use usb_submit_urb().</span></span><br><span class="line"><span class="comment"> * If a thread in your driver uses this call, make sure your disconnect()</span></span><br><span class="line"><span class="comment"> * method can wait for it to complete.  Since you don&#x27;t have a handle on the</span></span><br><span class="line"><span class="comment"> * URB used, you can&#x27;t cancel the request.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return: If successful, the number of bytes transferred. Otherwise, a negative</span></span><br><span class="line"><span class="comment"> * error number.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">int</span> <span class="title">usb_control_msg</span><span class="params">(struct usb_device *dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> pipe, __u8 request,</span></span></span><br><span class="line"><span class="params"><span class="function">		    __u8 requesttype, __u16 value, __u16 index, <span class="keyword">void</span> *data,</span></span></span><br><span class="line"><span class="params"><span class="function">		    __u16 size, <span class="keyword">int</span> timeout)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_bulk_msg - Builds a bulk urb, sends it off and waits for completion</span></span><br><span class="line"><span class="comment"> * @usb_dev: pointer to the usb device to send the message to</span></span><br><span class="line"><span class="comment"> * @pipe: endpoint &quot;pipe&quot; to send the message to</span></span><br><span class="line"><span class="comment"> * @data: pointer to the data to send</span></span><br><span class="line"><span class="comment"> * @len: length in bytes of the data to send</span></span><br><span class="line"><span class="comment"> * @actual_length: pointer to a location to put the actual length transferred</span></span><br><span class="line"><span class="comment"> *	in bytes</span></span><br><span class="line"><span class="comment"> * @timeout: time in msecs to wait for the message to complete before</span></span><br><span class="line"><span class="comment"> *	timing out (if 0 the wait is forever)</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Context: !in_interrupt ()</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This function sends a simple bulk message to a specified endpoint</span></span><br><span class="line"><span class="comment"> * and waits for the message to complete, or timeout.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Don&#x27;t use this function from within an interrupt context, like a bottom half</span></span><br><span class="line"><span class="comment"> * handler.  If you need an asynchronous message, or need to send a message</span></span><br><span class="line"><span class="comment"> * from within interrupt context, use usb_submit_urb() If a thread in your</span></span><br><span class="line"><span class="comment"> * driver uses this call, make sure your disconnect() method can wait for it to</span></span><br><span class="line"><span class="comment"> * complete.  Since you don&#x27;t have a handle on the URB used, you can&#x27;t cancel</span></span><br><span class="line"><span class="comment"> * the request.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Because there is no usb_interrupt_msg() and no USBDEVFS_INTERRUPT ioctl,</span></span><br><span class="line"><span class="comment"> * users are forced to abuse this routine by using it to submit URBs for</span></span><br><span class="line"><span class="comment"> * interrupt endpoints.  We will take the liberty of creating an interrupt URB</span></span><br><span class="line"><span class="comment"> * (with the default interval) if the target is an interrupt endpoint.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return:</span></span><br><span class="line"><span class="comment"> * If successful, 0. Otherwise a negative error number. The number of actual</span></span><br><span class="line"><span class="comment"> * bytes transferred will be stored in the @actual_length parameter.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">int</span> <span class="title">usb_bulk_msg</span><span class="params">(struct usb_device *usb_dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> pipe,</span></span></span><br><span class="line"><span class="params"><span class="function">		 <span class="keyword">void</span> *data, <span class="keyword">int</span> len, <span class="keyword">int</span> *actual_length, <span class="keyword">int</span> timeout)</span></span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_interrupt_msg - Builds an interrupt urb, sends it off and waits for completion</span></span><br><span class="line"><span class="comment"> * @usb_dev: pointer to the usb device to send the message to</span></span><br><span class="line"><span class="comment"> * @pipe: endpoint &quot;pipe&quot; to send the message to</span></span><br><span class="line"><span class="comment"> * @data: pointer to the data to send</span></span><br><span class="line"><span class="comment"> * @len: length in bytes of the data to send</span></span><br><span class="line"><span class="comment"> * @actual_length: pointer to a location to put the actual length transferred</span></span><br><span class="line"><span class="comment"> *	in bytes</span></span><br><span class="line"><span class="comment"> * @timeout: time in msecs to wait for the message to complete before</span></span><br><span class="line"><span class="comment"> *	timing out (if 0 the wait is forever)</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Context: !in_interrupt ()</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This function sends a simple interrupt message to a specified endpoint and</span></span><br><span class="line"><span class="comment"> * waits for the message to complete, or timeout.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Don&#x27;t use this function from within an interrupt context, like a bottom half</span></span><br><span class="line"><span class="comment"> * handler.  If you need an asynchronous message, or need to send a message</span></span><br><span class="line"><span class="comment"> * from within interrupt context, use usb_submit_urb() If a thread in your</span></span><br><span class="line"><span class="comment"> * driver uses this call, make sure your disconnect() method can wait for it to</span></span><br><span class="line"><span class="comment"> * complete.  Since you don&#x27;t have a handle on the URB used, you can&#x27;t cancel</span></span><br><span class="line"><span class="comment"> * the request.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return:</span></span><br><span class="line"><span class="comment"> * If successful, 0. Otherwise a negative error number. The number of actual</span></span><br><span class="line"><span class="comment"> * bytes transferred will be stored in the @actual_length parameter.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">int</span> <span class="title">usb_interrupt_msg</span><span class="params">(struct usb_device *usb_dev, <span class="keyword">unsigned</span> <span class="keyword">int</span> pipe,</span></span></span><br><span class="line"><span class="params"><span class="function">		      <span class="keyword">void</span> *data, <span class="keyword">int</span> len, <span class="keyword">int</span> *actual_length, <span class="keyword">int</span> timeout)</span></span>;</span><br></pre></td></tr></table></figure>
+<h2 id="异步传输函数">异步传输函数</h2>
+<p>使用URB进行传输时，它是异步方式：需要先分配、构造、提交一个URB("usb request block")，当传输完成后，它的回调函数被调用。</p>
+<p>关键就在于需要填充URB：</p>
+<ul>
+<li>dev：跟谁传输数据</li>
+<li>pipe：跟哪个pipe传输数据</li>
+<li>buffer：里面存有要发送的数据，或者用来接收要读取的数据</li>
+<li>数据长度</li>
+<li>回调函数</li>
+</ul>
+<h2 id="分配和释放urb">分配和释放URB</h2>
+<p>函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_alloc_urb - creates a new urb for a USB driver to use</span></span><br><span class="line"><span class="comment"> * @iso_packets: number of iso packets for this urb</span></span><br><span class="line"><span class="comment"> * @mem_flags: the type of memory to allocate, see kmalloc() for a list of</span></span><br><span class="line"><span class="comment"> *	valid options for this.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Creates an urb for the USB driver to use, initializes a few internal</span></span><br><span class="line"><span class="comment"> * structures, increments the usage counter, and returns a pointer to it.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If the driver want to use this urb for interrupt, control, or bulk</span></span><br><span class="line"><span class="comment"> * endpoints, pass &#x27;0&#x27; as the number of iso packets.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The driver must call usb_free_urb() when it is finished with the urb.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return: A pointer to the new urb, or %NULL if no memory is available.</span></span><br><span class="line"><span class="comment"> */</span><span class="function">struct urb *<span class="title">usb_alloc_urb</span><span class="params">(<span class="keyword">int</span> iso_packets, <span class="keyword">gfp_t</span> mem_flags)</span></span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_free_urb - frees the memory used by a urb when all users of it are finished</span></span><br><span class="line"><span class="comment"> * @urb: pointer to the urb to free, may be NULL</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Must be called when a user of a urb is finished with it.  When the last user</span></span><br><span class="line"><span class="comment"> * of the urb calls this function, the memory of the urb is freed.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note: The transfer buffer associated with the urb is not freed unless the</span></span><br><span class="line"><span class="comment"> * URB_FREE_BUFFER transfer flag is set.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">void</span> <span class="title">usb_free_urb</span><span class="params">(struct urb *urb)</span></span>;</span><br></pre></td></tr></table></figure>
+<h2 id="分配释放dma-buffer">分配/释放DMA Buffer</h2>
+<p>发起USB传输时，数据保存在buffer里。这个buffer可以是一般的buffer，也可以是DMA Buffer。</p>
+<p>对于一般的buffer，在提交URB时会临时分配一个DMA Buffer：</p>
+<ul>
+<li>发送数据时：函数内部会先从一般buffer中把数据复制到DMA Buffer，在提交给USB控制器</li>
+<li>读取数据时：USB控制器先把数据传到DMA Buffer，函数内部在把DMA Buffer的数据复制到一般buffer</li>
+<li>中间增加了一次数据的拷贝，效率低</li>
+</ul>
+<p>我们可以直接使用DMA Buffer，函数原型如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_alloc_coherent - allocate dma-consistent buffer for URB_NO_xxx_DMA_MAP</span></span><br><span class="line"><span class="comment"> * @dev: device the buffer will be used with</span></span><br><span class="line"><span class="comment"> * @size: requested buffer size</span></span><br><span class="line"><span class="comment"> * @mem_flags: affect whether allocation may block</span></span><br><span class="line"><span class="comment"> * @dma: used to return DMA address of buffer</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return: Either null (indicating no buffer could be allocated), or the</span></span><br><span class="line"><span class="comment"> * cpu-space pointer to a buffer that may be used to perform DMA to the</span></span><br><span class="line"><span class="comment"> * specified device.  Such cpu-space buffers are returned along with the DMA</span></span><br><span class="line"><span class="comment"> * address (through the pointer provided).</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note:</span></span><br><span class="line"><span class="comment"> * These buffers are used with URB_NO_xxx_DMA_MAP set in urb-&gt;transfer_flags</span></span><br><span class="line"><span class="comment"> * to avoid behaviors like using &quot;DMA bounce buffers&quot;, or thrashing IOMMU</span></span><br><span class="line"><span class="comment"> * hardware during URB completion/resubmit.  The implementation varies between</span></span><br><span class="line"><span class="comment"> * platforms, depending on details of how DMA will work to this device.</span></span><br><span class="line"><span class="comment"> * Using these buffers also eliminates cacheline sharing problems on</span></span><br><span class="line"><span class="comment"> * architectures where CPU caches are not DMA-coherent.  On systems without</span></span><br><span class="line"><span class="comment"> * bus-snooping caches, these buffers are uncached.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * When the buffer is no longer used, free it with usb_free_coherent().</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">void</span> *<span class="title">usb_alloc_coherent</span><span class="params">(struct usb_device *dev, <span class="keyword">size_t</span> size, <span class="keyword">gfp_t</span> mem_flags,</span></span></span><br><span class="line"><span class="params"><span class="function">			 <span class="keyword">dma_addr_t</span> *dma)</span></span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_free_coherent - free memory allocated with usb_alloc_coherent()</span></span><br><span class="line"><span class="comment"> * @dev: device the buffer was used with</span></span><br><span class="line"><span class="comment"> * @size: requested buffer size</span></span><br><span class="line"><span class="comment"> * @addr: CPU address of buffer</span></span><br><span class="line"><span class="comment"> * @dma: DMA address of buffer</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This reclaims an I/O buffer, letting it be reused.  The memory must have</span></span><br><span class="line"><span class="comment"> * been allocated using usb_alloc_coherent(), and the parameters must match</span></span><br><span class="line"><span class="comment"> * those provided in that allocation request.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">void</span> <span class="title">usb_free_coherent</span><span class="params">(struct usb_device *dev, <span class="keyword">size_t</span> size, <span class="keyword">void</span> *addr,</span></span></span><br><span class="line"><span class="params"><span class="function">		       <span class="keyword">dma_addr_t</span> dma)</span></span>;</span><br></pre></td></tr></table></figure>
+<h2 id="填充urb">填充URB</h2>
+<p>对于控制传输、批量传输、中断传输，分别有如下函数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_fill_control_urb - initializes a control urb</span></span><br><span class="line"><span class="comment"> * @urb: pointer to the urb to initialize.</span></span><br><span class="line"><span class="comment"> * @dev: pointer to the struct usb_device for this urb.</span></span><br><span class="line"><span class="comment"> * @pipe: the endpoint pipe</span></span><br><span class="line"><span class="comment"> * @setup_packet: pointer to the setup_packet buffer</span></span><br><span class="line"><span class="comment"> * @transfer_buffer: pointer to the transfer buffer</span></span><br><span class="line"><span class="comment"> * @buffer_length: length of the transfer buffer</span></span><br><span class="line"><span class="comment"> * @complete_fn: pointer to the usb_complete_t function</span></span><br><span class="line"><span class="comment"> * @context: what to set the urb context to.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Initializes a control urb with the proper information needed to submit</span></span><br><span class="line"><span class="comment"> * it to a device.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">usb_fill_control_urb</span><span class="params">(struct urb *urb,</span></span></span><br><span class="line"><span class="params"><span class="function">					struct usb_device *dev,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">unsigned</span> <span class="keyword">int</span> pipe,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">unsigned</span> <span class="keyword">char</span> *setup_packet,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">void</span> *transfer_buffer,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">int</span> buffer_length,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">usb_complete_t</span> complete_fn,</span></span></span><br><span class="line"><span class="params"><span class="function">					<span class="keyword">void</span> *context)</span></span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_fill_bulk_urb - macro to help initialize a bulk urb</span></span><br><span class="line"><span class="comment"> * @urb: pointer to the urb to initialize.</span></span><br><span class="line"><span class="comment"> * @dev: pointer to the struct usb_device for this urb.</span></span><br><span class="line"><span class="comment"> * @pipe: the endpoint pipe</span></span><br><span class="line"><span class="comment"> * @transfer_buffer: pointer to the transfer buffer</span></span><br><span class="line"><span class="comment"> * @buffer_length: length of the transfer buffer</span></span><br><span class="line"><span class="comment"> * @complete_fn: pointer to the usb_complete_t function</span></span><br><span class="line"><span class="comment"> * @context: what to set the urb context to.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Initializes a bulk urb with the proper information needed to submit it</span></span><br><span class="line"><span class="comment"> * to a device.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">usb_fill_bulk_urb</span><span class="params">(struct urb *urb,</span></span></span><br><span class="line"><span class="params"><span class="function">				     struct usb_device *dev,</span></span></span><br><span class="line"><span class="params"><span class="function">				     <span class="keyword">unsigned</span> <span class="keyword">int</span> pipe,</span></span></span><br><span class="line"><span class="params"><span class="function">				     <span class="keyword">void</span> *transfer_buffer,</span></span></span><br><span class="line"><span class="params"><span class="function">				     <span class="keyword">int</span> buffer_length,</span></span></span><br><span class="line"><span class="params"><span class="function">				     <span class="keyword">usb_complete_t</span> complete_fn,</span></span></span><br><span class="line"><span class="params"><span class="function">				     <span class="keyword">void</span> *context)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_fill_int_urb - macro to help initialize a interrupt urb</span></span><br><span class="line"><span class="comment"> * @urb: pointer to the urb to initialize.</span></span><br><span class="line"><span class="comment"> * @dev: pointer to the struct usb_device for this urb.</span></span><br><span class="line"><span class="comment"> * @pipe: the endpoint pipe</span></span><br><span class="line"><span class="comment"> * @transfer_buffer: pointer to the transfer buffer</span></span><br><span class="line"><span class="comment"> * @buffer_length: length of the transfer buffer</span></span><br><span class="line"><span class="comment"> * @complete_fn: pointer to the usb_complete_t function</span></span><br><span class="line"><span class="comment"> * @context: what to set the urb context to.</span></span><br><span class="line"><span class="comment"> * @interval: what to set the urb interval to, encoded like</span></span><br><span class="line"><span class="comment"> *	the endpoint descriptor&#x27;s bInterval value.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Initializes a interrupt urb with the proper information needed to submit</span></span><br><span class="line"><span class="comment"> * it to a device.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note that High Speed and SuperSpeed(+) interrupt endpoints use a logarithmic</span></span><br><span class="line"><span class="comment"> * encoding of the endpoint interval, and express polling intervals in</span></span><br><span class="line"><span class="comment"> * microframes (eight per millisecond) rather than in frames (one per</span></span><br><span class="line"><span class="comment"> * millisecond).</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Wireless USB also uses the logarithmic encoding, but specifies it in units of</span></span><br><span class="line"><span class="comment"> * 128us instead of 125us.  For Wireless USB devices, the interval is passed</span></span><br><span class="line"><span class="comment"> * through to the host controller, rather than being translated into microframe</span></span><br><span class="line"><span class="comment"> * units.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">void</span> <span class="title">usb_fill_int_urb</span><span class="params">(struct urb *urb,</span></span></span><br><span class="line"><span class="params"><span class="function">				    struct usb_device *dev,</span></span></span><br><span class="line"><span class="params"><span class="function">				    <span class="keyword">unsigned</span> <span class="keyword">int</span> pipe,</span></span></span><br><span class="line"><span class="params"><span class="function">				    <span class="keyword">void</span> *transfer_buffer,</span></span></span><br><span class="line"><span class="params"><span class="function">				    <span class="keyword">int</span> buffer_length,</span></span></span><br><span class="line"><span class="params"><span class="function">				    <span class="keyword">usb_complete_t</span> complete_fn,</span></span></span><br><span class="line"><span class="params"><span class="function">				    <span class="keyword">void</span> *context,</span></span></span><br><span class="line"><span class="params"><span class="function">				    <span class="keyword">int</span> interval)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>如果URB使用DMA Buffer，那么还需要设置一个flag表明这点：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">urb-&gt;transfer_dma = DMA address of buffer;<span class="comment">// usb_alloc_coherent的输出参数</span></span><br><span class="line">urb-&gt;transfer_flags |= URB_NO_TRANSFER_DMA_MAP;</span><br></pre></td></tr></table></figure>
+<h2 id="提交urb">提交URB</h2>
+<p>构造好URB后，需要提交到USB系统里，才能启动传输。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_submit_urb - issue an asynchronous transfer request for an endpoint</span></span><br><span class="line"><span class="comment"> * @urb: pointer to the urb describing the request</span></span><br><span class="line"><span class="comment"> * @mem_flags: the type of memory to allocate, see kmalloc() for a list</span></span><br><span class="line"><span class="comment"> *	of valid options for this.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This submits a transfer request, and transfers control of the URB</span></span><br><span class="line"><span class="comment"> * describing that request to the USB subsystem.  Request completion will</span></span><br><span class="line"><span class="comment"> * be indicated later, asynchronously, by calling the completion handler.</span></span><br><span class="line"><span class="comment"> * The three types of completion are success, error, and unlink</span></span><br><span class="line"><span class="comment"> * (a software-induced fault, also called &quot;request cancellation&quot;).</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * URBs may be submitted in interrupt context.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The caller must have correctly initialized the URB before submitting</span></span><br><span class="line"><span class="comment"> * it.  Functions such as usb_fill_bulk_urb() and usb_fill_control_urb() are</span></span><br><span class="line"><span class="comment"> * available to ensure that most fields are correctly initialized, for</span></span><br><span class="line"><span class="comment"> * the particular kind of transfer, although they will not initialize</span></span><br><span class="line"><span class="comment"> * any transfer flags.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * If the submission is successful, the complete() callback from the URB</span></span><br><span class="line"><span class="comment"> * will be called exactly once, when the USB core and Host Controller Driver</span></span><br><span class="line"><span class="comment"> * (HCD) are finished with the URB.  When the completion function is called,</span></span><br><span class="line"><span class="comment"> * control of the URB is returned to the device driver which issued the</span></span><br><span class="line"><span class="comment"> * request.  The completion handler may then immediately free or reuse that</span></span><br><span class="line"><span class="comment"> * URB.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * With few exceptions, USB device drivers should never access URB fields</span></span><br><span class="line"><span class="comment"> * provided by usbcore or the HCD until its complete() is called.</span></span><br><span class="line"><span class="comment"> * The exceptions relate to periodic transfer scheduling.  For both</span></span><br><span class="line"><span class="comment"> * interrupt and isochronous urbs, as part of successful URB submission</span></span><br><span class="line"><span class="comment"> * urb-&gt;interval is modified to reflect the actual transfer period used</span></span><br><span class="line"><span class="comment"> * (normally some power of two units).  And for isochronous urbs,</span></span><br><span class="line"><span class="comment"> * urb-&gt;start_frame is modified to reflect when the URB&#x27;s transfers were</span></span><br><span class="line"><span class="comment"> * scheduled to start.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Not all isochronous transfer scheduling policies will work, but most</span></span><br><span class="line"><span class="comment"> * host controller drivers should easily handle ISO queues going from now</span></span><br><span class="line"><span class="comment"> * until 10-200 msec into the future.  Drivers should try to keep at</span></span><br><span class="line"><span class="comment"> * least one or two msec of data in the queue; many controllers require</span></span><br><span class="line"><span class="comment"> * that new transfers start at least 1 msec in the future when they are</span></span><br><span class="line"><span class="comment"> * added.  If the driver is unable to keep up and the queue empties out,</span></span><br><span class="line"><span class="comment"> * the behavior for new submissions is governed by the URB_ISO_ASAP flag.</span></span><br><span class="line"><span class="comment"> * If the flag is set, or if the queue is idle, then the URB is always</span></span><br><span class="line"><span class="comment"> * assigned to the first available (and not yet expired) slot in the</span></span><br><span class="line"><span class="comment"> * endpoint&#x27;s schedule.  If the flag is not set and the queue is active</span></span><br><span class="line"><span class="comment"> * then the URB is always assigned to the next slot in the schedule</span></span><br><span class="line"><span class="comment"> * following the end of the endpoint&#x27;s previous URB, even if that slot is</span></span><br><span class="line"><span class="comment"> * in the past.  When a packet is assigned in this way to a slot that has</span></span><br><span class="line"><span class="comment"> * already expired, the packet is not transmitted and the corresponding</span></span><br><span class="line"><span class="comment"> * usb_iso_packet_descriptor&#x27;s status field will return -EXDEV.  If this</span></span><br><span class="line"><span class="comment"> * would happen to all the packets in the URB, submission fails with a</span></span><br><span class="line"><span class="comment"> * -EXDEV error code.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * For control endpoints, the synchronous usb_control_msg() call is</span></span><br><span class="line"><span class="comment"> * often used (in non-interrupt context) instead of this call.</span></span><br><span class="line"><span class="comment"> * That is often used through convenience wrappers, for the requests</span></span><br><span class="line"><span class="comment"> * that are standardized in the USB 2.0 specification.  For bulk</span></span><br><span class="line"><span class="comment"> * endpoints, a synchronous usb_bulk_msg() call is available.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return:</span></span><br><span class="line"><span class="comment"> * 0 on successful submissions. A negative error number otherwise.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Request Queuing:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * URBs may be submitted to endpoints before previous ones complete, to</span></span><br><span class="line"><span class="comment"> * minimize the impact of interrupt latencies and system overhead on data</span></span><br><span class="line"><span class="comment"> * throughput.  With that queuing policy, an endpoint&#x27;s queue would never</span></span><br><span class="line"><span class="comment"> * be empty.  This is required for continuous isochronous data streams,</span></span><br><span class="line"><span class="comment"> * and may also be required for some kinds of interrupt transfers. Such</span></span><br><span class="line"><span class="comment"> * queuing also maximizes bandwidth utilization by letting USB controllers</span></span><br><span class="line"><span class="comment"> * start work on later requests before driver software has finished the</span></span><br><span class="line"><span class="comment"> * completion processing for earlier (successful) requests.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * As of Linux 2.6, all USB endpoint transfer queues support depths greater</span></span><br><span class="line"><span class="comment"> * than one.  This was previously a HCD-specific behavior, except for ISO</span></span><br><span class="line"><span class="comment"> * transfers.  Non-isochronous endpoint queues are inactive during cleanup</span></span><br><span class="line"><span class="comment"> * after faults (transfer errors or cancellation).</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Reserved Bandwidth Transfers:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Periodic transfers (interrupt or isochronous) are performed repeatedly,</span></span><br><span class="line"><span class="comment"> * using the interval specified in the urb.  Submitting the first urb to</span></span><br><span class="line"><span class="comment"> * the endpoint reserves the bandwidth necessary to make those transfers.</span></span><br><span class="line"><span class="comment"> * If the USB subsystem can&#x27;t allocate sufficient bandwidth to perform</span></span><br><span class="line"><span class="comment"> * the periodic request, submitting such a periodic request should fail.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * For devices under xHCI, the bandwidth is reserved at configuration time, or</span></span><br><span class="line"><span class="comment"> * when the alt setting is selected.  If there is not enough bus bandwidth, the</span></span><br><span class="line"><span class="comment"> * configuration/alt setting request will fail.  Therefore, submissions to</span></span><br><span class="line"><span class="comment"> * periodic endpoints on devices under xHCI should never fail due to bandwidth</span></span><br><span class="line"><span class="comment"> * constraints.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Device drivers must explicitly request that repetition, by ensuring that</span></span><br><span class="line"><span class="comment"> * some URB is always on the endpoint&#x27;s queue (except possibly for short</span></span><br><span class="line"><span class="comment"> * periods during completion callbacks).  When there is no longer an urb</span></span><br><span class="line"><span class="comment"> * queued, the endpoint&#x27;s bandwidth reservation is canceled.  This means</span></span><br><span class="line"><span class="comment"> * drivers can use their completion handlers to ensure they keep bandwidth</span></span><br><span class="line"><span class="comment"> * they need, by reinitializing and resubmitting the just-completed urb</span></span><br><span class="line"><span class="comment"> * until the driver longer needs that periodic bandwidth.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Memory Flags:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The general rules for how to decide which mem_flags to use</span></span><br><span class="line"><span class="comment"> * are the same as for kmalloc.  There are four</span></span><br><span class="line"><span class="comment"> * different possible values; GFP_KERNEL, GFP_NOFS, GFP_NOIO and</span></span><br><span class="line"><span class="comment"> * GFP_ATOMIC.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * GFP_NOFS is not ever used, as it has not been implemented yet.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * GFP_ATOMIC is used when</span></span><br><span class="line"><span class="comment"> *   (a) you are inside a completion handler, an interrupt, bottom half,</span></span><br><span class="line"><span class="comment"> *       tasklet or timer, or</span></span><br><span class="line"><span class="comment"> *   (b) you are holding a spinlock or rwlock (does not apply to</span></span><br><span class="line"><span class="comment"> *       semaphores), or</span></span><br><span class="line"><span class="comment"> *   (c) current-&gt;state != TASK_RUNNING, this is the case only after</span></span><br><span class="line"><span class="comment"> *       you&#x27;ve changed it.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * GFP_NOIO is used in the block io path and error handling of storage</span></span><br><span class="line"><span class="comment"> * devices.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * All other situations use GFP_KERNEL.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Some more specific rules for mem_flags can be inferred, such as</span></span><br><span class="line"><span class="comment"> *  (1) start_xmit, timeout, and receive methods of network drivers must</span></span><br><span class="line"><span class="comment"> *      use GFP_ATOMIC (they are called with a spinlock held);</span></span><br><span class="line"><span class="comment"> *  (2) queuecommand methods of scsi drivers must use GFP_ATOMIC (also</span></span><br><span class="line"><span class="comment"> *      called with a spinlock held);</span></span><br><span class="line"><span class="comment"> *  (3) If you use a kernel thread with a network driver you must use</span></span><br><span class="line"><span class="comment"> *      GFP_NOIO, unless (b) or (c) apply;</span></span><br><span class="line"><span class="comment"> *  (4) after you have done a down() you can use GFP_KERNEL, unless (b) or (c)</span></span><br><span class="line"><span class="comment"> *      apply or your are in a storage driver&#x27;s block io path;</span></span><br><span class="line"><span class="comment"> *  (5) USB probe and disconnect can use GFP_KERNEL unless (b) or (c) apply; and</span></span><br><span class="line"><span class="comment"> *  (6) changing firmware on a running storage or net device uses</span></span><br><span class="line"><span class="comment"> *      GFP_NOIO, unless b) or c) apply</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">int</span> <span class="title">usb_submit_urb</span><span class="params">(struct urb *urb, <span class="keyword">gfp_t</span> mem_flags)</span></span>;</span><br></pre></td></tr></table></figure>
+<h2 id="取消urb">取消URB</h2>
+<p>已经提交的URB，可以取消它，有2个函数：</p>
+<ul>
+<li>usb_kill_urb：这是一个同步函数，它会等待URB结束</li>
+<li>usb_unlink_urb：这是一个异步函数，它不会等待URB结束，USB控制器驱动会调用它的回调函数</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_kill_urb - cancel a transfer request and wait for it to finish</span></span><br><span class="line"><span class="comment"> * @urb: pointer to URB describing a previously submitted request,</span></span><br><span class="line"><span class="comment"> *	may be NULL</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This routine cancels an in-progress request.  It is guaranteed that</span></span><br><span class="line"><span class="comment"> * upon return all completion handlers will have finished and the URB</span></span><br><span class="line"><span class="comment"> * will be totally idle and available for reuse.  These features make</span></span><br><span class="line"><span class="comment"> * this an ideal way to stop I/O in a disconnect() callback or close()</span></span><br><span class="line"><span class="comment"> * function.  If the request has not already finished or been unlinked</span></span><br><span class="line"><span class="comment"> * the completion handler will see urb-&gt;status == -ENOENT.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * While the routine is running, attempts to resubmit the URB will fail</span></span><br><span class="line"><span class="comment"> * with error -EPERM.  Thus even if the URB&#x27;s completion handler always</span></span><br><span class="line"><span class="comment"> * tries to resubmit, it will not succeed and the URB will become idle.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The URB must not be deallocated while this routine is running.  In</span></span><br><span class="line"><span class="comment"> * particular, when a driver calls this routine, it must insure that the</span></span><br><span class="line"><span class="comment"> * completion handler cannot deallocate the URB.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This routine may not be used in an interrupt context (such as a bottom</span></span><br><span class="line"><span class="comment"> * half or a completion handler), or when holding a spinlock, or in other</span></span><br><span class="line"><span class="comment"> * situations where the caller can&#x27;t schedule().</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This routine should not be called by a driver after its disconnect</span></span><br><span class="line"><span class="comment"> * method has returned.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">void</span> <span class="title">usb_kill_urb</span><span class="params">(struct urb *urb)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * usb_unlink_urb - abort/cancel a transfer request for an endpoint</span></span><br><span class="line"><span class="comment"> * @urb: pointer to urb describing a previously submitted request,</span></span><br><span class="line"><span class="comment"> *	may be NULL</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This routine cancels an in-progress request.  URBs complete only once</span></span><br><span class="line"><span class="comment"> * per submission, and may be canceled only once per submission.</span></span><br><span class="line"><span class="comment"> * Successful cancellation means termination of @urb will be expedited</span></span><br><span class="line"><span class="comment"> * and the completion handler will be called with a status code</span></span><br><span class="line"><span class="comment"> * indicating that the request has been canceled (rather than any other</span></span><br><span class="line"><span class="comment"> * code).</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Drivers should not call this routine or related routines, such as</span></span><br><span class="line"><span class="comment"> * usb_kill_urb() or usb_unlink_anchored_urbs(), after their disconnect</span></span><br><span class="line"><span class="comment"> * method has returned.  The disconnect function should synchronize with</span></span><br><span class="line"><span class="comment"> * a driver&#x27;s I/O routines to insure that all URB-related activity has</span></span><br><span class="line"><span class="comment"> * completed before it returns.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This request is asynchronous, however the HCD might call the -&gt;complete()</span></span><br><span class="line"><span class="comment"> * callback during unlink. Therefore when drivers call usb_unlink_urb(), they</span></span><br><span class="line"><span class="comment"> * must not hold any locks that may be taken by the completion function.</span></span><br><span class="line"><span class="comment"> * Success is indicated by returning -EINPROGRESS, at which time the URB will</span></span><br><span class="line"><span class="comment"> * probably not yet have been given back to the device driver. When it is</span></span><br><span class="line"><span class="comment"> * eventually called, the completion function will see @urb-&gt;status ==</span></span><br><span class="line"><span class="comment"> * -ECONNRESET.</span></span><br><span class="line"><span class="comment"> * Failure is indicated by usb_unlink_urb() returning any other value.</span></span><br><span class="line"><span class="comment"> * Unlinking will fail when @urb is not currently &quot;linked&quot; (i.e., it was</span></span><br><span class="line"><span class="comment"> * never submitted, or it was unlinked before, or the hardware is already</span></span><br><span class="line"><span class="comment"> * finished with it), even if the completion handler has not yet run.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * The URB must not be deallocated while this routine is running.  In</span></span><br><span class="line"><span class="comment"> * particular, when a driver calls this routine, it must insure that the</span></span><br><span class="line"><span class="comment"> * completion handler cannot deallocate the URB.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Return: -EINPROGRESS on success. See description for other values on</span></span><br><span class="line"><span class="comment"> * failure.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Unlinking and Endpoint Queues:</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * [The behaviors and guarantees described below do not apply to virtual</span></span><br><span class="line"><span class="comment"> * root hubs but only to endpoint queues for physical USB devices.]</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Host Controller Drivers (HCDs) place all the URBs for a particular</span></span><br><span class="line"><span class="comment"> * endpoint in a queue.  Normally the queue advances as the controller</span></span><br><span class="line"><span class="comment"> * hardware processes each request.  But when an URB terminates with an</span></span><br><span class="line"><span class="comment"> * error its queue generally stops (see below), at least until that URB&#x27;s</span></span><br><span class="line"><span class="comment"> * completion routine returns.  It is guaranteed that a stopped queue</span></span><br><span class="line"><span class="comment"> * will not restart until all its unlinked URBs have been fully retired,</span></span><br><span class="line"><span class="comment"> * with their completion routines run, even if that&#x27;s not until some time</span></span><br><span class="line"><span class="comment"> * after the original completion handler returns.  The same behavior and</span></span><br><span class="line"><span class="comment"> * guarantee apply when an URB terminates because it was unlinked.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Bulk and interrupt endpoint queues are guaranteed to stop whenever an</span></span><br><span class="line"><span class="comment"> * URB terminates with any sort of error, including -ECONNRESET, -ENOENT,</span></span><br><span class="line"><span class="comment"> * and -EREMOTEIO.  Control endpoint queues behave the same way except</span></span><br><span class="line"><span class="comment"> * that they are not guaranteed to stop for -EREMOTEIO errors.  Queues</span></span><br><span class="line"><span class="comment"> * for isochronous endpoints are treated differently, because they must</span></span><br><span class="line"><span class="comment"> * advance at fixed rates.  Such queues do not stop when an URB</span></span><br><span class="line"><span class="comment"> * encounters an error or is unlinked.  An unlinked isochronous URB may</span></span><br><span class="line"><span class="comment"> * leave a gap in the stream of packets; it is undefined whether such</span></span><br><span class="line"><span class="comment"> * gaps can be filled in.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Note that early termination of an URB because a short packet was</span></span><br><span class="line"><span class="comment"> * received will generate a -EREMOTEIO error if and only if the</span></span><br><span class="line"><span class="comment"> * URB_SHORT_NOT_OK flag is set.  By setting this flag, USB device</span></span><br><span class="line"><span class="comment"> * drivers can build deep queues for large or complex bulk transfers</span></span><br><span class="line"><span class="comment"> * and clean them up reliably after any sort of aborted transfer by</span></span><br><span class="line"><span class="comment"> * unlinking all pending URBs at the first fault.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * When a control URB terminates with an error other than -EREMOTEIO, it</span></span><br><span class="line"><span class="comment"> * is quite likely that the status stage of the transfer will not take</span></span><br><span class="line"><span class="comment"> * place.</span></span><br><span class="line"><span class="comment"> */</span><span class="function"><span class="keyword">int</span> <span class="title">usb_unlink_urb</span><span class="params">(stru</span></span></span><br></pre></td></tr></table></figure>
+<h1 id="参考文献">参考文献</h1>
+<p>《韦东山老师相关课程》<br />
+《圈圈教你玩USB》<br />
+《USB2.0协议规范》</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘帅
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://carlyleliu.github.io/2023/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUSB%E5%AD%90%E7%B3%BB%E7%BB%9F(%E5%9B%9B)USB%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/" title="Linux驱动之USB子系统(四)USB设备驱动模型">http://carlyleliu.github.io/2023/Linux驱动之USB子系统(四)USB设备驱动模型/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <span class="exturl" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC8="><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</span> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          
+          <div class="post-tags">
+              <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/" rel="tag"><i class="fa fa-tag"></i> Linux驱动</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%B8%80%EF%BC%89%E6%A6%82%E8%BF%B0/" rel="prev" title="Linux驱动之ALSA（一）概述">
+      <i class="fa fa-chevron-left"></i> Linux驱动之ALSA（一）概述
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUSB%E5%AD%90%E7%B3%BB%E7%BB%9F(%E4%B8%80)UAC%E5%90%8C%E6%AD%A5%E6%96%B9%E5%BC%8F/" rel="next" title="Linux驱动之USB子系统(一)UAC同步方式">
+      Linux驱动之USB子系统(一)UAC同步方式 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    
+  <div class="comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+    </div>
+  </div>
+  
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#busdevdrv%E6%A8%A1%E5%9E%8B"><span class="nav-text">BUS&#x2F;DEV&#x2F;DRV模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E5%87%BD%E6%95%B0"><span class="nav-text">接口函数</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pipe"><span class="nav-text">pipe</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E4%BC%A0%E8%BE%93%E5%87%BD%E6%95%B0"><span class="nav-text">同步传输函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5%E4%BC%A0%E8%BE%93%E5%87%BD%E6%95%B0"><span class="nav-text">异步传输函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E5%92%8C%E9%87%8A%E6%94%BEurb"><span class="nav-text">分配和释放URB</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E9%87%8A%E6%94%BEdma-buffer"><span class="nav-text">分配&#x2F;释放DMA Buffer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A1%AB%E5%85%85urb"><span class="nav-text">填充URB</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E4%BA%A4urb"><span class="nav-text">提交URB</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%96%E6%B6%88urb"><span class="nav-text">取消URB</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">刘帅</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">124</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="sidebar-button motion-element"><i class="fa fa-comment"></i>
+    Chat
+  </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2018 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘帅</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-area"></i>
+    </span>
+      <span class="post-meta-item-text">站点总字数：</span>
+    <span title="站点总字数">632k</span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">9:35</span>
+</div>
+  <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
+  </div>
+
+        
+<div class="busuanzi-count">
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+      
+
+<script>
+  if (typeof MathJax === 'undefined') {
+    window.MathJax = {
+      loader: {
+          load: ['[tex]/mhchem'],
+        source: {
+          '[tex]/amsCd': '[tex]/amscd',
+          '[tex]/AMScd': '[tex]/amscd'
+        }
+      },
+      tex: {
+        inlineMath: {'[+]': [['$', '$']]},
+          packages: {'[+]': ['mhchem']},
+        tags: 'ams'
+      },
+      options: {
+        renderActions: {
+          findScript: [10, doc => {
+            document.querySelectorAll('script[type^="math/tex"]').forEach(node => {
+              const display = !!node.type.match(/; *mode=display/);
+              const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display);
+              const text = document.createTextNode('');
+              node.parentNode.replaceChild(text, node);
+              math.start = {node: text, delim: '', n: 0};
+              math.end = {node: text, delim: '', n: 0};
+              doc.math.push(math);
+            });
+          }, '', false],
+          insertedScript: [200, () => {
+            document.querySelectorAll('mjx-container').forEach(node => {
+              let target = node.parentNode;
+              if (target.nodeName.toLowerCase() === 'li') {
+                target.parentNode.classList.add('has-jax');
+              }
+            });
+          }, '', false]
+        }
+      }
+    };
+    (function () {
+      var script = document.createElement('script');
+      script.src = '//cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.defer = true;
+      document.head.appendChild(script);
+    })();
+  } else {
+    MathJax.startup.document.state(0);
+    MathJax.texReset();
+    MathJax.typeset();
+  }
+</script>
+
+    
+
+  
+
+<script>
+  function loadCount() {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://vooxle.disqus.com/count.js';
+    s.id = 'dsq-count-scr';
+    (d.head || d.body).appendChild(s);
+  }
+  // defer loading until the whole page loading is completed
+  window.addEventListener('load', loadCount, false);
+</script>
+<script>
+  var disqus_config = function() {
+    this.page.url = "http://carlyleliu.github.io/2023/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUSB%E5%AD%90%E7%B3%BB%E7%BB%9F(%E5%9B%9B)USB%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/";
+    this.page.identifier = "2023/Linux驱动之USB子系统(四)USB设备驱动模型/";
+    this.page.title = "Linux驱动之USB子系统(四)USB设备驱动模型";
+    };
+  NexT.utils.loadComments(document.querySelector('#disqus_thread'), () => {
+    if (window.DISQUS) {
+      DISQUS.reset({
+        reload: true,
+        config: disqus_config
+      });
+    } else {
+      var d = document, s = d.createElement('script');
+      s.src = 'https://vooxle.disqus.com/embed.js';
+      s.setAttribute('data-timestamp', '' + +new Date());
+      (d.head || d.body).appendChild(s);
+    }
+  });
+</script>
+
+    </div>
+</body>
+</html>
