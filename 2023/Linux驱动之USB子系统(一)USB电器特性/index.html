@@ -37,19 +37,18 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-Low-Full-speed-signal.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-High-speed-signal.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-High-speed-signal1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-data-signal-packer.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-High-speed-connected.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-Low-speed-connected.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-disconnected-low-speed.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-Disconnected-full-speed.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-Disconnected-full-speed1.png">
-<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-Low-speed-cable-and-resistor-connections.png">
-<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-High-speed-cable-and-resistor-connections.png">
-<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-data-signal-packer.png">
-<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-Low-speed-sop-eop.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-NRZI1.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-NRZI2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-Low-speed-cable-and-resistor-connections.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/USB-High-speed-cable-and-resistor-connections.png">
 <meta property="article:published_time" content="2023-08-09T11:15:01.000Z">
-<meta property="article:modified_time" content="2024-02-25T15:24:02.526Z">
+<meta property="article:modified_time" content="2024-02-26T15:44:13.594Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Linux驱动">
 <meta name="twitter:card" content="summary">
@@ -292,14 +291,14 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>2.8k</span>
+              <span>3.9k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
                 <i class="far fa-clock"></i>
               </span>
                 <span class="post-meta-item-text">阅读时长 &asymp;</span>
-              <span>3 分钟</span>
+              <span>4 分钟</span>
             </span>
 
         </div>
@@ -314,32 +313,68 @@
         <p>USB 2.0协议支持3种速率：低速(Low Speed，1.5Mbps)、全速(Full Speed, 12Mbps)、高速(High Speed, 480Mbps)。</p>
 <p>USB Hub、USB设备，也分为低速、全速、高速三种类型。一个USB设备，可能兼容低速、全速，可能兼容全速、高速，但是不会同时兼容低速、高速。</p>
 <span id="more"></span>
-<p><strong>USB设备状态切换图</strong><br />
-<img src="/picture/linux_driver/usb/USB-eletrict-feature.png" /></p>
-<p><strong>硬件线路</strong><br />
-<img src="/picture/linux_driver/usb/USB-interface.png" /></p>
+<h1 id="usb设备状态切换图">USB设备状态切换图</h1>
+<p><img src="/picture/linux_driver/usb/USB-eletrict-feature.png" /></p>
+<ul>
+<li>连接(Attached)：USB设备在已连接到USB，但还没有上电的时候处于连接状态</li>
+<li>上电(Powered)：USB设备在已连接到USB，并且已经上电，但还没有被复位的时候，处于上电状态 USB设备的电源获取分为两种，一种是通过外部电源进行获取，另一种是通过设备所连接的集线器(hub)处获得电源。通过外部供电的USB设备被称为自供电(self-powered)设备。尽管自供电设备在连接到USB之前可能已经有了电源，但在连接到USB并且VBUS被应用到设备之前，它们不被认为是处于上电状态。USB设备可以同时支持自供电和总线供电(bus-powered)的配置。某些设备配置支持任一电源，其他设备配置可能只有在设备是自供电的情况下才可用。设备通过配置描述符(configuration descriptor)报告其电源能力(power source capability)。当前电源作为设备状态的一部分进行报告。</li>
+<li>默认(Default)：USB设备在已连接到USB，且已经上电，并已经复位，但还没有分配唯一的地址时，处于默认状态，设备响应默认地址<br />
+当复位过程完成后，USB设备以正确的速度运行（即低速low-speed/全速full-speed/高速high-speed）。低速和全速的速度选择由设备端终端电阻决定。作为复位过程的一部分，能够高速运行的设备决定是否以高速运行。</li>
+<li>地址(Address)：USB设备在已连接到USB，且已经上电和复位，并已分配了一个唯一的设备地址，但还没有被配置时，处于地址状态<br />
+在完成Set Address请求后，如果指定的地址是个非零地址，则设备进入地址状态；否则，设备将保持处于默认状态。</li>
+<li>配置(Configured)：USB设备已连接到USB，已上电和复位，已分配了一个唯一的设备地址，并且已配置，且未挂起，处于配置状态<br />
+配置设备或改变备用设置，会导致与受影响接口中的端点相关的所有状态和配置值被设置为其默认值。这包括任何使用数据切换(data toggle)的端点将其数据切换(data toggle)重置成值DATA0。</li>
+<li>挂起(Suspended)：USB设备在已连接到USB，且已上电，并且3ms内未看到总线活动时，USB设备会进入挂起状态</li>
+</ul>
+<h1 id="硬件线路">硬件线路</h1>
+<p><img src="/picture/linux_driver/usb/USB-interface.png" /></p>
 <p>USB连接涉及Hub Port和USB设备，硬件连接如下： <img src="/picture/linux_driver/usb/USB-Hub-Device.png" /></p>
-<h1 id="电子信号">电子信号</h1>
-<p>USB连接线有4条：5V、D+、D-、GND。数据线D+、D-，只能表示4种状态。USB协议中，很巧妙地使用这两条线路实现了空闲(Idle)、开始(SOP)、传输数据(Data)、结束(EOP)等功能。</p>
-<h2 id="低速全速信号电平">低速/全速信号电平</h2>
-<p><img src="/picture/linux_driver/usb/USB-Low-Full-speed-signal.png" /></p>
-<p>高速信号电平 <img src="/picture/linux_driver/usb/USB-High-speed-signal.png" /><br />
+<h1 id="usb总线信号">USB总线信号</h1>
+<p>USB连接线有4条：5V、D+、D-、GND。数据线D+、D-，只能表示4种状态。USB协议中，很巧妙地使用这两条线路实现了信号1、信号0、SE0状态、SE1状态、J状态、K状态、空闲IDLE、开始SOP、结束EOP、复位Reset、Suspend信号、Resume信号、SYNC信号、Connect信号、Disconnect信号等。</p>
+<p><strong>低速/全速信号电平</strong><br />
+<img src="/picture/linux_driver/usb/USB-Low-Full-speed-signal.png" /></p>
+<p><strong>高速信号电平</strong><br />
+<img src="/picture/linux_driver/usb/USB-High-speed-signal.png" /><br />
 <img src="/picture/linux_driver/usb/USB-High-speed-signal1.png" /></p>
-<h1 id="设备连接与断开">设备连接与断开</h1>
-<h2 id="连接">连接</h2>
-<p>Hub端口的D+、D-都有15K的下拉电阻，平时为低电平。全速设备内部的D+有1.5K的上拉电阻，低速设备内部的D-有1.5K的上拉电阻，连接到Hub后会导致Hub的D+或D-电平变化，Hub根据变化的引脚分辨接进来的是全速设备还是低速设备。</p>
+<p><strong>数据信号</strong><br />
+<img src="/picture/linux_driver/usb/USB-data-signal-packer.png" /></p>
+<ul>
+<li><p>Reset信号</p>
+<ul>
+<li>主机拉低两根信号线（SE0状态）并保持10ms</li>
+<li>USB设备看到Reset信号后，需要准备接收"SetAddress()"请求；如果它不能回应这个请求，就是"不能识别的设备"</li>
+</ul></li>
+<li><p>Suspend信号</p>
+<ul>
+<li>总线3ms以上的IDLE状态，则设备会认为主机发起了一次挂起操作</li>
+</ul></li>
+<li><p>Resume信号</p>
+<ul>
+<li>Resume信号可以由USB主机发起，也可以由USB设备本身触发，但是只有USB主机可以结束Resume信号</li>
+<li>主机在挂起设备后可通过翻转数据线上的极性并保持20ms来唤醒设备，并以低速EOP信号结尾</li>
+<li>如果设备支持远程唤醒，设备可向主机发起远程唤醒请求，前提是设备已进入idle状态至少5ms，设备会驱动总线进入K状态，如下图，K状态必须维持1ms-15ms之内，此信号会在1ms内被主机接管，主机会继续驱动唤醒信号直到20ms，并以低速EOP信号结尾</li>
+</ul></li>
+<li><p>SYNC信号</p>
+<ul>
+<li>低速设备的SYNC信号，3个KJ状态的切换，后跟随2位时间的K状态，完成一次同步信号的发送Idle-K-J-K-J-K-J-K-K</li>
+<li>高速模式中的SYNC格式为：KJKJKJKJ KJKJKJKJ KJKJKJKJ KJKJKJKK，即15对KJ，外加2个K</li>
+</ul></li>
+<li><p>Connect信号<br />
+Hub端口的D+、D-都有15K的下拉电阻，平时为低电平。全速设备内部的D+有1.5K的上拉电阻，低速设备内部的D-有1.5K的上拉电阻，连接到Hub后会导致Hub的D+或D-电平变化，Hub根据变化的引脚分辨接进来的是全速设备还是低速设备。</p>
 <p>高速设备一开始也是作为全速设备被识别的。</p>
 <p>全速设备、高速设备连接时，D+引脚的电平由低变高： <img src="/picture/linux_driver/usb/USB-High-speed-connected.png" /></p>
-<p>低速设备连接时，D-引脚的电平由低变高： <img src="/picture/linux_driver/usb/USB-Low-speed-connected.png" /></p>
-<h2 id="断开">断开</h2>
-<p>对于低速、全速设备，接到Hub时导致D-或D+引脚变为高电平，断开设备后，D-或D+引脚变为低电平： <img src="/picture/linux_driver/usb/USB-disconnected-low-speed.png" /></p>
+<p>低速设备连接时，D-引脚的电平由低变高： <img src="/picture/linux_driver/usb/USB-Low-speed-connected.png" /></p></li>
+<li><p>Disconnect信号<br />
+对于低速、全速设备，接到Hub时导致D-或D+引脚变为高电平，断开设备后，D-或D+引脚变为低电平： <img src="/picture/linux_driver/usb/USB-disconnected-low-speed.png" /></p>
 <p>对于高速设备，它先作为全速设备被识别出来，然后再被识别为高速设备。工作于高速模式时，D+的上拉电阻是断开的，所以对于工作于高速模式的USB设备，无法通过D+的引脚电平变化监测到它已经断开。</p>
 <p>工作于高速模式的设备，D+、D-两边有45欧姆的下拉电阻，用来消除反射信号： <img src="/picture/linux_driver/usb/USB-Disconnected-full-speed.png" /></p>
-<p>当断开高速设备后，Hub发出信号，得到的反射信号无法衰减，Hub监测到这些信号后就知道高速设备已经断开，内部电路图如下： <img src="/picture/linux_driver/usb/USB-Disconnected-full-speed1.png" /></p>
-<h2 id="复位">复位</h2>
-<p>从状态切换图上看，一个USB设备连接后，它将会被供电，然后被复位。当软件出错时，我们也可以发出复位信号重新驱动设备。</p>
-<p>那么，USB Hub端口或USB控制器端口如何发出复位信号？发出SE0信号，并维持至少10ms。</p>
-<p>USB设备看到Reset信号后，需要准备接收"SetAddress()"请求；如果它不能回应这个请求，就是"不能识别的设备"。</p>
+<p>当断开高速设备后，Hub发出信号，得到的反射信号无法衰减，Hub监测到这些信号后就知道高速设备已经断开，内部电路图如下： <img src="/picture/linux_driver/usb/USB-Disconnected-full-speed1.png" /></p></li>
+</ul>
+<h1 id="nrzi与位填充">NRZI与位填充</h1>
+<p>参考文章：<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC80NjAwMTg5OTM=">USB的NRZI信号格式<i class="fa fa-external-link-alt"></i></span> NRZI：Non Return Zero Inverted Code，反向不归零编码。NRZI的编码方位为：对于数据0，波形翻转；对于数据1，波形不变。 <img src="/picture/linux_driver/usb/USB-NRZI1.png" /></p>
+<p>使用NRZI，发送端可以很巧妙地把"时钟频率"告诉接收端：只要传输连续的数据0即可。在下图中，低速/全速协议中"Sync Pattern"的原始数据是"00000001"，接收端从前面的7个0波形就可以算出"时钟频率"。 <img src="/picture/linux_driver/usb/USB-NRZI2.png" /></p>
+<p>NRZI数据格式如上图所示。</p>
+<p>使用NRZI时，如果传输的数据总是"1"，会导致波形维持不变。如果电平长时间维持不变，比如传输100位1时，如果接收方稍有偏差，就可能认为接收到了99位1、101位1。而USB中采用了Bit-Stuffing位填充处理，即在连续发送6个1后面会插入1个0，强制翻转发送信号，从而让接收方调整频率，同步接收。而接收方在接收时只要接收到连续的6个1后，直接将后面的0删除即可恢复数据的原貌。</p>
 <h1 id="设备速率识别">设备速率识别</h1>
 <h2 id="低速全速">低速/全速</h2>
 <p>Hub端口的D+、D-都有15K的下拉电阻，平时为低电平。全速设备内部的D+有1.5K的上拉电阻，低速设备内部的D-有1.5K的上拉电阻，连接到Hub后会导致Hub的D+或D-电平变化，Hub根据变化的引脚分辨接进来的是全速设备还是低速设备。 <img src="/picture/linux_driver/usb/USB-Low-speed-cable-and-resistor-connections.png" /></p>
@@ -348,12 +383,12 @@
 <p>高速设备首先作为全速设备被识别出来，然后Hub如何确定它是否支持高速模式？</p>
 <p>Hub端口如何监测一个新插入的USB设备能否工作于高速模式？流程如下：</p>
 <ul>
-<li>对于低速设备，Hub端口不会监测它能否工作于高速模式。低速设备不能兼容高速模式。</li>
-<li>Hub端口发出SE0信号，这就是复位信号</li>
+<li>对于低速设备，Hub端口不会监测它能否工作于高速模式。低速设备不能兼容高速模式</li>
+<li>Hub端口发出SE0信号（10ms），这就是复位信号</li>
 <li>USB设备监测到SE0信号后，会发出"a high-speed detection handshake"信号表示自己能支持高速模式，这可以细分为一下3种情景
 <ul>
 <li>如果USB设备原来处于"suspend"状态，它检测到SE0信号后，就发出"a high-speed detection handshake"信号</li>
-<li>如果USB设备原来处于"non-suspend"状态，并且处于全速模式，它检测到SE0信号后，就发出"a high-speed detection handshake"信号。这个情景，就是一个设备刚插到Hub端口时的情况，它一开始工作于全速模式。</li>
+<li>如果USB设备原来处于"non-suspend"状态，并且处于全速模式，它检测到SE0信号后，就发出"a high-speed detection handshake"信号。这个情景，就是一个设备刚插到Hub端口时的情况，它一开始工作于全速模式</li>
 <li>如果USB设备原来处于"non-suspend"状态，并且处于高速模式，它会切换回到全速模式(重新连接D+的上拉电阻)，然后发出"a high-speed detection handshake"信号</li>
 </ul></li>
 </ul>
@@ -369,22 +404,9 @@
 </ul></li>
 </ul>
 <p><img src="/picture/linux_driver/usb/USB-High-speed-cable-and-resistor-connections.png" /></p>
-<h2 id="数据信号">数据信号</h2>
-<p><img src="/picture/linux_driver/usb/USB-data-signal-packer.png" /></p>
-<h2 id="低速全速的sop和eop">低速/全速的SOP和EOP</h2>
-<p>SOP：Start Of Packet，Hub驱动D+、D-这两条线路从Idle状态变为K状态。SOP中的K状态就是SYNC信号的第1位数据，SYNC格式为3对KJ外加2个K。</p>
-<p>EOP：End Of Packet，由数据的发送方发出EOP，数据发送方驱动D+、D-这两条线路，先设为SE0状态并维持2位时间，再设置为J状态并维持1位时间，最后D+、D-变为高阻状态，这时由线路的上下拉电阻使得总线进入Idle状态。 <img src="/picture/linux_driver/usb/USB-Low-speed-sop-eop.png" /></p>
-<h2 id="高速的sop">高速的SOP</h2>
-<p>高速的EOP比较复杂，作为软件开发人员无需掌握。</p>
-<p>高速模式中，Ide状态为：D+、D-接地。SOP格式为：从Idle状态切换为K状态。SOP中的K状态就是SYNC信号的第1位数据。</p>
-<p>高速模式中的SYNC格式为：KJKJKJKJ KJKJKJKJ KJKJKJKJ KJKJKJKK，即15对KJ，外加2个K。</p>
-<h1 id="nrzi与位填充">NRZI与位填充</h1>
-<p>参考文章：<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC80NjAwMTg5OTM=">USB的NRZI信号格式<i class="fa fa-external-link-alt"></i></span> NRZI：Non Return Zero Inverted Code，反向不归零编码。NRZI的编码方位为：对于数据0，波形翻转；对于数据1，波形不变。 <img src="/picture/linux_driver/usb/USB-NRZI1.png" /></p>
-<p>使用NRZI，发送端可以很巧妙地把"时钟频率"告诉接收端：只要传输连续的数据0即可。在下图中，低速/全速协议中"Sync Pattern"的原始数据是"00000001"，接收端从前面的7个0波形就可以算出"时钟频率"。 <img src="/picture/linux_driver/usb/USB-NRZI2.png" /></p>
-<p>NRZI数据格式如上图所示。</p>
-<p>使用NRZI时，如果传输的数据总是"1"，会导致波形维持不变。如果电平长时间维持不变，比如传输100位1时，如果接收方稍有偏差，就可能认为接收到了99位1、101位1。而USB中采用了Bit-Stuffing位填充处理，即在连续发送6个1后面会插入1个0，强制翻转发送信号，从而让接收方调整频率，同步接收。而接收方在接收时只要接收到连续的6个1后，直接将后面的0删除即可恢复数据的原貌。</p>
 <h1 id="参考文献">参考文献</h1>
-<p>《韦东山老师相关课程》<br />
+<p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaWFpcGFuMTMxNC9hcnRpY2xlL2RldGFpbHMvMTEzNjM5OTEx">https://blog.csdn.net/weiaipan1314/article/details/113639911<i class="fa fa-external-link-alt"></i></span><br />
+《韦东山老师相关课程》<br />
 《USB2.0协议规范》</p>
 
     </div>
@@ -494,7 +516,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%B5%E5%AD%90%E4%BF%A1%E5%8F%B7"><span class="nav-text">电子信号</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8E%E9%80%9F%E5%85%A8%E9%80%9F%E4%BF%A1%E5%8F%B7%E7%94%B5%E5%B9%B3"><span class="nav-text">低速&#x2F;全速信号电平</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E8%BF%9E%E6%8E%A5%E4%B8%8E%E6%96%AD%E5%BC%80"><span class="nav-text">设备连接与断开</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9E%E6%8E%A5"><span class="nav-text">连接</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%AD%E5%BC%80"><span class="nav-text">断开</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E4%BD%8D"><span class="nav-text">复位</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E9%80%9F%E7%8E%87%E8%AF%86%E5%88%AB"><span class="nav-text">设备速率识别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8E%E9%80%9F%E5%85%A8%E9%80%9F"><span class="nav-text">低速&#x2F;全速</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E9%80%9F"><span class="nav-text">高速</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E4%BF%A1%E5%8F%B7"><span class="nav-text">数据信号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8E%E9%80%9F%E5%85%A8%E9%80%9F%E7%9A%84sop%E5%92%8Ceop"><span class="nav-text">低速&#x2F;全速的SOP和EOP</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E9%80%9F%E7%9A%84sop"><span class="nav-text">高速的SOP</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nrzi%E4%B8%8E%E4%BD%8D%E5%A1%AB%E5%85%85"><span class="nav-text">NRZI与位填充</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#usb%E8%AE%BE%E5%A4%87%E7%8A%B6%E6%80%81%E5%88%87%E6%8D%A2%E5%9B%BE"><span class="nav-text">USB设备状态切换图</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E7%BA%BF%E8%B7%AF"><span class="nav-text">硬件线路</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#usb%E6%80%BB%E7%BA%BF%E4%BF%A1%E5%8F%B7"><span class="nav-text">USB总线信号</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#nrzi%E4%B8%8E%E4%BD%8D%E5%A1%AB%E5%85%85"><span class="nav-text">NRZI与位填充</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E9%80%9F%E7%8E%87%E8%AF%86%E5%88%AB"><span class="nav-text">设备速率识别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%8E%E9%80%9F%E5%85%A8%E9%80%9F"><span class="nav-text">低速&#x2F;全速</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E9%80%9F"><span class="nav-text">高速</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -579,13 +601,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">632k</span>
+    <span title="站点总字数">633k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:35</span>
+    <span title="站点阅读时长">9:36</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
