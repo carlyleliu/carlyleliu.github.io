@@ -37,7 +37,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/anl4.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/anl5.png">
 <meta property="article:published_time" content="2021-08-21T01:35:15.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.914Z">
+<meta property="article:modified_time" content="2024-02-27T15:18:13.584Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="论文翻译">
 <meta name="twitter:card" content="summary">
@@ -280,7 +280,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>5.3k</span>
+              <span>5.2k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -305,15 +305,15 @@
 <h3 id="abstract">Abstract</h3>
 <p>我们提出了一种对移动设备上捕获的视频进行视频稳定和滚动快门校正的方法。该方法使用来自机载陀螺仪的数据来跟踪相机的角速度，并且可以在相机捕获期间内实时运行。我们消除了由于手抖动引起的小抖动和滚动快门失真，营造出在三脚架上拍摄的视频的效果。</p>
 <span id="more"></span>
-<h2 id="introduction">1. Introduction</h2>
+<h1 id="introduction">Introduction</h1>
 <p>大多数中高端移动设备包含一个多核 CPU 复合体、一个图形处理单元 (GPU) 和一个带有 3 轴陀螺仪的惯性测量单元 (IMU)。 在本文中，我们解决了在此类设备上执行视频稳定的挑战，使用陀螺仪进行运动跟踪。 与大多数稳定方法不同，它们作为捕获视频的后处理步骤运行，我们的方法可以作为相机捕获的一部分实时运行。</p>
-<h2 id="background-and-prior-work">2. Background and Prior Work</h2>
+<h1 id="background-and-prior-work">Background and Prior Work</h1>
 <p>视频稳定消除了视频中的抖动，它本质上是一个三阶段过程，包括运动估计阶段、平滑测量运动的滤波阶段和生成新视频序列的重新合成阶段。</p>
 <p>当深度变化引起像素运动时，基于图像的跟踪方法会受到影响，视差，单应性不容易建模。此外，滚动快门成像传感器可以引入非刚性的帧到帧对应关系，不能简单地通过全局帧到帧运动模型进行建模。为了解决滚动快门问题，Baker 等人 [8] 使用低频光流的时间超分辨率估计和去除相机的高频抖动。Grundmann 等人 [3] 开发了一个基于混合单应性的模型，该模型跟踪帧内运动并生成具有校正滚动快门失真的稳定视频。 Liu等人 [6] 采用基于网格的空间变化运动表示，结合自适应时空路径优化，可以处理视差并校正滚动快门效应。</p>
 <p>Karpenko [1] 和Hanning等人 [11] 描述了使用内置陀螺仪跟踪相机方向的移动设备的视频稳定技术，将线性低通滤波器应用于陀螺仪输出。Karpenko等人 [1] 使用高斯核，而 Hanning 等人 [11] 应用可变长度的 Hann 窗口来自适应地平滑相机路径。相比之下，我们引入了一种非线性滤波方法，该方法可以完全平坦化小运动，而不管频率如何，并在虚拟摄像机必须移动以将裁剪窗口保持在输入帧内时执行低通平滑。当相机几乎静止时，我们的虚拟相机被固定，消除所有抖动。移动时，我们的方法就像一个可变 IIR 滤波器，以平滑输出的方式将输入速度与虚拟相机速度混合，同时保证它跟踪输入，以便裁剪窗口永远不会离开输入帧。</p>
-<h2 id="algorithm-description">3. Algorithm Description</h2>
+<h1 id="algorithm-description">Algorithm Description</h1>
 <p>从概念上讲，可以通过创建一个裁剪矩形来实现视频稳定，该矩形在相机四处晃动时随场景内容逐帧移动。如图 1 所示 <img src="/picture/eis/anl1.png" /></p>
-<h3 id="camera-tracking-using-the-gyroscope">3.1 Camera Tracking Using the Gyroscope</h3>
+<h2 id="camera-tracking-using-the-gyroscope">Camera Tracking Using the Gyroscope</h2>
 <p>我们将相机运动建模为全局坐标系中的旋转。陀螺仪提供了一系列带有时间戳的离散角速度测量值，我们将其积分以生成描述相机方向的时间函数。 理论上，我们还可以通过使用设备的加速度计测量平移来更精确，但实际上这很困难且价值有限。如果相机距离平面场景 3 米，那么 1 厘米平移引起的图像运动相当于旋转 0.19 度。 此外，平移的使用需要了解场景中物体的深度。</p>
 <p>为了修复卷帘快门失真，我们需要知道特定行曝光时相机的方向。 给定帧 <span class="math inline">\(t_0\)</span> 第一行的时间戳，第 r 行的时间戳为</p>
 <p><span class="math display">\[
@@ -330,7 +330,7 @@ x_2 = KR_c(t_2)R_c^{-1}(t_1K^{-1})x_1 \tag2
 x_2 = KTR_g(t_2 + t_d)R_g^{-1}(t_1 + t_d)T^{-1}K^{-1}x_1 \tag3
 \]</span></p>
 <p>其中 <span class="math inline">\(R_g\)</span> 是从陀螺仪导出的方向，T 是相机和陀螺仪坐标系之间的转换，<span class="math inline">\(t_d\)</span> 是上述陀螺仪和相机数据流之间的时间偏移。由于大多数移动设备都将陀螺仪和摄像头固定安装在一起，轴彼此平行，因此 T 只是一个置换矩阵。</p>
-<h3 id="motion-model-and-smoothing-algorithm">3.2 Motion Model and Smoothing Algorithm</h3>
+<h2 id="motion-model-and-smoothing-algorithm">Motion Model and Smoothing Algorithm</h2>
 <p>我们在每一帧用相机的方向和角速度参数化相机路径。我们用四元数<span class="math inline">\(p(k)\)</span>和<span class="math inline">\(v(k)\)</span>表示第 k 帧的物理和虚拟相机方向。 物理和虚拟角速度计算为从第 k 帧到第 k + 1 帧的离散角变化，并表示 <span class="math inline">\(p_∆(k)\)</span>和<span class="math inline">\(v_∆(k)\)</span>。由于帧速率是恒定的，因此这种速度表示中隐含了时间。对于每个新帧 k，我们的平滑算法使用来自最后一帧的虚拟参数以及来自最后一帧、当前帧和可选的未来小缓冲区的物理相机参数计算<span class="math inline">\(v(k)\)</span>和<span class="math inline">\(v_Δ(k)\)</span>帧（5 个或更少）。</p>
 <p>我们的平滑算法创建了一个新的相机路径，当测量到的运动足够小以表明实际意图是保持相机静止时，该路径使虚拟相机保持静止，否则遵循测量运动的意图，角速度平滑变化 . 作为第一步，我们通过设置假设虚拟相机的新方向. <span class="math display">\[
 \hat{v}^(k) = v(k − 1) · v_∆(k − 1) \tag4
@@ -357,15 +357,15 @@ v_∆(k) = slerp(v_∆(k + a); v_∆(k); γ) \tag{11}
 \]</span></p>
 <p>其中 γ 是一个混合因子，它定义了我们应该将多少前瞻角度变化与当前角度变化混合。 使用接近 1 的 γ 值提供了在正确方向上的先发制人的推动，而不是硬约束。 请注意，我们不会在没有前瞻的情况下更新我们计算的虚拟摄像机位置，我们只会更新我们将用于下一帧的虚拟摄像机速度</p>
 <p>图 3 显示了一系列前瞻距离（以帧为单位）的路径比较。 较大的前瞻值会产生更平滑的路径，因为它们可以有效地“预测”较大的运动并轻轻地导致输出开始移动。但需要注意的是，我们的算法可以在没有前瞻的情况下工作并且仍然产生良好的结果。</p>
-<h3 id="output-synthesis-and-rolling-shutter-correction">3.3 Output Synthesis and Rolling-Shutter Correction</h3>
+<h2 id="output-synthesis-and-rolling-shutter-correction">Output Synthesis and Rolling-Shutter Correction</h2>
 <p><img src="/picture/eis/anl4.png" /> <img src="/picture/eis/anl5.png" /></p>
 <p>一旦我们计算了虚拟摄像机的新方向，我们就可以通过将裁剪多边形从视频输入投影到虚拟摄像机来合成输出。我们的裁剪多边形本质上是一个裁剪矩形，在垂直边缘上有多个拐点，如图 4 所示。拐点允许我们对多边形的每个切片使用不同的变换并修复滚动快门失真。对于每个切片，我们根据等式 2 计算单应矩阵。 我们将旋转矩阵 <span class="math inline">\(R_c(t2)\)</span> 固定到虚拟输出相机的方向，并通过来自陀螺仪的数据计算 <span class="math inline">\(R_c(tk)\)</span>，输入相机在每个拐点处的方向。我们将裁剪多边形的坐标设置为 OpenGL 着色器程序的纹理坐标，该程序将裁剪多边形从输入帧投影映射到虚拟相机。请注意，为了有效校正滚动快门效应，陀螺仪采样率应高于帧读出时间。在我们的实现中，我们以 200 Hz 的频率对陀螺仪进行采样，总共使用 10 个切片，或每个垂直边缘 9 个拐点。</p>
-<h3 id="parameter-selection">3.4 Parameter Selection</h3>
+<h2 id="parameter-selection">Parameter Selection</h2>
 <p>最重要的参数是输出裁剪多边形的大小以及分配给内部和外部区域的填充量。裁剪大小是平滑和图像质量之间的权衡：较大的裁剪多边形保留更多的输入图像，但留下较少的填充来平滑运动。填充分配是完全去除运动和剩余运动的平滑度之间的权衡。 如图 5 所示，较大的内部区域（绿色）能够使较大的运动（例如步行）变平，但当裁剪窗口接近框架边缘时必须更突然地移动。</p>
-<h3 id="gyroscope-and-camera-calibration">3.5 Gyroscope and Camera Calibration</h3>
+<h2 id="gyroscope-and-camera-calibration">Gyroscope and Camera Calibration</h2>
 <p>我们使用为此目的开发的校准程序来求解时间偏移 <span class="math inline">\(t_d\)</span>。 我们在相机前面放置了一个校准图案，它由一个不对称的圆网格组成, 然后我们在剧烈旋转相机的同时录制视频和陀螺仪读数。 即使存在运动模糊和滚动快门效果，也可以轻松地跨帧跟踪圆圈。 我们使用每个圆的质心作为特征点，并根据公式 3 通过最小化重投影误差的总和来迭代求解 <span class="math inline">\(t_d\)</span>。通过在多个数据集上重复校准，我们确定偏移 <span class="math inline">\(t_d\)</span> 几乎是恒定的。 我们还考虑了通过在捕获每一帧时跟踪关键点来进行在线校准的可能性 [18]，但事实证明离线方法足以满足我们的目的。</p>
 <p>陀螺仪测量中任何静态偏移的积分将导致估计的方向缓慢偏离地面实况。然而，我们的稳定算法不受这种漂移的影响，因为它平滑了方向的相对变化。 我们在一到五帧的窗口内测量方向变化，在如此短的时间跨度内，积分漂移可以忽略不计。</p>
-<h2 id="results">4. Results</h2>
+<h1 id="results">Results</h1>
 <p>我们的源视频、结果和补充材料视频可在 https://research.nvidia.com/publication/non-linearfilter-gyroscope-based-video-stabilization 获得。</p>
 
     </div>
@@ -475,7 +475,7 @@ v_∆(k) = slerp(v_∆(k + a); v_∆(k); γ) \tag{11}
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#abstract"><span class="nav-text">Abstract</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#introduction"><span class="nav-text">1. Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#background-and-prior-work"><span class="nav-text">2. Background and Prior Work</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#algorithm-description"><span class="nav-text">3. Algorithm Description</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#camera-tracking-using-the-gyroscope"><span class="nav-text">3.1 Camera Tracking Using the Gyroscope</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#motion-model-and-smoothing-algorithm"><span class="nav-text">3.2 Motion Model and Smoothing Algorithm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#output-synthesis-and-rolling-shutter-correction"><span class="nav-text">3.3 Output Synthesis and Rolling-Shutter Correction</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#parameter-selection"><span class="nav-text">3.4 Parameter Selection</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#gyroscope-and-camera-calibration"><span class="nav-text">3.5 Gyroscope and Camera Calibration</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#results"><span class="nav-text">4. Results</span></a></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#abstract"><span class="nav-text">Abstract</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#introduction"><span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#background-and-prior-work"><span class="nav-text">Background and Prior Work</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#algorithm-description"><span class="nav-text">Algorithm Description</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#camera-tracking-using-the-gyroscope"><span class="nav-text">Camera Tracking Using the Gyroscope</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#motion-model-and-smoothing-algorithm"><span class="nav-text">Motion Model and Smoothing Algorithm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#output-synthesis-and-rolling-shutter-correction"><span class="nav-text">Output Synthesis and Rolling-Shutter Correction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#parameter-selection"><span class="nav-text">Parameter Selection</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#gyroscope-and-camera-calibration"><span class="nav-text">Gyroscope and Camera Calibration</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#results"><span class="nav-text">Results</span></a></div>
       </div>
       <!--/noindex-->
 
@@ -560,13 +560,13 @@ v_∆(k) = slerp(v_∆(k + a); v_∆(k); γ) \tag{11}
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

@@ -36,7 +36,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/IRQ_RUN.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/irq_init1.png">
 <meta property="article:published_time" content="2021-09-19T03:46:13.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.902Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="中断子系统">
 <meta name="twitter:card" content="summary">
@@ -300,31 +300,31 @@
       
         <p><img src="/picture/linux/brief/中断子系统-中断处理过程.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ODFjZDU2NTNiYjA3MWU2ZTZkYmU=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="中断控制器">1. 中断控制器</h2>
+<h1 id="中断控制器">中断控制器</h1>
 <p>ARM公司提供了一种标准的中断控制器，称为通用中断控制器（Generic IntermurController，GIC）。目前GIC架构规范有4个版本：v1~v4。GICv2最多支持8个处理器。GIC v3最多支持128个处理器，GICv3和GICv4只支持ARM64处理器。</p>
-<h3 id="gicv2控制器的两个主要功能">1.1 GICv2控制器的两个主要功能</h3>
+<h2 id="gicv2控制器的两个主要功能">GICv2控制器的两个主要功能</h2>
 <ul>
 <li>分发器（Distributor）：系统中所有的中断源连接到分发器，分发器的寄存器用来控制单个中断的属性：优先级、状态、安全、转发信息（可以被发送到哪些处理器）和使能状态。分发器决定哪个中断应该通过处理器接口转发到哪个处理器</li>
 <li>处理器接口（CPU Interface）：处理器通过处理器接口接收中断。处理器接口提供的寄存器用来屏蔽和识别中断，控制中断的状态。每个处理器有一个单独的处理器接口。软件通过中断号识别中断，每个中断号唯一对应一个中断源</li>
 </ul>
-<h3 id="中断有以下4种类型">1.2 中断有以下4种类型</h3>
+<h2 id="中断有以下4种类型">中断有以下4种类型</h2>
 <ul>
 <li>软件生成的中断（Software Generated Interrupt，SGI）：中断号0~15，通常用来实现处理器间中断（Inter-Processor Iterrupt，IPI）。这种中断是由软件写分发器的软件生成中断寄存器（GICD_SGIR）生成的</li>
 <li>私有外设中断（Private Peripheral Iterrupt，PPI）：中断号16~31。处理器私有的中断源，不同处理器的相同中断源没有关系，比如每个处理器的定时器</li>
 <li>共享外设中断（Shared Peripheral Iterrupt，SPI）：中断号32~1020。这种中断可以被中断控制器转发到多个处理器</li>
 <li>局部特定外设中断（Locality-specific Peripheral Interrunt，LPI），基于消息的中断GIC， v1和GIC v2不支持LPI</li>
 </ul>
-<h3 id="中断有以下4种状态">1.3 中断有以下4种状态</h3>
+<h2 id="中断有以下4种状态">中断有以下4种状态</h2>
 <ul>
 <li>Inactive：中断源没有发送中断</li>
 <li>Pending：中断源已经发送中断，等待处理器外理</li>
 <li>Active：处理器已经确认中断，正在处理</li>
 <li>Active and pending：处理器正在处理中断，相同的中断源又发送了一个中断</li>
 </ul>
-<h2 id="中断域">2. 中断域</h2>
+<h1 id="中断域">中断域</h1>
 <p>一个大型系统可能有多个中断控制器，这些中断控制器可以级联，一个中断控制器作为中断源连接到另一个中断控制器，但只有一个中断控制器作为根控制器直接连接到处理器。如下图： <img src="/picture/linux_driver/irq/HW_IRQ.png" /></p>
 <p>为了把每个中断控制器本地的硬件中断号映射到全局唯一的Linux中断号（虚拟中断号），内核定义了中断域irq_domain，每个中断控制器有自己的中断域。</p>
-<h3 id="创建中断域">2.1 创建中断域</h3>
+<h2 id="创建中断域">创建中断域</h2>
 <p>中断控制器的驱动程序使用分配函数irq_domain_add_*()创建和注册中断域。每种映射方法提供不同的分配函数，调用者必须给分配函数提供irq_domain_ops结构体，分配函在执行成功的时候返回irq_domain的指针。</p>
 <h4 id="中断域支持以下映射方法">中断域支持以下映射方法</h4>
 <ul>
@@ -343,15 +343,15 @@
 <p>有些中断控制器很强，硬件中断号是可以配置的，例如PowerPC架构使用的MPIC（Muti-PossorIterrupt Controller）。我们直接把Linux中断号写到硬件，硬件中断号就是Linux中断号，不需要映射。对于不映射，分配中断域的函数如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> struct irq_domain *<span class="title">irq_domain_add_nomap</span><span class="params">(struct device_node *of_node,</span></span></span><br><span class="line"><span class="params"><span class="function">					 <span class="keyword">unsigned</span> <span class="keyword">int</span> max_irq,</span></span></span><br><span class="line"><span class="params"><span class="function">					 <span class="keyword">const</span> struct irq_domain_ops *ops,</span></span></span><br><span class="line"><span class="params"><span class="function">					 <span class="keyword">void</span> *host_data)</span></span></span><br></pre></td></tr></table></figure>
 <p>分配函数把主要工作委托给函数__irq_domain_add()。函数__irq_domain_add()的执行过是、分配一个irq_domain结构体，初始化成员，然后把中断域添加到全局链表irq_domain_list 中。</p>
-<h3 id="创建映射">2.2 创建映射</h3>
+<h2 id="创建映射">创建映射</h2>
 <p>创建中断域以后，需要向中断域添加硬件中断号到Linux中断号的映射，内核提供了函数irq_create_mapping：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">irq_create_mapping</span><span class="params">(struct irq_domain *host,</span></span></span><br><span class="line"><span class="params"><span class="function">					      <span class="keyword">irq_hw_number_t</span> hwirq)</span></span></span><br></pre></td></tr></table></figure>
 <p>输入参数是中断域和硬件中断号，返回Linux中断号，该函数首先分配Linux中断号然后把硬件中断号到Linux中断号的映射添加到中断域。</p>
-<h3 id="查找映射">2.3 查找映射</h3>
+<h2 id="查找映射">查找映射</h2>
 <p>中断处理程序需要根据硬件中断号查找Linux中断号，内核提供了函数irq_find_mapping函数：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * irq_find_mapping() - Find a linux irq from a hw irq number.</span></span><br><span class="line"><span class="comment"> * @domain: domain owning this hardware interrupt</span></span><br><span class="line"><span class="comment"> * @hwirq: hardware irq number in that domain space</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="title">irq_find_mapping</span><span class="params">(struct irq_domain *domain,</span></span></span><br><span class="line"><span class="params"><span class="function">					    <span class="keyword">irq_hw_number_t</span> hwirq)</span></span></span><br></pre></td></tr></table></figure>
 <p>输入参数是中断域和硬件中断号，返回Linux中断号。</p>
-<h2 id="linux中断处理">3. Linux中断处理</h2>
+<h1 id="linux中断处理">Linux中断处理</h1>
 <p>对于中断控制器的每个中断源，向中断域添加硬件中断号到Linux中断号的映射时内核分配一个Linux中断号和一个中断描述符irq_desc，中断描述符有两个层次的中断处理函数。</p>
 <ul>
 <li>第一层处理函数是中断描述符的成员handle_irq()</li>
@@ -375,9 +375,9 @@
 <p>在上一节我们分析了ARM64架构下的异常处理流程，当异常发生时会跳转到异常向量表中执行异常处理函数，中断是异常的一种，因此当中断发生时也会跳转到异常向量表中执行中断处理函数，ARM64对应有不同的异常级别，其中内核运行在EL1级别，对于这种情况，根据我们上一节的分析中断会跳转到el1h_64_irq标号处运行程序，该标号处的处理在不同的异常下都是类似的，不同的是跳转的处理函数不同，对于el1h_64_irq标号会跳转到el1h_64_irq_handle函数处处理，下面我们详细看下该函数的具体处理工作是怎样的吧：</p>
 <p>同样由于函数调用层次较多，这里采用流程图的方式展现，当然这必然会忽略掉很多细节，详细的读者可以自己追踪源码查看。 <img src="/picture/linux/kernel/IRQ_RUN.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9kaWFncmFtaW5nLzYxNDc1NjExZTQwMWZkNzg2MWE3MWFkYw==">原图<i class="fa fa-external-link-alt"></i></span></p>
 <p>通过上图我们大概就了解了中断处理的整体流程。当中断发生时跳转到异常向量表，然后跳转到对应的标号处执行，然后执行中断控制器的处理函数，再调用外部中断注册的中断处理函数。</p>
-<h2 id="中断控制器驱动初始化">4. 中断控制器驱动初始化</h2>
+<h1 id="中断控制器驱动初始化">中断控制器驱动初始化</h1>
 <p>以一张图来整理这些函数之间的调用关系，如下： <img src="/picture/linux/kernel/irq_init1.png" /> <span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxNDkzNzU0MWUwODUzMTVkYzRkZTZjOC5wbmc=">原图<i class="fa fa-external-link-alt"></i></span></p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p>《Linux内核深度解析》</p>
 
     </div>
@@ -487,7 +487,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%8E%A7%E5%88%B6%E5%99%A8"><span class="nav-text">1. 中断控制器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gicv2%E6%8E%A7%E5%88%B6%E5%99%A8%E7%9A%84%E4%B8%A4%E4%B8%AA%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD"><span class="nav-text">1.1 GICv2控制器的两个主要功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%9C%89%E4%BB%A5%E4%B8%8B4%E7%A7%8D%E7%B1%BB%E5%9E%8B"><span class="nav-text">1.2 中断有以下4种类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%9C%89%E4%BB%A5%E4%B8%8B4%E7%A7%8D%E7%8A%B6%E6%80%81"><span class="nav-text">1.3 中断有以下4种状态</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E5%9F%9F"><span class="nav-text">2. 中断域</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%AD%E6%96%AD%E5%9F%9F"><span class="nav-text">2.1 创建中断域</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E5%9F%9F%E6%94%AF%E6%8C%81%E4%BB%A5%E4%B8%8B%E6%98%A0%E5%B0%84%E6%96%B9%E6%B3%95"><span class="nav-text">中断域支持以下映射方法</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%98%A0%E5%B0%84"><span class="nav-text">2.2 创建映射</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE%E6%98%A0%E5%B0%84"><span class="nav-text">2.3 查找映射</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86"><span class="nav-text">3. Linux中断处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%8E%A7%E5%88%B6%E5%99%A8%E9%A9%B1%E5%8A%A8%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-text">4. 中断控制器驱动初始化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%8E%A7%E5%88%B6%E5%99%A8"><span class="nav-text">中断控制器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#gicv2%E6%8E%A7%E5%88%B6%E5%99%A8%E7%9A%84%E4%B8%A4%E4%B8%AA%E4%B8%BB%E8%A6%81%E5%8A%9F%E8%83%BD"><span class="nav-text">GICv2控制器的两个主要功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%9C%89%E4%BB%A5%E4%B8%8B4%E7%A7%8D%E7%B1%BB%E5%9E%8B"><span class="nav-text">中断有以下4种类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%9C%89%E4%BB%A5%E4%B8%8B4%E7%A7%8D%E7%8A%B6%E6%80%81"><span class="nav-text">中断有以下4种状态</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E5%9F%9F"><span class="nav-text">中断域</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%AD%E6%96%AD%E5%9F%9F"><span class="nav-text">创建中断域</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E5%9F%9F%E6%94%AF%E6%8C%81%E4%BB%A5%E4%B8%8B%E6%98%A0%E5%B0%84%E6%96%B9%E6%B3%95"><span class="nav-text">中断域支持以下映射方法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E6%98%A0%E5%B0%84"><span class="nav-text">创建映射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE%E6%98%A0%E5%B0%84"><span class="nav-text">查找映射</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux%E4%B8%AD%E6%96%AD%E5%A4%84%E7%90%86"><span class="nav-text">Linux中断处理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD%E6%8E%A7%E5%88%B6%E5%99%A8%E9%A9%B1%E5%8A%A8%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="nav-text">中断控制器驱动初始化</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -572,13 +572,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

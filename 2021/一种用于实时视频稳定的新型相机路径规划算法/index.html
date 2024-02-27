@@ -40,7 +40,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/anc8.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/anc9.png">
 <meta property="article:published_time" content="2021-08-21T19:25:13.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.914Z">
+<meta property="article:modified_time" content="2024-02-27T15:22:01.766Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="论文翻译">
 <meta name="twitter:card" content="summary">
@@ -306,10 +306,10 @@
 <p>原论文: &lt; A novel camera path planning algorithm for real-time video stabilization &gt;</p>
 </blockquote>
 <span id="more"></span>
-<h2 id="introduction">1 Introduction</h2>
+<h1 id="introduction">Introduction</h1>
 <p>视频稳定根据运动模型分为 2D 和 3D 方法。 第一种方法是 2D 视频稳定 [2]，它使用 2D 运动模型（例如简单的平移模型、2D 刚性模型和 2D 仿射模型 [3-12]）描述两个连续帧之间的关系。 如果相机在 3D 空间中沿 x 轴和 y 轴的旋转很小，则 2D 视频稳定可提供良好的性能 [13]。 然而，随着相机运动变得动态，二维运动模型无法描述连续帧之间的几何关系，性能非常有限。 lee等 提出了一种无需明确估计相机运动即可直接稳定视频的方法[14]。 该方法找到一组变换来平滑特征轨迹 [15, 16] 并稳定视频。</p>
 <p>第二种方法是 Buehler 等人引入的 3D 视频稳定[17]。早期的 3D 方法使用来自运动的结构 (SFM) 技术重建场景和相机运动的 3D 模型 [18]。然后在新的 3D 相机路径上渲染稳定的视图 [17, 19]。 3D 视频稳定提供比 2D 方法更好的性能。由于这些 3D 方法在处理缺乏视差的视频时经常失败，因此它们在许多情况下并不实用 [20]。 Liu 提出了结合 2D 和 3D 视频稳定优点的子空间视频稳定[21]，然而，由于长特征轨迹的数量不足，这种方法对于包含动态运动的视频通常会失败[20]。因此，Wang [20] 针对 3D 重建困难或长特征轨迹不可用的视频提出了视频稳定。Liu等人 [22] 提出了一种运动模型 SteadyFlow，它是一种通过强制强空间相干性的特定光流。Grundmann等人基于单应性混合模型[23]，提出了免校准滚动快门去抖。 Dong 提出了使用基于帧间单应性估计的运动模型的实时应用视频稳定 [24]。Ringaby等人提出了一种通过将相机旋转参数化为连续曲线来校正和稳定视频的方法[25]。Karpendo等人建议使用陀螺仪进行视频稳定和滚动快门校正 [26]。 Lee提出了基于人类视觉系统的视频稳定[27]。</p>
-<h2 id="background">2 Background</h2>
+<h1 id="background">Background</h1>
 <p>为便于解释，本文描述了在简单视频稳定下相机路径规划的建议算法，如图 1 所示。 不同的运动模型，如单应性。 <img src="/picture/eis/anc1.png" /> <img src="/picture/eis/anc2.png" /></p>
 <p>手持相机拍摄的视频的原始相机路径通常是不稳定的，如图 2 所示。为了提供稳定的输出视频，有必要从原始相机路径预测平滑的相机路径。估计平滑相机路径的最简单方法是对原始相机路径应用低通滤波器，如下所示: <span class="math display">\[
 P_N(t) = \sum_{k} w(k)P_o(k)  \tag1
@@ -319,12 +319,12 @@ P_N(t) = \sum_{k=0}{k=t} w(k)P_o(k) \tag2
 M_W = \frac{W_I - W_O}{2}, M_H = \frac{H_I - H_O}{2} \tag3
 \]</span> 其中<span class="math inline">\(W_I、H_I\)</span>和<span class="math inline">\(W_O、H_O\)</span>分别是原始帧和输出帧的宽度和高度。 出界区域将不可见或需要运动修复 [10, 33]。 边界如图 3 所示。在图中，灰色区域说明了界外区域的示例。 对于实时应用，由于复杂性，运动修复不是一个可行的解决方案。 因此，应确定新的相机路径，以便裁剪窗口位于原始帧内。 然而，基于低通滤波器的方法中的裁剪窗口偏移量是不可控的，并且该方法不能保证裁剪窗口总是位于原始帧内。 因此，这种简单的方法不能应用于输出视频大小固定的实时视频稳定。 <img src="/picture/eis/anc3.png" /></p>
 <p>在后期处理视频稳定中，在规划新的相机路径之前给出整个原始相机路径。 因此，可以优化规划平滑的相机路径，从而不会出现越界区域。然而，由于实时视频稳定中后续帧的摄像机位置是未知的，因此有时难以正确确定当前帧的摄像机位置。图 4 举例说明了为实时视频稳定规划相机路径的困难。在图 4a 中，无法预测相机路径在后续帧中是上升还是下降。如果相机路径在后续帧中向下行进，则新的相机路径可以是直的，如图 4b 所示。如果相机路径在后续帧中向上移动，则新相机路径的方向应该改变，如图 4c 所示。这种突然的移动会降低稳定视频的视觉质量。另一方面，由于整个原始相机路径是在后处理视频稳定中给出的，因此可以如图 4d 所示规划新的相机路径。如本例所示，如果没有后续帧的摄像机位置，实时视频稳定是很困难的。摄像机路径规划在实时视频稳定方面的性能将不可避免地受到限制。因此，用于实时视频稳定的相机路径规划是一个具有挑战性的问题。 <img src="/picture/eis/anc4.png" /></p>
-<h2 id="methodcamera-path-planning">3 Method—camera path planning</h2>
-<h3 id="framework-of-the-proposed-algorithm">3.1 Framework of the proposed algorithm</h3>
+<h1 id="methodcamera-path-planning">Method—camera path planning</h1>
+<h2 id="framework-of-the-proposed-algorithm">Framework of the proposed algorithm</h2>
 <p>在规划相机路径时要考虑的第一个属性是提供恒定的相机路径。恒定的相机路径表示一条斜率为零的线。下一个属性是线性相机路径，其中相机具有恒定速度。虽然线性相机路径的斜率不为零，但线性路径也是一条线。虽然这两个属性的物理含义在相机运动方面有所不同，但恒定和线性相机路径的形状基本上是一条线。因此，所提出的算法将线视为在相机路径中追求的基本特征。</p>
 <p>所提出的算法首先在新的相机路径上找到通过最后一个相机位置的所有可能的候选线，如图6所示。由于新的相机路径应该是连续的，候选线应该从第（ n − 1) 帧，它是新相机路径上的最后一个相机位置。然后它们在第 (n + K) 帧的上下边界之间结束。所有可能的候选线在第(n+K)帧以相邻候选线之间的间隔为1的方式生成。图中，当前帧（或第n帧）的相机位置尚未确定，缓冲的帧范围从第 (n+1) 帧到第 (n+K) 帧。可以预先预测缓冲帧的相机运动，从而可以确定缓冲帧处的原始相机位置和边界。因此，候选线的端点简单地位于第 (n+K) 帧的两个边界之间。然后，所提出的算法使用将在下一小节中描述的所提出的成本函数检查搜索范围内所有可能的候选线，选择成本最低的候选线作为最佳线。最后，根据最佳线计算当前帧的相机位置，请注意，缓冲帧处的相机位置不属于新的相机路径。</p>
 <p>如果候选线穿过界外区域，则不应将其选为最佳线。 图 7 描绘了不应选择的候选行的示例。 在图 7a 中，区域 R 中的候选线通过了界外区域。 因此，不应选择区域 R 中的任何候选线作为最佳线。 有时，搜索范围内的所有候选线都经过界外区域，如图 7b 所示。 在这种情况下，当找不到最佳行时，K 的值减 1，直到找到最佳行。</p>
-<h3 id="cost-function">3.2 Cost function</h3>
+<h2 id="cost-function">Cost function</h2>
 <p><img src="/picture/eis/anc6.png" /></p>
 <p>所提出的算法选择具有最小成本的候选线作为最佳线。 第 n 帧第 i 条候选线的代价函数定义如下。 <span class="math display">\[
 C(n,i) = w_1C_s(n,i) + w_2C_L(n,i) + w_3C_M(n,i) \tag4
@@ -450,7 +450,7 @@ C_M(n,i) = \sum_{k=n}^{n+K} (F_{LO}(k,i) + F_{UP}(k,i)) \\
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#introduction"><span class="nav-text">1 Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#background"><span class="nav-text">2 Background</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#methodcamera-path-planning"><span class="nav-text">3 Method—camera path planning</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#framework-of-the-proposed-algorithm"><span class="nav-text">3.1 Framework of the proposed algorithm</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#cost-function"><span class="nav-text">3.2 Cost function</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#introduction"><span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#background"><span class="nav-text">Background</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#methodcamera-path-planning"><span class="nav-text">Method—camera path planning</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#framework-of-the-proposed-algorithm"><span class="nav-text">Framework of the proposed algorithm</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cost-function"><span class="nav-text">Cost function</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -535,13 +535,13 @@ C_M(n,i) = \sum_{k=n}^{n+K} (F_{LO}(k,i) + F_{UP}(k,i)) \\
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

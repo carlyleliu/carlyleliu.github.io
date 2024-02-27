@@ -24,17 +24,17 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. 概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点, input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容 核心层：">
+  <meta name="description" content="概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点, input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容 核心层：承上启">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之Input子系统">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BInput%E5%AD%90%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="1. 概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点, input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容 核心层：">
+<meta property="og:description" content="概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点, input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容 核心层：承上启">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/input/input.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/input/Input_Struct.png">
 <meta property="article:published_time" content="2020-09-30T04:00:55.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.910Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Linux驱动">
 <meta name="twitter:card" content="summary">
@@ -277,7 +277,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>4.1k</span>
+              <span>4k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -296,7 +296,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="概述">1. 概述</h2>
+        <h1 id="概述">概述</h1>
 <p>按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点, input 子系统框架如图 所示： <img src="/picture/linux_driver/input/input.png" /></p>
 <ul>
 <li>驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容</li>
@@ -304,7 +304,7 @@
 <li>事件层：主要和用户空间进行交互</li>
 </ul>
 <span id="more"></span>
-<h2 id="数据结构">2. 数据结构</h2>
+<h1 id="数据结构">数据结构</h1>
 <p>Input子系统实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1NWY2ZTVlMGIzNGQwOTEyMzViN2U1">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/input/Input_Struct.png" /></p>
 <ul>
 <li><p>input_dev<br />
@@ -319,29 +319,29 @@ evdev_client结构体表示一个input客户，也就是app用户会使用input_
 通过对input_handler和evdev_client的介绍其实也就已经将evdev介绍完了，evdev_client使用设备，那么需要知道使用的是哪个设备input_dev以及如何驱动这个设备input_handler，这都是通过input_handler结构体完成的。evdev是将input设备，input设备的驱动方法和用户client联系起来的一个结构体</p></li>
 </ul>
 <p>通过对input结构体的介绍，其实我们就已经大致了解了驱动的整体框架。其实跟设备模型中device和device_driver之间的关系很像，device和driver之间有一个匹配规则，当匹配成功后，两者之间建立联系，完成驱动设备的功能。但是为什么这里不直接使用设备驱动模型呢，不理解。</p>
-<h2 id="实现">3. 实现</h2>
+<h1 id="实现">实现</h1>
 <p>input驱动的实现无非就是input_dev、input_handler的注册等流程，下面一个个看下具体相关流程吧：</p>
-<h3 id="input_dev注册流程">3.1 input_dev注册流程</h3>
+<h2 id="input_dev注册流程">input_dev注册流程</h2>
 <p>input_register_device函数用于注册一个input_dev设备：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">input_register_device</span><span class="params">(struct input_dev *dev)</span></span></span><br></pre></td></tr></table></figure>
 <p>该函数主要完成以下工作：</p>
 <pre><code>1、为input_dev创建struct device类型的变量，并设置其所属的class为input_class，并调用device_add完成device类型变量的注册，至此完成strcut device类型变量注册至input_class中，且完成了input_dev对应的sysfs属性文件的创建 
 2、将该input_device注册至input_dev_list      
 3、遍历input_handler_list链表，针对input_handler_list上每一个input_handler，均与注册的input_device进行匹配检测，若匹配检测成功，则调用  input_handler-&gt;connect接口，进行input_handler与input_device的绑定（通过调用input_register_handle实现，也可以理解为在input_handler、input_device上 完成input_handler、input_device的事件消息的订阅操作）。因input_handler和input_device可实现多对多的绑定，因此，会遍历input_handler_list链表上所有已注册的input_handler，而不是检测到一个input_handler的匹配即返回   </code></pre>
-<h3 id="input_handler的注册流程">3.2 input_handler的注册流程</h3>
+<h2 id="input_handler的注册流程">input_handler的注册流程</h2>
 <p>input_handler的注册函数是input_register_handler：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">input_register_handler</span><span class="params">(struct input_handler *handler)</span></span></span><br></pre></td></tr></table></figure>
 <p>该函数主要完成以下工作：</p>
 <pre><code>1、将该input_device注册至input_handler_list      
 2、遍历input_dev_list链表，针对input_dev_list上每一个input_dev，均与注册的input_device进行匹配检测，若匹配检测成功，则调用input_handler-&gt;connect接口，进行input_handler与input_device的绑定（通过调用input_register_handle实现，也可以理解为在input_handler、input_device上完成input_handler、input_device的事件消息的订阅操作）。因input_handler和input_device可实现多对多的绑定，因此，会遍历input_dev_list链表上所有已注册的input_dev，而不是检测到一个input_dev的匹配即返回</code></pre>
-<h3 id="input_handle的注册流程">3.3 input_handle的注册流程</h3>
+<h2 id="input_handle的注册流程">input_handle的注册流程</h2>
 <p>input_handle的注册函数是input_register_handle：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">input_register_handle</span><span class="params">(struct input_handle *handle)</span></span></span><br></pre></td></tr></table></figure>
 <p>该函数主要完成以下工作：</p>
 <pre><code>1、 完成input_handle与input_handler的关联
 2、完成input_handle与input_dev的关联</code></pre>
-<h2 id="一个完整的事件上报流程">4. 一个完整的事件上报流程</h2>
-<h3 id="应用打开并读设备">4.1 应用打开并读设备</h3>
+<h1 id="一个完整的事件上报流程">一个完整的事件上报流程</h1>
+<h2 id="应用打开并读设备">应用打开并读设备</h2>
 <p>当应用打开一个input设备时会通过vfs调用到驱动程序的file_operations,对于input设备就是evdev.c下的：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">evdev_fops</span> =</span> &#123;</span><br><span class="line">  .owner		= THIS_MODULE,</span><br><span class="line">  .read		= evdev_read,</span><br><span class="line">  .write		= evdev_write,</span><br><span class="line">  .poll		= evdev_poll,</span><br><span class="line">  .open		= evdev_open,</span><br><span class="line">  .release	= evdev_release,</span><br><span class="line">  .unlocked_ioctl	= evdev_ioctl,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_COMPAT</span></span><br><span class="line">  .compat_ioctl	= evdev_ioctl_compat,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  .fasync		= evdev_fasync,</span><br><span class="line">  .llseek		= no_llseek,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>这个就是input_dev注册的时候会向系统注册的字符设备，该字符设备的注册时机是什么时候呢，先来看下input_handle的初始化。</p>
@@ -353,7 +353,7 @@ evdev_client结构体表示一个input客户，也就是app用户会使用input_
 2、 将evdev_client放入evdev的链表中   </code></pre>
 <p>evdev_read的工作：</p>
 <pre><code>如果没有数据等待休眠，调用wait_event_interruptible函数，将当前工作挂载在evdev_client的wait等待队列中</code></pre>
-<h3 id="事件产生上报数据">4.2 事件产生上报数据</h3>
+<h2 id="事件产生上报数据">事件产生上报数据</h2>
 <p>一般采用中断方式处理外部事件，当按键或其他输入事件发生时，产生中断，执行中断服务程序，中断服务程序一般主要就是干两件事，读取数据和上报数据，对于读取数据没什么好说的，下面看下上报数据流程：上报数据通过input core层提供的input_event函数完成，函数如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">input_event</span><span class="params">(struct input_dev *dev,</span></span></span><br><span class="line"><span class="params"><span class="function">		 <span class="keyword">unsigned</span> <span class="keyword">int</span> type, <span class="keyword">unsigned</span> <span class="keyword">int</span> code, <span class="keyword">int</span> value)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> flags;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (is_event_supported(type, dev-&gt;evbit, EV_MAX)) &#123;</span><br><span class="line"></span><br><span class="line">    spin_lock_irqsave(&amp;dev-&gt;event_lock, flags);</span><br><span class="line">    input_handle_event(dev, type, code, value);</span><br><span class="line">    spin_unlock_irqrestore(&amp;dev-&gt;event_lock, flags);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>函数调用流程如下：</p>
@@ -363,11 +363,11 @@ evdev_client结构体表示一个input客户，也就是app用户会使用input_
 <p>以evdev为例，在上面的evdev_handler中提供了events函数evdev_handler，该函数调用流程如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">evdev_events()</span><br><span class="line">    --&gt;evdev_pass_values()</span><br><span class="line">        --&gt;__pass_event()</span><br><span class="line">        --&gt;wake_up_interruptible_poll(&amp;client-&gt;wait,</span><br><span class="line">      EPOLLIN | EPOLLOUT | EPOLLRDNORM | EPOLLWRNORM);</span><br></pre></td></tr></table></figure>
 <p>__pass_event函数将读取的事件传递给client结构体，wake_up_interruptible_poll将应用程序唤醒（前面提到读取数据的时候如果没有数据就休眠）。</p>
-<h3 id="总结">4.3 总结</h3>
+<h2 id="总结">总结</h2>
 <p>1、应用open一个input设备，通过vfs调用到驱动字符设备的open函数，该函数创建构造一个evdev_client结构体并将该结构体放入打开的input设备的evdev结构体链表中<br />
 2、应用read读取一个input设备，通过vfs调用到驱动的字符设备read函数，如果没有数据就休眠<br />
 3、事件发生产生中断，在中断函数里读取数据并上报事件，上报事件流程是通过input_dev结构体找到驱动该结构体的input_handler结构体，然后调用input_handler结构体的events函数，在events函数里，主要干两件事，一是将外部事件传递给evdev_client结构体，二是将应用程序唤醒</p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly9sZDI0Ni5jb20vYXJ0aWNsZS8xNTk4MDkzMjM3MjM1">https://ld246.com/article/1598093237235<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vZGVuZy10YW8vcC82MDk0MDQ5Lmh0bWw=">https://www.cnblogs.com/deng-tao/p/6094049.html<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY0NDkxMDQ/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/106449104?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br />
@@ -480,7 +480,7 @@ evdev_client结构体表示一个input客户，也就是app用户会使用input_
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2. 数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">3. 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#input_dev%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">3.1 input_dev注册流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#input_handler%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">3.2 input_handler的注册流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#input_handle%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">3.3 input_handle的注册流程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%8C%E6%95%B4%E7%9A%84%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5%E6%B5%81%E7%A8%8B"><span class="nav-text">4. 一个完整的事件上报流程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E6%89%93%E5%BC%80%E5%B9%B6%E8%AF%BB%E8%AE%BE%E5%A4%87"><span class="nav-text">4.1 应用打开并读设备</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E4%BA%A7%E7%94%9F%E4%B8%8A%E6%8A%A5%E6%95%B0%E6%8D%AE"><span class="nav-text">4.2 事件产生上报数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">4.3 总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#input_dev%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">input_dev注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input_handler%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">input_handler的注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input_handle%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">input_handle的注册流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%8C%E6%95%B4%E7%9A%84%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5%E6%B5%81%E7%A8%8B"><span class="nav-text">一个完整的事件上报流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E6%89%93%E5%BC%80%E5%B9%B6%E8%AF%BB%E8%AE%BE%E5%A4%87"><span class="nav-text">应用打开并读设备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E4%BA%A7%E7%94%9F%E4%B8%8A%E6%8A%A5%E6%95%B0%E6%8D%AE"><span class="nav-text">事件产生上报数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -565,13 +565,13 @@ evdev_client结构体表示一个input客户，也就是app用户会使用input_
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

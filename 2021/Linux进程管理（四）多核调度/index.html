@@ -37,7 +37,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/queue_cpu.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/task_load.png">
 <meta property="article:published_time" content="2021-10-31T07:53:38.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.906Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="进程管理">
 <meta name="twitter:card" content="summary">
@@ -301,10 +301,10 @@
       
         <p><img src="/picture/linux/brief/程管理-多核调度.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2YjhlYzFlZmFkNDA3NTI1MTE2NDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="概述">1. 概述</h2>
+<h1 id="概述">概述</h1>
 <p>SMP（Symmetrical MultiProcessing）的全称是“对称多处理”技术，是指在一台计算机上汇集了一组处理器，这些处理器都是对等的，它们之间共享内存子系统和系统总线。</p>
 <p>下图所示为4核的SMP处理器架构，在4核处理器中，每个物理CPU核心拥有独立的L1缓存且不支持超线程技术，分成两个簇（cluster）簇0和簇1，每个簇包含两个物理CPU核，簇中的CPU核共享L2缓存。 <img src="/picture/linux/kernel/task/smp.png" /></p>
-<h2 id="调度域和调度组">2. 调度域和调度组</h2>
+<h1 id="调度域和调度组">调度域和调度组</h1>
 <p>根据处理器的实际物理属性，CPU和Linux内核的分类如下所示。</p>
 <ul>
 <li><p>SMT(超线程) Linux内核配置项CONFIG_SCHED_SMT 一个物理核心可以有两个或更多执行线程，被称为超线程技术。超线程使用相同的cpu资源且共享L1缓存，迁移进程不会影响高速缓存的利用率</p></li>
@@ -316,7 +316,7 @@
 <p>另外，Linux内核默认定义了数组default_topology[]来概括CPU物理域的层次结构。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/sched/topology.c&gt;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Topology list, bottom-up.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_domain_topology_level</span> <span class="title">default_topology</span>[] =</span> &#123;</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SCHED_SMT</span></span><br><span class="line">  &#123; cpu_smt_mask, cpu_smt_flags, SD_INIT_NAME(SMT) &#125;,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_SCHED_MC</span></span><br><span class="line">  &#123; cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) &#125;,</span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line">  &#123; cpu_cpu_mask, SD_INIT_NAME(DIE) &#125;,</span><br><span class="line">  &#123; <span class="literal">NULL</span>, &#125;,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>Linux内核使用sched_domain数据结构来描述调度层级，从defaul_topology[]数组可知，系统默认支持DIE类型层级、SMT类型层级以及MC类型层级。另外，可在调度域里划分调度组，然后使用sched_group数据结构来描述调度组，调度组是负载均衡调度的最小单位。在最低层级的调度域中，通常用调度组描述CPU核心。 在支持NUMA架构的处理器中，假设支持SMT技术，那么整个系统的调度域和调度组的关系如图所示，可在默认的调度层级中新增NUMA层级的调度域。在超大系统中，系统会频繁访问调度域数据结构。为了提升系统的性能和可扩展性，调度域数据结构sched_domain采用Per-CPU变量来构建 <img src="/picture/linux/kernel/task/sched_domain.png" /></p>
-<h2 id="负载的计算">3. 负载的计算</h2>
+<h1 id="负载的计算">负载的计算</h1>
 <h3 id="例1">例1</h3>
 <p>假设在如图所示的双核处理器里，CPU0的就绪队列里有4个进程，CPU1的就绪队列里有两个进程，那么究竟哪个CPU上的负载重呢？ <img src="/picture/linux/kernel/task/queue_cpu.png" /></p>
 <p>假设上述6个进程的nice值是相同的，也就是优先级和权重都相同，那么明显可以看出 CPU0的就绪队列里有4个进程，相比CPU1的就绪队列里的进程数目要多，从而得出CPU0 上的负载相比CPU1更重的结论。</p>
@@ -336,7 +336,7 @@ CPU上的负载 = \frac{运行时间}{总时间} \times  就绪队列总权重 \
 decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time}) \times  weight \tag{3}
 \]</span></p>
 <p>其中，decay_avg_load表示量化负载；decay_sum_runnable_time指的是就绪队列或调度实体在可运行状态下的所有历史累计衰减时间；decay_sum_period_time指的是就绪队列或调度实体在所有的采样周期里全部时间的累加衰减时间。通常从进程开始执行时就计算和累计这些值。weight表示调度实体或就绪队列的权重。 计算进程的量化负载的意义在于能够把负载量化到权重里。当一个进程的decay_sumrunnable_time 无限接近decay_sum_period_time时，它的量化负载就无限接近权重值，说明这个进程一直在占用CPU，满负荷工作，CPU占用率很高。一个进程的decay_sum_runnable_time越小，它的量化负载就越小，说明这个进程的工作负荷很小，占用的CPU资源很少，CPU占用率很低。这样，我们就对负载实现了统一和标准化的量化计算，不同行为的进程就可以进行标准化的负载计算和比较了。</p>
-<h2 id="负载均衡算法">4. 负载均衡算法</h2>
+<h1 id="负载均衡算法">负载均衡算法</h1>
 <p>SMP负载均衡机制从注册软中断开始，系统每次调度tick中断时，都会检查当前是否需要处理SMP负载均衡。rebalance_domains()函数是负载均衡的核心入口。load_balance()函数中的主要流程如下。</p>
 <ul>
 <li>负载均衡以当前CPU开始，由下至上地遍历调度域，从最底层的调度域开始做负载均衡</li>
@@ -344,25 +344,25 @@ decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time
 <li>在调度域中查找最繁忙的调度组，更新调度域和调度组的相关信息，最后计算出调度域的不均衡负载值</li>
 <li>最繁忙的调度组中找出最繁忙的CPU，然后把繁忙CPU中的进程迁移到当前CPU上，迁移的负载量为不均衡负载值</li>
 </ul>
-<h2 id="per-cpu变量">5. Per-CPU变量</h2>
+<h1 id="per-cpu变量">Per-CPU变量</h1>
 <p>Per-CPU变量是Linux内核中同步机制的一种。当系统中的所有CPU都访问共享的一个变量v时，如果CPU0修改了变量v的值，而CPU1也在同时修改变量v的值，就会导致变量v的值不正确。一种可行的办法就是在CPU0访问变量v时使用原子加锁指令，这样CPU1访问变量v时就只能等待了，但这样做有两个比较明显的缺点。</p>
 <ul>
 <li>原子操作是比较耗时的</li>
 <li>在现代处理器中，每个CPU都有L1缓存，因而多个CPU同时访问同一个变量就会导致缓存一致性问题。当某个CPU对共享的数据变量v进行修改后，其他CPU上对应的缓存行需要做无效操作，这对性能是有损耗的</li>
 </ul>
 <p>Per-CPU变量是为了解决上述问题而出现的一种有趣的特性，它为系统中的每个处理器都分配自身的副本。这样在多处理器系统中，当处理器只能访问属于自己的那个变量副本时，不需要考虑与其他处理器的竞争问题，还能充分利用处理器本地的硬件缓存来提升性能。</p>
-<h3 id="per-cpu变量的定义和声明">5.1 Per-CPU变量的定义和声明</h3>
+<h2 id="per-cpu变量的定义和声明">Per-CPU变量的定义和声明</h2>
 <p>Per-CPU变量的定义和声明有两种方式。一种是静态声明，另一种是动态分配。静态的Per-CPU变量可通过DEFINE_PER_CPU和DECLARE_PER_CPU宏来定义和声明。这类变量与普通变量的主要区别在于它们存放在一个特殊的段中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Variant on the per-CPU variable declaration/definition theme used for</span></span><br><span class="line"><span class="comment"> * ordinary per-CPU variables.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DECLARE_PER_CPU(type, name)					\</span></span><br><span class="line"><span class="meta">	DECLARE_PER_CPU_SECTION(type, name, <span class="meta-string">&quot;&quot;</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEFINE_PER_CPU(type, name)					\</span></span><br><span class="line"><span class="meta">	DEFINE_PER_CPU_SECTION(type, name, <span class="meta-string">&quot;&quot;</span>)</span></span><br></pre></td></tr></table></figure>
 <p>用于动态分配和释放per-cpu变量的API函数如下。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> alloc_percpu(type)						\</span></span><br><span class="line"><span class="meta">	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\</span></span><br><span class="line"><span class="meta">						__alignof__(type))</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">free_percpu</span><span class="params">(<span class="keyword">void</span> __percpu *__pdata)</span></span>;</span><br></pre></td></tr></table></figure>
-<h3 id="使用per-cpu变量">5.2 使用Per-CPU变量</h3>
+<h2 id="使用per-cpu变量">使用Per-CPU变量</h2>
 <p>对于静态定义的Per-CPU变量，可以通过get_cpu_var()和put_cpu_var()函数来访问和修改，这两个函数内置了关闭和打开内核抢占的功能。另外需要注意的是，这两个函数需要配对使用。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> get_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">(*(&#123;									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(&amp;var);						\</span></span><br><span class="line"><span class="meta">&#125;))</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> put_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">do &#123;									\</span></span><br><span class="line"><span class="meta">	(void)&amp;(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">&#125; while (0)</span></span><br></pre></td></tr></table></figure>
 <p>对于动态分配的Per-CPU变量，需要通过以下接口来访问：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> get_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">(&#123;									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(var);						\</span></span><br><span class="line"><span class="meta">&#125;)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> put_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">do &#123;									\</span></span><br><span class="line"><span class="meta">	(void)(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">&#125; while (0)</span></span><br></pre></td></tr></table></figure>
-<h2 id="tlb处理">6. TLB处理</h2>
-<h3 id="单核处理">6.1 单核处理</h3>
+<h1 id="tlb处理">TLB处理</h1>
+<h2 id="单核处理">单核处理</h2>
 <p>在进程切换的时候，需要有tlb的操作，以便清除旧进程的影响，具体怎样做呢？我们下面一一讨论。</p>
 <ul>
 <li><p>绝对没有问题，但是性能不佳的方案 所有TLB和Cache的数据都全部flush掉。当然，稍微有一点遗憾的就是在B进程开始执行的时候，TLB和Cache都是冰冷的</p></li>
@@ -370,12 +370,12 @@ decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time
 <li><p>特殊情况的考量 对于多线程环境，切换可能发生在一个进程中的两个线程，这时候，线程在同样的地址空间，也根本不需要flush tlb</p></li>
 <li><p>进一步提升TLB的性能 这里有一个术语叫做ASID（address space ID）。原来TLB查找是通过虚拟地址VA来判断是否TLB hit。有了ASID的支持后，TLB hit的判断标准修改为（虚拟地址＋ASID），ASID是每一个进程分配一个，标识自己的进程地址空间。TLB block如何知道一个tlb entry的ASID呢？一般会来自CPU的系统寄存器（对于ARM64平台，它来自TTBRx_EL1寄存器），这样在TLB block在缓存（VA-PA-Global flag）的同时，也就把当前的ASID缓存在了对应的TLB entry中，这样一个TLB entry中包括了（VA-PA-Global flag-ASID）</p></li>
 </ul>
-<h3 id="多核处理">6.2 多核处理</h3>
+<h2 id="多核处理">多核处理</h2>
 <p>在多核系统中，进程切换的时候，TLB的操作要复杂一些，原因是进程可以调度到任何一个cpu core上执行。</p>
 <p>根据上一节的描述，我们了解到地址翻译有global（各个进程共享）和local（进程特定的）的概念，因而tlb entry也有global和local的区分。如果区分global 和local，那么tlb操作也基本类似，只不过进程切换的时候，不是flush该cpu上的所有tlb entry，而是flush所有的tlb local entry就OK了。</p>
 <p>对local tlb entry还可以进一步细分，那就是ASID（address space ID）或者PCID（process context ID）的概念了（global tlb entry不区分ASID）。如果支持ASID（或者PCID）的话，tlb操作变得简单一些，或者说我们没有必要执行tlb操作了，因为在TLB搜索的时候已经可以区分各个task上下文了，这样，各个cpu中残留的tlb不会影响其他任务的执行。</p>
 <p>不过，对于多核系统，这种情况有一点点的麻烦，其实也就是传说中的TLB shootdown带来的性能问题。在多核系统中，如果cpu支持PCID并且在进程切换的时候不flush tlb，那么系统中各个cpu中的tlb entry则保留各种task的tlb entry，当在某个cpu上，一个进程被销毁，或者修改了自己的页表（也就是修改了VA PA映射关系）的时候，我们必须将该task的相关tlb entry从系统中清除出去。这时候，你不仅仅需要flush本cpu上对应的TLB entry，还需要shootdown其他cpu上的和该task相关的tlb残余。而这个动作一般是通过IPI实现（例如X86），从而引入了开销。此外PCID的分配和管理也会带来额外的开销，因此，OS是否支持PCID（或者ASID）是由各个arch代码自己决定。</p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p>《奔跑吧Linux内核》<br />
 《Linux内核设计与实现》<br />
 <span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L2NvbnRleHQtc3dpdGNoLXRsYi5odG1s">http://www.wowotech.net/process_management/context-switch-tlb.html<i class="fa fa-external-link-alt"></i></span></p>
@@ -487,7 +487,7 @@ decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E5%9F%9F%E5%92%8C%E8%B0%83%E5%BA%A6%E7%BB%84"><span class="nav-text">2. 调度域和调度组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD%E7%9A%84%E8%AE%A1%E7%AE%97"><span class="nav-text">3. 负载的计算</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B1"><span class="nav-text">例1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B2"><span class="nav-text">例2</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95"><span class="nav-text">4. 负载均衡算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#per-cpu%E5%8F%98%E9%87%8F"><span class="nav-text">5. Per-CPU变量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#per-cpu%E5%8F%98%E9%87%8F%E7%9A%84%E5%AE%9A%E4%B9%89%E5%92%8C%E5%A3%B0%E6%98%8E"><span class="nav-text">5.1 Per-CPU变量的定义和声明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8per-cpu%E5%8F%98%E9%87%8F"><span class="nav-text">5.2 使用Per-CPU变量</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tlb%E5%A4%84%E7%90%86"><span class="nav-text">6. TLB处理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%95%E6%A0%B8%E5%A4%84%E7%90%86"><span class="nav-text">6.1 单核处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E6%A0%B8%E5%A4%84%E7%90%86"><span class="nav-text">6.2 多核处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E5%9F%9F%E5%92%8C%E8%B0%83%E5%BA%A6%E7%BB%84"><span class="nav-text">调度域和调度组</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD%E7%9A%84%E8%AE%A1%E7%AE%97"><span class="nav-text">负载的计算</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B1"><span class="nav-text">例1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B2"><span class="nav-text">例2</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95"><span class="nav-text">负载均衡算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#per-cpu%E5%8F%98%E9%87%8F"><span class="nav-text">Per-CPU变量</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#per-cpu%E5%8F%98%E9%87%8F%E7%9A%84%E5%AE%9A%E4%B9%89%E5%92%8C%E5%A3%B0%E6%98%8E"><span class="nav-text">Per-CPU变量的定义和声明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8per-cpu%E5%8F%98%E9%87%8F"><span class="nav-text">使用Per-CPU变量</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#tlb%E5%A4%84%E7%90%86"><span class="nav-text">TLB处理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E6%A0%B8%E5%A4%84%E7%90%86"><span class="nav-text">单核处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E6%A0%B8%E5%A4%84%E7%90%86"><span class="nav-text">多核处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -572,13 +572,13 @@ decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

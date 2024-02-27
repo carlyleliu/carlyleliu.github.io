@@ -39,7 +39,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/program/load8.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/program/load9.png">
 <meta property="article:published_time" content="2021-12-23T05:09:26.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.918Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.548Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="链接装载与库">
 <meta name="twitter:card" content="summary">
@@ -303,10 +303,10 @@
       
         <p><img src="/picture/program/可执行文件的装载与进程.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMwYTZlNzA3OTEyOTA3YzI4NjNmZmM=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="装载的方式">1. 装载的方式</h2>
+<h1 id="装载的方式">装载的方式</h1>
 <p>程序执行时所需要的指令和数据必须在内存中才能够正常运行，最简单的办法就是将程序运行所需要的指令和数据全都装入内存中，这就是最简单的静态装入的办法。后来研究发现，程序运行时是有局部性原理的，所以我们可以将程序最常用的部分驻留在内存中，而将一些不太常用的数据存放在磁盘里面，这就是动态装入的基本原理。</p>
 <p>覆盖装入（Overlay）和页映射（Paging）是两种很典型的动态装载方法，它们所采用的思想都差不多，原则上都是利用了程序的局部性原理。动态装入的思想是程序用到哪个模块，就将哪个模块装入内存，如果不用就暂时不装入，存放在磁盘中。</p>
-<h3 id="页映射">1.1 页映射</h3>
+<h2 id="页映射">页映射</h2>
 <p>将内存和所有磁盘中的数据和指令按照“页（Page）”为单位划分成若干个页，以后所有的装载和操作的单位就是页。</p>
 <p>为了演示页映射的基本机制，假设我们的32位机器有16KB的内存，每个页大小为4096字节，则共有4个页，如下表所示。</p>
 <table>
@@ -337,8 +337,8 @@
 </table>
 <p>假设程序所有的指令和数据总和为32KB，那么程序总共被分为8个页。我们将它们编号为P0~P7。很明显，16KB的内存无法同时将32KB的程序装入，那么我们将按照动态装入的原理来进行整个装入过程。如果程序刚开始执行时的入口地址在P0，这时装载管理器发现程序的P0不在内存中，于是将内存F0分配给P0，并且将P0的内容装入F0；运行一段时间以后，程序需要用到P5，于是装载管理器将P5装入F1；就这样，当程序用到P3和P6的时候，它们分别被装入到了F2和F3，它们的映射关系如图6-4所示。 <img src="/picture/program/load4.png" /></p>
 <p>很明显，如果这时候程序只需要P0、P3、P5和P6这4个页，那么程序就能一直运行下去。但是问题很明显，如果这时候程序需要访问P4，那么装载管理器必须做出抉择，它必须放弃目前正在使用的4个内存页中的其中一个来装载P4。至于选择哪个页，我们有很多种算法可以选择，比如可以选择F0，因为它是第一个被分配掉的内存页（这个算法我们可以称之为FIFO，先进先出算法）：假设装载管理器发现F2很少被访问到，那么我们可以选择F2（这种算法可以称之为LUR，最少使用算法）。</p>
-<h2 id="从操作系统角度看可执行文件的装载">2. 从操作系统角度看可执行文件的装载</h2>
-<h3 id="进程的建立">2.1 进程的建立</h3>
+<h1 id="从操作系统角度看可执行文件的装载">从操作系统角度看可执行文件的装载</h1>
+<h2 id="进程的建立">进程的建立</h2>
 <p>创建一个进程，然后装载相应的可执行文件并且执行。在有虚拟存储的情况下，上述过程最开始只需要做三件事情：</p>
 <ul>
 <li>创建一个独立的虚拟地址空间，建立虚拟空间到物理空间的映射关系。创建虚拟地址空间实际上只是分配一个页目录（Page Directory）就可以了，甚至不设置页映射关系，这些映射关系等到后面程序发生页错误的时候再进行设置</li>
@@ -347,11 +347,11 @@
 </ul>
 <p>让我们考虑最简单的情况，假设我们的ELF可执行文件只有一个代码段“.text“，它的虚拟地址为0x08048000，它在文件中的大小为0x000e1，对齐为0x1000。一旦该可执行文件被装载，可执行文件与执行该可执行文件进程的虚拟空间的映射关系如图6-5所示。 <img src="/picture/program/load5.png" /></p>
 <p>很明显，这种映射关系只是保存在操作系统内部的一个数据结构。Linux中将进程虚拟空间中的一个段叫做虚拟内存区域（VMA，Virtual Memory Area）。比如上例中，操作系统创建进程后，会在进程相应的数据结构中设置有一个.text段的VMA：它在虚拟空间中的地址为0x08048000~0x08049000，它对应ELF文件中偏移为0的.text，它的属性为只读（一般代码段都是只读的）。</p>
-<h3 id="页错误">2.2 页错误</h3>
+<h2 id="页错误">页错误</h2>
 <p>上面的步骤执行完以后，其实可执行文件的真正指令和数据都没有被装入到内存中。操作系统只是通过可执行文件头部的信息建立起可执行文件和进程虚存之间的映射关系而已。假设在上面的例子中，程序的入口地址为0x08048000，即刚好是.text段的起始地址。当CPU开始打算执行这个地址的指令时，发现页面0x08048000~0x08049000是个空页面，于是它就认为这是一个页错误（Page Fault）。CPU将控制权交给操作系统，操作系统有专门的页错误处理例程来处理这种情况。这时候我们前面提到的装载过程的第二步建立的数据结构起到了很关键的作用，操作系统将查询这个数据结构，然后找到空页面所在的VMA，计算出相应的页面在可执行文件中的偏移，然后在物理内存中分配一个物理页面，将进程中该虚拟页与分配的物理页之间建立映射关系，然后把控制权再还回给进程，进程从刚才页错误的位置重新开始执行。</p>
 <p>随着进程的执行，页错误也会不断地产生，操作系统也会为进程分配相应的物理页面来满足进程执行的需求，如图6-6所示。当然有可能进程所需要的内存会超过可用的内存数量，特别是在有多个进程同时执行的时候，这时候操作系统就需要精心组织和分配物理内存，甚至有时候应将分配给进程的物理内存暂时收回等，这就涉及了操作系统的虚拟存储管理。 <img src="/picture/program/load6.png" /></p>
-<h2 id="进程虚存空间分布">3. 进程虚存空间分布</h2>
-<h3 id="elf文件链接视图和执行视图">3.1 ELF文件链接视图和执行视图</h3>
+<h1 id="进程虚存空间分布">进程虚存空间分布</h1>
+<h2 id="elf文件链接视图和执行视图">ELF文件链接视图和执行视图</h2>
 <p>当段的数量增多时，就会产生空间浪费的问题。当我们站在操作系统装载可执行文件的角度看问题时，可以发现它实际上并不关心可执行文件各个段所包含的实际内容，只关心一些跟装载相关的问题，最主要的是段的权限（可读、可写、可执行）。基本上是三种：</p>
 <ul>
 <li>以代码段为代表的权限为可读可执行的段</li>
@@ -374,7 +374,7 @@
 <p>我们可以看到，这个可执行文件中共有10个Segment。从装载的角度看，我们目前只关心两个“LOAD”类型的Segment，因为只有它是需要被映射的，其他的诸如“NOTE”、“TLS”、“GNU_STACK”都是在装载时起辅助作用的，我们在这里不详细展开。可以用图6-8来表示“SectionMapping.elf”可执行文件的段与进程虚拟空间的映射关系。</p>
 <p>“SectionMapping.elf”被重新划分成了三个部分，有一些段被归入可读可执行的，它们被统一映射到一个VMA0；另外一部分段是可读可写的，它们被映射到了VMA1；还有一部分段在程序装载时没有被映射的，它们是一些包含调试信息和字符串表等段，这些段在程序执行时没有用，所以不需要被映射。很明显，所有相同属性的“Section”被归类到一个“Segment”，并且映射到同一个VMA。</p>
 <p>所以总的来说，“Segment”和“Section”是从不同的角度来划分同一个ELF文件。这个在ELF中被称为不同的视图（View），从“Section”的角度来看ELF文件就是链接视图（Linking View），从“Segment”的角度来看就是执行视图（Execution View）。 <img src="/picture/program/load8.png" /></p>
-<h3 id="堆和栈">3.2 堆和栈</h3>
+<h2 id="堆和栈">堆和栈</h2>
 <p>在操作系统里面，VMA除了被用来映射可执行文件中的各个“Segment'”以外，它还可以有其他的作用，操作系统通过使用VMA来对进程的地址空间进行管理。我们知道进程在执行的时候它还需要用到栈（Stack）、堆（Heap）等空间，事实上它们在进程的虚拟空间中的表现也是以VMA的形式存在的，很多情况下，一个进程中的栈和堆分别都有一个对应的VMA。在Linux下，我们可以通过查看“/proc”来查看进程的虚拟空间分布：</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ./SectionMapping.elf &amp;</span><br><span class="line">[1]21963</span><br><span class="line">$ cat /proc/21963/maps</span><br><span class="line">08048000-080b9000   r-xp    00000000    08:01   2801887 ./SectionMapping.elf</span><br><span class="line">080b9000-080bb000   rwxp    00070000    08:01   2801887 ./SectionMapping.elf</span><br><span class="line">080bb000-080de000   rwxp    080bb000    00:00   0       [heap]</span><br><span class="line">bf7ec000-bf802000   rw-p    bf7ec0000   00:00   0       [stack]</span><br><span class="line">ffffe000-fffff000   r-xp0   000000000:0 00:00   0       [vdso]</span><br></pre></td></tr></table></figure>
 <p>上面的输出结果中：</p>
@@ -398,9 +398,9 @@
 <li>栈VMA，权限可读写、不可执行；无映像文件，匿名，可向下扩展</li>
 </ul>
 <p>当我们在讨论进程虚拟空间的“Segment”的时候，基本上就是指上面的几种VMA。现在再让我们来看一个常见进程的虚拟空间是怎么样的，如图6-9所示。 <img src="/picture/program/load9.png" /></p>
-<h3 id="段地址对齐">3.3 段地址对齐</h3>
+<h2 id="段地址对齐">段地址对齐</h2>
 <p>如果有很多段的大小很小，按照page对齐映射会造成空间的浪费，为了解决这种问题，有些UNIX系统采用了一个很取巧的办法，就是让那些各个段接壤部分共享一个物理页面，然后将该物理页面分别映射多次。</p>
-<h2 id="linux内核装载elf过程简介">4. Linux内核装载ELF过程简介</h2>
+<h1 id="linux内核装载elf过程简介">Linux内核装载ELF过程简介</h1>
 <p>当我们在Linux系统的bash下输入一个命令执行某个ELF程序时，Linux系统是怎样装载这个ELF文件并且执行它的呢？ 首先在用户层面，bash进程会调用fork()系统调用创建一个新的进程，然后新的进程调用execve()系统调用执行指定的ELF文件，原先的bash进程继续返回等待刚才启动的新进程结束，然后继续等待用户输入命令。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> buf[<span class="number">1024</span>]=&#123;<span class="number">0</span>&#125;;</span><br><span class="line">    <span class="keyword">pid_t</span> pid;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;minibashs&quot;</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">&quot;s&quot;</span>,buf);</span><br><span class="line">        <span class="function">pid <span class="title">fork</span><span class="params">()</span></span>;</span><br><span class="line">        <span class="keyword">if</span>(pid =<span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span>(execlp(buf,<span class="number">0</span>) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">&quot;exec error\n&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(pid &gt;<span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">int</span> status;</span><br><span class="line">            waitpid(pid,&amp;status,<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;fork error &amp;d\n&quot;</span>,pid);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>在进入execve()系统调用之后，Linux内核就开始进行真正的装载工作。在内核中，execve()系统调用相应的入口是sys_execve()，进行一些参数的检查复制之后，调用do_execve()。do_execve()会首先查找被执行的文件，如果找到文件，则读取文件的前128个字节。(Linux支持的可执行文件不止ELF一种,还有a.out、Java程序和以“#！”开始的脚本程序)。</p>
@@ -413,7 +413,7 @@
 <li>将系统调用的返回地址修改成ELF可执行文件的入口点，这个入口点取决于程序的链接方式，对于静态链接的ELF可执行文件，这个程序入口就是ELF文件的文件头中e_entry所指的地址；对于动态链接的ELF可执行文件，程序入口点是动态链接器</li>
 </ul>
 <p>当load_elf_binary()执行完毕，返回至do_execve()再返回至sys_execve()时，上面的第5步中已经把系统调用的返回地址改成了被装载的ELF程序的入口地址了。所以当sys_execve()系统调用从内核态返回到用户态时，EIP寄存器直接跳转到了ELF程序的入口地址，于是新的程序开始执行，ELF可执行文件装载完成。</p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p>《程序员的自我修养》</p>
 
     </div>
@@ -523,7 +523,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A3%85%E8%BD%BD%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-text">1. 装载的方式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E6%98%A0%E5%B0%84"><span class="nav-text">1.1 页映射</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E7%9A%84%E8%A3%85%E8%BD%BD"><span class="nav-text">2. 从操作系统角度看可执行文件的装载</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%BB%BA%E7%AB%8B"><span class="nav-text">2.1 进程的建立</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A1%B5%E9%94%99%E8%AF%AF"><span class="nav-text">2.2 页错误</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%99%9A%E5%AD%98%E7%A9%BA%E9%97%B4%E5%88%86%E5%B8%83"><span class="nav-text">3. 进程虚存空间分布</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#elf%E6%96%87%E4%BB%B6%E9%93%BE%E6%8E%A5%E8%A7%86%E5%9B%BE%E5%92%8C%E6%89%A7%E8%A1%8C%E8%A7%86%E5%9B%BE"><span class="nav-text">3.1 ELF文件链接视图和执行视图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A0%86%E5%92%8C%E6%A0%88"><span class="nav-text">3.2 堆和栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AE%B5%E5%9C%B0%E5%9D%80%E5%AF%B9%E9%BD%90"><span class="nav-text">3.3 段地址对齐</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E5%86%85%E6%A0%B8%E8%A3%85%E8%BD%BDelf%E8%BF%87%E7%A8%8B%E7%AE%80%E4%BB%8B"><span class="nav-text">4. Linux内核装载ELF过程简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A3%85%E8%BD%BD%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-text">装载的方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E6%98%A0%E5%B0%84"><span class="nav-text">页映射</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E7%9A%84%E8%A3%85%E8%BD%BD"><span class="nav-text">从操作系统角度看可执行文件的装载</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%BB%BA%E7%AB%8B"><span class="nav-text">进程的建立</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%94%99%E8%AF%AF"><span class="nav-text">页错误</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%99%9A%E5%AD%98%E7%A9%BA%E9%97%B4%E5%88%86%E5%B8%83"><span class="nav-text">进程虚存空间分布</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#elf%E6%96%87%E4%BB%B6%E9%93%BE%E6%8E%A5%E8%A7%86%E5%9B%BE%E5%92%8C%E6%89%A7%E8%A1%8C%E8%A7%86%E5%9B%BE"><span class="nav-text">ELF文件链接视图和执行视图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A0%86%E5%92%8C%E6%A0%88"><span class="nav-text">堆和栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AE%B5%E5%9C%B0%E5%9D%80%E5%AF%B9%E9%BD%90"><span class="nav-text">段地址对齐</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux%E5%86%85%E6%A0%B8%E8%A3%85%E8%BD%BDelf%E8%BF%87%E7%A8%8B%E7%AE%80%E4%BB%8B"><span class="nav-text">Linux内核装载ELF过程简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -608,13 +608,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

@@ -42,7 +42,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/ksm8.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/ksm9.png">
 <meta property="article:published_time" content="2021-12-04T05:28:24.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.902Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="内存管理">
 <meta name="twitter:card" content="summary">
@@ -306,9 +306,9 @@
       
         <p><img src="/picture/linux/brief/内存管理-KSM.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjUyOGYzNDZmYjA3MjVmYjQ1YmI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="概述">1. 概述</h2>
+<h1 id="概述">概述</h1>
 <p>KSM指Kernel SamePage Merging，即内核同页合并，用于合并内容相同的页面。KSM的出现是为了优化虚拟化中产生的冗余页面。 KSM允许合并同一个进程或不同进程之间内容相同的匿名页面，这对应用程序来说是不可见的。把这些相同的页面合并成一个只读的页面，从而释放出多余的物理页面，当应用程序需要改变页面内容时，会发生写时复制。</p>
-<h2 id="使能ksm">2. 使能KSM</h2>
+<h1 id="使能ksm">使能KSM</h1>
 <p>KSM只会处理通过madvise系统调用显式指定的用户进程地址空间，因此用户程序想使用这个功能就必须在分配地址空间时显式地调用madvise（addr，length，MADV_MERGEA BLE）。如果用户想在KSM中取消某一个用户进程地址空间的合并功能，也需要显式地调用madvise（addr，length,MADV_UNMERGEABLE)。 下面是测试KSM的test.c程序的代码片段，使用mmap()：来创建一个文件的私有映射，并且调用memset()写入这些私有映射的内容缓存页面中。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">《测试KSM的test.c程序的代码片段》</span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc,<span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *buf;</span><br><span class="line">    <span class="keyword">char</span> filename[<span class="number">64</span>]=<span class="string">&quot;&quot;</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">stat</span>;</span></span><br><span class="line">    <span class="keyword">int</span> size =<span class="number">100</span>*<span class="number">4096</span>;</span><br><span class="line">    <span class="keyword">int</span> fd =<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">strcpy</span>(filename, argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    fd = open(filename,O_RDWR | O_CREAT,<span class="number">0664</span>);</span><br><span class="line"></span><br><span class="line">    fstat(fd, &amp;stat);</span><br><span class="line"></span><br><span class="line">    buf = mmap (<span class="literal">NULL</span>,stat.st_size,PROT_WRITE,MAP_PRIVATE,fd,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(buf,<span class="number">0x55</span>,stat.st_size);</span><br><span class="line"></span><br><span class="line">    madvise(buf,stat.st_size, MADV_MERGEABLE);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">        sleep(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>编译上述test.c程序。</p>
@@ -346,7 +346,7 @@
 <p>ksm_scan_thread()是ksmd内核线程的主干，它运行 ksm_do_scan()函数，扫描和合并100个页面，见 ksm_thread_pages_to_scan参数，然后等待20ms，见 ksm_thread_sleep_millisecs参数，这两个参数可以在/sys/kernel/mm/ksm目录下设置和修改。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;ksmd内核线程&gt;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">ksm_do_scan</span><span class="params">(unsignd <span class="keyword">int</span> scan_npages)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">while</span>(scan_npages-- &amp;&amp; likely(!freezing(current))) &#123;</span><br><span class="line">        cond_resched();</span><br><span class="line">        rmap_item = scan_get_next_rmap_item(&amp;page);</span><br><span class="line">        <span class="keyword">if</span> (!rmap_item)</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        cmp_and_merge_page(page, rmap_item);</span><br><span class="line">        put_page(page)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>ksm_do_scan()函数在while循环中尝试合并scan_npages个页面， scan_get_next_rmap_item()获取一个合适的匿名页面。 cmp_and_merge_page()函数会让页面在KSM中稳定和不稳定的两棵红黑树中查找是否有可以合并的对象，并且尝试合并他们。</p>
-<h2 id="ksm基本实现">3. KSM基本实现</h2>
+<h1 id="ksm基本实现">KSM基本实现</h1>
 <p>为了让读者先有一个初步的认识，本节先介绍Lnux4.13内核之前的KSM实现，后文会介绍Linux5.0内核中的实现。</p>
 <p>KSM机制下采用两棵红黑树来管理扫描的页面和己经合并的页面。第一棵红黑树称为不稳定红黑树，里面存放了还没有合并的页面；第二棵红黑树称为稳定红黑树，已经合并的页面会生成一个节点，这个节点为稳定节点。如两个页面的内容是一样的，KSM扫描并发现了它们，因此这两个页面就可以合并成一个页面。对于这个合并后的页面，会设置只读属性，其中一个页面会作为稳定的节点挂载到稳定的红黑树中之后，另外一个页面就会被释放了。但是这两个页面的 rmap_item数据结构会被添如到稳定节点中的 hist 链表中，如下图所示。 <img src="/picture/linux/kernel/mem/ksm1.png" /></p>
 <p>我们假设有3个VMA（表示进程地址空间，VMA的大小正好是一个页面的大小，分别有3个页面映射这3个VMA。这3个页面准备通过KSM来扫描和合并，这3个页面的内容是相同的。具体步骤如下。</p>
@@ -357,7 +357,7 @@
 <li>扫描page2。因为稳定的红黑树中有成员，因此，先和稳定的红黑树中的成员进行比较，检査是否可以合并。若发现page2的内容和稳定的节点内容一致，那么把VMA2中的vaddr2映射到稳定的节点对应的 page1上，并且把PTE属性设置为只读属性。把代表page2的rmap_item2添加到稳定的节点的 hlist 链表中，最后释放page2页面，如图（d）所示 <img src="/picture/linux/kernel/mem/ksm2.png" /></li>
 </ul>
 <p>上述步骤完成之后，VMAO~VMA2这3个VMA对应的虚拟地址（vadr）都映射到page1上，并且映射的3个PTE属性都是只读属性，page1生成一个稳定的节点并被添加到了稳定的红黑树中，page0和page2被释放了。</p>
-<h2 id="新版本ksm的新特性">4. 新版本KSM的新特性</h2>
+<h1 id="新版本ksm的新特性">新版本KSM的新特性</h1>
 <p>新版本的KSM（如 Linux5.0内核的KSM）比 Linux4.0内核的KSM新增了两项特性。</p>
 <ul>
 <li>对内容全是零的页面进行特殊处理</li>
@@ -451,7 +451,7 @@
 <blockquote>
 <p>malloc函数分配的内存是不能被KSM扫描的，malloc()函数分配的虚拟内存没办法保证一定是按照页面对齐的，但在madvise系统调用中，要求起始地址是按照页面对齐的。</p>
 </blockquote>
-<h2 id="小结">5. 小结</h2>
+<h1 id="小结">小结</h1>
 <p>KSM的核心设计思想基于写时复制机制，也就是内容相同的页面可以合并成一个只读页面，从而释放空闲页面。 KSM最早是为了KVM虚拟机而设计的，KVM虚拟机在宿主机上使用的页面大部分是匿名页面，并且它们在宿主机中存在大量的冗余内存。对于典型的应用程序，KSM只考虑进程分配使用的匿名页面，暂时不考虑页面高速缓存的情况。一个典型的应用程序可以由以下5个内存部分组成</p>
 <ul>
 <li>可执行文件的内存映射（页面高速缓存）</li>
@@ -461,7 +461,7 @@
 <li>进程访问内核产生时的内核缓冲器（如slab）等</li>
 </ul>
 <p>设计的关键是如何寻找和比较两个相同的页面，如何让这个过程变得高效而且占用的系统资源最少，这就是一个好的设计人员应该思考的问题。首先不能用哈希算法来比较两个页面的专利问题。KSM虽然使用了 memcmp来比较，最糟糕的情况是两个页面最后的4字节不一样但是KSM使用红黑树来设计了两棵树，分别是稳定的红黑树和不稳定的红黑树，可以有效地避免最糟糕的情况。另外，KSM也巧妙地利用页面的校验和来比较不稳定的红黑树的页面最近是否被修改过，从而避开了该专利的缺陷。 页面分为物理页面和虚拟页面，多个虚拟页面可以同时映射到一个物理页面，因此需要把映射到该页面的所有PTE都解除后，才是算真正释放（这里说的PTE是指用户进程地止空间的虚拟地址映射的该页面的PTE，简称用户PTE，因此page-&gt;__mapcount成员里描述的PTE数量不包含内核线性映射的PTE）。目前有两种做法，一种做法是扫描每个进程中用户地址进程空间，由用户地址进程空间的虚拟地址查询MMU页表，找到对应的page数据结构，这样就找到了用户PTE。然后对比KSM中的稳定树和不稳定树，如果找到页面内容相同的，就把该PTE设置成写时复制，映射到KSM页面中，从而释放出一个PTE。注意，这里是释放出一个用户PTE，而不是一个物理页面（如果该物理页面只有一个PTE映射，那就是释放该页）。另外一种做法是直接扫描系统中的物理页面，然后通过RMAP来解除该页面所有的用户PTE，从而一次性地释放出物理页面。显然，目前内核的KSM是基于第一种做法。 KSM的作者在他的论文中有实测数据，但作者依然覚得有一些情况下会比较糟糕。如在一个很大内存的服务器上，很多的匿名页面都同时映射了多个虚拟页面。假设每个匿名页面都映射了1000个虚拟页面，这些虚拟页面又同时分布在不同的子进程中，那么要释放一个物理页面，需要扫描完1000个虚拟页面所在的用户地址进程空间，每次都要利用 follow_page() 查询页表，然后査询稳定树，还需要多次执行 memcmp比较，合并10000次PTE也就意味着 memcmp要执行10000次，这个过程会很漫长，在实际项目中，有很多人抱怨KSM的效率低，在很多项目是关闭该特性的。也有很多人在思考如何提高KSM的效率，包括利用新的软件算法或者利用硬件机制。</p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p>《奔跑吧Linux内核》</p>
 
     </div>
@@ -571,7 +571,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1. 概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E8%83%BDksm"><span class="nav-text">2. 使能KSM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ksm%E5%9F%BA%E6%9C%AC%E5%AE%9E%E7%8E%B0"><span class="nav-text">3. KSM基本实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%ACksm%E7%9A%84%E6%96%B0%E7%89%B9%E6%80%A7"><span class="nav-text">4. 新版本KSM的新特性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-text">5. 小结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E8%83%BDksm"><span class="nav-text">使能KSM</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ksm%E5%9F%BA%E6%9C%AC%E5%AE%9E%E7%8E%B0"><span class="nav-text">KSM基本实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%ACksm%E7%9A%84%E6%96%B0%E7%89%B9%E6%80%A7"><span class="nav-text">新版本KSM的新特性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -656,13 +656,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

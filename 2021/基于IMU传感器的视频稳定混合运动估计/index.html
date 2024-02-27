@@ -39,7 +39,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm6.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm10.png">
 <meta property="article:published_time" content="2021-08-14T05:06:10.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.914Z">
+<meta property="article:modified_time" content="2024-02-27T15:18:51.949Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="论文翻译">
 <meta name="twitter:card" content="summary">
@@ -282,7 +282,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>6.9k</span>
+              <span>6.8k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -307,13 +307,13 @@
 <h2 id="abstract">Abstract</h2>
 <p>在本文中，我们提出了一种混合方法来估计运动并通过切换函数稳定视频，该方法在 Kanade-Lucus-Tomasi (KLT) 跟踪器和 IMU 辅助运动估计器之间切换估计的运动。为了实现这一点，由于 KLT 跟踪器在较大运动期间的性能不佳，我们使用 KLT 跟踪器来校正低旋转的运动，并使用 IMU 辅助运动估计器来校正高旋转，此外，卡尔曼滤波器用于去除不需要的运动，从而平滑轨迹。</p>
 <span id="more"></span>
-<h2 id="introduction">1. Introduction</h2>
+<h1 id="introduction">Introduction</h1>
 <p>在相机市场，光学图像稳定（OIS）系统安装在相机镜头或图像传感器上，价格相当昂贵[3]。另一方面，数字稳定系统通过在相机移动时补偿捕获图像的移动来处理图像，它可以分为三个步骤，即运动估计、运动平滑和图像扭曲[4,5]。</p>
 <p>数字视频稳定中运动估计的常用技术是分别使用块匹配 [9]、KLT (Kanade-Lucus-Tomasi) 跟踪器 [10,11]、SIFT [12] 和 SURF [13]。最近，Dong et al. [14] and Lim等人 [15] 使用 KLT 跟踪器以高帧率和低计算成本实时估计运动， KLT 跟踪器通过 Good Feature to Track 检测特征点，并使用 Lucas-Kanade 方法估计连续帧的光流。该跟踪器在评估小运动中的运动方面取得了成功，但在局部运动和全局运动发生显着变化时失败[15]，然而，可以通过使用 IMU（惯性测量单元）数据来估计大运动。</p>
 <p>我们提出了一种混合函数来切换运动估计算法，以确定两个连续帧之间的转换。 在低运动的情况下，我们应用 KLT 跟踪器来计算两个连续帧上运动物体的光流。 然而，在快速旋转的情况下，来自 IMU 传感器的旋转数据用于通过计算来自预定义运动点和参考点的运动来估计运动。</p>
-<h2 id="related-work">2. Related Work</h2>
+<h1 id="related-work">Related Work</h1>
 <p>Karpenko 等人 [3]仅使用陀螺仪数据创建滚动快门以实现视频稳定。此外，一些研究分别包括 IMU 数据和特征跟踪，例如 Ryu 等人 [26] 提出了通过将旋转运动纳入 KLT 跟踪的运动估计，它使用来自 IMU 的位置来预测下一帧，从而证明速度和准确性。</p>
-<h2 id="proposed-framework">3. Proposed Framework</h2>
+<h1 id="proposed-framework">Proposed Framework</h1>
 <p>本文的挑战是如何估计连续帧在移动相机上的运动，例如，由于相机旋转引起的大旋转和基于场景中运动物体的局部运动。 根据我们的目标，我们应用了一种混合方法来近似确定估计移动相机运动的方法，如图 1 中的流程图所示。 <img src="/picture/eis/ahm1.png" /></p>
 <p>为了使用混合方法估计运动，我们采用由IMU传感器 <span class="math inline">\(w^{imu}\)</span> 测量和相机<span class="math inline">\(w^{cam}\)</span>的旋转速度来确定估计方法。 但是，这两个设备是不同的位置，因此我们需要将<span class="math inline">\(w^{imu}\)</span>转换为具有相对方向 <span class="math inline">\(R^{ci}\)</span> 的 <span class="math inline">\(w^{cam}\)</span>。 因此，相机的旋转速度定义为：</p>
 <p><span class="math display">\[
@@ -326,9 +326,9 @@ w^{cam}(t+t_{off}) = R^{ci}(w^{imu}(t) + b^{imu}) \tag1
 <li>使用 Li 和 Ren [16] 提出的陀螺仪数据和光流之间的关系估计 <span class="math inline">\(R^{ci}\)</span>，使用 CC+LS13 方法</li>
 <li>确定陀螺仪和相机输入之间的 <span class="math inline">\(t_{off}\)</span> 时间偏差。然后，我们可以正确估计<span class="math inline">\(w^{cam}\)</span></li>
 </ul>
-<h2 id="motion-estimation">4. Motion Estimation</h2>
+<h1 id="motion-estimation">Motion Estimation</h1>
 <p>为了挑战每个环境中的运动估计，我们开发了一种可靠且有效的方法，用于通过混合算法切换算法，以计算连续帧的运动流。 该方法分为两个功能，其中包括 KLT 跟踪器和 IMU 辅助运动估计器。</p>
-<h3 id="a-klt-tracker">4.1 A KLT Tracker</h3>
+<h2 id="a-klt-tracker">A KLT Tracker</h2>
 <p>如果 <span class="math inline">\(w^{cam}\)</span> z的绝对值小于 0.5 rad/s，则刚性变换由相应的特征点集估计。 我们使用 Good Feature to Track，这是一种实时计算光流的高效检测器。特征点由 Harris 角点检测器检测，该检测器使用强度差异对 (u, v) 在所有方向上的位移，定义如下：</p>
 <p><span class="math display">\[
 \varepsilon (u,v) = \sum_{x,y}^{} w(x,y)[I(x+u,y+v) - I(x,y)]^2 \\
@@ -366,7 +366,7 @@ f_x = \frac{\partial f}{\partial x}; f_y = \frac{\partial f}{\partial y}; u = \f
 <p><img src="/picture/eis/ahm3.png" /></p>
 <p>例如，图 3a、b 分别显示了在正常运动和快速运动期间来自 KLT 特征跟踪器的光流。 后一种运动情况是无序的，导致对单应矩阵的估计效率低下。在大运动期间，KLT 特征跟踪器确实失败了。因此，我们在大运动的情况下使用 IMU 辅助的运动估计器方法来减少任何运动矢量误差。</p>
 <p>总之，KLT 跟踪器已经根据前一帧中的特征点和当前帧中移动到新位置的特征点创建了运动向量。 这两组来自 KLT 跟踪器的特征点用于估计刚性变换的单应矩阵以稳定图像帧。</p>
-<h3 id="an-imu-aided-motion-estimator">4.2 An IMU-Aided Motion Estimator</h3>
+<h2 id="an-imu-aided-motion-estimator">An IMU-Aided Motion Estimator</h2>
 <p>在<span class="math inline">\(w_{𝑧}^{𝑐𝑎𝑚}\)</span> 的绝对值大于 0.5 rad/s 的情况下，IMU 传感器将估计运动。 首先，我们需要在第一张图像<span class="math inline">\(I_0(x_{ij}, y_{ij})\)</span>上创建参考点的集合为如图 4 所示，由 <span class="math inline">\((i, j)\)</span> 的对称分布点组成。 <span class="math inline">\((i, j)\)</span> 的大小由 $(2e + 1) x(2f + 1), e , f = 1, 2, ..., n $计算，其中 e 和 f 应在5到30之间，以准确地近似运动 分别在 x 和 y 方向上的计算负载。 <img src="/picture/eis/ahm4.png" /></p>
 <p><span class="math inline">\(I_0(x_{ij}, y_{ij})\)</span> 的所有参考点都位于图像中心 <span class="math inline">\((x0, y0)\)</span> 的周围，由以下等式确定:</p>
 <p><span class="math display">\[
@@ -408,7 +408,7 @@ S_0[i] - AS_n[i]^T - t
 \begin{bmatrix} x\\ y\\ 1 \end{bmatrix} \tag{12}
 \]</span></p>
 <p>自由度 (12) 包括标度 (S)、旋转角度 (q) 以及 x 轴和 y 轴上的平移<span class="math inline">\(t_x\)</span> 和 <span class="math inline">\(t_y\)</span>。 因此，式(12)中的总自由度为4，称为相似变换。 然而，在本文中，我们使用刚性变换来扭曲稳定的框架，使尺度等于 1，以减少用于计算尺度向量的存储区域</p>
-<h2 id="motion-smoothing-and-image-warping">5. Motion Smoothing and Image Warping</h2>
+<h1 id="motion-smoothing-and-image-warping">Motion Smoothing and Image Warping</h1>
 <p>为了从估计的运动中去除噪声，我们使用卡尔曼滤波器来减少噪声并获得平滑的运动 [30]。 卡尔曼滤波器通过使用前一个状态 [31] 来近似下一个状态，这适合连续帧的动态系统。<span class="math inline">\(x_k\)</span>的预测状态由下式给出：</p>
 <p><span class="math display">\[
 x_k = F_{x_{k-1}} + B_{u_k} + w_k \tag{13}
@@ -422,7 +422,7 @@ z_k = H_kx_k + v_k \tag{14}
  0 &amp; 0 &amp; 1 \end{bmatrix}
 \begin{bmatrix} x&#39; \\ y&#39; \\ 1 \end{bmatrix} \tag{15}
 \]</span> 其中 <span class="math inline">\((\hat{\theta},\hat{t_x},\hat{t_y})\)</span>是来自卡尔曼滤波器的滤波后的运动。 稳定的视频是用这种校正运动和平滑轨迹创建的。</p>
-<h2 id="experimental-results-and-discussion">6. Experimental Results and Discussion</h2>
+<h1 id="experimental-results-and-discussion">Experimental Results and Discussion</h1>
 <p>假设IMU和Camera之间的延迟是常数 [32]。它可以通过应用围绕 z 轴移动相机以测量 <span class="math inline">\(w_z^{cam}\)</span> 所需的小正弦信号来识别偏移时间。然后，对光流和陀螺数据的平均幅度进行比较，如图9所示，光流是用图像插值算法[33]估计的，陀螺数据由等式（1）计算。 来自光流和陀螺仪数据的存档数据包含相同的相位，因此由<span class="math inline">\(t_{off}\)</span> 表示的两个测量数据之间的最大相位滞后等于 -0.035 s， <img src="/picture/eis/ahm10.png" /></p>
 <p>我们提出的方法与独立的 KTL 跟踪器和 IMU 辅助运动估计器进行了比较。 为了合理的评估稳定视频的性能，我们使用帧间变换保真度（ITF）[34]通过总结峰值信噪比（PSNR）以单个值表示稳定视频的质量 ，由下式给出：</p>
 <p><span class="math display">\[
@@ -545,7 +545,7 @@ MSE(I_n,I_{i+1}) = \frac{1}{MN}\sum_{j=1}^{N}\sum_{i=1}^{M}(I_n(i,j) - I_{n+1}(i
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#abstract"><span class="nav-text">Abstract</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#introduction"><span class="nav-text">1. Introduction</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#related-work"><span class="nav-text">2. Related Work</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#proposed-framework"><span class="nav-text">3. Proposed Framework</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#motion-estimation"><span class="nav-text">4. Motion Estimation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#a-klt-tracker"><span class="nav-text">4.1 A KLT Tracker</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#an-imu-aided-motion-estimator"><span class="nav-text">4.2 An IMU-Aided Motion Estimator</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#motion-smoothing-and-image-warping"><span class="nav-text">5. Motion Smoothing and Image Warping</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#experimental-results-and-discussion"><span class="nav-text">6. Experimental Results and Discussion</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#abstract"><span class="nav-text">Abstract</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#introduction"><span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#related-work"><span class="nav-text">Related Work</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#proposed-framework"><span class="nav-text">Proposed Framework</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#motion-estimation"><span class="nav-text">Motion Estimation</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#a-klt-tracker"><span class="nav-text">A KLT Tracker</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#an-imu-aided-motion-estimator"><span class="nav-text">An IMU-Aided Motion Estimator</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#motion-smoothing-and-image-warping"><span class="nav-text">Motion Smoothing and Image Warping</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#experimental-results-and-discussion"><span class="nav-text">Experimental Results and Discussion</span></a></div>
       </div>
       <!--/noindex-->
 
@@ -630,13 +630,13 @@ MSE(I_n,I_{i+1}) = \frac{1}{MN}\sum_{j=1}^{N}\sum_{i=1}^{M}(I_n(i,j) - I_{n+1}(i
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

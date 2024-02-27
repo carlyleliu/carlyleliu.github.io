@@ -24,16 +24,16 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. seq_file 1.1 概述 seq_file只是在普通文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口, seq_file一般只提供只读接口。 123456struct seq_operations &amp;#123;  void * (*start) (struct seq_file *m, loff_t *pos);  void (*stop) (struct">
+  <meta name="description" content="seq_file 概述 seq_file只是在普通文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口, seq_file一般只提供只读接口。 123456struct seq_operations &amp;#123;  void * (*start) (struct seq_file *m, loff_t *pos);  void (*stop) (struct seq_fi">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之文件系统">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="1. seq_file 1.1 概述 seq_file只是在普通文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口, seq_file一般只提供只读接口。 123456struct seq_operations &amp;#123;  void * (*start) (struct seq_file *m, loff_t *pos);  void (*stop) (struct">
+<meta property="og:description" content="seq_file 概述 seq_file只是在普通文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口, seq_file一般只提供只读接口。 123456struct seq_operations &amp;#123;  void * (*start) (struct seq_file *m, loff_t *pos);  void (*stop) (struct seq_fi">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/FileSystem/KernFS.png">
 <meta property="article:published_time" content="2020-08-08T04:25:58.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.910Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Linux驱动">
 <meta name="twitter:card" content="summary">
@@ -295,12 +295,12 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="seq_file">1. seq_file</h2>
-<h3 id="概述">1.1 概述</h3>
+        <h1 id="seq_file">seq_file</h1>
+<h2 id="概述">概述</h2>
 <p>seq_file只是在普通文件read中加入了内核缓冲的功能，从而实现顺序多次遍历读取大数据量的简单接口, seq_file一般只提供只读接口。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">seq_operations</span> &#123;</span></span><br><span class="line">  <span class="keyword">void</span> * (*start) (struct seq_file *m, <span class="keyword">loff_t</span> *pos);</span><br><span class="line">  <span class="keyword">void</span> (*stop) (struct seq_file *m, <span class="keyword">void</span> *v);</span><br><span class="line">  <span class="keyword">void</span> * (*next) (struct seq_file *m, <span class="keyword">void</span> *v, <span class="keyword">loff_t</span> *pos);</span><br><span class="line">  <span class="keyword">int</span> (*show) (struct seq_file *m, <span class="keyword">void</span> *v);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <span id="more"></span>
-<h3 id="核心功能">1.2 核心功能</h3>
+<h2 id="核心功能">核心功能</h2>
 <p>seq_file接口可通过 &lt;linux/seq_file.h&gt; 获得。 seq_file包含三个方面：</p>
 <ul>
 <li>An iterator interface which lets a virtual file implementation step through the objects it is presenting</li>
@@ -308,15 +308,15 @@
 <li>A set of canned file_operations which implement most operations on the virtual file</li>
 </ul>
 <p>实现文件在fs/seq_file.c和include/linux/seq_file.h中。</p>
-<h3 id="总结">1.3 总结</h3>
+<h2 id="总结">总结</h2>
 <p>seq_file是为proc文件系统设计的，但不只是proc，在需要创建一个由一系列数据顺序组合而成的虚拟文件或一个较大的虚拟文件时，推荐使用seq_file接口。这正是符合bin_attribute的场景。用户空间通过open、read等函数操作文件时通过系统的VFS调用到内核层，其中file结构体的private指针指向seq_file结构体，然后调用该结构体里的op指针指向的相应函数。</p>
-<h2 id="kernfs">2. kernfs</h2>
-<h3 id="概述-1">2.1 概述</h3>
+<h1 id="kernfs">kernfs</h1>
+<h2 id="概述-1">概述</h2>
 <p>在Linux内核中，kernfs提供内核子系统内部虚拟文件系统所需的功能，源于拆分sysfs使用的部分内部逻辑，它通过将有关硬件设备和相关设备驱动程序的信息从内核的设备模型导出到用户空间，提供一组虚拟文件，从而实现独立且可重用的功能。 其他内核子系统可以更容易，更一致地实现自己的文件系统。</p>
-<h3 id="数据结构">2.2 数据结构</h3>
+<h2 id="数据结构">数据结构</h2>
 <p>先整体看下数据结构，如下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQyOTllMGIzNGQ3YzdkYjU1MjU1">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/FileSystem/KernFS.png" /></p>
 <p>该图展示了各个数据结构之间的关系以及实现方式，kernfs是fs抽象出来公共的属性操作，sysfs基本就是调用该结构的方法来实现，同时kobject的目录和属性文件在用户空间的文件组织也是通过该数据结构实现的。</p>
-<h3 id="实现">2.3 实现</h3>
+<h2 id="实现">实现</h2>
 <p>所有文件系统的实现都是通过file_operations结构体实现具体的操作的，kernfs也是，它同样实现了file_operations结构体相关操作，如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">kernfs_file_fops</span> =</span> &#123;</span><br><span class="line">  .read		= kernfs_fop_read,</span><br><span class="line">  .write		= kernfs_fop_write,</span><br><span class="line">  .llseek		= generic_file_llseek,</span><br><span class="line">  .mmap		= kernfs_fop_mmap,</span><br><span class="line">  .open		= kernfs_fop_open,</span><br><span class="line">  .release	= kernfs_fop_release,</span><br><span class="line">  .poll		= kernfs_fop_poll,</span><br><span class="line">  .fsync		= noop_fsync,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>这个可以关注下open成员的实现函数kernfs_fop_open，</p>
@@ -328,8 +328,8 @@ seq_file的实现就使用了kernfs结构，kernfs实现了seq_file的file_opera
 <p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">seq_operations</span> <span class="title">kernfs_seq_ops</span> =</span> &#123;</span><br><span class="line">  .start = kernfs_seq_start,</span><br><span class="line">  .next = kernfs_seq_next,</span><br><span class="line">  .stop = kernfs_seq_stop,</span><br><span class="line">  .show = kernfs_seq_show,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></p>
 <p>然后通过调用seq_open将该数据结构连入seq_file结构体的op成员中。</p></li>
 </ul>
-<h2 id="sysfs">3. sysfs</h2>
-<h3 id="概述-2">3.1 概述</h3>
+<h1 id="sysfs">sysfs</h1>
+<h2 id="概述-2">概述</h2>
 <p>sysfs是非持久性虚拟文件系统，它提供系统的全局视图，并通过它们的kobiect 显示内核对象的层次结构（拓扑）。每个kobiect显示为目录和目录中的文件，目录代表相关kobject导出的内核变量。这些文件称为属性，可以读取或写入。</p>
 <p>对系统上的每个块设备，block都包含一个目录，目录下包含设备上分区的子目录。bus包含系统上注册的总线。dev以原始方式（无层次结构）包含已注册的设备节点，每个节点都是/sys/devices目录中真实设备的符号链接。devices给出系统内设备的拓扑结构视图。firmware显示系统相关的低层子系统树，如ACPI、EFI、OF （DT）。fs列出系统上实际使用的文件系统。kernel保存内核配置选项和状态信息。module是加载的模块列表。</p>
 <pre><code>kernel_kobj：对应于/sys/kernel
@@ -339,9 +339,9 @@ hvpervisor_kobj：对应于/sys/hypervisor，导出在drivers/base hypervisor.c�
 fs_kobj：对应于/sys/fs，导出在fs/namespace.c文件中</code></pre>
 <p>然而，class/、dev/、devices/是在启动期间由内核源代码内drivers_base/core.c中的devices_init函数创建的，block/在block/genhd.c中创建，bus/ 在drivers/base/bus.c中被创建为kset。</p>
 <p>kobject目录被添加到sysfs（使用kobject_add）时，其添加位置取决于kobject的父项。如果其父指针已设置，则它将被添加为父目录内的子目录。如果父指针为NULL，则将其添加为kset-&gt;kobj内的子目录。如果其父和kset字段都未设置，它将映射到sysfs内的根目录（/sys）。</p>
-<h3 id="挂载sysfs">3.2 挂载sysfs</h3>
+<h2 id="挂载sysfs">挂载sysfs</h2>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mount -t sysfs sysfs /sys</span><br></pre></td></tr></table></figure>
-<h3 id="属性文件使用">3.3 属性文件使用</h3>
+<h2 id="属性文件使用">属性文件使用</h2>
 <h4 id="属性文件定义">属性文件定义</h4>
 <p>裸属性不包含读取或写入属性值的方法。 鼓励子系统定义自己的属性结构和包装函数，以便为特定对象类型添加和删除属性。 例如驱动模型定义struct device_attribute如下：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">device_attribute</span> &#123;</span></span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">attribute</span>	<span class="title">attr</span>;</span></span><br><span class="line">  <span class="keyword">ssize_t</span> (*show)(struct device *dev, struct device_attribute *attr,</span><br><span class="line">      <span class="keyword">char</span> *buf);</span><br><span class="line">  <span class="keyword">ssize_t</span> (*store)(struct device *dev, struct device_attribute *attr,</span><br><span class="line">       <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
@@ -362,7 +362,7 @@ fs_kobj：对应于/sys/fs，导出在fs/namespace.c文件中</code></pre>
 </blockquote>
 <p>一个简单的例子，来看看具体的使用方法：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">show_name</span><span class="params">(struct device *dev, struct device_attribute *attr,</span></span></span><br><span class="line"><span class="params"><span class="function">                         <span class="keyword">char</span> *buf)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> scnprintf(buf, PAGE_SIZE, <span class="string">&quot;%s\n&quot;</span>, dev-&gt;name);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">store_name</span><span class="params">(struct device *dev, struct device_attribute *attr,</span></span></span><br><span class="line"><span class="params"><span class="function">                          <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        <span class="built_in">snprintf</span>(dev-&gt;name, <span class="keyword">sizeof</span>(dev-&gt;name), <span class="string">&quot;%.*s&quot;</span>,</span><br><span class="line">                 (<span class="keyword">int</span>)min(count, <span class="keyword">sizeof</span>(dev-&gt;name) - <span class="number">1</span>), buf);</span><br><span class="line">  <span class="keyword">return</span> count;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="title">DEVICE_ATTR</span><span class="params">(name, S_IRUGO, show_name, store_name)</span></span>;</span><br></pre></td></tr></table></figure>
-<h4 id="参考文献">参考文献</h4>
+<h2 id="参考文献">参考文献</h2>
 <p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9kZXZpY2VfbW9kZWw=">窝窝科技相-设备驱动模型<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2NoZW55aW5nMTI2L2FydGljbGUvZGV0YWlscy83ODA3OTk0Mg==">https://blog.csdn.net/chenying126/article/details/78079942<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly93d3cua2VybmVsLm9yZy9kb2MvaHRtbC9sYXRlc3QvZmlsZXN5c3RlbXMvc2VxX2ZpbGUuaHRtbA==">https://www.kernel.org/doc/html/latest/filesystems/seq_file.html<i class="fa fa-external-link-alt"></i></span><br />
@@ -477,7 +477,7 @@ fs_kobj：对应于/sys/fs，导出在fs/namespace.c文件中</code></pre>
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#seq_file"><span class="nav-text">1. seq_file</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">1.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD"><span class="nav-text">1.2 核心功能</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">1.3 总结</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#kernfs"><span class="nav-text">2. kernfs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-text">2.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">2.2 数据结构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">2.3 实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sysfs"><span class="nav-text">3. sysfs</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-2"><span class="nav-text">3.1 概述</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8C%82%E8%BD%BDsysfs"><span class="nav-text">3.2 挂载sysfs</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E6%96%87%E4%BB%B6%E4%BD%BF%E7%94%A8"><span class="nav-text">3.3 属性文件使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E6%96%87%E4%BB%B6%E5%AE%9A%E4%B9%89"><span class="nav-text">属性文件定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9A%E4%B9%89%E5%9B%9E%E8%B0%83"><span class="nav-text">子系统定义回调</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#seq_file"><span class="nav-text">seq_file</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD"><span class="nav-text">核心功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#kernfs"><span class="nav-text">kernfs</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-1"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sysfs"><span class="nav-text">sysfs</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0-2"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8C%82%E8%BD%BDsysfs"><span class="nav-text">挂载sysfs</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E6%96%87%E4%BB%B6%E4%BD%BF%E7%94%A8"><span class="nav-text">属性文件使用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B1%9E%E6%80%A7%E6%96%87%E4%BB%B6%E5%AE%9A%E4%B9%89"><span class="nav-text">属性文件定义</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%90%E7%B3%BB%E7%BB%9F%E5%AE%9A%E4%B9%89%E5%9B%9E%E8%B0%83"><span class="nav-text">子系统定义回调</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -562,13 +562,13 @@ fs_kobj：对应于/sys/fs，导出在fs/namespace.c文件中</code></pre>
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

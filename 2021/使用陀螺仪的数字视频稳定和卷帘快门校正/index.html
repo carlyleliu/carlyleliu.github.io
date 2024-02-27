@@ -39,7 +39,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs6.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs7.png">
 <meta property="article:published_time" content="2021-08-20T23:21:54.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.914Z">
+<meta property="article:modified_time" content="2024-02-27T15:21:54.177Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="论文翻译">
 <meta name="twitter:card" content="summary">
@@ -308,11 +308,11 @@
 <h2 id="abstract">Abstract</h2>
 <p>在本文中，我们提出了一种基于商用陀螺仪的强大实时视频稳定和滚动快门校正技术。首先来对相机运动和卷帘快门扭曲进行建模，然后从单个视频捕获自动校准陀螺仪和相机输出。 这种校准使我们能够仅使用陀螺仪数据来有效校正卷帘快门扭曲并稳定视频。</p>
 <span id="more"></span>
-<h2 id="video-stabilization-and-rolling-shutter-correction">1 Video Stabilization and Rolling Shutter Correction</h2>
+<h1 id="video-stabilization-and-rolling-shutter-correction">Video Stabilization and Rolling Shutter Correction</h1>
 <p>我们系统中的相机运动仅根据旋转进行建模。 我们忽略平移运动，加速度计数据必须被积分两次才能获得位移，因此它们很难使用IMU准确测量。即使我们可以准确地测量平移，这也是不够的，因为在相机相同平移量的情况下不同深度的物体移动的量不同，我们将不得不依赖立体或基于特征的运动结构（SfM）算法来获取深度信息。这些方法并不健壮，而且目前在移动平台上实时运行计算成本太高。</p>
 <p>Forsse ́n和Ringaby[2010]试图在他们的系统中模拟相机位移，但发现结果比只考虑旋转的模型表现更差。 他们假设优化器在尝试从特征跟踪器重建位移时陷入局部最小值。他们的算法还假设相机正在对纯平面场景（即恒定深度）进行成像。 因此，由于视频中的未建模视差，平移重建有时会失败。 <img src="/picture/eis/dvs2.png" /></p>
 <p>为了避免这些问题，我们没有将平移合并到我们的模型中。 幸运的是，相机抖动和卷帘快门扭曲主要来自旋转。之所以如此，是因为平移随着深度的增加而迅速衰减，并且物体通常离镜头足够远，平移相机抖动不会在图像中产生明显的运动。 这一结论得到了我们的稳定结果的支持。</p>
-<h3 id="camera-model">1.1 Camera Model</h3>
+<h2 id="camera-model">Camera Model</h2>
 <p>我们的旋转卷帘快门相机模型基于针孔相机模型。在针孔相机中，图像之间的关系在齐次坐标中的点x和对应点在3D世界坐标系中的X（图 2）可以通过以下方式表示：</p>
 <p><span class="math display">\[
 x=KX, X=\lambda K^{-1}x \tag1
@@ -322,7 +322,7 @@ x=KX, X=\lambda K^{-1}x \tag1
 K^{-1} = \begin{bmatrix} 1 &amp; 0 &amp; -o_x\\ 0 &amp; 1 &amp; -o_y\\ 0 &amp; 0 &amp; f \end{bmatrix} \tag2
 \]</span></p>
 <p>其中，<span class="math inline">\((o_x, o_y)\)</span> 是图像平面中相机轴的原点坐标，f是焦距。</p>
-<h3 id="camera-motion">1.2 Camera Motion</h3>
+<h2 id="camera-motion">Camera Motion</h2>
 <p>我们将世界原点设置在相机原点。然后可以用R(t)来描述相机在时间t时刻的运动。因此，对于任何世界坐标点点X，对应的图像点x在时间t由下式给出：</p>
 <p><span class="math display">\[
 x = KR(t)X \tag3
@@ -332,13 +332,13 @@ x = KR(t)X \tag3
 \Delta \theta (t) = (w(t + t_d) + w_d) * dt \tag4
 \]</span></p>
 <p>这里<span class="math inline">\(w_d\)</span>是陀螺仪漂移，<span class="math inline">\(t_d\)</span>是陀螺仪和相机时间戳的差，这些参数都是未知的需要进行校准获得。</p>
-<h3 id="rolling-shutter-compensation">1.3 Rolling Shutter Compensation</h3>
+<h2 id="rolling-shutter-compensation">Rolling Shutter Compensation</h2>
 <p>我们现在将卷帘快门的概念引入我们的相机模型中。在RS相机中，每个图像行的曝光时间略有不同，因此曝光期间相机的旋转将导致图像的扭曲。例如，如果相机在快门滚动时左右摇摆，则输出图像将扭曲，如图2所示。更正式地说，我们可以说x在时间t(i, y)期间成像：</p>
 <p><span class="math display">\[
 t(i,y) = t_i + t_s * y / h; where  x = (x,y,1)^T \tag5
 \]</span></p>
 <p>其中y是点x对应的图像行，h是帧中的总行数，<span class="math inline">\(t_i\)</span>是第i帧的时间戳。 <span class="math inline">\(t_s\)</span>是一帧曝光所需时间，也就是从上到下逐行读出完整帧所需的时间。</p>
-<h3 id="image-warping">1.4 Image Warping</h3>
+<h2 id="image-warping">Image Warping</h2>
 <p>现在我们推导出一帧图像两个坐标点之间的旋转关系。对于场景点X，在i帧和j帧的图像平面中的投影点<span class="math inline">\(x_i\)</span>和<span class="math inline">\(x_j\)</span>由下式给出：</p>
 <p><span class="math display">\[
 x_i = KR(t(i,y_i))X, and x_j = KR(t(j,y_j))X \tag6
@@ -355,7 +355,7 @@ x_j = W(t(j,y_j),t(i,y_i))x_i, R&#39; = R \tag9
 \]</span></p>
 <p>还要注意，W分别取决于图像点<span class="math inline">\(x_i\)</span>和<span class="math inline">\(x_j\)</span>的图像行<span class="math inline">\(y_i\)</span>和<span class="math inline">\(y_j\)</span>。该变换矩阵可用于将帧i中的点与帧j中的对应点进行匹配，同时在两帧中都考虑卷帘快门的影响。给定这种变形矩阵的公式，滚动快门校正和视频稳定的算法就变得简单了。我们创建了一个具有平滑运动和全局快门的合成视频。该相机的运动是通过对输入相机的运动应用高斯低通滤波器来计算的，这会产生一组新的旋转矩阵R0。我们将合成相机的滚动快门持续时间ts设置为0（即全局快门），然后我们在当前帧i的每个图像行<span class="math inline">\(y_i\)</span>处计算<span class="math inline">\(W(t_i; t(i; y_i))\)</span>，并将扭曲应用于该行。 请注意W的第一项现在仅取决于帧时间<span class="math inline">\(t_i\)</span>。此操作将所有输入帧映射到我们的合成视频上；因此可以同时消除滚动快门扭曲和视频抖动。 <img src="/picture/eis/dvs5.png" /></p>
 <p>实际上，我们不会为每个图像行<span class="math inline">\(y_i\)</span>计算<span class="math inline">\(W(t_i; t(i; y_i))\)</span>。相反我们细分输入图像（图 5a）并计算每个垂直细分的扭曲（图 5c 和 5d）。本质上，我们从输入图像创建一个扭曲的网格，它是非线性扭曲的分段线性近似。我们发现十个细分通常足以去除任何可见的 RS 拖影。Forssen和Ringaby [2010] 将这种采样方法称为´逆插值。他们还提出了两种额外的插值技术，他们凭经验证明在合成视频数据集上表现更好。然而，我们使用逆插值是因为使用顶点着色器很容易在GPU上实现一个高效的版本。GPU的片段着色器负责使用双线性插值对网格扭曲图像进行重新采样。我们发现，由于双线性逆插值实际视频中的RS扭曲通常不足以产生混叠拖影，因此逆插值在实践中效果也很好.</p>
-<h2 id="camera-and-gyroscope-calibration">2. Camera and Gyroscope Calibration</h2>
+<h1 id="camera-and-gyroscope-calibration">Camera and Gyroscope Calibration</h1>
 <p>我们现在展示用于找到未知的相机和陀螺仪参数。 这个校准步骤是必要的，它使我们能够直接从陀螺仪数据中计算W。 我们模型中的未知参数是：相机的焦距 f、滚动快门的持续时间 <span class="math inline">\(t_s\)</span>、陀螺仪和帧样本时间戳之间的延迟 <span class="math inline">\(t_d\)</span> 以及陀螺仪漂移 <span class="math inline">\(w_d\)</span></p>
 <p>请注意，制造商可能会给定其中一些参数，例如相机的焦距，也可以通过实验测量这些参数。 例如，Forssen 和 Ringaby [2010] 使用快速闪烁的显示器来测量滚动快门持续时间 <span class="math inline">\(t_s\)</span>。 然而这些技术往往不精确且容易出错；而且它们也太繁琐，普通用户无法执行。滚动快门的持续时间通常在毫秒范围内。因此，<span class="math inline">\(t_d\)</span> 或<span class="math inline">\(t_s\)</span>中的小偏差将导致卷帘门整流失败。</p>
 <p>我们的方法是从单个视频和陀螺仪捕获中估计这些参数。用户被要求记录视频和陀螺仪轨迹，在那里他们站着不动并在指向建筑物时晃动相机。持续时间约为10秒的短片通常以估计所有未知数。 请注意，这只需为每个摄像头和陀螺仪设置完成一次。 <img src="/picture/eis/dvs6.png" /></p>
@@ -481,7 +481,7 @@ J = \sum_{i,j} \left \| x_j - W(t(j,yj); t(i, yi))x_i \right \|^2 \tag{10}
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#abstract"><span class="nav-text">Abstract</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#video-stabilization-and-rolling-shutter-correction"><span class="nav-text">1 Video Stabilization and Rolling Shutter Correction</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#camera-model"><span class="nav-text">1.1 Camera Model</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#camera-motion"><span class="nav-text">1.2 Camera Motion</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rolling-shutter-compensation"><span class="nav-text">1.3 Rolling Shutter Compensation</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#image-warping"><span class="nav-text">1.4 Image Warping</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#camera-and-gyroscope-calibration"><span class="nav-text">2. Camera and Gyroscope Calibration</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#abstract"><span class="nav-text">Abstract</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#video-stabilization-and-rolling-shutter-correction"><span class="nav-text">Video Stabilization and Rolling Shutter Correction</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#camera-model"><span class="nav-text">Camera Model</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#camera-motion"><span class="nav-text">Camera Motion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rolling-shutter-compensation"><span class="nav-text">Rolling Shutter Compensation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#image-warping"><span class="nav-text">Image Warping</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#camera-and-gyroscope-calibration"><span class="nav-text">Camera and Gyroscope Calibration</span></a></div>
       </div>
       <!--/noindex-->
 
@@ -566,13 +566,13 @@ J = \sum_{i,j} \left \| x_j - W(t(j,yj); t(i, yi))x_i \right \|^2 \tag{10}
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

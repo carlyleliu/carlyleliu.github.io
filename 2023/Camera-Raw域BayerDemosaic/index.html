@@ -24,12 +24,12 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. Bayer Demosaic概述 RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（">
+  <meta name="description" content="Bayer Demosaic概述 RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（zip">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Camera-Raw域BayerDemosaic">
 <meta property="og:url" content="http://carlyleliu.github.io/2023/Camera-Raw%E5%9F%9FBayerDemosaic/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="1. Bayer Demosaic概述 RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（">
+<meta property="og:description" content="Bayer Demosaic概述 RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（zip">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/pipeline18.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/pipeline19.png">
@@ -37,7 +37,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/dm2.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/dm3.png">
 <meta property="article:published_time" content="2023-05-30T15:17:53.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.898Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.548Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Camera">
 <meta name="twitter:card" content="summary">
@@ -280,7 +280,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>6.5k</span>
+              <span>6.4k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -299,7 +299,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="bayer-demosaic概述">1. Bayer Demosaic概述</h2>
+        <h1 id="bayer-demosaic概述">Bayer Demosaic概述</h1>
 <p>RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（zipper artifacts），边缘模糊，颜色误差等。 <img src="/picture/camera/isp/pipeline18.png" /> <img src="/picture/camera/isp/pipeline19.png" /></p>
 <span id="more"></span>
 <p>所以Demosaic 算法的主要挑战就是尽量提高算法的准确性，减少图像边缘损失和颜色误差。</p>
@@ -309,8 +309,8 @@
 <li>有方向性插值：先判断边缘方向，再利用周围像素信息恢复</li>
 </ul>
 <p>Bayer 格式图像的绿色成分占比例较多，信息较丰富，色彩恢复时步骤通常是：a、先恢复G通道；b、再利用G通道信息恢复R、B通道。</p>
-<h2 id="cfa-双线性插值">2. CFA 双线性插值</h2>
-<h3 id="无边缘检测">2.1 无边缘检测</h3>
+<h1 id="cfa-双线性插值">CFA 双线性插值</h1>
+<h2 id="无边缘检测">无边缘检测</h2>
 <p><img src="/picture/camera/isp/dm1.png" /></p>
 <ul>
 <li><p>绿色像素上的R，B值分别由相邻的2个R，B像素的灰度求平均值得到<br />
@@ -334,7 +334,7 @@
   \]</span></p></li>
 </ul>
 <p>边缘检测，直接采用最近临同色像素的均值求解，图像边缘不够清晰，算法简单。</p>
-<h3 id="基于边缘检测和色差的cfa插值hibbard原理">2.2 基于边缘检测和色差的CFA插值：Hibbard原理</h3>
+<h2 id="基于边缘检测和色差的cfa插值hibbard原理">基于边缘检测和色差的CFA插值：Hibbard原理</h2>
 <p>G分量的恢复加入了相邻G通道的一阶微分方向判断因子。使用周围G通道值信息。</p>
 <ul>
 <li><p>恢复采样点R和B点的绿色分量：例B44<br />
@@ -365,7 +365,7 @@
   \]</span></p></li>
 </ul>
 <p>G通道有边缘检测采用相邻G，恢复无色差、色度信息，R、B通道无边缘检测，恢复采用色差信息。效果接近原始图，算法难度适中。</p>
-<h3 id="基于边缘检测和色差的cfa插值laroche原理">2.3 基于边缘检测和色差的CFA插值：laroche原理</h3>
+<h2 id="基于边缘检测和色差的cfa插值laroche原理">基于边缘检测和色差的CFA插值：laroche原理</h2>
 <p>G分量的恢复改用相邻R或B通道的二阶微分方向判断因子；恢复时使用相邻G通道信息。 R、B分量的恢复同Hibbard使用色差原理。</p>
 <ul>
 <li><p>恢复采样点R和B点的绿色分量：例B44 梯度因子：水平方向H： <span class="math display">\[
@@ -383,7 +383,7 @@
   \]</span> 其他像素插值方法同Hibbard。</p></li>
 </ul>
 <p>G通道有边缘检测采用相邻B色度信息，恢复用均值无色差信息、色度信息，R、B通道无边缘检测，恢复采用色差信息。效果接近原始图，算法难度适中。</p>
-<h3 id="基于边缘色度和色差自适应插值">2.4 基于边缘、色度和色差自适应插值</h3>
+<h2 id="基于边缘色度和色差自适应插值">基于边缘、色度和色差自适应插值</h2>
 <p>G分量的恢复改用相邻R或B的二阶微分加G通道的一阶微分方向判断因子；R、B分量的恢复使用了色差原理。</p>
 <ul>
 <li><p>恢复绿色分量G 已知B44,水平方向梯度和色度算子： <span class="math display">\[
@@ -433,7 +433,7 @@
   \]</span></p></li>
 </ul>
 <p>R、G、B通道分别进行了边缘检测，颜色恢复时采用了色差信息及其他通道的信息。效果接近原始图，算法难度较大。</p>
-<h3 id="基于边缘色度和色差自适应插值之标志位减少false-color">2.5 基于边缘、色度和色差自适应插值之标志位：减少False color</h3>
+<h2 id="基于边缘色度和色差自适应插值之标志位减少false-color">基于边缘、色度和色差自适应插值之标志位：减少False color</h2>
 <p>G分量的恢复改用相邻R或B的二阶微分加G通道的一阶微分方向判断因子；并采用标志因子的统计，R、B分量的恢复使用了色差原理。</p>
 <ul>
 <li>对每个像素计算水平和垂直方向梯度和色度算子</li>
@@ -485,7 +485,7 @@ C M S E=\frac{1}{3 H W} \sum_{k=R, G, B} \sum_{i=1}^H \sum_{j=1}^W\left(I_o(i, j
 <p><span class="math display">\[
 CPSNR = 10 log_{10}(\frac{255^2}{CMSE})
 \]</span></p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC85ODgyMDkyNw==">https://zhuanlan.zhihu.com/p/98820927<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC80MDYyNjYyMA==">https://zhuanlan.zhihu.com/p/40626620<i class="fa fa-external-link-alt"></i></span></p>
 
@@ -596,7 +596,7 @@ CPSNR = 10 log_{10}(\frac{255^2}{CMSE})
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#bayer-demosaic%E6%A6%82%E8%BF%B0"><span class="nav-text">1. Bayer Demosaic概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cfa-%E5%8F%8C%E7%BA%BF%E6%80%A7%E6%8F%92%E5%80%BC"><span class="nav-text">2. CFA 双线性插值</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A0%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B"><span class="nav-text">2.1 无边缘检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E8%89%B2%E5%B7%AE%E7%9A%84cfa%E6%8F%92%E5%80%BChibbard%E5%8E%9F%E7%90%86"><span class="nav-text">2.2 基于边缘检测和色差的CFA插值：Hibbard原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E8%89%B2%E5%B7%AE%E7%9A%84cfa%E6%8F%92%E5%80%BClaroche%E5%8E%9F%E7%90%86"><span class="nav-text">2.3 基于边缘检测和色差的CFA插值：laroche原理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E8%89%B2%E5%BA%A6%E5%92%8C%E8%89%B2%E5%B7%AE%E8%87%AA%E9%80%82%E5%BA%94%E6%8F%92%E5%80%BC"><span class="nav-text">2.4 基于边缘、色度和色差自适应插值</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E8%89%B2%E5%BA%A6%E5%92%8C%E8%89%B2%E5%B7%AE%E8%87%AA%E9%80%82%E5%BA%94%E6%8F%92%E5%80%BC%E4%B9%8B%E6%A0%87%E5%BF%97%E4%BD%8D%E5%87%8F%E5%B0%91false-color"><span class="nav-text">2.5 基于边缘、色度和色差自适应插值之标志位：减少False color</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#bayer-demosaic%E6%A6%82%E8%BF%B0"><span class="nav-text">Bayer Demosaic概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cfa-%E5%8F%8C%E7%BA%BF%E6%80%A7%E6%8F%92%E5%80%BC"><span class="nav-text">CFA 双线性插值</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B"><span class="nav-text">无边缘检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E8%89%B2%E5%B7%AE%E7%9A%84cfa%E6%8F%92%E5%80%BChibbard%E5%8E%9F%E7%90%86"><span class="nav-text">基于边缘检测和色差的CFA插值：Hibbard原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E8%89%B2%E5%B7%AE%E7%9A%84cfa%E6%8F%92%E5%80%BClaroche%E5%8E%9F%E7%90%86"><span class="nav-text">基于边缘检测和色差的CFA插值：laroche原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E8%89%B2%E5%BA%A6%E5%92%8C%E8%89%B2%E5%B7%AE%E8%87%AA%E9%80%82%E5%BA%94%E6%8F%92%E5%80%BC"><span class="nav-text">基于边缘、色度和色差自适应插值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E8%89%B2%E5%BA%A6%E5%92%8C%E8%89%B2%E5%B7%AE%E8%87%AA%E9%80%82%E5%BA%94%E6%8F%92%E5%80%BC%E4%B9%8B%E6%A0%87%E5%BF%97%E4%BD%8D%E5%87%8F%E5%B0%91false-color"><span class="nav-text">基于边缘、色度和色差自适应插值之标志位：减少False color</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -681,13 +681,13 @@ CPSNR = 10 log_{10}(\frac{255^2}{CMSE})
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

@@ -24,19 +24,19 @@
     var CONFIG = {"hostname":"carlyleliu.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":true,"sidebar":{"position":"right","display":"hide","padding":18,"offset":12,"onmobile":true},"copycode":{"enable":true,"show_result":true,"style":"mac"},"back2top":{"enable":true,"sidebar":false,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="1. imu通过加速度计解算姿态角  通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中 \(\alpha\) , \(\beta\) 和 \(\gamma\)（ \(\gamma\) 是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示： \[ \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D;">
+  <meta name="description" content="imu通过加速度计解算姿态角  通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中 \(\alpha\) , \(\beta\) 和 \(\gamma\)（ \(\gamma\) 是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示： \[ \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D; arc">
 <meta property="og:type" content="article">
 <meta property="og:title" content="imu姿态解算">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/imu%E5%A7%BF%E6%80%81%E8%A7%A3%E7%AE%97/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="1. imu通过加速度计解算姿态角  通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中 \(\alpha\) , \(\beta\) 和 \(\gamma\)（ \(\gamma\) 是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示： \[ \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D;">
+<meta property="og:description" content="imu通过加速度计解算姿态角  通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中 \(\alpha\) , \(\beta\) 和 \(\gamma\)（ \(\gamma\) 是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示： \[ \begin{aligned} &amp;\beta &#x3D; arcsin(\frac{a_x}{g}) \\ &amp;\gamma  &#x3D; arc">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/imu/imu.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/imu/kalman.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/imu/mahony.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/imu/rotation.png">
 <meta property="article:published_time" content="2020-04-05T20:11:29.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.914Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="Sensor">
 <meta name="twitter:card" content="summary">
@@ -298,7 +298,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h3 id="imu通过加速度计解算姿态角">1. imu通过加速度计解算姿态角</h3>
+        <h2 id="imu通过加速度计解算姿态角">imu通过加速度计解算姿态角</h2>
 <p><img src="/picture/algorithm/imu/imu.png" /></p>
 <p>通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中 <span class="math inline">\(\alpha\)</span> , <span class="math inline">\(\beta\)</span> 和 <span class="math inline">\(\gamma\)</span>（ <span class="math inline">\(\gamma\)</span> 是z轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示：</p>
 <p><span class="math display">\[
@@ -320,9 +320,9 @@ g = \sqrt{a_x^{2} + a_y^{2} + a_z^{2}}
 \]</span></p>
 <p>其中α为俯仰角pitch，β为滚转角roll，其中航向角是没有办法通过加速度计来计算的。</p>
 <span id="more"></span>
-<h3 id="陀螺仪积分得到角度">2. 陀螺仪积分得到角度</h3>
+<h2 id="陀螺仪积分得到角度">陀螺仪积分得到角度</h2>
 <p>陀螺仪积分最直接的就是将陀螺仪输出的角速度与时间相乘做累加实现对角速度的积分得到角度，数据精度较高但是漂移很严重。在积分算法上常用龙格库塔法计算积分。</p>
-<h3 id="数据融合">3. 数据融合</h3>
+<h2 id="数据融合">数据融合</h2>
 <h5 id="一阶互补滤波">3.1 一阶互补滤波</h5>
 <p><strong>推导：</strong> 角速度计和陀螺仪都可以解算得到姿态角，如下：</p>
 <p><span class="math display">\[
@@ -375,7 +375,7 @@ K=\frac{dt}{f+dt}
 <p><strong>代码：</strong> 将上面推导出的公式写成代码如下， <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * @brief 一阶互补滤波器单轴</span><br><span class="line"> * @param acc_angle 通过三角函数计算加速度计的值得到的角度值</span><br><span class="line"> * @param gyro_rate 陀螺仪输出的角速度值</span><br><span class="line"> * @param K1 滤波器系数，远小于1</span><br><span class="line"> * @<span class="built_in">return</span> 返回融合后角度值</span><br><span class="line"> */</span><br><span class="line">static void firstOrderComplementaryFiltering(<span class="built_in">float</span> acc_angle, <span class="built_in">float</span> gyro_rate, <span class="built_in">float</span>* angle)</span><br><span class="line">&#123;</span><br><span class="line">  *angle = K * acc_angle + (1 - K) * (*angle + gyro_rate * dt);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure> <strong>调参：</strong> 陀螺仪采样率是1kHZ，dt为0.001则算法涉及的参数只有一个就是K参数，假如取截止频率为100的话 <span class="math display">\[
 K = \frac{dt}{f + dt} = \frac{0.001}{\frac{1}{100} + 0.001} \doteq 0.1
 \]</span></p>
-<h5 id="kalman滤波">3.2 kalman滤波</h5>
+<h4 id="kalman滤波">kalman滤波</h4>
 <p><strong>原理：</strong> 卡尔曼滤波包括预测和更新两个过程，下面是两个过程的详细推导： <em>预测过程</em> 预测阶段主要是根据陀螺仪数据预测角度值，系统状态量是角度值和角速度偏差，而不是角度值和角速度值</p>
 <p><span class="math display">\[
 \begin{aligned}
@@ -523,7 +523,7 @@ P_{k|k} = (I - K_k* H_k)P_{k|k-1} \tag{4}
 \hat{x}_{k|k} = \hat{x}_{k|k-1} + K * (z_k  -  H_k * \hat{x}_{k|k-1})
 \]</span></p>
 <p>这个式子中 <span class="math inline">\(H_k\)</span> 只是选取了角度信息去掉了加速度值，暂时可以忽略掉不看，当 <span class="math inline">\(K\)</span> 为 <span class="math inline">\(0\)</span> 时，最优值完全取预测值即完全相信预测值是真实值不相信测量值，当<span class="math inline">\(K\)</span>取1时最优值取<span class="math inline">\(z_k\)</span>测量值，则完全相信测量值而不相信预测值。<span class="math inline">\(K\)</span>越大则越相信测量值，<span class="math inline">\(K\)</span>越小越相信预测值。<span class="math inline">\(K\)</span>的值动态调整预测和测量之间的比例因子。对于我们的系统中一开始相信陀螺仪数据多一些，随着时间不短累积则相信加速度计数据逐渐增多，最后会收敛到一个固定的值。 接下来是系统里的几个关键参数 <span class="math inline">\(Q\)</span> 和 <span class="math inline">\(R\)</span>，这里详细看下具体每个参数该怎么选取： 参数 <span class="math inline">\(Q\)</span> 的角度误差的方差 <span class="math inline">\(Q_{\theta }\)</span> ，该参数是预测角度的噪声，预测主要是基于上一次的最优值对陀螺仪数据进行积分得到预测值，该值代表了陀螺仪的整体误差，调试参数的时候该值一般设的比较小，对陀螺仪的信任度比较大。 角速度误差 <span class="math inline">\(Q_{\acute{\theta }}\)</span> 就是陀螺仪的漂移方差，这个值反应的是陀螺仪漂移的方差，即在每次的漂移量都是符合高斯噪声的，但是这个值跟环境温度等相关，在不同温度下漂移值是不同的可以对温度漂移进行多次测量修正，还有跟陀螺仪的运动状态有关，例如在一个系统中陀螺仪固定像一个方向旋转，则可以在陀螺仪以固定角速度旋转下测量该漂移。整体Q代表的是预测噪声。 测量噪声 <span class="math inline">\(R\)</span> 是代表了实际数据与测量值之间的误差，传感器不能100%获取到实际物理量数据测量一定是有误差的，该值可以通过imu的datasheet获取相关参数。例如icm20602的加速度误差为 <span class="math inline">\(100ug/\sqrt{hz}\)</span> 则对于1kz的采样率则为 <span class="math inline">\(100ug * \sqrt{1000}\)</span> ,但是这个值不能直接作为加速度计的观测噪声，还要看具体场景，加速度计的平移运动会产生加速度值，而这个值对计算角度来讲就是噪声，所以对于本系统 <span class="math inline">\(R\)</span> 不仅仅是传感器本身误差，同时还包括imu的平移运动产生的误差。在一个非常平稳的系统中加速度计的各轴平移加速度非常小，甚至可以忽略，此时加速度计的噪声是非常小的可以近似等于传感器测量噪声，相反在一个震动频率很高的场景下，加速度计的平移加速度就非常大，这个时候<span class="math inline">\(R\)</span>的取值就应该比传感器的本身误差大很多。手册上的误差值代表了最理想情况下的误差，实际系统中应该根据具体情况去调整这个值。 整体调试过程中，<span class="math inline">\(R\)</span>值的选取跟收敛速度相关，该值取的很小则收敛速度越快，因为长期来看滤波的值是像加速度计的值进行收敛的，对加速度的信任度越高则收敛越快反之则收敛越慢，但是对加速度计的信任度越高就会导致滤波效果不好有毛刺，<span class="math inline">\(Q\)</span>和<span class="math inline">\(R\)</span>的值共同决定了滤波效果。在实际的调参过程中将加速度计的曲线和滤波的曲线同时输出，对比两条曲线的关系就可以看到滤波的平滑程度以及收敛速度了。具体效果可以以缓慢旋转imu，快速旋转imu，不做旋转而左右晃动imu来看滤波后的值是否是我们期望的。</p>
-<h5 id="mahony滤波">3.3 mahony滤波</h5>
+<h4 id="mahony滤波">mahony滤波</h4>
 <p><strong>陀螺仪模型：</strong></p>
 <p><span class="math display">\[
 \omega = \hat{\omega} + b_g + n_g
@@ -674,7 +674,7 @@ w_z&amp; w_y&amp; -w_x&amp; 0
 \end{bmatrix} * \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t}
 \]</span></p>
 <p>写为代码如下： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">// Integrate rate of change of quaternion</span><br><span class="line">gx *= (0.5f * (1.0f / sampleFreq));		// pre-multiply common factors</span><br><span class="line">gy *= (0.5f * (1.0f / sampleFreq));</span><br><span class="line">gz *= (0.5f * (1.0f / sampleFreq));</span><br><span class="line">qa = q0;</span><br><span class="line">qb = q1;</span><br><span class="line">qc = q2;</span><br><span class="line">q0 += (-qb * gx - qc * gy - q3 * gz);</span><br><span class="line">q1 += (qa * gx + qc * gz - q3 * gy);</span><br><span class="line">q2 += (qa * gy - qb * gz + q3 * gx);</span><br><span class="line">q3 += (qa * gz + qb * gy - qc * gx);</span><br></pre></td></tr></table></figure> 最后再对四元数进行归一化，如下： <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// Normalise quaternion</span><br><span class="line">recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);</span><br><span class="line">q0 *= recipNorm;</span><br><span class="line">q1 *= recipNorm;</span><br><span class="line">q2 *= recipNorm;</span><br><span class="line">q3 *= recipNorm;</span><br></pre></td></tr></table></figure> 至此所有理论推导都完成了，剩下的就是不停的循环上面的步骤就得到了四元数，剩下的任务就是将四元数转为欧拉角了，这里转欧拉角里面也是有坑的，需要考虑欧拉角的奇异性，在转化的过程中要注意对欧拉角的奇异性进行考虑就可以了。</p>
-<h4 id="参考文献">参考文献</h4>
+<h2 id="参考文献">参考文献</h2>
 <p><span class="exturl" data-url="aHR0cDovL2ZpbGUuZWxlY2ZhbnMuY29tL3dlYjEvTTAwLzdGLzg5L280WUJBRndub0oyQUdkanBBQ0FYaDdKRS1fSTAwNS5wZGY=">http://file.elecfans.com/web1/M00/7F/89/o4YBAFwnoJ2AGdjpACAXh7JE-_I005.pdf<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly9rcmFzamV0LmdpdGh1Yi5pby9xdWF0ZXJuaW9uL3F1YXRlcm5pb24ucGRm">https://krasjet.github.io/quaternion/quaternion.pdf<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDM2MjM4Nzk=">https://zhuanlan.zhihu.com/p/103623879<i class="fa fa-external-link-alt"></i></span><br />
@@ -791,7 +791,7 @@ w_z&amp; w_y&amp; -w_x&amp; 0
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#imu%E9%80%9A%E8%BF%87%E5%8A%A0%E9%80%9F%E5%BA%A6%E8%AE%A1%E8%A7%A3%E7%AE%97%E5%A7%BF%E6%80%81%E8%A7%92"><span class="nav-text">1. imu通过加速度计解算姿态角</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%99%80%E8%9E%BA%E4%BB%AA%E7%A7%AF%E5%88%86%E5%BE%97%E5%88%B0%E8%A7%92%E5%BA%A6"><span class="nav-text">2. 陀螺仪积分得到角度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%9E%8D%E5%90%88"><span class="nav-text">3. 数据融合</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%80%E9%98%B6%E4%BA%92%E8%A1%A5%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.1 一阶互补滤波</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#kalman%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.2 kalman滤波</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#mahony%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.3 mahony滤波</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#imu%E9%80%9A%E8%BF%87%E5%8A%A0%E9%80%9F%E5%BA%A6%E8%AE%A1%E8%A7%A3%E7%AE%97%E5%A7%BF%E6%80%81%E8%A7%92"><span class="nav-text">imu通过加速度计解算姿态角</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%80%E8%9E%BA%E4%BB%AA%E7%A7%AF%E5%88%86%E5%BE%97%E5%88%B0%E8%A7%92%E5%BA%A6"><span class="nav-text">陀螺仪积分得到角度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E8%9E%8D%E5%90%88"><span class="nav-text">数据融合</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E4%B8%80%E9%98%B6%E4%BA%92%E8%A1%A5%E6%BB%A4%E6%B3%A2"><span class="nav-text">3.1 一阶互补滤波</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#kalman%E6%BB%A4%E6%B3%A2"><span class="nav-text">kalman滤波</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#mahony%E6%BB%A4%E6%B3%A2"><span class="nav-text">mahony滤波</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -876,13 +876,13 @@ w_z&amp; w_y&amp; -w_x&amp; 0
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

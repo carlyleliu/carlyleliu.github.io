@@ -36,7 +36,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/vruntime.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/task/context.png">
 <meta property="article:published_time" content="2021-10-31T01:49:26.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.906Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="进程管理">
 <meta name="twitter:card" content="summary">
@@ -279,7 +279,7 @@
                 <i class="far fa-file-word"></i>
               </span>
                 <span class="post-meta-item-text">本文字数：</span>
-              <span>6.8k</span>
+              <span>6.7k</span>
             </span>
             <span class="post-meta-item" title="阅读时长">
               <span class="post-meta-item-icon">
@@ -300,32 +300,32 @@
       
         <p><img src="/picture/linux/brief/进程管理-CFS调度器.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2OTgxMzBlM2U3NDA3NGNmMGU2NGU=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="公平调度思想的引入">1. 公平调度思想的引入</h2>
-<h3 id="传统调度器时间片悖论">1.1 传统调度器时间片悖论</h3>
+<h1 id="公平调度思想的引入">公平调度思想的引入</h1>
+<h2 id="传统调度器时间片悖论">传统调度器时间片悖论</h2>
 <p>在O（n）和O（1）调度器中，时间片是固定分配的，静态优先级高的进程获取更大的time slice。高优先级的进程会获得更多的连续执行的机会，这是CPU-bound进程期望的，但是实际上，CPU-bound进程往往在后台执行，其优先级都是比较低的。</p>
-<h3 id="rsdl调度器">1.2 RSDL调度器</h3>
+<h2 id="rsdl调度器">RSDL调度器</h2>
 <p>RSDL调度器仍然沿用了O（1）调度的数据结构和软件结构，当然删除了那些令人毛骨悚然的评估进程交互指数的代码。我们这一小节不可能详细描述RSDL算法，不过只讲清楚Rotating、Staircase和Deadline这三个基本概念。</p>
 <p>首先看Staircase概念，它更详细表述应该是priority staircase，即在进程调度过程中，其优先级会像下楼梯那样一点点的降低。在传统的调度概念中，一个进程有一个和其静态优先级相匹配的时间片，在RSDL中，同样也存在这样的时间片，但是时间片是散布在很多优先级中。例如如果一个进程的优先级是120，那么整个时间片散布在120～139的优先级中，在一个调度周期，进程开始是挂入120的优先级队列，并在其上运行6ms，一旦在120级别的时间配额使用完毕之后，该进程会转入121的队列中，发生一次Rotating，更准确的说是Priority minor rotating。之后，该进程沿阶而下，直到139的优先级，在这个优先级上如果耗尽了6ms的时间片，这时候，该进程所有的时间片就都耗尽了，就会被挂入到expired队列中去等待下一个调度周期。这次rotating被称为major rotating。当然，这时候该进程会挂入其静态优先级对应的expired队列，即一切又回到了调度的起点。</p>
 <p>Deadline是指在RSDL算法中，任何一个进程可以准确的预估其调度延迟。一个简单的例子，假设runqueue中有两个task，静态优先级分别是130的A进程和139的B进程。对于A进程，只有在进程沿着优先级楼梯从130走到139的时候，B进程才有机会执行，其调度延迟是9 x 6ms ＝ 54ms。</p>
 <p>多么简洁的算法，只需要维持公平，没有对进程睡眠/运行时间的统计，没有对用户交互指数的计算，没有那些奇奇怪怪的常数……调度，就是这么简单。</p>
-<h2 id="cfs调度器">2. CFS调度器</h2>
+<h1 id="cfs调度器">CFS调度器</h1>
 <p>Con Kolivas的RSDL调度器始终没有能够进入kernel mainline，取而代之的是同样基于公平调度思想的CFS调度器，在CFS调度器并入主线的同时，仍然提供了模块化的设计，为RSDL或者其他的调度器可以进入内核提供了方便。本章我们唯一需要描述的是Ingo Molnar如何把完全公平调度的理想照进现实。</p>
-<h3 id="模块化思想的引入">2.1 模块化思想的引入</h3>
+<h2 id="模块化思想的引入">模块化思想的引入</h2>
 <p>从2.6.23内核开始，调度器采用了模块化设计的思想，从而把进程调度的软件分成了两个层次，一个是core scheduler layer，另外一个是specific scheduler layer： <img src="/picture/linux/kernel/task/scheduler_layer.png" /></p>
 <p>从功能层面上看，进程调度仍然分成两个部分，第一个部分是通过负载均衡模块将各个runnable task根据负载情况平均分配到各个CPU runqueue上去。第二部分的功能是在各个CPU的Main scheduler和Tick scheduler的驱动下进行单个CPU上的调度。</p>
-<h3 id="时间粒度">2.2 时间粒度</h3>
+<h2 id="时间粒度">时间粒度</h2>
 <p>Linux内核的CFS调度器已经摒弃了传统的固定时间片的概念了，O（1）调度器会为每一个进程分配一个缺省的时间片。CFS调度器没有传统的静态时间片的概念，她的时间片是动态的，和当前CPU的可运行状态的进程以及它们的优先级相关，因此CFS调度器中，时间片是动态变化的。</p>
 <p>CFS调度器是有一个时间粒度的定义，我们称之调度周期。也就是说，在一个调度周期内，CFS调度器可以保证所有的可运行状态的进程平均分配CPU时间。</p>
-<h3 id="如何保证有界的调度延迟">2.3 如何保证有界的调度延迟？</h3>
+<h2 id="如何保证有界的调度延迟">如何保证有界的调度延迟？</h2>
 <p>传统的调度器无法保证调度延迟，为了说明这个问题我们设想这样一个场景：CPU runqueue中有两个nice value等于0的runnable进程A和B，传统调度器会为每一个进程分配一个固定的时间片100ms，这时候A先运行，直到100ms的时间片耗尽，然后B运行。这两个进程会交替运行，调度延迟就是100ms。随着系统负荷的加重，例如又有两个两个nice value等于0的runnable进程C和D挂入runqueue，这时候，A、B、C、D交替运行，调度延迟就是300ms。因此，传统调度器的调度延迟是和系统负载相关的，当系统负载增加的时候，用户更容易观察到卡顿现象。</p>
 <p>CFS调度器设计之初就确定了调度延迟的参数，我们称之targeted latency，这个概念类似传统调度器中的调度周期的概念，只不过在过去，一个调度周期中的时间片被固定分配给了runnable的进程，而在CFS中，调度器会不断的检查在一个targeted latency中，公平性是否得到了保证。下面的代码说明了targeted latency的计算过程：</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> u64 __sched_period(<span class="keyword">unsigned</span> <span class="keyword">long</span> nr_running)</span><br><span class="line">&#123;</span><br><span class="line"><span class="keyword">if</span> (unlikely(nr_running &gt; sched_nr_latency))</span><br><span class="line">    <span class="keyword">return</span> nr_running * sysctl_sched_min_granularity;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line">    <span class="keyword">return</span> sysctl_sched_latency;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>当runqueue中的runnable进程的数目小于sched_nr_latency（8个）的时候，targeted latency就是sysctl_sched_latency（6ms），当runqueue中的runnable进程的数目大于等于sched_nr_latency的时候，targeted latency等于runnable进程数目乘以sysctl_sched_min_granularity（0.75ms）。显然sysctl_sched_min_granularity这个参数就是一段一个进程被调度执行，它需要至少执行的时间片大小，设立这个参数是为了防止overscheduling而产生的性能下降。</p>
 <p>CFS调度器保证了在一个targeted latency中，所有的runnable进程都会至少执行一次，从而保证了有界的、可预测的调度延迟。</p>
-<h3 id="为何引入虚拟时间">2.4 为何引入虚拟时间？</h3>
+<h2 id="为何引入虚拟时间">为何引入虚拟时间？</h2>
 <p>虽然Con Kolivas提出了精采绝伦的设计思想，但是在具体实现的时候相对保守。CFS调度器则不然，它采用了相对激进的方法，把runqueue中管理task的优先级链表变成了红黑树结构。有了这样一颗runnable进程的红黑树，在插入操作的时候如何确定进程在红黑树中的位置？也就是说这棵树的“key”是什么？</p>
 <p>CFS的红黑树使用vruntime（virtual runtime）作为key，为了理解vruntime，这里需要引入一个虚拟时间轴的概念。在上一章中，我们已经清楚的表述了公平的含义：按照进程的静态优先级来分配CPU资源，当然，CPU资源也就是CPU的时间片，因此在物理世界中，公平就是分配和静态优先级匹配的CPU时间片。但是红黑树需要一个单一数轴上的量进行比对，而这里有两个度量因素：静态优先级和物理时间片，因此我们需要把它们映射到一个虚拟的时间轴上，屏蔽掉静态优先级的影响：</p>
-<h3 id="如何计算virtual-runtime">2.5 如何计算virtual runtime</h3>
+<h2 id="如何计算virtual-runtime">如何计算virtual runtime</h2>
 <p>具体的计算公式如下：</p>
 <p><span class="math display">\[
 Virtual runtime ＝ （physical runtime） * （nice value 0的权重）/ 当前线程的权重
@@ -335,8 +335,8 @@ Virtual runtime ＝ （physical runtime） * （nice value 0的权重）/ 当前
 <p>通过上面的公式，我们构造了一个虚拟的世界。二维的（load weight，physical runtime）物理世界变成了一维的virtual runtime的虚拟世界。在这个虚拟的世界中，各个进程的vruntime可以比较大小，以便确定其在红黑树中的位置，而CFS调度器的公平也就是维护虚拟世界vruntime的公平，即各个进程的vruntime是相等的。</p>
 <p>根据上面的公式，我们可以看出：实际上对于静态优先级是120（即nice value等于0）的进程，其物理时间轴等于虚拟时间轴，而其他的静态优先级的虚拟时间都是根据其权重和nice 0的权重进行尺度缩放。对于更高优先级的进程，其虚拟时间轴过的比较慢，而对于优先级比较低的进程，其虚拟时间轴过的比较快。 <img src="/picture/linux/kernel/task/vruntime.png" /></p>
 <p>在进行进程调度时候，调度器需要选择下一个占用CPU资源的那个next thread。对于CFS而言，其算法就是从红黑树中找到left most的那个task并调度其运行。这时候，失去CPU执行权的那个task会被重新插入红黑树，其在红黑树中的位置是由task的vruntime值决定的。</p>
-<h2 id="进程切换">3. 进程切换</h2>
-<h3 id="调度时机">3.1 调度时机</h3>
+<h1 id="进程切换">进程切换</h1>
+<h2 id="调度时机">调度时机</h2>
 <p>内核中实现调度的统一策略是：检查进程是否需要调度和实际的调度行为是分离的，比如在 tick 中断或者唤醒进程时检查到存在高优先级进程可以抢占当前执行进程，此时只是设置抢占标志(TIF_NEED_RESCHED)，在特定的时间点再执行调度行为，而不是直接执行调度。毕竟在中断中是绝对不能直接执行调度的。schedule()（调用__schedule()）是调度器的核心函数，作用是让调度器选择和切换到一个合适的进程并运行。调度的时机可以分为如下3种。</p>
 <ul>
 <li>阻塞操作：比如互斥量（mutex）、信号量（semaphore）、等待队列（wait queue）sleep等</li>
@@ -365,7 +365,7 @@ Virtual runtime ＝ （physical runtime） * （nice value 0的权重）/ 当前
 <li>schedule_timeout（signed long timeout），进程睡眠到timeout指定的超时时间为止。 schedule()函数的核心代码片段如下</li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">asmlinkage __visible <span class="keyword">void</span> __sched <span class="title">schedule</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">tsk</span> =</span> current;</span><br><span class="line"></span><br><span class="line">  sched_submit_work(tsk);</span><br><span class="line">  <span class="keyword">do</span> &#123;</span><br><span class="line">    preempt_disable();</span><br><span class="line">    __schedule(SM_NONE);</span><br><span class="line">    sched_preempt_enable_no_resched();</span><br><span class="line">  &#125; <span class="keyword">while</span> (need_resched());</span><br><span class="line">  sched_update_worker(tsk);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL(schedule);</span><br></pre></td></tr></table></figure>
-<h3 id="进程切换-1">3.2 进程切换</h3>
+<h2 id="进程切换-1">进程切换</h2>
 <p>操作系统会把当前正在运行的进程挂起并且恢复以前挂起的某个进程的执行，这个过程称为进程切换或者上下文切换。Linux内核实现进程切换的核心函数是context_switch()每个进程可以拥有属于自己的进程地址空间，但是所有进程都必须共享CPU的寄存器等资源。所以，在切换进程时必须把next进程在上一次挂起时保存的寄存器值重新装载到CPU里。在进程恢复执行前必须装入CPU寄存器的数据，则称为硬件上下文。进程的切执可以总结为如下两步。</p>
 <ul>
 <li>切换进程的进程地址空间，也就是切换next进程的页表到硬件页表中，这是switch_mm()函数实现的</li>
@@ -402,7 +402,7 @@ Virtual runtime ＝ （physical runtime） * （nice value 0的权重）/ 当前
 <p>cpu_context是一种非常重要的数据结构，它勾画了在切换进程时，CPU需要保存哪些寄存器，我们称为进程硬件上下文。对于ARM64处理器来说，在切换进程时，我们需要把prev进程的x19~x28寄存器以及fp、sp和pc寄存器保存到cpu_context数据结构中，然后把next进程中上一次保存的cpu_context数据结构的值恢复到实际硬件的寄存器中，这样就完成了进程的上下文切换。 cpu_context数据结构的定义如下。</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/include/<span class="keyword">asm</span>/processor.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cpu_context</span> &#123;</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x19;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x20;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x21;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x22;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x23;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x24;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x25;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x26;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x27;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> x28;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> fp;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> sp;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">long</span> pc;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
 <p>进程的上下文切换的流程如图所示。在进程切换过程中，进程硬件上下文中重要的寄存器已保存到prev进程的cpu_context数据结构中，进程硬件上下文包括x19~x28寄存器、fp寄存器、sp寄存器以及pc寄存器，如图（a）所示。然后，把next进程存储的上下文恢复到CPU中，如图（b）所示。 <img src="/picture/linux/kernel/task/context.png" /></p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p>《奔跑吧Linux内核》<br />
 《Linux内核设计与实现》</p>
 
@@ -513,7 +513,7 @@ Virtual runtime ＝ （physical runtime） * （nice value 0的权重）/ 当前
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%AC%E5%B9%B3%E8%B0%83%E5%BA%A6%E6%80%9D%E6%83%B3%E7%9A%84%E5%BC%95%E5%85%A5"><span class="nav-text">1. 公平调度思想的引入</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E8%B0%83%E5%BA%A6%E5%99%A8%E6%97%B6%E9%97%B4%E7%89%87%E6%82%96%E8%AE%BA"><span class="nav-text">1.1 传统调度器时间片悖论</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rsdl%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">1.2 RSDL调度器</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cfs%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">2. CFS调度器</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%8C%96%E6%80%9D%E6%83%B3%E7%9A%84%E5%BC%95%E5%85%A5"><span class="nav-text">2.1 模块化思想的引入</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%B2%92%E5%BA%A6"><span class="nav-text">2.2 时间粒度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%9C%89%E7%95%8C%E7%9A%84%E8%B0%83%E5%BA%A6%E5%BB%B6%E8%BF%9F"><span class="nav-text">2.3 如何保证有界的调度延迟？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BA%E4%BD%95%E5%BC%95%E5%85%A5%E8%99%9A%E6%8B%9F%E6%97%B6%E9%97%B4"><span class="nav-text">2.4 为何引入虚拟时间？</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AE%A1%E7%AE%97virtual-runtime"><span class="nav-text">2.5 如何计算virtual runtime</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%88%87%E6%8D%A2"><span class="nav-text">3. 进程切换</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E6%97%B6%E6%9C%BA"><span class="nav-text">3.1 调度时机</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%88%87%E6%8D%A2-1"><span class="nav-text">3.2 进程切换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#switch_mm%E5%87%BD%E6%95%B0"><span class="nav-text">switch_mm()函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#switch_to%E5%87%BD%E6%95%B0"><span class="nav-text">switch_to()函数</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%AC%E5%B9%B3%E8%B0%83%E5%BA%A6%E6%80%9D%E6%83%B3%E7%9A%84%E5%BC%95%E5%85%A5"><span class="nav-text">公平调度思想的引入</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BC%A0%E7%BB%9F%E8%B0%83%E5%BA%A6%E5%99%A8%E6%97%B6%E9%97%B4%E7%89%87%E6%82%96%E8%AE%BA"><span class="nav-text">传统调度器时间片悖论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#rsdl%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">RSDL调度器</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cfs%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text">CFS调度器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%8C%96%E6%80%9D%E6%83%B3%E7%9A%84%E5%BC%95%E5%85%A5"><span class="nav-text">模块化思想的引入</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%B2%92%E5%BA%A6"><span class="nav-text">时间粒度</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%9C%89%E7%95%8C%E7%9A%84%E8%B0%83%E5%BA%A6%E5%BB%B6%E8%BF%9F"><span class="nav-text">如何保证有界的调度延迟？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BD%95%E5%BC%95%E5%85%A5%E8%99%9A%E6%8B%9F%E6%97%B6%E9%97%B4"><span class="nav-text">为何引入虚拟时间？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%AE%A1%E7%AE%97virtual-runtime"><span class="nav-text">如何计算virtual runtime</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%88%87%E6%8D%A2"><span class="nav-text">进程切换</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E6%97%B6%E6%9C%BA"><span class="nav-text">调度时机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E5%88%87%E6%8D%A2-1"><span class="nav-text">进程切换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#switch_mm%E5%87%BD%E6%95%B0"><span class="nav-text">switch_mm()函数</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#switch_to%E5%87%BD%E6%95%B0"><span class="nav-text">switch_to()函数</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -598,13 +598,13 @@ Virtual runtime ＝ （physical runtime） * （nice value 0的权重）/ 当前
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>

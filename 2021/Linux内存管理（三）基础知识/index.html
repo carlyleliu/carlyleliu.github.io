@@ -42,7 +42,7 @@
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/framebuffer.jpg">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/node.png">
 <meta property="article:published_time" content="2021-11-14T08:05:15.000Z">
-<meta property="article:modified_time" content="2024-01-30T16:38:58.902Z">
+<meta property="article:modified_time" content="2024-02-27T15:46:28.544Z">
 <meta property="article:author" content="刘帅">
 <meta property="article:tag" content="内存管理">
 <meta name="twitter:card" content="summary">
@@ -306,8 +306,8 @@
       
         <p><img src="/picture/linux/brief/内存管理-基础知识.png" /> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MjRjNTU2NTNiYjA3MWU3MGVjMmY=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h2 id="内存管理发展史">1. 内存管理发展史</h2>
-<h3 id="内存管理的远古时代">1.1 内存管理的“远古时代”</h3>
+<h1 id="内存管理发展史">内存管理发展史</h1>
+<h2 id="内存管理的远古时代">内存管理的“远古时代”</h2>
 <p>在分页机制出现之前，操作系统有很多不同的内存管理机制，如动态分区法。如图（a）所示。剩余的4MB内存不足以装载进程D，如图（b）所示，因为进程D需要5MB内存，这个内存末尾就成了第一个空洞（内存碎片）。假设某个时刻，操作系统需要运行进程D，因为系统中没有足够的内存，所以需要选择一个进程来换出，为进程D腾出足够的空间。假设操作系统选择进程B来换出，这样进程D就装载到了原来进程B的地址空间里，于是产生了第二个空洞，如图（c）所示。假设操作系统某个时刻需要运行进程B，也需要选择一个进程来换出，假设进程A被换出，那么操作系统中又产生了第三个空洞，如图（d）所示。 <img src="/picture/linux/kernel/mem/Dynamic_partition.png" /></p>
 <p>这种动态分区法在开始时是很好的，但是随着时间的推移会出现很多内存空洞，内存的利用率随之下降，这些内存空洞便是我们常说的内存碎片，动态分区法依然存在以下问题。</p>
 <ul>
@@ -316,15 +316,15 @@
 <li>程序运行地址重定位问题。从上图中看到，进程在每次换出、换入时使用的地址都是不固定的，这给程序的编写带来一定的麻烦，因为访问数据和指令跳转时的目标地址通常是固定的，这就需要重定位技术</li>
 </ul>
 <p>因此产生了分段机制和分页机制。</p>
-<h3 id="分段机制">1.2 分段机制</h3>
+<h2 id="分段机制">分段机制</h2>
 <ul>
 <li>把程序所需的内存空间的虚拟地址映射到某个物理地址空间中，解决地址空间保护问题</li>
 <li>分段机制把进程分成若干段（代码段、数据段栈段与堆段等），每个段的大小是不固定的，有点类似于动态分区法，这些段的物理地址可以不连续这样可以一定程度上解决内存碎片问题</li>
 </ul>
 <p>分段机制是一个比较明显的改进，但是它的内存使用效率依然比较低。分段机制对虚拟内存到物理内存的映射依然以进程为单位。进程在运行时，根据局部性原理，只有一部分数据是一直在使用的，若把那些不常用的数据交换出磁盘，就可以节省很多系统带宽。</p>
-<h3 id="分页机制">1.3 分页机制</h3>
+<h2 id="分页机制">分页机制</h2>
 <p>分页机制把分段机制的单位继续细分成固定大小的页面（page），进程的虚拟地址空间也按照页面来分割，这样常用的数据和代码就可以以页面为单位驻留在内存中，而那些不常用的页面可以交换到磁盘中。物理内存也以页面为单位来管理，这些物理内存称为物理页面（physical page）或者页帧（page frame）。进程的虚拟地址空间中的页面称为虚拟页面（virtualpage）。操作系统为了管理这些页帧需要按照物理地址给每个页帧编号，这个编号称为页帧号（Page Frame Number，PFN）。</p>
-<h2 id="从进程的角度看内存管理">2. 从进程的角度看内存管理</h2>
+<h1 id="从进程的角度看内存管理">从进程的角度看内存管理</h1>
 <p>在Linux系统中，应用程序常用的可执行文件格式是可执行与可链接格式（Executable Linkable Format，ELF）。ELF最开始的部分是ELF文件头（ELF Header），它包含了描述整个文件的基本属性，如ELF文件版本、目标计算机型号、程序入口地址等信息。ELF文件头后面是程序的各个段，包括代码段、数据段、未初始化数据段等。后面是段头表，用于描述ELF文件中包含的所有段的信息，如每个段的名字、段的长度、在文件中的偏移量、读写权限以及段的其他属性等，后面紧跟着是字符串表和符号表等。ELF结构如下图所示： <img src="/picture/linux/kernel/mem/ELF.png" /></p>
 <p>下面介绍常见的几个段，这些段与内核映像中的段也是基本类似的。</p>
 <ul>
@@ -348,13 +348,13 @@
 第5行显示了名为vdso的特殊映射，VDSO指Virtual Dynamic Shared Object，用于解决内核和libc之间的版本问题。<br />
 第6行显示了test进程的栈（stack）空间。<br />
 对于这里的进程地址空间，在Linux内核中使用一个叫作VMA的术语来描述它，它是vm_area_struct数据结构的简称。 另外，/proc/pid/smaps节点会提供更多地址映射的细节. <img src="/picture/linux/kernel/mem/test_process.png" /></p>
-<h2 id="物理内存管理之预备知识">3. 物理内存管理之预备知识</h2>
-<h3 id="内存架构之uma和numa">3.1 内存架构之UMA和NUMA</h3>
+<h1 id="物理内存管理之预备知识">物理内存管理之预备知识</h1>
+<h2 id="内存架构之uma和numa">内存架构之UMA和NUMA</h2>
 <ul>
 <li><p>UMA统一内存访问架构：内存有统一的结构并且可以统一寻址。目前大部分嵌入式系统、手机操作系统以及台式机操作系统等采用UMA架构 <img src="/picture/linux/kernel/mem/UMA.png" /></p></li>
 <li><p>NUMA非统一内存访问架构：系统中有多个内存节点和多个CPU簇，CPU访问本地内存节点的速度最快，访问远端的内存节点的速度要慢一点 <img src="/picture/linux/kernel/mem/NUMA.png" /></p></li>
 </ul>
-<h3 id="基本概念">3.2 基本概念</h3>
+<h2 id="基本概念">基本概念</h2>
 <p>从Linux内核的角度来看，DDR存储设备其实就是一段物理内存空间。在Linux内核中，和内存硬件物理特性相关的一些数据结构主要集中在MMU（如页表、高速缓存/TLB操作等）中。因此大部分的Linux内核中关于内存管理的相关数据结构是软件层面的概念，如mm、VMA、内存管理区（zone）、页面、pg_data等。Linux内核内存管理中的数据结构错综复杂，如下图所示。 <img src="/picture/linux/kernel/mem/mem_struct.png" /></p>
 <p>和物理内存管理相关的数据结构有内存节点（pglist data）、内存管理区、物理页面（page）、mem_map[]数组、页表项（PTE）、页帧号（PFN）、物理地址（paddress）。</p>
 <p>其中，pglist data数据结构用来描述一个内存节点的所有资源。在UMA架构中，只有一个内存节点，即系统有一个全局的变量contig_page_data来描述这个内存节点。在NUMA架构中，整个系统的内存由一个pglist_data*的指针数组node_data[]来管理，在系统初始化枚举BIOS固件（ACPI）来完成。</p>
@@ -421,7 +421,7 @@
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> <span class="keyword">enum</span> zone_type <span class="title">page_zonenum</span><span class="params">(<span class="keyword">const</span> struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> (page-&gt;flags &gt;&gt; ZONES_PGSHIFT) &amp; ZONES_MASK;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">inline</span> struct zone *<span class="title">page_zone</span><span class="params">(<span class="keyword">const</span> struct page *page)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> &amp;NODE_DATA(page_to_nid(page))-&gt;node_zones[page_zonenum(page)];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>事实上，page flags完整的组织是这样的： <img src="/picture/linux/kernel/mem/node.png" /></p>
 <p>只有低位的bits才是上文提到的那些表示page frame属性和状态的标志位。在32位系统中，只有32个bits的flags的资源已经非常紧张了。然而，为了避免在struct page中单独开辟内存空间引发反对的声浪，ZONE, NODE和SECTION这三个家伙还硬挤进了flags里，占去flags那么多宝贵的bits，以至于现在要再添加一个标志位都变得极其困难。</p>
-<h3 id="参考文献">参考文献</h3>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82ODQ2NTk1Mg==">https://zhuanlan.zhihu.com/p/68465952<i class="fa fa-external-link-alt"></i></span><br />
 <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82ODQ3MzQyOA==">https://zhuanlan.zhihu.com/p/68473428<i class="fa fa-external-link-alt"></i></span><br />
 《奔跑吧Linux内核》</p>
@@ -533,7 +533,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8F%91%E5%B1%95%E5%8F%B2"><span class="nav-text">1. 内存管理发展史</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E7%9A%84%E8%BF%9C%E5%8F%A4%E6%97%B6%E4%BB%A3"><span class="nav-text">1.1 内存管理的“远古时代”</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%AE%B5%E6%9C%BA%E5%88%B6"><span class="nav-text">1.2 分段机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E9%A1%B5%E6%9C%BA%E5%88%B6"><span class="nav-text">1.3 分页机制</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">2. 从进程的角度看内存管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B9%8B%E9%A2%84%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="nav-text">3. 物理内存管理之预备知识</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%9E%B6%E6%9E%84%E4%B9%8Buma%E5%92%8Cnuma"><span class="nav-text">3.1 内存架构之UMA和NUMA</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">3.2 基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#page-frame"><span class="nav-text">Page Frame</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zone"><span class="nav-text">Zone</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#node"><span class="nav-text">Node</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8F%91%E5%B1%95%E5%8F%B2"><span class="nav-text">内存管理发展史</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E7%9A%84%E8%BF%9C%E5%8F%A4%E6%97%B6%E4%BB%A3"><span class="nav-text">内存管理的“远古时代”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%AE%B5%E6%9C%BA%E5%88%B6"><span class="nav-text">分段机制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%A1%B5%E6%9C%BA%E5%88%B6"><span class="nav-text">分页机制</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text">从进程的角度看内存管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B9%8B%E9%A2%84%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="nav-text">物理内存管理之预备知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%9E%B6%E6%9E%84%E4%B9%8Buma%E5%92%8Cnuma"><span class="nav-text">内存架构之UMA和NUMA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text">基本概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#page-frame"><span class="nav-text">Page Frame</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#zone"><span class="nav-text">Zone</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#node"><span class="nav-text">Node</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -618,13 +618,13 @@
       <i class="fa fa-chart-area"></i>
     </span>
       <span class="post-meta-item-text">站点总字数：</span>
-    <span title="站点总字数">639k</span>
+    <span title="站点总字数">636k</span>
     <span class="post-meta-divider">|</span>
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span class="post-meta-item-text">站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">9:41</span>
+    <span title="站点阅读时长">9:38</span>
 </div>
   <div class="powered-by">由 <span class="exturl theme-link" data-url="aHR0cHM6Ly9oZXhvLmlv">Hexo</span> & <span class="exturl theme-link" data-url="aHR0cHM6Ly9tdXNlLnRoZW1lLW5leHQub3Jn">NexT.Muse</span> 强力驱动
   </div>
