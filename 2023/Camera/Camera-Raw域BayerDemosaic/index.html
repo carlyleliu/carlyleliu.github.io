@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Bayer Demosaic概述RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（zipp">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera-Raw域BayerDemosaic">
+<meta property="og:url" content="http://carlyleliu.github.io/2023/Camera/Camera-Raw%E5%9F%9FBayerDemosaic/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="Bayer Demosaic概述RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（zipp">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/pipeline18.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/pipeline19.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/dm1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/dm2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/dm3.png">
+<meta property="article:published_time" content="2023-05-30T15:17:53.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.789Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Camera">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/camera/isp/pipeline18.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2023/Camera/Camera-Raw%E5%9F%9FBayerDemosaic/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2023/Camera/Camera-Raw%E5%9F%9FBayerDemosaic/","path":"2023/Camera/Camera-Raw域BayerDemosaic/","title":"Camera-Raw域BayerDemosaic"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Camera-Raw域BayerDemosaic | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Bayer-Demosaic%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">Bayer Demosaic概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#CFA-%E5%8F%8C%E7%BA%BF%E6%80%A7%E6%8F%92%E5%80%BC"><span class="nav-number">2.</span> <span class="nav-text">CFA 双线性插值</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B"><span class="nav-number">2.1.</span> <span class="nav-text">无边缘检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E8%89%B2%E5%B7%AE%E7%9A%84CFA%E6%8F%92%E5%80%BC%EF%BC%9AHibbard%E5%8E%9F%E7%90%86"><span class="nav-number">2.2.</span> <span class="nav-text">基于边缘检测和色差的CFA插值：Hibbard原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E6%A3%80%E6%B5%8B%E5%92%8C%E8%89%B2%E5%B7%AE%E7%9A%84CFA%E6%8F%92%E5%80%BC%EF%BC%9Alaroche%E5%8E%9F%E7%90%86"><span class="nav-number">2.3.</span> <span class="nav-text">基于边缘检测和色差的CFA插值：laroche原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E3%80%81%E8%89%B2%E5%BA%A6%E5%92%8C%E8%89%B2%E5%B7%AE%E8%87%AA%E9%80%82%E5%BA%94%E6%8F%92%E5%80%BC"><span class="nav-number">2.4.</span> <span class="nav-text">基于边缘、色度和色差自适应插值</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%BE%B9%E7%BC%98%E3%80%81%E8%89%B2%E5%BA%A6%E5%92%8C%E8%89%B2%E5%B7%AE%E8%87%AA%E9%80%82%E5%BA%94%E6%8F%92%E5%80%BC%E4%B9%8B%E6%A0%87%E5%BF%97%E4%BD%8D%EF%BC%9A%E5%87%8F%E5%B0%91False-color"><span class="nav-number">2.5.</span> <span class="nav-text">基于边缘、色度和色差自适应插值之标志位：减少False color</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">3.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2023/Camera/Camera-Raw%E5%9F%9FBayerDemosaic/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Camera-Raw域BayerDemosaic | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Camera-Raw域BayerDemosaic
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2023-05-30 23:17:53" itemprop="dateCreated datePublished" datetime="2023-05-30T23:17:53+08:00">2023-05-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/ISP/" itemprop="url" rel="index"><span itemprop="name">ISP</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Bayer-Demosaic概述"><a href="#Bayer-Demosaic概述" class="headerlink" title="Bayer Demosaic概述"></a>Bayer Demosaic概述</h1><p>RAW域的最后一步处理是Demosaic，将像素从RAW域变换到RGB域进行下一阶段的处理。Demosaic 算法的主要难点在于，RAW域的任何一个像点（photosite）只包含一个真实的采样值，而构成像素（R,G,B）的其它两个值需要从周围像点中预测得到。既然是预测，就一定会发生预测不准的情况，这是不可避免的，而预测不准会带来多种负面影响，包括拉链效应（zipper artifacts），边缘模糊，颜色误差等。<br><img src="/picture/camera/isp/pipeline18.png"><br><img src="/picture/camera/isp/pipeline19.png"></p>
+<span id="more"></span>
+
+<p>所以Demosaic 算法的主要挑战就是尽量提高算法的准确性，减少图像边缘损失和颜色误差。</p>
+<p>Bayer 格式图像色彩恢复时有两种思路：</p>
+<ul>
+<li>无方向性插值：不加边缘方向判断（思路：临近像素的均值），直接利用周围像素信息恢复</li>
+<li>有方向性插值：先判断边缘方向，再利用周围像素信息恢复</li>
+</ul>
+<p>Bayer 格式图像的绿色成分占比例较多，信息较丰富，色彩恢复时步骤通常是：a、先恢复G通道；b、再利用G通道信息恢复R、B通道。</p>
+<h1 id="CFA-双线性插值"><a href="#CFA-双线性插值" class="headerlink" title="CFA 双线性插值"></a>CFA 双线性插值</h1><h2 id="无边缘检测"><a href="#无边缘检测" class="headerlink" title="无边缘检测"></a>无边缘检测</h2><p><img src="/picture/camera/isp/dm1.png"></p>
+<ul>
+<li><p>绿色像素上的R，B值分别由相邻的2个R，B像素的灰度求平均值得到<br>  以象素点(2，3)为例，即已知G23该点的R，B值计算公式如下：<br>  $$<br>  R_{23} &#x3D; \frac{R_{13} + R_{33}}{2}<br>  $$<br>  $$<br>  B_{23} &#x3D; \frac{B_{22} + B_{24}}{2}<br>  $$</p>
+</li>
+<li><p>红、蓝像素上的G值由相邻的4个绿色像素求平均值得到<br>  如图中象素点(3，3)和(4，4)，即已知R33和B44这两点的绿色分量值表示为<br>  $$<br>  G_{33} &#x3D; \frac{G_{23} + G_{43} + G_{32} + G_{34}}{4}<br>  $$</p>
+<p>  $$<br>  G_{44} &#x3D; \frac{G_{34} + G_{54} + G_{43} + G_{45}}{4}<br>  $$</p>
+</li>
+<li><p>红色像素上的B值由对角线上相邻的4个B像素平均得到。象素点(3，3) ，R33的B值表示为<br>  $$<br>  B_{33} &#x3D; \frac{B_{22} + B_{24} + B_{42} + B{44}}{4}<br>  $$<br>  蓝色像素上的R值由对角线上相邻的4个R像素平均得到。象素点(4，4)，B44的R值表示为<br>  $$<br>  R_{44} &#x3D; \frac{R_{33} + R_{35} + R_{53} + R_{55}}{4}<br>  $$</p>
+</li>
+</ul>
+<p>边缘检测，直接采用最近临同色像素的均值求解，图像边缘不够清晰，算法简单。</p>
+<h2 id="基于边缘检测和色差的CFA插值：Hibbard原理"><a href="#基于边缘检测和色差的CFA插值：Hibbard原理" class="headerlink" title="基于边缘检测和色差的CFA插值：Hibbard原理"></a>基于边缘检测和色差的CFA插值：Hibbard原理</h2><p>G分量的恢复加入了相邻G通道的一阶微分方向判断因子。使用周围G通道值信息。</p>
+<ul>
+<li><p>恢复采样点R和B点的绿色分量：例B44<br>  梯度因子：水平方向H<br>  $$<br>  \alpha &#x3D; \left | G_{43} - G_{45} \right |<br>  $$<br>  竖直方向W：<br>  $$<br>  \beta &#x3D; \left | G_{34} - G_{54} \right |<br>  $$<br>  变化小的方向可能是边缘，所以G44表示如下：<br>  $$<br>  G_{44} &#x3D; \frac{G_{43} + G_{45}}{2} (\alpha &lt; \beta)<br>  $$<br>  $$<br>  G_{44} &#x3D; \frac{G_{34} + G_{54}}{2} (\alpha &gt; \beta)<br>  $$<br>  $$<br>  G_{44} &#x3D; \frac{G_{34} + G_{54} + G_{43} + G_{45}}{4} (\alpha &#x3D; \beta)<br>  $$</p>
+</li>
+<li><p>对R、B分量插值。基本思想是在图片的小平滑区域内，色差恒定的。假设像素点P(i，j)邻近的一个像素点是P(m，n)则有：<br>  $$<br>  R_{ij} - G_{ij} &#x3D; R_{mn} - G_{mn} \<br>  B_{ij} - G_{ij} &#x3D; B_{mn} - G_{mn}<br>  $$<br>  例求R分量：<br>  如已知G43，红色分量表达式：<br>  $$<br>  R_{43} &#x3D; \frac{R_{33} + R_{35}}{2} - \frac{G_{33} + G_{35}}{2} + G_{43}<br>  $$<br>  如已知G34，红色分量表达式：<br>  $$<br>  R_{34} &#x3D; \frac{R_{33} + R_{35}}{2} - \frac{G_{33} + G_{35}}{2} + G_{34}<br>  $$<br>  如已知B44，红色分量表达式：<br>  $$<br>  R_{44} &#x3D; \frac{R_{33} + R_{35} + R_{53} + R_{55}}{4} - \frac{G_{33} + G_{35} + G_{53} + G_{55}}{4} + G_{44}<br>  $$<br>  例求B分量：如已知G43，蓝色分量表达式：<br>  $$<br>  B_{43} &#x3D; \frac{B_{24} + B_{44}}{2} - \frac{G_{24} + G_{44}}{2} + G_{34}<br>  $$<br>  如已知R33，蓝色分量表达式：<br>  $$<br>  B_{33} &#x3D; \frac{B_{22} + B_{24} + B_{42} + B_{44}}{4} - \frac{G_{22} + G_{24} + G_{42} + G_{44}}{4} + G_{33}<br>  $$</p>
+</li>
+</ul>
+<p>G通道有边缘检测采用相邻G，恢复无色差、色度信息，R、B通道无边缘检测，恢复采用色差信息。效果接近原始图，算法难度适中。</p>
+<h2 id="基于边缘检测和色差的CFA插值：laroche原理"><a href="#基于边缘检测和色差的CFA插值：laroche原理" class="headerlink" title="基于边缘检测和色差的CFA插值：laroche原理"></a>基于边缘检测和色差的CFA插值：laroche原理</h2><p>G分量的恢复改用相邻R或B通道的二阶微分方向判断因子；恢复时使用相邻G通道信息。 R、B分量的恢复同Hibbard使用色差原理。</p>
+<ul>
+<li><p>恢复采样点R和B点的绿色分量：例B44<br>  梯度因子：水平方向H：<br>  $$<br>  \alpha &#x3D; \left | 2 * B_{44} - B_{42} - B_{46} \right |<br>  $$<br>  竖直方向W:<br>  $$<br>  \beta &#x3D; \left | 2 * B_{44} - B_{24} - B_{64} \right |<br>  $$<br>  变化小的方向可能是边缘，所以G44表示如下：<br>  $$<br>  G_{44} &#x3D; \frac{G_{43} + G_{45}}{2} (\alpha &lt; \beta)<br>  $$</p>
+<p>  $$<br>  G_{44} &#x3D; \frac{G_{34} + G_{54}}{2}  (\alpha &gt; \beta)<br>  $$</p>
+<p>  $$<br>  G_{44} &#x3D; \frac{G_{34} + G_{54} + G{43} + G_{45}}{4} (\alpha &#x3D; \beta)<br>  $$<br>  其他像素插值方法同Hibbard。</p>
+</li>
+</ul>
+<p>G通道有边缘检测采用相邻B色度信息，恢复用均值无色差信息、色度信息，R、B通道无边缘检测，恢复采用色差信息。效果接近原始图，算法难度适中。</p>
+<h2 id="基于边缘、色度和色差自适应插值"><a href="#基于边缘、色度和色差自适应插值" class="headerlink" title="基于边缘、色度和色差自适应插值"></a>基于边缘、色度和色差自适应插值</h2><p>G分量的恢复改用相邻R或B的二阶微分加G通道的一阶微分方向判断因子；R、B分量的恢复使用了色差原理。</p>
+<ul>
+<li><p>恢复绿色分量G<br>  已知B44,水平方向梯度和色度算子：<br>  $$<br>  \alpha &#x3D; \left | 2 * B_{44} - B_{42} - B_{46} \right |  + \left | G_{43} - G_{45} \right |<br>  $$<br>  已知B44,竖直方向梯度和色度算子：<br>  $$<br>  \beta &#x3D; \left | 2 * B_{44} - B_{24} - B_{64} \right |  + \left | G_{34} - G_{54} \right |<br>  $$<br>  G值公式：<br>  $$<br>  \begin{equation}<br>  G_{44}&#x3D; \begin{cases}\frac{G_{43}+G_{45}}{2}+\frac{2 * B_{44}-B_{42}-B_{46}}{4} &amp;   \alpha&lt;\beta \ \frac{G_{34}+G_{54}}{2}+\frac{2 * B_{44}-B_{24}-B_{64}}{4} &amp; \alpha&gt;\beta     \ \frac{G_{34}+G_{43}+G_{45}+G_{54}}{4}+\frac{4 * B_{44}-B_{24}-B_{42}-B_{46}-B_{64}}  {8} &amp; \alpha&#x3D;\beta\end{cases}<br>  \end{equation}<br>  $$<br>  已知R33,水平方向梯度和色度算子：<br>  $$<br>  \alpha &#x3D; \left |  2* R_{33} - R_{31} - R_{35}   \right | +  \left |   G_{32} - G_{34}   \right |<br>  $$<br>  已知R33,竖直方向梯度和色度算子：<br>  $$<br>  \beta &#x3D; \left | 2 * R_{33} - R_{13} - R_{53}  \right |  + \left |   G_{23} - G_{43}   \right |<br>  $$<br>  G值公式：<br>  $$<br>  \begin{equation}<br>  G_{33}&#x3D; \begin{cases}\frac{G_{32}+G_{34}}{2}+\frac{ 2*R_{33} - R_{31} - R_{35}}{4} &amp;   \alpha&lt;\beta \ \frac{G_{23}+G_{43}}{2}+\frac{2 * R_{33}-R_{13}-R_{53}}{4} &amp; \alpha&gt;\beta     \ \frac{G_{32}+G_{34}+G_{23}+G_{43}}{4}+\frac{4 * R_{33}-R_{31}-R_{35}-R_{13}-R_{53}}  {8} &amp; \alpha&#x3D;\beta\end{cases}<br>  \end{equation}<br>  $$</p>
+</li>
+<li><p>若已知R33，求B33<br>  B分量的恢复采用相邻G的二阶微分加B通道的一阶微分方向判断因子；B分量的恢复使用了色差原理<br>  先求对角线方向的梯度和色度算子<br>  $$<br>  \alpha &#x3D; \left |  2 * G_{33} - G_{24} - G{42}  \right |  + \left | B_{24 - B_{42}} \right |<br>  $$<br>  $$<br>  \beta &#x3D; \left | 2 * G_{33} - G_{22} - G_{44}  \right |  + \left |   B_{22} - B_{44}   \right |<br>  $$<br>  B分量表达式：<br>  $$<br>  \begin{equation}<br>  B_{33}&#x3D; \begin{cases}\frac{B_{24}+B_{42}}{2} - \frac{G_{24}+G_{42}}{2} + G_{33} &amp;   \alpha&lt;\beta \ \frac{B_{22}+B_{44}}{2} - \frac{G_{22} + G_{44}}{2} + G_{33} &amp;  \alpha&gt;\beta     \ \frac{B_{22}+B_{24}+B_{42}+B_{44}}{4} - \frac{ G_{22}+G_{24}+G_{42}+G_{44}}  {4} + G_{33} &amp; \alpha&#x3D;\beta\end{cases}<br>  \end{equation}<br>  $$</p>
+</li>
+<li><p>已知B44，求R44<br>  先求对角线方向的梯度和色度算子<br>  R分量的恢复采用相邻G的二阶微分加R通道的一阶微分方向判断因子；R分量的恢复使用了色差原理。<br>  $$<br>  \alpha &#x3D; \left |  2 * G_{44} - G_{35} - G{53}  \right |  + \left | R_{35} - R_{53} \right |<br>  $$<br>  $$<br>  \beta &#x3D; \left | 2 * G_{44} - G_{33} - G_{55}  \right |  + \left |   B_{33} - B_{55}   \right |<br>  $$<br>  R分量表达式：<br>  $$<br>  \begin{equation}<br>  B_{44}&#x3D; \begin{cases}\frac{R_{35}+R_{53}}{2} - \frac{G_{35}+G_{53}}{2} + G_{44} &amp;   \alpha&lt;\beta \ \frac{R_{33}+R_{55}}{2} - \frac{G_{35} + G_{55}}{2} + G_{44} &amp;  \alpha&gt;\beta     \ \frac{R_{35}+R_{53}+R_{33}+R_{55}}{4} - \frac{ G_{35}+G_{53}+G_{33}+G_{55}}  {4} + G_{44} &amp; \alpha&#x3D;\beta\end{cases}<br>  \end{equation}<br>  $$</p>
+</li>
+<li><p>如已知G43<br>  红色分量表达式：<br>  $$<br>  R_{43} &#x3D; \frac{R_{33} + R_{53}}{2} - \frac{G_{33} + G_{53}}{2} + G_{43}<br>  $$<br>  蓝色分量表达式：<br>  $$<br>  B_{43} &#x3D; \frac{B_{42} + B_{44}}{2} - \frac{G_{42} + G_{44}}{2} + G_{43}<br>  $$</p>
+</li>
+<li><p>如已知G34<br>  红色分量表达式：<br>  $$<br>  R_{34} &#x3D; \frac{R_{33} + R{35}}{2} -  \frac{G_{33} + G_{35}}{2} + G_{34}<br>  $$<br>  蓝色分量表达式：<br>  $$<br>  B_{34} &#x3D; \frac{B_{24} + B_{44}}{2} - \frac{G_{24} + G_{44}}{2} + G_{34}<br>  $$</p>
+</li>
+</ul>
+<p>R、G、B通道分别进行了边缘检测，颜色恢复时采用了色差信息及其他通道的信息。效果接近原始图，算法难度较大。</p>
+<h2 id="基于边缘、色度和色差自适应插值之标志位：减少False-color"><a href="#基于边缘、色度和色差自适应插值之标志位：减少False-color" class="headerlink" title="基于边缘、色度和色差自适应插值之标志位：减少False color"></a>基于边缘、色度和色差自适应插值之标志位：减少False color</h2><p>G分量的恢复改用相邻R或B的二阶微分加G通道的一阶微分方向判断因子；并采用标志因子的统计，R、B分量的恢复使用了色差原理。</p>
+<ul>
+<li>对每个像素计算水平和垂直方向梯度和色度算子</li>
+<li>比较两个方向的算子大小，用0或1标记</li>
+<li>统计局部区域内如3x3窗口统计邻域九个位置的flag之和即total_flag</li>
+<li>设置阈值，判断该像素在局部区域内最可能的方向</li>
+</ul>
+<p><img src="/picture/camera/isp/dm2.png"></p>
+<p>对于图(a):已知B5<br>水平方向方向算子：</p>
+<p>$$<br>G_{h} &#x3D; \left |   G_4 - G_6  \right |  + \left |  2 * B_5 - B_3 - B_7  \right |<br>$$</p>
+<p>竖直方向方向算子：<br>$$<br>G_{v} &#x3D; \left |   G_2 - G_8  \right |  + \left |  2 * B_5 - B_1 - B_9  \right |<br>$$<br>方向梯度算子非固定<br>标志位： flag&#x3D;1，$G_h&lt;G_v$ ;<br>flag&#x3D;0，else<br><img src="/picture/camera/isp/dm3.png"></p>
+<p>对于图(b):已知G5（G43）<br>水平方向方向算子：</p>
+<p>$$<br>G_h &#x3D; \left | 2*G_5 - G_{12} - G_{13} \right |   + \left | G_1 - G_3   \right | + \left | G_7 - G_9   \right |<br>$$</p>
+<p>竖直方向方向算子：<br>$$<br>G_v &#x3D; \left | 2*G_5 - G_{10} - G_{11} \right |   + \left | G_1 - G_7   \right | + \left | G_3 - G_9   \right |<br>$$</p>
+<p>标志位： flag&#x3D;1，Gh&lt;Gv;<br>flag&#x3D;0，else<br>已知G34和R33，flag计算方法同理。</p>
+<p><strong>根据阈值判断方向的方法：</strong>    </p>
+<p>对于B和R位置，取3x3窗口，统计邻域九个位置的flag之和即total_flag，在[0.9]之间，越大水平方向边界可能性越大，越小竖直方向为边界可能性越大。</p>
+<p>取high_thresh和low_thresh，判断边界方向。</p>
+<p>total_flag &gt; &#x3D; high_thresh，水平方向存在边界，插值沿水平方向进行；</p>
+<p>total_flag &#x3D;&lt; low_thresh，竖直方向存在边界，插值沿竖直方向进行；</p>
+<p>low_thresh &lt; total_flag &lt; high_thresh，为平滑区域，插值在整个区域进行；</p>
+<p>经验值， high_thresh和low_thresh取7和3.</p>
+<p>插值方法同上。</p>
+<blockquote>
+<p>有局部区域内边缘方向的整体判断，使得边缘方向判断更加准确。</p>
+</blockquote>
+<p>CFA插值，还有其他一些比较经典的算法：基于色比的算法；2003年提出的Lu算法；基于权重的CFA插值算法；去False color的改进算法；其他一些在此基础上改进的算法等等</p>
+<p><strong>插值评价方法：</strong> 取一张RGB三色图像，按照Bayer格式取出对应的像素，构成Bayer格式图，然后经过CFA插值算法插值形成插值后图像。</p>
+<p>评价参数：</p>
+<ul>
+<li>颜色均方误差（CMSE）：插值前与插值后图像的对应像素间的差值（绝对值，方差值）之和的平均值。越小越重建接近原图，重建质量越高</li>
+</ul>
+<p>$$<br>\begin{equation}<br>C M S E&#x3D;\frac{1}{3 H W} \sum_{k&#x3D;R, G, B} \sum_{i&#x3D;1}^H \sum_{j&#x3D;1}^W\left(I_o(i, j) k-I_d(i, j) k\right)^2<br>\end{equation}<br>$$</p>
+<ul>
+<li>例颜色峰值信噪比（Color Peak Signal to Noise Ratio ,CPSNR）：越大越重建接近原图，重建质量越高。</li>
+</ul>
+<p>$$<br>CPSNR &#x3D; 10 log_{10}(\frac{255^2}{CMSE})<br>$$</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/98820927">https://zhuanlan.zhihu.com/p/98820927</a><br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/40626620">https://zhuanlan.zhihu.com/p/40626620</a>   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Camera/" rel="tag"># Camera</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-Raw%E5%9F%9FLSC/" rel="prev" title="Camera-Raw域LSC">
+                  <i class="fa fa-angle-left"></i> Camera-Raw域LSC
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-YUV%E5%9F%9FEdgeEnhancement/" rel="next" title="Camera-YUV域EdgeEnhancement">
+                  Camera-YUV域EdgeEnhancement <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

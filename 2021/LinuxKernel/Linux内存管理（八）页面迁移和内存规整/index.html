@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内存管理（八）页面迁移和内存规整">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AB%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate1.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate2.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate3.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate4.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/migrate5.jpg">
+<meta property="article:published_time" content="2021-12-01T05:57:14.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.779Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="内存管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AB%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AB%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/","path":"2021/LinuxKernel/Linux内存管理（八）页面迁移和内存规整/","title":"Linux内存管理（八）页面迁移和内存规整"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux内存管理（八）页面迁移和内存规整 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB"><span class="nav-number">1.</span> <span class="nav-text">页面迁移</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E7%9A%84API"><span class="nav-number">1.2.</span> <span class="nav-text">页面迁移的API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E6%A8%A1%E5%BC%8F"><span class="nav-number">1.3.</span> <span class="nav-text">迁移模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E5%8E%9F%E5%9B%A0"><span class="nav-number">1.4.</span> <span class="nav-text">迁移原因</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#migrate-pages-%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.5.</span> <span class="nav-text">migrate_pages()介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%81%E7%A7%BB%E5%89%8D%E7%9A%84%E5%87%86%E5%A4%87"><span class="nav-number">1.6.</span> <span class="nav-text">迁移前的准备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E9%99%A4old-page%E7%9A%84%E9%A1%B5%E8%A1%A8%E6%98%A0%E5%B0%84"><span class="nav-number">1.7.</span> <span class="nav-text">解除old page的页表映射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AEnew-page%E7%9A%84%E9%A1%B5%E9%9D%A2%E5%86%85%E5%AE%B9%E3%80%81%E5%85%83%E6%95%B0%E6%8D%AE%E5%8F%8A%E6%98%A0%E5%B0%84%E5%85%B3%E7%B3%BB"><span class="nav-number">1.8.</span> <span class="nav-text">设置new page的页面内容、元数据及映射关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E7%9A%84%E6%94%B6%E5%B0%BE%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.9.</span> <span class="nav-text">页面迁移的收尾工作</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4"><span class="nav-number">2.</span> <span class="nav-text">内存规整</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4%E7%9A%84%E8%A7%A6%E5%8F%91"><span class="nav-number">2.1.</span> <span class="nav-text">内存规整的触发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4%E7%9B%B8%E5%85%B3%E8%8A%82%E7%82%B9"><span class="nav-number">2.2.</span> <span class="nav-text">内存规整相关节点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">3.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AB%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux内存管理（八）页面迁移和内存规整 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux内存管理（八）页面迁移和内存规整
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-12-01 13:57:14" itemprop="dateCreated datePublished" datetime="2021-12-01T13:57:14+08:00">2021-12-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E5%86%85%E6%A0%B8/" itemprop="url" rel="index"><span itemprop="name">内核</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4.png"><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/6238617163768907105e5639">原图</a></p>
+<span id="more"></span>
+
+<blockquote>
+<p>声明本文转载自知乎<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/270366827">Linux内存管理：页面迁移</a>和<a target="_blank" rel="noopener" href="https://www.bbsmax.com/A/ZOJPrQgodv/">Linux内存管理 (16)内存规整</a>内存相关文章</p>
+</blockquote>
+<h1 id="页面迁移"><a href="#页面迁移" class="headerlink" title="页面迁移"></a>页面迁移</h1><h2 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h2><p>页面迁移(migrate)是内存管理中很多功能实现的基础，比方说内存规整、NUMA balance、内存热插拔、CMA、HugeTLB、内存气球等等，本文主要讲一下页面迁移的主要流程和应用。</p>
+<h2 id="页面迁移的API"><a href="#页面迁移的API" class="headerlink" title="页面迁移的API"></a>页面迁移的API</h2><p>migrate_pages( ) 这是页面迁移在内核态的主要接口，内核中涉及到页面迁移的功能大都会调到它。当然，在用户空间也存在着内存迁移相关的系统调用，最终也会调到它。这里我们通过migrate_pages( )的几个形参展开全文。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * migrate_pages - migrate the pages specified in a list, to the free pages</span></span><br><span class="line"><span class="comment"> *                 supplied as the target for the page migration</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * @from:               The list of pages to be migrated.</span></span><br><span class="line"><span class="comment"> * @get_new_page:       The function used to allocate free pages to be used</span></span><br><span class="line"><span class="comment"> *                      as the target of the page migration.</span></span><br><span class="line"><span class="comment"> * @put_new_page:       The function used to free target pages if migration</span></span><br><span class="line"><span class="comment"> *                      fails, or NULL if no special handling is necessary.</span></span><br><span class="line"><span class="comment"> * @private:            Private data to be passed on to get_new_page()</span></span><br><span class="line"><span class="comment"> * @mode:               The migration mode that specifies the constraints for</span></span><br><span class="line"><span class="comment"> *                      page migration, if any.</span></span><br><span class="line"><span class="comment"> * @reason:             The reason for page migration.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">migrate_pages</span><span class="params">(<span class="keyword">struct</span> list_head *from, <span class="type">new_page_t</span> get_new_page,</span></span><br><span class="line"><span class="params">                <span class="type">free_page_t</span> put_new_page, <span class="type">unsigned</span> <span class="type">long</span> private,</span></span><br><span class="line"><span class="params">                <span class="keyword">enum</span> migrate_mode mode, <span class="type">int</span> reason)</span></span><br></pre></td></tr></table></figure>
+
+<p>形参含义根据上面的注释很好理解，我们单独说下mode和reason，他们分别表示迁移模式和迁移原因。</p>
+<h2 id="迁移模式"><a href="#迁移模式" class="headerlink" title="迁移模式"></a>迁移模式</h2><p>迁移模式主要会影响迁移过程中对一些行为的过滤：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">MIGRATE_ASYNC        <span class="comment">//异步迁移，过程中不会发生阻塞</span></span><br><span class="line">MIGRATE_SYNC_LIGHT   <span class="comment">//轻度同步迁移，允许大部分的阻塞操作，唯独不允许脏页的回写操作</span></span><br><span class="line">MIGRATE_SYNC         <span class="comment">//同步迁移，迁移过程会发生阻塞，若需要迁移的某个page正在writeback或被locked会等待它完成</span></span><br><span class="line">MIGRATE_SYNC_NO_COPY <span class="comment">//同步迁移，但不等待页面的拷贝过程。页面的拷贝通过回调migratepage()，过程可能会涉及DMA</span></span><br></pre></td></tr></table></figure>
+
+<p>举例：内存规整(compact)中会调用migrate_pages()，同时也会设置迁移模式(位于compact_control-&gt;mode)。若是sysfs主动触发的内存规整会用MIGRATE_SYNC模式；若是kcompactd触发的规整会用MIGRATE_SYNC_LIGHT模式；若是内存分配slowpath中触发的会根据compact prior去设置用MIGRATE_ASYNC或MIGRATE_SYNC_LIGHT模式。</p>
+<h2 id="迁移原因"><a href="#迁移原因" class="headerlink" title="迁移原因"></a>迁移原因</h2><p>迁移原因主要使用来记录是什么功能触发了迁移的行为，毕竟页面迁移对系统本身是个不小的overhead，所以知道迁移的原因很有必。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">MR_COMPACTION      <span class="comment">//内存规整导致的迁移</span></span><br><span class="line">MR_MEMORY_FAILURE  <span class="comment">//当内存出现硬件问题(ECC校验失败等)时触发的页面迁移。 参考memory-failure.c</span></span><br><span class="line">MR_MEMORY_HOTPLUG  <span class="comment">//内存热插拔导致的迁移</span></span><br><span class="line">MR_SYSCALL         <span class="comment">//应用层主动调用migrate_pages()或move_pages()触发的迁移</span></span><br><span class="line">MR_MEMPOLICY_MBIND <span class="comment">//调用mbind系统调用设置memory policy时触发的迁移</span></span><br><span class="line">MR_NUMA_MISPLACED  <span class="comment">//numa balance触发的页面迁移(node之间)</span></span><br><span class="line">MR_CONTIG_RANGE    <span class="comment">//调用alloc_contig_range()为CMA或HugeTLB分配连续内存时触发的迁移(和compact相关)</span></span><br></pre></td></tr></table></figure>
+
+<p>延伸：对上面MR_SYSCALL迁移原因中提到的两个API(位于libnuma库)的简单介绍。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 含义：把某pid进程的所有页面从源numa node迁移到目标numa nodes组中，对应系统调用sys_migrate_pages()</span></span><br><span class="line">migrate_pages()  <span class="comment">//和kernel中接口同名，别搞混了</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 含义：把进程到部分页面迁移目标numa node中，对应系统调用sys_move_pages()</span></span><br><span class="line">move_pages()</span><br></pre></td></tr></table></figure>
+
+<h2 id="migrate-pages-介绍"><a href="#migrate-pages-介绍" class="headerlink" title="migrate_pages()介绍"></a>migrate_pages()介绍</h2><p>通过上面对迁移原因的介绍，我们知道了页面迁移的原因各种各样，这里我们通过内存规整(memory compact)这样一个实际的例子展开介绍，下图主要体现了内存规整和页面迁移的关系：<br><img src="/picture/linux/kernel/mem/migrate1.jpg"></p>
+<p>通过上图，我们看出页面迁移在内存规整中举足轻重的地位。下面则是内存规整调用migrate_pages()的函数关系：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">compact_zone           <span class="comment">//内存规整</span></span><br><span class="line">  -&gt;migrate_pages      <span class="comment">//页面迁移的入口函数</span></span><br><span class="line">    -&gt;unmap_and_move   <span class="comment">//页面迁移的核心实现</span></span><br></pre></td></tr></table></figure>
+
+<p>现在切入重点，页面迁移(migrate)过程做了那些事情：</p>
+<h2 id="迁移前的准备"><a href="#迁移前的准备" class="headerlink" title="迁移前的准备"></a>迁移前的准备</h2><ul>
+<li>获取old page的页面锁PG_locked (异步模式拿不到锁就直接跳过此页面)</li>
+<li>若是正在writeback的页面，则根据迁移模式判断是否等待页面wirteback（MIGRATE_SYNC_LIGHT和MIGRATE_ASYNC不等待）</li>
+<li>获取new page的页面锁PG_locked (new page正常情况下不会获取失败)</li>
+</ul>
+<p><img src="/picture/linux/kernel/mem/migrate2.jpg"></p>
+<h2 id="解除old-page的页表映射"><a href="#解除old-page的页表映射" class="headerlink" title="解除old page的页表映射"></a>解除old page的页表映射</h2><p>调用try_to_unmap()，通过反向映射机制解除old page所有相关的PTEs<br><img src="/picture/linux/kernel/mem/migrate3.jpg"></p>
+<h2 id="设置new-page的页面内容、元数据及映射关系"><a href="#设置new-page的页面内容、元数据及映射关系" class="headerlink" title="设置new page的页面内容、元数据及映射关系"></a>设置new page的页面内容、元数据及映射关系</h2><p>调用move_to_new_page拷贝old page的内容和struct page元数据到new page，并通过反向映射机制建立new page的映射关系。<br><img src="/picture/linux/kernel/mem/migrate4.jpg"></p>
+<h2 id="页面迁移的收尾工作"><a href="#页面迁移的收尾工作" class="headerlink" title="页面迁移的收尾工作"></a>页面迁移的收尾工作</h2><ul>
+<li>迁移完成释放新旧页面的PG_locked</li>
+<li>设置迁移原因</li>
+<li>调用put_page释放old page引用计数(_refcount减1)</li>
+</ul>
+<p><img src="/picture/linux/kernel/mem/migrate5.jpg"></p>
+<p>补充：什么样的页面才支持迁移呢？</p>
+<ul>
+<li>lru上的page，因为上面挂的是user spcace用的pages，都是从buddy分配器migrate type为movable或reclaim的pageblock上分来的</li>
+<li>no-lru但是movable的页面。no-lru的页面通常是为kernel space分配的page，这种页面通常是unmovable的，但是下面这个commit使得驱动中用到的页面也可以支持迁移。但是在驱动实现的过程中需要置位page-&gt;mapping中的second bit，并且实现page-&gt;mapping-&gt;a_ops中的相关方法</li>
+</ul>
+<h1 id="内存规整"><a href="#内存规整" class="headerlink" title="内存规整"></a>内存规整</h1><p>内存碎片的产生：伙伴系统以页为单位进行管理，经过大量申请释放，造成大量离散且不连续的页面。这时就产生了很多碎片。 n内存规整也即内存碎片整理，内存碎片也是以页面为单位的。实现基础是内存页面按照可移动性进行分组。内存规整的实现基础是页面迁移。<br>Linux内核以pageblock为单位来管理页的迁移属性。</p>
+<h2 id="内存规整的触发"><a href="#内存规整的触发" class="headerlink" title="内存规整的触发"></a>内存规整的触发</h2><p>下面是内存页面分配，以及分配失败之后采取的措施，以便促成分配成功。<br>可以看出采取的措施，越来越重。首先采用kswapd来进行页面回收，然后尝试页面规整、直接页面回收，最后是OOM杀死进程来获取更多内存空间</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">alloc_pages-------------------------------------页面分配的入口</span><br><span class="line">  -&gt;__alloc_pages_nodemask</span><br><span class="line">    -&gt;get_page_from_freelist--------------------直接从zonelist的空闲列表中分配页面</span><br><span class="line">    -&gt;__alloc_pages_slowpath--------------------在初次尝试分配失败后，进入slowpath路径分配页面</span><br><span class="line">      -&gt;wake_all_kswapds------------------------唤醒kswapd内核线程进行页面回收</span><br><span class="line">      -&gt;get_page_from_freelist------------------kswapd页面回收后再次进行页面分配</span><br><span class="line">      -&gt;__alloc_pages_direct_compact------------进行页面规整，然后进行页面分配</span><br><span class="line">      -&gt;__alloc_pages_direct_reclaim------------直接页面回收，然后进行页面分配</span><br><span class="line">      -&gt;__alloc_pages_may_oom-------------------尝试触发OOM</span><br></pre></td></tr></table></figure>
+
+<p>另一条路径是在kswapd的balance_pgdat中会判断是否需要进行内存规整。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">kswapd</span><br><span class="line">  -&gt;balance_pgdat-------------------------------遍历内存节点的zone，判断是否处于平衡状态即WMARK_HIGH。</span><br><span class="line">    -&gt;compact_pgdat-----------------------------针对整个内存节点进行内存规整</span><br></pre></td></tr></table></figure>
+
+<p>其中compact_pddat-&gt;__compact_pgdat-&gt;compact_zone，最终的实现和__alloc_pages_direct_compact调用compact_zone一样。</p>
+<h2 id="内存规整相关节点"><a href="#内存规整相关节点" class="headerlink" title="内存规整相关节点"></a>内存规整相关节点</h2><p>内存规整相关有两个节点，compact_memory用于触发内存规整；extfrag_threshold影响内核决策是采用内存规整还是直接回收来满足大内存分配。</p>
+<p>节点入口代码：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">ctl_table</span> <span class="title">vm_table</span>[] =</span> &#123;</span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_COMPACTION</span></span><br><span class="line">    &#123;</span><br><span class="line">        .procname    = <span class="string">&quot;compact_memory&quot;</span>,</span><br><span class="line">        .data        = &amp;sysctl_compact_memory,</span><br><span class="line">        .maxlen        = <span class="keyword">sizeof</span>(<span class="type">int</span>),</span><br><span class="line">        .mode        = ,</span><br><span class="line">        .proc_handler    = sysctl_compaction_handler,</span><br><span class="line">    &#125;,</span><br><span class="line">    &#123;</span><br><span class="line">        .procname    = <span class="string">&quot;extfrag_threshold&quot;</span>,</span><br><span class="line">        .data        = &amp;sysctl_extfrag_threshold,</span><br><span class="line">        .maxlen        = <span class="keyword">sizeof</span>(<span class="type">int</span>),</span><br><span class="line">        .mode        = ,</span><br><span class="line">        .proc_handler    = sysctl_extfrag_handler,</span><br><span class="line">        .extra1        = &amp;min_extfrag_threshold,</span><br><span class="line">        .extra2        = &amp;max_extfrag_threshold,</span><br><span class="line">    &#125;,</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* CONFIG_COMPACTION */</span></span></span><br><span class="line">...</span><br><span class="line">    &#123; &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><p>&#x2F;proc&#x2F;sys&#x2F;vm&#x2F;compact_memory<br>  打开compaction Tracepoint：echo 1 &gt; &#x2F;sys&#x2F;kernel&#x2F;debug&#x2F;tracing&#x2F;events&#x2F;compaction&#x2F;enable<br>  触发内存规整：sysctl -w vm.compact_memory&#x3D;1<br>  查看Tracepoint：cat &#x2F;sys&#x2F;kernel&#x2F;debug&#x2F;tracing&#x2F;trace   </p>
+</li>
+<li><p>&#x2F;proc&#x2F;sys&#x2F;vm&#x2F;extfrag_threshold<br>  在compact_zone中调用函数compaction_suitable-&gt;__compaction_suitable进行判断是否进行内存规整<br>  和extfrag_threshold相关部分如下，如果当前fragindex不超过sysctl_extfrag_threshold，则不会继续进行内存规整<br>  所以这个参数越小越倾向于进行内存规整，越大越不容易进行内存规整   </p>
+  <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> __compaction_suitable(<span class="keyword">struct</span> zone *zone, <span class="type">int</span> order,</span><br><span class="line">                    <span class="type">int</span> alloc_flags, <span class="type">int</span> classzone_idx)</span><br><span class="line">&#123;</span><br><span class="line">...</span><br><span class="line">    fragindex = fragmentation_index(zone, order);</span><br><span class="line">    <span class="keyword">if</span> (fragindex &gt;= <span class="number">0</span> &amp;&amp; fragindex &lt;= sysctl_extfrag_threshold)</span><br><span class="line">        <span class="keyword">return</span> COMPACT_NOT_SUITABLE_ZONE;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> COMPACT_CONTINUE;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>  设置extfrag_threshold：sysctl -w vm.extfrag_threshold&#x3D;500</p>
+</li>
+<li><p>其它Debug信息<br>  &#x2F;sys&#x2F;kernel&#x2F;debug&#x2F;extfrag&#x2F;extfrag_index<br>  &#x2F;sys&#x2F;kernel&#x2F;debug&#x2F;extfrag&#x2F;unusable_index</p>
+</li>
+</ul>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/270366827">https://zhuanlan.zhihu.com/p/270366827</a><br><a target="_blank" rel="noopener" href="https://www.bbsmax.com/A/ZOJPrQgodv/">https://www.bbsmax.com/A/ZOJPrQgodv/</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag"># 内存管理</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6/" rel="prev" title="Linux内存管理（七）页面回收">
+                  <i class="fa fa-angle-left"></i> Linux内存管理（七）页面回收
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B9%9D%EF%BC%89KSM/" rel="next" title="Linux内存管理（九）KSM">
+                  Linux内存管理（九）KSM <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

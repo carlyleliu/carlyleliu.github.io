@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Why？我们肉眼的对光谱的RGB响应曲线和sensor的响应曲线是不同的； CCM一般是3x3矩阵形式，也有3x4形式的，3x4形式主要是给rgb各自加一个offset $$\begin{bmatrix}R_{out} \G_{out} \B_{out}\end{bmatrix} &#x3D;\begin{bmatrix}CC_{00}  &amp; CC_{01} &amp; CC_{02}\C">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera-RGB域CCM">
+<meta property="og:url" content="http://carlyleliu.github.io/2023/Camera/Camera-RGB%E5%9F%9FCCM/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="Why？我们肉眼的对光谱的RGB响应曲线和sensor的响应曲线是不同的； CCM一般是3x3矩阵形式，也有3x4形式的，3x4形式主要是给rgb各自加一个offset $$\begin{bmatrix}R_{out} \G_{out} \B_{out}\end{bmatrix} &#x3D;\begin{bmatrix}CC_{00}  &amp; CC_{01} &amp; CC_{02}\C">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/ccm1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/ccm2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/ccm3.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/ccm4.png">
+<meta property="article:published_time" content="2023-05-30T08:37:29.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.789Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Camera">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/camera/isp/ccm1.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2023/Camera/Camera-RGB%E5%9F%9FCCM/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2023/Camera/Camera-RGB%E5%9F%9FCCM/","path":"2023/Camera/Camera-RGB域CCM/","title":"Camera-RGB域CCM"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Camera-RGB域CCM | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Why%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">Why？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%87%E5%AE%9ACCM%E6%96%B9%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">标定CCM方法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%87%E5%AE%9A%E7%AE%97%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">标定算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2023/Camera/Camera-RGB%E5%9F%9FCCM/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Camera-RGB域CCM | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Camera-RGB域CCM
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2023-05-30 16:37:29" itemprop="dateCreated datePublished" datetime="2023-05-30T16:37:29+08:00">2023-05-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/ISP/" itemprop="url" rel="index"><span itemprop="name">ISP</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Why？"><a href="#Why？" class="headerlink" title="Why？"></a>Why？</h1><p>我们肉眼的对光谱的RGB响应曲线和sensor的响应曲线是不同的；<br><img src="/picture/camera/isp/ccm1.png"></p>
+<p>CCM一般是3x3矩阵形式，也有3x4形式的，3x4形式主要是给rgb各自加一个offset</p>
+<p>$$<br>\begin{bmatrix}<br>R_{out} \<br>G_{out} \<br>B_{out}<br>\end{bmatrix} &#x3D;<br>\begin{bmatrix}<br>CC_{00}  &amp; CC_{01} &amp; CC_{02}\<br>CC_{10}  &amp; CC_{11} &amp; CC_{12}\<br>CC_{20}  &amp; CC_{21} &amp; CC_{22}<br>\end{bmatrix} \ast<br>\begin{bmatrix}<br>R_{in} \<br>G_{in} \<br>B_{in}<br>\end{bmatrix}<br>$$</p>
+<p>$$<br>\begin{bmatrix}<br>R_{out} \<br>G_{out} \<br>B_{out}<br>\end{bmatrix} &#x3D;<br>\begin{bmatrix}<br>CC_{00}  &amp; CC_{01} &amp; CC_{02} &amp; OFFSET_r\<br>CC_{10}  &amp; CC_{11} &amp; CC_{12} &amp; OFFSET_g\<br>CC_{20}  &amp; CC_{21} &amp; CC_{22} &amp; OFFSET_b<br>\end{bmatrix} \ast<br>\begin{bmatrix}<br>R_{in} \<br>G_{in} \<br>B_{in}<br>\end{bmatrix}<br>$$</p>
+<span id="more"></span>
+
+<p>上面的人眼rgb响应和sensor rgb响应曲线都是非线性的，所以指望通过一个CCM矩阵就得到匹配度很好的映射关系是不现实的。现实中，往往会标定很多个CCM，ISP在运行的时候根据照度，光源等等因素，选择两个最近的CCM插值得到最终的CCM；</p>
+<p>CCM模块在apply awb gain后面，因此3x3个值存在约束条件：</p>
+<p>$$<br>CC_{00} + CC_{01} + CC_{02} &#x3D; 1<br>CC_{10} + CC_{11} + CC_{12} &#x3D; 1<br>CC_{20} + CC_{21} + CC_{22} &#x3D; 1<br>$$</p>
+<p>保证灰点也就是r&#x3D;g&#x3D;b的点，经过CCM以后仍然r&#x3D;g&#x3D;b；</p>
+<h1 id="标定CCM方法"><a href="#标定CCM方法" class="headerlink" title="标定CCM方法"></a>标定CCM方法</h1><ul>
+<li><p>用camera拍一张某个色温下的24色卡raw文件：注意shading影响，拍这个色卡占整个sensor中间一小部分就可以<br><img src="/picture/camera/isp/ccm2.png"></p>
+</li>
+<li><p>raw文件预处理。主要包括减blc，根据第4行的patch，获取awb gain值，乘上去；这样就拿到了这个色温下24个patch的rgb值</p>
+</li>
+<li><p>理想rgb值<br><img src="/picture/camera/isp/ccm3.png"></p>
+</li>
+</ul>
+<p>这是色卡厂家提供的24个patch的标准rgb空间下的理论值；拿到这个值以后，需要进行反gamma处理，因为厂家提供的是srgb的值，是带了2.2gamma的，ISP的CCM模块一般是在gamma前面，因此要对理论值进行反gamma处理；</p>
+<h1 id="标定算法"><a href="#标定算法" class="headerlink" title="标定算法"></a>标定算法</h1><p>已知100个raw rgb值，已知对应的理论rgb值；求一个3x3线性变换矩阵；这个矩阵要使得映射后的rgb值尽可能的接近理论值；</p>
+<p>借鉴深度学习的梯度下降方法，可以快速得到CCM；并且可以自定义100个patch的重要程度，使得某些patch的误差非常小。</p>
+<p>定义损失和梯度函数，测量rgb值得差异，采用L2距离；</p>
+<p>$$<br>L_i &#x3D;  {\textstyle \sum_{n&#x3D;1}^{18}} (CCM \ast RGB_{origin} - RGB_{standard})^2<br>$$</p>
+<p>完整代码如下：</p>
+<figure class="highlight matlab"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br></pre></td><td class="code"><pre><span class="line">from mpl_toolkits.mplot3d import Axes3D</span><br><span class="line">import matplotlib.pyplot as plt</span><br><span class="line">import torch</span><br><span class="line"></span><br><span class="line">ccm = torch.tensor([[<span class="number">1655</span>, <span class="number">-442</span>, <span class="number">-189</span>], [<span class="number">-248</span>, <span class="number">1466</span>, <span class="number">-194</span>], [<span class="number">-48</span>, <span class="number">-770</span>, <span class="number">1842</span>]], dtype=torch.float32)</span><br><span class="line">rgb_data = torch.randint(<span class="number">0</span>, <span class="number">255</span>, (<span class="number">3</span>, <span class="number">100</span>))</span><br><span class="line">rgb_data = rgb_data.float()</span><br><span class="line"></span><br><span class="line">error_manual = torch.<span class="built_in">randn</span>((<span class="number">3</span>, <span class="number">100</span>)) * <span class="number">16</span></span><br><span class="line">rgb_target = ccm.mm(rgb_data)/<span class="number">1024.0</span></span><br><span class="line">rgb_target_error = rgb_target + error_manual</span><br><span class="line">ccm_calc1 = torch.tensor([<span class="number">0.0</span>], dtype=torch.float32, requires_grad=True)</span><br><span class="line">ccm_calc2 = torch.tensor([<span class="number">0.0</span>], dtype=torch.float32, requires_grad=True)</span><br><span class="line">ccm_calc3 = torch.tensor([<span class="number">0.0</span>], dtype=torch.float32, requires_grad=True)</span><br><span class="line">ccm_calc5 = torch.tensor([<span class="number">0.0</span>], dtype=torch.float32, requires_grad=True)</span><br><span class="line">ccm_calc6 = torch.tensor([<span class="number">0.0</span>], dtype=torch.float32, requires_grad=True)</span><br><span class="line">ccm_calc7 = torch.tensor([<span class="number">0.0</span>], dtype=torch.float32, requires_grad=True)</span><br><span class="line"></span><br><span class="line">def squared_loss(rgb_tmp, rgb_ideal):</span><br><span class="line">    <span class="keyword">return</span> torch.sum((rgb_tmp-rgb_ideal)**<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">def sgd(params, lr, batch_size):</span><br><span class="line">    <span class="keyword">for</span> param in params:</span><br><span class="line">        param.data -= lr * param.grad/batch_size;</span><br><span class="line"></span><br><span class="line">def net(ccm_calc1, ccm_calc2, ccm_calc3, ccm_calc5, ccm_calc6, ccm_calc7, rgb_data):</span><br><span class="line">    rgb_tmp = torch.zeros_like(rgb_data)</span><br><span class="line">    rgb_tmp[<span class="number">0</span>, :] = ((<span class="number">1024.0</span> - ccm_calc1 - ccm_calc2) * rgb_data[<span class="number">0</span>, :] + ccm_calc1 * rgb_data[<span class="number">1</span>, :] + ccm_calc2 * rgb_data[<span class="number">2</span>, :]) / <span class="number">1024.0</span></span><br><span class="line">    rgb_tmp[<span class="number">1</span>, :] = (ccm_calc3 * rgb_data[<span class="number">0</span>, :] + (<span class="number">1024.0</span> - ccm_calc3 - ccm_calc5) * rgb_data[<span class="number">1</span>, :] + ccm_calc5 * rgb_data[<span class="number">2</span>, :]) / <span class="number">1024.0</span></span><br><span class="line">    rgb_tmp[<span class="number">2</span>, :] = (ccm_calc6 * rgb_data[<span class="number">0</span>, :] + ccm_calc7 * rgb_data[<span class="number">1</span>, :] + (<span class="number">1024.0</span> - ccm_calc6 - ccm_calc7) * rgb_data[<span class="number">2</span>, :]) / <span class="number">1024.0</span></span><br><span class="line">    <span class="keyword">return</span> rgb_tmp</span><br><span class="line"></span><br><span class="line">lr = <span class="number">3</span></span><br><span class="line">num_epochs = <span class="number">100</span></span><br><span class="line"><span class="keyword">for</span> epoch in range(num_epochs):</span><br><span class="line">    l = squared_loss(net(ccm_calc1, ccm_calc2, ccm_calc3, ccm_calc5, ccm_calc6, ccm_calc7, rgb_data), rgb_target_error)</span><br><span class="line">    l.backward()</span><br><span class="line">    sgd([ccm_calc1, ccm_calc2, ccm_calc3, ccm_calc5, ccm_calc6, ccm_calc7], lr, <span class="number">100</span>)</span><br><span class="line">    ccm_calc1.grad.data.zero_()</span><br><span class="line">    ccm_calc2.grad.data.zero_()</span><br><span class="line">    ccm_calc3.grad.data.zero_()</span><br><span class="line">    ccm_calc5.grad.data.zero_()</span><br><span class="line">    ccm_calc6.grad.data.zero_()</span><br><span class="line">    ccm_calc7.grad.data.zero_()</span><br><span class="line">    print(<span class="string">&#x27;epoch %d, loss %f&#x27;</span><span class="comment">%(epoch, l))</span></span><br><span class="line"></span><br><span class="line">res = torch.tensor([[<span class="number">1024.0</span> - ccm_calc1 - ccm_calc2, ccm_calc1, ccm_calc2],</span><br><span class="line">                    [ccm_calc3, <span class="number">1024.0</span>-ccm_calc3-ccm_calc5, ccm_calc5],</span><br><span class="line">                    [ccm_calc6, ccm_calc7, <span class="number">1024.0</span>-ccm_calc6-ccm_calc7]], dtype=torch.float32)</span><br><span class="line">print(res);</span><br><span class="line"></span><br><span class="line">rgb_apply_ccm = res.mm(rgb_data)/<span class="number">1024.0</span></span><br><span class="line"></span><br><span class="line">fig1 = plt.<span class="built_in">figure</span>(<span class="number">1</span>)</span><br><span class="line">ax1 = fig1.add_subplot(<span class="number">111</span>, projection=<span class="string">&#x27;3d&#x27;</span>)</span><br><span class="line">fig2 = plt.<span class="built_in">figure</span>(<span class="number">2</span>)</span><br><span class="line">ax2 = fig2.add_subplot(<span class="number">111</span>, projection=<span class="string">&#x27;3d&#x27;</span>)</span><br><span class="line"></span><br><span class="line">x2 = rgb_data[<span class="number">0</span>]</span><br><span class="line">y2 = rgb_data[<span class="number">1</span>]</span><br><span class="line">z2 = rgb_data[<span class="number">2</span>]</span><br><span class="line"></span><br><span class="line">ax1.<span class="built_in">scatter</span>(x2, y2, z2, marker=<span class="string">&#x27;*&#x27;</span>, c=<span class="string">&#x27;b&#x27;</span>, label=<span class="string">&#x27;origin RGB&#x27;</span>)</span><br><span class="line"></span><br><span class="line">ax1.set_xlim(<span class="number">-80</span>, <span class="number">360</span>)</span><br><span class="line">ax1.set_ylim(<span class="number">-80</span>, <span class="number">360</span>)</span><br><span class="line">ax1.set_zlim(<span class="number">-80</span>, <span class="number">360</span>)</span><br><span class="line">ax1.set_xlabel(<span class="string">&#x27;R&#x27;</span>)</span><br><span class="line">ax1.set_ylabel(<span class="string">&#x27;G&#x27;</span>)</span><br><span class="line">ax1.set_zlabel(<span class="string">&#x27;B&#x27;</span>)</span><br><span class="line"></span><br><span class="line">x3 = rgb_target[<span class="number">0</span>]</span><br><span class="line">y3 = rgb_target[<span class="number">1</span>]</span><br><span class="line">z3 = rgb_target[<span class="number">2</span>]</span><br><span class="line"></span><br><span class="line">ax1.<span class="built_in">scatter</span>(x3, y3, z3, marker=<span class="string">&#x27;o&#x27;</span>, c=<span class="string">&#x27;c&#x27;</span>, label=<span class="string">&#x27;target rgb&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> <span class="built_in">i</span> in range(len(x3)):</span><br><span class="line">    ax1.<span class="built_in">plot</span>([x2[<span class="built_in">i</span>], x3[<span class="built_in">i</span>]], [y2[<span class="built_in">i</span>], y3[<span class="built_in">i</span>]], [z2[<span class="built_in">i</span>], z3[<span class="built_in">i</span>]], <span class="string">&#x27;k-.&#x27;</span>)</span><br><span class="line">ax1.<span class="built_in">legend</span>()</span><br><span class="line"></span><br><span class="line">ax2.set_xlim(<span class="number">-80</span>, <span class="number">360</span>)</span><br><span class="line">ax2.set_ylim(<span class="number">-80</span>, <span class="number">360</span>)</span><br><span class="line">ax2.set_zlim(<span class="number">-80</span>, <span class="number">360</span>)</span><br><span class="line">ax2.set_xlabel(<span class="string">&#x27;R&#x27;</span>)</span><br><span class="line">ax2.set_ylabel(<span class="string">&#x27;G&#x27;</span>)</span><br><span class="line">ax2.set_zlabel(<span class="string">&#x27;B&#x27;</span>)</span><br><span class="line">ax2.<span class="built_in">scatter</span>(x3, y3, z3, marker=<span class="string">&#x27;o&#x27;</span>, c=<span class="string">&#x27;c&#x27;</span>, label=<span class="string">&#x27;target rgb&#x27;</span>)</span><br><span class="line"></span><br><span class="line">x4 = rgb_apply_ccm[<span class="number">0</span>]</span><br><span class="line">y4 = rgb_apply_ccm[<span class="number">1</span>]</span><br><span class="line">z4 = rgb_apply_ccm[<span class="number">2</span>]</span><br><span class="line">ax2.<span class="built_in">scatter</span>(x4, y4, z4, marker=<span class="string">&#x27;^&#x27;</span>, c=<span class="string">&#x27;b&#x27;</span>, label=<span class="string">&#x27;apply ccm rgb&#x27;</span>)</span><br><span class="line">ax2.<span class="built_in">legend</span>()</span><br><span class="line"></span><br><span class="line">plt.show()</span><br></pre></td></tr></table></figure>
+
+<p>可视化看一下映射后的点与理论点的距离：<br><img src="/picture/camera/isp/ccm4.png"></p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/108626480">https://zhuanlan.zhihu.com/p/108626480</a>   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Camera/" rel="tag"># Camera</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-Raw%E5%9F%9FAWB%E8%87%AA%E5%8A%A8%E7%99%BD%E5%B9%B3%E8%A1%A1/" rel="prev" title="Camera-Raw域AWB自动白平衡">
+                  <i class="fa fa-angle-left"></i> Camera-Raw域AWB自动白平衡
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-Raw%E5%9F%9F%E9%99%8D%E5%99%AA/" rel="next" title="Camera-Raw域降噪">
+                  Camera-Raw域降噪 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

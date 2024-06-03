@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Retinex 理论Retinex 这个词由 Retina 和 Cortex 两个单词组成。在 Retinex 理论中，物体的颜色是由物体对长波、中波和短波光线的反射能力决定的，而不是由反射光强度的绝对值决定的，并且物体的色彩不受光照非均性的影响，具有一致性。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera-YUV域EdgeEnhancement">
+<meta property="og:url" content="http://carlyleliu.github.io/2023/Camera/Camera-YUV%E5%9F%9FEdgeEnhancement/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="Retinex 理论Retinex 这个词由 Retina 和 Cortex 两个单词组成。在 Retinex 理论中，物体的颜色是由物体对长波、中波和短波光线的反射能力决定的，而不是由反射光强度的绝对值决定的，并且物体的色彩不受光照非均性的影响，具有一致性。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/isp/ee1.png">
+<meta property="article:published_time" content="2023-06-04T13:06:37.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.789Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Camera">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/camera/isp/ee1.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2023/Camera/Camera-YUV%E5%9F%9FEdgeEnhancement/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2023/Camera/Camera-YUV%E5%9F%9FEdgeEnhancement/","path":"2023/Camera/Camera-YUV域EdgeEnhancement/","title":"Camera-YUV域EdgeEnhancement"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Camera-YUV域EdgeEnhancement | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Retinex-%E7%90%86%E8%AE%BA"><span class="nav-number">1.</span> <span class="nav-text">Retinex 理论</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SSR-%E7%AE%97%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">SSR 算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MSR-%E7%AE%97%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">MSR 算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#MSRCR-%E7%AE%97%E6%B3%95"><span class="nav-number">4.</span> <span class="nav-text">MSRCR 算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">5.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2023/Camera/Camera-YUV%E5%9F%9FEdgeEnhancement/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Camera-YUV域EdgeEnhancement | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Camera-YUV域EdgeEnhancement
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2023-06-04 21:06:37" itemprop="dateCreated datePublished" datetime="2023-06-04T21:06:37+08:00">2023-06-04</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/ISP/" itemprop="url" rel="index"><span itemprop="name">ISP</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Retinex-理论"><a href="#Retinex-理论" class="headerlink" title="Retinex 理论"></a>Retinex 理论</h1><p>Retinex 这个词由 Retina 和 Cortex 两个单词组成。在 Retinex 理论中，物体的颜色是由物体对长波、中波和短波光线的反射能力决定的，而不是由反射光强度的绝对值决定的，并且物体的色彩不受光照非均性的影响，具有一致性。<br><img src="/picture/camera/isp/ee1.png"></p>
+<span id="more"></span>
+
+<p>在 Retinex 理论中，人眼得到的图像数据取决于入射光和物体表面对入射光的反射。如上图所示，I(x,y) 是我们最终得到的图像数据，先是由入射光照射，然后经由物体反射进入成像系统，最终形成我们所看到的图像。该过程可以用公式表示：</p>
+<p>$$<br>I(x,y) &#x3D; R(x,y) \cdot  L(x,y)<br>$$</p>
+<p>其中，I(x,y)代表被观察或照相机接收到的图像信号；L(x,y) 代表环境光的照射分量 ；R(x,y) 表示携带图像细节信息的目标物体的反射分量。将该式子两边取对数，可以得到物体原本的信息:</p>
+<p>$$<br>log[I(x,y)] &#x3D; log[R(x,y)] - log[L(x,y)]<br>$$</p>
+<p>在图像处理领域，常将该理论用于图像增强，为了得到成像更好的图片。这时，R(x,y) 表示为图像增强得到后的图像，I(x,y) 为原始的图像。在处理过程中 L(x,y) 常为 I(x,y) 高通滤波之后的结果，也可以用其他滤波的方法，比如中值滤波，均值滤波等等。</p>
+<h1 id="SSR-算法"><a href="#SSR-算法" class="headerlink" title="SSR 算法"></a>SSR 算法</h1><p>SSR (Singal Scale Retinex)，即单尺度视网膜算法是 Retinex 算法中最基础的一个算法。运用的就是上面的方法，具体步骤如下：</p>
+<ul>
+<li>输入原始图像 I(x,y) 和滤波的半径范围 sigma</li>
+<li>计算原始图像 I(x,y) 高斯滤波后的结果，得到 L(x,y)</li>
+<li>按照公式计算，得到 Log[R(x,y)]</li>
+<li>将得到的结果量化为 [0, 255] 范围的像素值，然后输出结果图像</li>
+</ul>
+<p>需要注意的是，最后一步量化的过程中，并不是将 Log[R(x,y)] 进行 Exp 化得到 R(x,y) 的结果，而是直接将 Log[R(x,y)] 的结果直接用如下公式进行量化：</p>
+<p>$$<br>R(x,y) &#x3D; \frac{Value - Min}{Max - Min} * 255<br>$$</p>
+<p>将过程整合在一起就是如下过程：</p>
+<p>$$<br>R_{SSR_i}(x,y,\delta) &#x3D; log(I_i(x,y)) - log(I_i(x,y) * G(x,y, \delta))<br>$$</p>
+<p>G(x,y)代表高斯核,Retinex算法是去掉光照的影响，还原图像的本来面目。</p>
+<h1 id="MSR-算法"><a href="#MSR-算法" class="headerlink" title="MSR 算法"></a>MSR 算法</h1><p>MSR是在SSR基础上发展来的，优点是可以同时保持图像高保真度与对图像的动态范围进行压缩的同时，MSR也可实现色彩增强、颜色恒常性、局部动态范围压缩、全局动态范围压缩，也可以用于X光图像增强。</p>
+<p>为了得到更好的效果，人们又开发出所谓的多尺度视网膜增强算法（MSR， Multi-Scale Retinex），最为经典的就是3尺度的，大、中、小，既能实现图像动态范围的压缩，又能保持色感的一致性较好。同单尺度相比，该算法有在计算Log[R(x,y)]的值时步骤有所不同：</p>
+<ul>
+<li>需要对原始图像进行每个尺度的高斯模糊，得到模糊后的图像Li(x,y),其中小标i表示尺度数</li>
+<li>对每个尺度下进行累加计算</li>
+</ul>
+<p>公式如下所示：</p>
+<p>$$<br>R_{MSR}(x,y,\delta) &#x3D; \sum_{k&#x3D;1}^{n}w_kR_{SSR_k}(x,y,\delta_k)<br>$$</p>
+<p>其中n是尺度的数量，$\delta &#x3D; {\delta 1,\delta 2,…\delta n}$ 是高斯模糊系数的向量, $w_k$ 是与第k个尺度相关的权重，其中 $w_1 + w_2 + … w_n &#x3D; 1$</p>
+<h1 id="MSRCR-算法"><a href="#MSRCR-算法" class="headerlink" title="MSRCR 算法"></a>MSRCR 算法</h1><p>由于R是对数域的输出，要转换为数字图像，必须将他们量化为[0,255]的数字图像范畴，关于这个量化的算法，有这极为重要的意义，他的好坏直接决定了最终输出的图像的品质。目前，结合上述文章中提出的一些过程，有4种方式进行处理：</p>
+<ul>
+<li><p>直接线性量化，即采用下式进行处理<br>  $$<br>  R_{MSRCR_i}(x,y) &#x3D; \frac{R_{MSRCR_i}(x,y) - Min(R_{MSRCR_i}(x,y))}{Max(R_{MSRCR_i}(x,y)) -  Min(R_{MSRCR_i}(x,y))} * 255<br>  $$</p>
+</li>
+<li><p>在经典的MSRCR文章《A Multiscale Retinex for Bridging the Gap Between Color Images and the Human Observation of Scenes》中提出的Canonical Gain&#x2F;set 算法<br> $$<br> R_{MSRCR_i}(x,y) &#x3D; G[R_{MSRCR_i}(x,y) - b]<br> $$<br> 其中G和b为经验参数。</p>
+</li>
+<li><p>种方式的处理类似于Photoshop中的自动色阶，他把数据按照一定的百分比去除最小和最大的部分，然后中间的部分重新线性量化到0和255之间</p>
+</li>
+</ul>
+<p>在用第二种或第三种方式处理时，最好还需要有个Color Restoration的过程，因为如果直接对MSR处理的结果进行量化，得到的图像往往整体偏灰度，这是由于原始的彩色值经过log处理后的数据范围就比较小了，这样各通道之间的差异也很小，而之后的线性量化比log曲线要平滑很多，因此整体就丧失了彩色。论文中提出了修正方式如下：</p>
+<p>$$<br>I_{i}^{‘}(x,y) &#x3D; \frac{I_{i}(x,y)}{ {\textstyle \sum_{j&#x3D;1}^{S}} I_{j}(x,y)}<br>$$</p>
+<p>$$<br>C_i(x,y) &#x3D; \beta log[\alpha I_{i}^{‘}(x,y)]<br>$$</p>
+<p>$$<br>R_{MSRCR_i}(x,y) &#x3D; C_i(x,y)R_{MSR_i}(x,y)<br>$$</p>
+<p>对于一些原始图像HUE较为合理的图，如果用经典的MSRCR算法，会导致处理后的图容易偏色，上述论文提出了对图像的Intensity数据进行Retinex处理，然后再把数据根据原始的RGB的比例映射到每个通道，这样就能在保留原始颜色分布的基础上增强图像，文章中称其为MSRCP。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://blog.csdn.net/lz0499/article/details/81154937">https://blog.csdn.net/lz0499/article/details/81154937</a><br><a target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1422364">https://cloud.tencent.com/developer/article/1422364</a><br><a target="_blank" rel="noopener" href="https://www.cnblogs.com/Imageshop/archive/2013/04/17/3026881.html">https://www.cnblogs.com/Imageshop/archive/2013/04/17/3026881.html</a>   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Camera/" rel="tag"># Camera</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-Raw%E5%9F%9FBayerDemosaic/" rel="prev" title="Camera-Raw域BayerDemosaic">
+                  <i class="fa fa-angle-left"></i> Camera-Raw域BayerDemosaic
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-YUV%E5%9F%9FHueAndSaturation/" rel="next" title="Camera-YUV域HueAndSaturation">
+                  Camera-YUV域HueAndSaturation <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

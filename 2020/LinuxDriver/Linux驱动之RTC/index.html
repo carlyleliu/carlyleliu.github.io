@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="概述RTC和系统时钟有不同的用途。前者是硬件时钟，以非易失方式维护绝对时间和日期，而后者是内核维护的软件时钟，用于实现gettimeofday（2）和time（2）系统调用，以及在文件上设置时间戳等。系统时钟报告从起点开始的秒和微秒，起点定义为 POSIX 纪元：1970-01-0100:00：00 +0000(UTC)。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之RTC">
+<meta property="og:url" content="http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRTC/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="概述RTC和系统时钟有不同的用途。前者是硬件时钟，以非易失方式维护绝对时间和日期，而后者是内核维护的软件时钟，用于实现gettimeofday（2）和time（2）系统调用，以及在文件上设置时间戳等。系统时钟报告从起点开始的秒和微秒，起点定义为 POSIX 纪元：1970-01-0100:00：00 +0000(UTC)。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/rtc/RTC_Struct.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/rtc/RTC_Framework.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/rtc/rtc_register.png">
+<meta property="article:published_time" content="2020-10-05T22:34:40.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.769Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux驱动">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/rtc/RTC_Struct.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRTC/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRTC/","path":"2020/LinuxDriver/Linux驱动之RTC/","title":"Linux驱动之RTC"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux驱动之RTC | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sysfs%E6%8E%A5%E5%8F%A3"><span class="nav-number">4.</span> <span class="nav-text">sysfs接口</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hwclock%E5%B7%A5%E5%85%B7"><span class="nav-number">5.</span> <span class="nav-text">hwclock工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">6.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRTC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux驱动之RTC | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之RTC
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-10-06 06:34:40" itemprop="dateCreated datePublished" datetime="2020-10-06T06:34:40+08:00">2020-10-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">驱动</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>RTC和系统时钟有不同的用途。前者是硬件时钟，以非易失方式维护绝对时间和日期，而后者是内核维护的软件时钟，用于实现gettimeofday（2）和time（2）系统调用，以及在文件上设置时间戳等。系统时钟报告从起点开始的秒和微秒，起点定义为 POSIX 纪元：1970-01-0100:00：00 +0000(UTC)。</p>
+<span id="more"></span>
+
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>rtc数据结构如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/615d59160791295710b6b634">原图</a><br><img src="/picture/linux_driver/rtc/RTC_Struct.png"></p>
+<ul>
+<li><p>rtc_device<br>  内核中使用rtc_device结构体来抽象一个rtc设备，rtc_device结构体屏蔽了不同RTC硬件之间的差异，通过rtc_class_ops结构体为上层提供了访问硬件设备的统一接口</p>
+</li>
+<li><p>rtc_class_ops<br>  该结构体提供了对底层差异的抽象，rtc_device用于描述一个rtc设备，而访问该设备的方法对于不同的设备是不同的，rtc_class_ops用于抽象对rtc设备的访问，对上屏蔽了底层操作的差异。编写一个rtc设备驱动就是构造一个rtc_device结构体并注册进系统，rtc的访问方法就是rtc_class_ops结构体</p>
+</li>
+<li><p>rtc_time<br>  这是一个描述时间的结构体</p>
+</li>
+<li><p>rtc_timer<br>  用于对rtc设备的管理</p>
+</li>
+</ul>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>rtc实现的整体框架如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/615d61731efad4243d474106">原图</a><br><img src="/picture/linux_driver/rtc/RTC_Framework.png"></p>
+<ul>
+<li>在rtc设备驱动模型的最上层，针对procfs 文件、sysfs 属性文件、字符设备文件相关的处理接口，分别抽象出rtc-dev相关接口、rtc-sysfs相关接口、rtc-procfs相关接口，分别存储在rtc-dev.c、rtc-sysfs.c、rtc-proc.c这三个文件中</li>
+<li>在rtc-dev.c、rtc-sysfs.c、rtc-proc.c中定义了这三类文件的操作接口（open、read、write、close…）</li>
+<li>上述三类文件的操作接口（open、read、write、close…），会借助rtc interface接口，调用各设备的操作接口，rtc interface接口可以理解为调用设备驱动的桥梁；<br>针对rtc设备驱动，均需要实现rtc class ops中的方法，以便被rtc上层接口调用，从而完成与rtc设备的通信操作</li>
+<li>应用程序通过系统调用接口、vfs相关接口、设备文件系统的inode的操作接口、sysfs文件系统的inode的操作接口、procfs文件系统的inode的操作接口，方才进入rtc设备驱动模型的处理接口中</li>
+</ul>
+<p>实现流程如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/615d6caa1efad4243d474f7d">原图</a><br><img src="/picture/linux_driver/rtc/rtc_register.png"></p>
+<p>devm_rtc_device_register函数就是注册一个rtc设备的api。注册流程如下：</p>
+<ul>
+<li>devm_rtc_allocate_device分配并设置rtc_device结构体</li>
+<li>devm_rtc_register_device注册rtc_device结构体。这里是&#x2F;linux&#x2F;drivers&#x2F;rtc&#x2F;dev.c文件里提供的cdev的file_operations结构体，该结构体函数指针提供了对interface的访问</li>
+<li>在&#x2F;linux&#x2F;drivers&#x2F;rtc&#x2F;interface.c文件里向上为&#x2F;linux&#x2F;drivers&#x2F;rtc&#x2F;dev.c提供接口，向下提供访问rtc_class_ops的接口</li>
+<li>rtc_class_ops由具体的rtc设备在注册的时候提供</li>
+</ul>
+<h1 id="sysfs接口"><a href="#sysfs接口" class="headerlink" title="sysfs接口"></a>sysfs接口</h1><p>在Linux系统上，从用户空间正确管理RTC需要关注两个内核选项。这两个选项是CONFIG_RTC_HCTOSYS 和CONFIG_RTC_HCTOSYS_DEVICE。<br>要使用CONFIG_RTC_HCTOSYS应在内核构建过程中包含代码文件driversrtc&#x2F;hctosys.c，它在启动和恢复时从RTC设置系统时间。一旦启用此选项，就将使用从指定RTC设备读取的值设置系统时间。RTC设备应该在CONFIG_RTC_HCTOSYSDEVICE 中指定：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CONFIG_RTC_HCTOSYS=y</span><br><span class="line">CONFIG_RTC_HCTOSYS_DEVICE=<span class="string">&quot;rtcO&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>负责在sysfs 中实例化RTC属性的内核代码在内核源码树的drivers&#x2F;rtc&#x2F;rtc_sysfs.c中定义。一旦注册，RTC设备就将在&#x2F;sys&#x2F;class&#x2F;rtc下创建rtc<id> 目录，该目录包含一组只读属性，其中重要的属性如下。</p>
+<ul>
+<li><p>date: 该文件打印RTC接口的当前日期：   </p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/date</span><br><span class="line">2017-8-28</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>time:打印此RTC的当前时间：   </p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/time</span><br><span class="line">14:54:20</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>hctosys: 该属性指出RTC设备是否是CONFIG_RTC_HCTOSYS_DEVICE 中指定的设备，也就是在启动和恢复时是否使用该RTC设置系统时间。其值为1表示真，0表示假：   </p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/hctosys</span><br><span class="line">1</span><br></pre></td></tr></table></figure></li>
+<li><p>dev: 此属性显示设备的主设备号和次设备号。数据格式为主设备号：次设备号：    </p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/dev</span><br><span class="line">251:0</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>since_epoch: 该属性将显示从UNIX纪元（自1970年1月1日起）以来的秒数：   </p>
+  <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/since epoch</span><br><span class="line">1503931738</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h1 id="hwclock工具"><a href="#hwclock工具" class="headerlink" title="hwclock工具"></a>hwclock工具</h1><p>硬件时钟（hwclock）工具用于访问RTC设备。man hwclock命令可能比本节讨论的所有内容都更有意义。尽管如此，下面还是编写一些命令，以从系统时钟设置hwclockRTC:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ntpd -q              <span class="comment">#确保系统时钟是从网络时间设置的</span></span><br><span class="line">$ sudo hwclock --systohc    <span class="comment">#从系统时钟设置RTC</span></span><br><span class="line">$ sudo hwclock --show       <span class="comment">#设置RTC</span></span><br><span class="line">Sat May 17 17:36:50 2017 -0.671045 seconds</span><br></pre></td></tr></table></figure>
+
+<p>上面的例子假定主机具有网络连接，可以访问NTP服务器。也可以手动设置系统时间：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">date</span> -s <span class="string">&#x27;2017-08-28 17:14:00&#x27;</span>+s<span class="string">&#x27; #手动设置系统时钟</span></span><br><span class="line"><span class="string">$ sudo hwclock 一systohc                #在系统时间上同步RTC芯片</span></span><br></pre></td></tr></table></figure>
+
+<p>如果没有给出参数，hwclock假定RTC设备文件是&#x2F;dev&#x2F;rtc，它实际上是真正RTC设备的符号链接：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -l /dev/rtc</span><br><span class="line">lrwxrwxrwx 1 root root 4 aout 27 17:50 /dev/rtc -&gt; rtc0</span><br></pre></td></tr></table></figure>
+
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://www.cnblogs.com/053179hu/p/14130300.html">https://www.cnblogs.com/053179hu/p/14130300.html</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/lickylin/article/details/103841941?spm=1001.2014.3001.5501">https://blog.csdn.net/lickylin/article/details/103841941?spm=1001.2014.3001.5501</a>    </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/" rel="tag"># Linux驱动</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BCCF%E5%AD%90%E7%B3%BB%E7%BB%9F/" rel="prev" title="Linux驱动之CCF子系统">
+                  <i class="fa fa-angle-left"></i> Linux驱动之CCF子系统
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRegulator%E5%AD%90%E7%B3%BB%E7%BB%9F/" rel="next" title="Linux驱动之Regulator子系统">
+                  Linux驱动之Regulator子系统 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

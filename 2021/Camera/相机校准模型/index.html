@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="小孔成像模型">
+<meta property="og:type" content="article">
+<meta property="og:title" content="相机校准模型">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Camera/%E7%9B%B8%E6%9C%BA%E6%A0%A1%E5%87%86%E6%A8%A1%E5%9E%8B/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="小孔成像模型">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled%201.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled%202.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled%203.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled%204.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled%205.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled%206.png">
+<meta property="article:published_time" content="2021-06-06T01:17:03.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.789Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Camera">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/camera/calib/Untitled.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Camera/%E7%9B%B8%E6%9C%BA%E6%A0%A1%E5%87%86%E6%A8%A1%E5%9E%8B/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2021/Camera/%E7%9B%B8%E6%9C%BA%E6%A0%A1%E5%87%86%E6%A8%A1%E5%9E%8B/","path":"2021/Camera/相机校准模型/","title":"相机校准模型"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>相机校准模型 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E5%AD%94%E6%88%90%E5%83%8F%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">小孔成像模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%84%E5%9D%90%E6%A0%87%E7%B3%BB%E5%AE%9A%E4%B9%89%E5%8F%8A%E7%9B%B8%E6%9C%BA%E7%9A%84%E5%86%85%E5%8F%82%E5%92%8C%E5%A4%96%E5%8F%82"><span class="nav-number">2.</span> <span class="nav-text">各坐标系定义及相机的内参和外参</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%83%8F%E7%B4%A0%E5%9D%90%E6%A0%87%E7%B3%BB"><span class="nav-number">2.1.</span> <span class="nav-text">像素坐标系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E5%9D%90%E6%A0%87%E7%B3%BB"><span class="nav-number">2.2.</span> <span class="nav-text">图像坐标系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B8%E6%9C%BA%E5%9D%90%E6%A0%87%E7%B3%BB"><span class="nav-number">2.3.</span> <span class="nav-text">相机坐标系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%96%E7%95%8C%E5%9D%90%E6%A0%87%E7%B3%BB"><span class="nav-number">2.4.</span> <span class="nav-text">世界坐标系</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E7%95%B8%E5%8F%98%E5%8F%8A%E7%95%B8%E5%8F%98%E7%9F%AB%E6%AD%A3"><span class="nav-number">3.</span> <span class="nav-text">图像畸变及畸变矫正</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BE%84%E5%90%91%E7%95%B8%E5%8F%98"><span class="nav-number">3.1.</span> <span class="nav-text">径向畸变</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%87%E5%90%91%E7%95%B8%E5%8F%98"><span class="nav-number">3.2.</span> <span class="nav-text">切向畸变</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%95%B8%E5%8F%98%E7%9F%AB%E6%AD%A3"><span class="nav-number">3.3.</span> <span class="nav-text">畸变矫正</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Camera/%E7%9B%B8%E6%9C%BA%E6%A0%A1%E5%87%86%E6%A8%A1%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="相机校准模型 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          相机校准模型
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-06-06 09:17:03" itemprop="dateCreated datePublished" datetime="2021-06-06T09:17:03+08:00">2021-06-06</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/%E9%98%B2%E6%8A%96/" itemprop="url" rel="index"><span itemprop="name">防抖</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="小孔成像模型"><a href="#小孔成像模型" class="headerlink" title="小孔成像模型"></a>小孔成像模型</h1><p><img src="/picture/camera/calib/Untitled.png"></p>
+<span id="more"></span>
+
+<h1 id="各坐标系定义及相机的内参和外参"><a href="#各坐标系定义及相机的内参和外参" class="headerlink" title="各坐标系定义及相机的内参和外参"></a>各坐标系定义及相机的内参和外参</h1><h2 id="像素坐标系"><a href="#像素坐标系" class="headerlink" title="像素坐标系"></a>像素坐标系</h2><p>像素坐标就是像素在图像中的位置。一般像素坐标系的左上角的顶点就是原点，水平向右是u，垂直向下是v轴。<br><img src="/picture/camera/calib/Untitled%201.png"></p>
+<h2 id="图像坐标系"><a href="#图像坐标系" class="headerlink" title="图像坐标系"></a>图像坐标系</h2><p>在像素坐标系中，每个像素的坐标是用像素来表示的，然而，像素的表示方法却不能反应图像中物体的物理尺寸，因此，有必要将像素坐标转换为图像坐标。将像素坐标系的原点平移到图像的中心，就定为图像坐标系的原点，图像坐标系的x轴与像素坐标系的u轴平行，方向相同，而图像坐标系的y轴与像素坐标系的v轴平行，方向相同。<br><img src="/picture/camera/calib/Untitled%202.png"></p>
+<p>在图中，假设在像素坐标系下图像中心的像素坐标是（u0,v0），相机中感光器件每个像素的物理尺寸是dx * dy，那么，图像坐标系的坐标（x,y）与像素坐标系的坐标（u,v）之间的关系可以表示为：</p>
+<p>$$u &#x3D; \frac{x}{d_x} + u_0 \         v &#x3D; \frac{y}{d_y} + v_0 $$</p>
+<p>写成矩阵的形式就为：</p>
+<p>$$\begin{bmatrix} u \  v \end{bmatrix} &#x3D; \begin{bmatrix} \frac{1}{d_x} &amp; 0 \ 0 &amp; \frac{1}{d_y} \end{bmatrix}\begin{bmatrix} x \ y \end{bmatrix} + \begin{bmatrix} u_0\  v_0 \end{bmatrix}$$</p>
+<p>改写为齐次坐标的形式：</p>
+<p>$$\begin{bmatrix} u \ v \ 1 \end{bmatrix} &#x3D; \begin{bmatrix} \frac{1}{d_x}&amp; 0 &amp;0 \ 0 &amp; \frac{1}{d_y} &amp; 0\ 0 &amp; 0 &amp; 0 \end{bmatrix} \begin{bmatrix} x \  y \ 0 \end{bmatrix} + \begin{bmatrix} u_o \  v_o \ 1 \end{bmatrix} &#x3D; \begin{bmatrix} \frac{1}{d_x}&amp; 0 &amp;u_o \ 0 &amp; \frac{1}{d_y}&amp; v_0\ 0 &amp; 0 &amp; 1 \end{bmatrix} \begin{bmatrix} x \  y \ 1 \end{bmatrix}$$</p>
+<h2 id="相机坐标系"><a href="#相机坐标系" class="headerlink" title="相机坐标系"></a>相机坐标系</h2><p>相机坐标系是以相机的光轴作为Z轴，光线在相机光学系统的中心位置就是原点Oc（实际上就是透镜的中心）,相机坐标系的水平轴Xc与垂直轴Yc分别于图像坐标系的X轴和Y轴平行。在图中，相机坐标系的原点与图像坐标系的原点之间的距离OcOi之间的距离为f(也就是焦距)。<br><img src="/picture/camera/calib/Untitled%203.png"></p>
+<p>假设，三维空间中点P, 其在相机坐标系下坐标为$P_c &#x3D; [x_c,y_c,z_c]^T$; 其像点p，在图像坐标系中坐标为.<br><img src="/picture/camera/calib/Untitled%204.png"></p>
+<p>由相似三角形原理，得到</p>
+<p>$$\frac{f}{z_c} &#x3D; \frac{x}{x_c} &#x3D; \frac{y}{y_c} \ x &#x3D; f \frac{x_c}{z_c},  y &#x3D; f \frac{y_c}{z_c} $$</p>
+<p>用向量表示为：</p>
+<p>$$\begin{bmatrix} x\ y\ 1 \end{bmatrix} &#x3D; \frac{1}{z_c}\begin{bmatrix} f &amp;0  &amp;0 \  0 &amp; f &amp; 0\  0 &amp; 0 &amp; 1 \end{bmatrix} \begin{bmatrix} x_c\  y_c\  z_c \end{bmatrix}$$</p>
+<p>进一步可以写为：</p>
+<p>$$<br>\begin{bmatrix} u \ v \ 1 \end{bmatrix} &#x3D; \begin{bmatrix} \frac{1}{d_x}&amp; 0 &amp;u_o \ 0 &amp; \frac{1}{d_y}&amp; v_0\ 0 &amp; 0 &amp; 1 \end{bmatrix} \begin{bmatrix} x \  y \ 1 \end{bmatrix} &#x3D; \frac{1}{z_c}\begin{bmatrix} \frac{f}{d_x}&amp; 0 &amp;u_o \ 0 &amp; \frac{f}{d_y}&amp; v_0\ 0 &amp; 0 &amp; 1 \end{bmatrix} \begin{bmatrix} x_c\  y_c\  z_c \end{bmatrix}<br>$$</p>
+<p>到这里$\begin{bmatrix} \frac{f}{d_x}&amp; 0 &amp;u_o \ 0 &amp; \frac{f}{d_y}&amp; v_0\ 0 &amp; 0 &amp; 1 \end{bmatrix}$<strong>就是相机的内参矩阵，跟相机的焦距和传感器的大小等参数有关</strong>。</p>
+<h2 id="世界坐标系"><a href="#世界坐标系" class="headerlink" title="世界坐标系"></a>世界坐标系</h2><p>界坐标系是图像与真实物体之间的一个映射关系。如果是单目视觉的话，主要就是真实物体尺寸与图像尺寸的映射关系。如果是多目视觉的话，那么就需要知道多个相机之间的关系，这个关系就需要在同一个坐标系下进行换算。在下图中，世界坐标系的原点是Ow,而Xw,Yw,Zw轴并不是与其他坐标系平行的，而是有一定的角度，并且有一定的平移。<br><img src="/picture/camera/calib/Untitled.png"></p>
+<p>对于世界坐标系到相机坐标系的转换是刚体变换，是旋转动作和平移动作的结果，如下：</p>
+<p>$$\begin{bmatrix} x_c\  y_c\  z_c\  1 \end{bmatrix} &#x3D; \begin{bmatrix}R &amp; t\ 0 &amp; 1 \end{bmatrix}\begin{bmatrix} x_w\  y_w\  z_w\  1 \end{bmatrix}$$</p>
+<p>这里$\begin{bmatrix}R &amp; t\ 0 &amp; 1 \end{bmatrix}$就是相机的外参矩阵，R是相机相对世界坐标系的旋转关系，t是相机相对于世界坐标系的平移关系，当相机位姿发生变化，该参数也相应的发生变化**。</p>
+<h1 id="图像畸变及畸变矫正"><a href="#图像畸变及畸变矫正" class="headerlink" title="图像畸变及畸变矫正"></a>图像畸变及畸变矫正</h1><h2 id="径向畸变"><a href="#径向畸变" class="headerlink" title="径向畸变"></a>径向畸变</h2><p>径向畸变:是由于透镜形状的制造工艺导致，且越向透镜边缘移动径向畸变越严重，实际情况中我们常用r&#x3D;0处的泰勒级数展开的前几项来近似描述径向畸变，矫正径向畸变前后的坐标关系为：<br><img src="/picture/camera/calib/Untitled%205.png"></p>
+<p>径向畸变的矫正公式如下：</p>
+<p>$$<br>\begin{aligned}<br>&amp;x_{rad}&#x3D;x(1+k_1r^2+k_2r^4+k_3r^6) \<br>&amp;y_{rad}&#x3D;y(1+k_1r^2+k_2r^4+k_3r^6)<br>\end{aligned}<br>$$</p>
+<h2 id="切向畸变"><a href="#切向畸变" class="headerlink" title="切向畸变"></a>切向畸变</h2><p>切向畸变:是由于透镜和CMOS或者CCD的安装位置误差导致，切向畸变需要两个额外的畸变参数来描述，矫正前后的坐标关系为：<br><img src="/picture/camera/calib/Untitled%206.png"></p>
+<p>切向畸变的矫正公式如下（这里不给出推导过程，直接使用）</p>
+<p>$$<br>x_{tan}&#x3D;x+2p_1xy+p_2(r^2+2x^2)\y_{tan}&#x3D;y+p_1(r^2+2y^2)+2p_2xy<br>$$</p>
+<h2 id="畸变矫正"><a href="#畸变矫正" class="headerlink" title="畸变矫正"></a>畸变矫正</h2><p>综合以上两种畸变，得到相机的畸变模型（纠正后的图像像素坐标系的坐标）：</p>
+<p>$$<br>\begin{aligned}<br>&amp;r^2&#x3D;x^2+y^2  \<br>&amp;x_{distorted}&#x3D;x(1+k_1r^2+k_2r^4+k_3r^6)+2p_1xy+p_2(r^2+2x^2) \<br>&amp;y_{distorted}&#x3D;y(1+k_1r^2+k_2r^4+k_3r^6)+p_1(r^2+2y^2)+2p_2xy<br>\end{aligned}<br>$$</p>
+<p>其中x,y 是是去畸变后的图像坐标，它是归一化的坐标，以图像中心为原点。r为半径。$x_{distorted}y_{distorted}$是具有畸变得图像坐标</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Camera/" rel="tag"># Camera</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BV4L2%E5%AD%90%E7%B3%BB%E7%BB%9F/" rel="prev" title="Linux驱动之V4L2子系统">
+                  <i class="fa fa-angle-left"></i> Linux驱动之V4L2子系统
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/Science/EIS%E7%94%B5%E5%AD%90%E9%98%B2%E6%8A%96/" rel="next" title="EIS电子防抖基本原理">
+                  EIS电子防抖基本原理 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

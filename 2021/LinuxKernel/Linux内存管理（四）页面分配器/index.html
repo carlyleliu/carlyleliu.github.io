@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内存管理（四）页面分配器">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/alloc_pages.png">
+<meta property="article:published_time" content="2021-11-20T17:47:50.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.779Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="内存管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8/","path":"2021/LinuxKernel/Linux内存管理（四）页面分配器/","title":"Linux内存管理（四）页面分配器"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux内存管理（四）页面分配器 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#page%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">page数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#refcount"><span class="nav-number">1.1.</span> <span class="nav-text">_refcount</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mapcount"><span class="nav-number">1.2.</span> <span class="nav-text">_mapcount</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#RMAP"><span class="nav-number">1.3.</span> <span class="nav-text">RMAP</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%87%BD%E6%95%B0%EF%BC%88%E6%89%A9%E5%B1%95%F0%9F%99%88%EF%BC%89"><span class="nav-number">2.</span> <span class="nav-text">分配物理页面的接口函数（扩展🙈）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2%E7%9A%84%E6%A0%B8%E5%BF%83%E6%8E%A5%E5%8F%A3%E5%87%BD%E6%95%B0"><span class="nav-number">2.1.</span> <span class="nav-text">分配物理页面的核心接口函数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E4%B8%80%E4%B8%AA%E7%89%A9%E7%90%86%E9%A1%B5%E9%9D%A2"><span class="nav-number">2.2.</span> <span class="nav-text">分配一个物理页面</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E9%87%8A%E6%94%BE%E5%87%BD%E6%95%B0"><span class="nav-number">2.3.</span> <span class="nav-text">页面释放函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E9%85%8D%E6%8E%A9%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">分配掩码</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8C%BA%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-number">3.1.</span> <span class="nav-text">内存管理区修饰符的标志</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-number">3.2.</span> <span class="nav-text">移动修饰符的标志</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B0%B4%E4%BD%8D%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-number">3.3.</span> <span class="nav-text">水位修饰符的标志</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-number">3.4.</span> <span class="nav-text">页面回收修饰符的标志</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%8C%E4%B8%BA%E4%BF%AE%E9%A5%B0%E7%AC%A6%E7%9A%84%E6%A0%87%E5%BF%97"><span class="nav-number">3.5.</span> <span class="nav-text">行为修饰符的标志</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#alloc-pages-%E5%87%BD%E6%95%B0"><span class="nav-number">4.</span> <span class="nav-text">alloc_pages()函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">6.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%9B%9B%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux内存管理（四）页面分配器 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux内存管理（四）页面分配器
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-11-21 01:47:50" itemprop="dateCreated datePublished" datetime="2021-11-21T01:47:50+08:00">2021-11-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E5%86%85%E6%A0%B8/" itemprop="url" rel="index"><span itemprop="name">内核</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E5%88%86%E9%85%8D%E5%99%A8.png"><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/62372dad07912906f50a7fab">原图</a></p>
+<span id="more"></span>
+
+<p>分配物理页面是内存管理中最复杂的部分，它涉及页面回收、内存规整、直接回收内存等相当错综复杂的机制。本节关注在内存充足的情况下如何分配连续物理内存。</p>
+<h1 id="page数据结构"><a href="#page数据结构" class="headerlink" title="page数据结构"></a>page数据结构</h1><p>Linux内核内存管理的实现以page数据结构为核心，其他的内存管理设施都基于page数据结构，如VMA管理、缺页中断、RMAP、页面分配与回收等。page数据结构定义在include&#x2F;linux&#x2F;mm_types.h头文件中。</p>
+<h2 id="refcount"><a href="#refcount" class="headerlink" title="_refcount"></a>_refcount</h2><p>_refcount和__mapcount是page数据结构中非常重要的两个引用计数，且都是atomic_t类型的变量。<br>_refcount表示内核中引用该页面的次数。</p>
+<ul>
+<li>当_refcount 的值为0时，表示该页面为空闲页面或即将要被释放的页面</li>
+<li>当_refcount 的值大于0时，表示该页面已经分配给内核正在使用，暂时不会被释放</li>
+</ul>
+<h2 id="mapcount"><a href="#mapcount" class="headerlink" title="_mapcount"></a>_mapcount</h2><p>_mapcount表示这个页面被进程映射的个数，即已经映射了多少个用户PTE。每个用户进程都拥有各自独立的虚拟空间（256TB）和一份独立的页表，所以可能出现多个用户进程地址空间同时映射到一个物理页面的情况，RMAP系统就是利用这个特性来实现的。_mapcount主要用于RMAP系统中。</p>
+<ul>
+<li>若_mapcount等于-1，表示没有PTE映射到页面</li>
+<li>若_mapcount等于O，表示只有父进程映射到页面。匿名页面刚分配时，_mapcount初始化为O。例如，当do_anonymous_page()产生的匿名页面通过page_add_new_anonrmap()添加到rmap系统中时，会设置_mapcount为O，这表明匿名页面当前只有父进程的PTE映射到页面</li>
+</ul>
+<h2 id="RMAP"><a href="#RMAP" class="headerlink" title="RMAP"></a>RMAP</h2><p>用户进程在使用虚拟内存过程中，从虚拟内存页面映射到物理内存页面时，PTE保留了这个记录。page数据结构中的_mapcount记录有多少个用户PTE映射到物理页面。有的页面需要迁移，有的页面需要交换到磁盘，在交换之前，必须找出哪些进程使用这个页面，然后解除这些映射的用户PTE。</p>
+<p>RMAP的主要目的是从物理页面的page数据结构中找到有哪些映射的用户PTE，这样页面回收模块就可以很快速和高效地把这个物理页面映射的所有用户PTE正都解除并回收这个页面。</p>
+<p>RMAP的典型应用场景如下。</p>
+<ul>
+<li>kswapd内核线程为了回收页面，需要断开所有映射到该匿名页面的用户PTE</li>
+<li>页面迁移时，需要断开所有映射到匿名页面的用户PTE</li>
+</ul>
+<h1 id="分配物理页面的接口函数（扩展🙈）"><a href="#分配物理页面的接口函数（扩展🙈）" class="headerlink" title="分配物理页面的接口函数（扩展🙈）"></a>分配物理页面的接口函数（扩展🙈）</h1><p>内核中分配物理内存页面的常用接口函数是alloc_pages()，它用于分配一个或者多个连续的物理页面，分配的页面个数只能是2的整数次幂。</p>
+<h2 id="分配物理页面的核心接口函数"><a href="#分配物理页面的核心接口函数" class="headerlink" title="分配物理页面的核心接口函数"></a>分配物理页面的核心接口函数</h2><p>aloc_pages()函数的参数有两个，gfp_mask表示分配掩码，order表示分配级数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/gfp.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">page</span> *__<span class="title">alloc_pages</span>(<span class="title">gfp_t</span> <span class="title">gfp</span>, <span class="title">unsigned</span> <span class="title">int</span> <span class="title">order</span>, <span class="title">int</span> <span class="title">preferred_nid</span>,</span></span><br><span class="line"><span class="class">		<span class="title">nodemask_t</span> *<span class="title">nodemask</span>);</span></span><br></pre></td></tr></table></figure>
+
+<p>alloc_paes()函数用来分配2的order次幂个连续的物理页面，返回值是第一个物理页面page数据结构。第一个参数是gfp_mask：第二个参数是order，请求的order需要小于MAX_ORDER，MAX_ORDER通常默认是11。<br>另一个很常见的接口函数是__get_free_pages()，其定义如下。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/page_alloc.c&gt;</span><br><span class="line"><span class="type">unsigned</span> <span class="type">long</span> __get_free_pages(<span class="type">gfp_t</span> gfp_mask, <span class="type">unsigned</span> <span class="type">int</span> order)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">page</span> *<span class="title">page</span>;</span></span><br><span class="line"></span><br><span class="line">	page = alloc_pages(gfp_mask &amp; ~__GFP_HIGHMEM, order);</span><br><span class="line">	<span class="keyword">if</span> (!page)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">return</span> (<span class="type">unsigned</span> <span class="type">long</span>) page_address(page);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>__get_free_pages()函数返回的是所分配内存的内核空间虚拟地址。如果所分配内存是线性映射的物理内存，则直接返回线性映射区域的内核空间虚拟地址。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span> *<span class="title function_">page_address</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> page *page)</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="分配一个物理页面"><a href="#分配一个物理页面" class="headerlink" title="分配一个物理页面"></a>分配一个物理页面</h2><p>如果需要分配一个物理页面，可以使用如下两个封装好的接口函数，它们最后仍调用alloc_pages()，只是order的值为0.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> alloc_pages_vma(gfp_mask, order, vma, addr, node, false)\</span></span><br><span class="line"><span class="meta">	alloc_pages(gfp_mask, order)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __get_free_page(gfp_mask) \</span></span><br><span class="line"><span class="meta">		__get_free_pages((gfp_mask), 0)</span></span><br></pre></td></tr></table></figure>
+
+<p>如果需要返回一个全填充为0的页面，可以使用如下接口函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">get_zeroed_page</span><span class="params">(<span class="type">gfp_t</span> gfp_mask)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">return</span> __get_free_pages(gfp_mask | __GFP_ZERO, <span class="number">0</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>使用alloc_page()分配的物理页面理论上可能被随机地填充了某些垃圾信息，因此在有些敏感的场合下需要先把分配的内存清零再使用，这样可以减少不必要的麻烦。</p>
+<h2 id="页面释放函数"><a href="#页面释放函数" class="headerlink" title="页面释放函数"></a>页面释放函数</h2><p>页面释放函数主要有如下几个。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="type">void</span> __free_pages(<span class="keyword">struct</span> page *page, <span class="type">unsigned</span> <span class="type">int</span> order);</span><br><span class="line"><span class="keyword">extern</span> <span class="type">void</span> <span class="title function_">free_pages</span><span class="params">(<span class="type">unsigned</span> <span class="type">long</span> addr, <span class="type">unsigned</span> <span class="type">int</span> order)</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> __free_page(page) __free_pages((page), 0)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> free_page(addr) free_pages((addr), 0)</span></span><br></pre></td></tr></table></figure>
+
+<p>释放时需要特别注意参数，传递错误的page指针或者错误的order值会引起系统崩溃。</p>
+<h1 id="分配掩码"><a href="#分配掩码" class="headerlink" title="分配掩码"></a>分配掩码</h1><p>分配掩码是描述页面分配方法的标志，它影响着页面分配的整个流程。因为Linux内核是一个通用的操作系统，所以页面分配器被设计成一个复杂的系统。它既要高效，又要兼顾很多种情况，特别是在内存紧张的情况下的内存分配。gfp_mask其实被定义成一个unsigned类型的变量。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="type">unsigned</span> __bitwise__ <span class="type">gfp_t</span>;</span><br></pre></td></tr></table></figure>
+
+<p>gfp_mask定义在include&#x2F;inux&#x2F;gfp.h文件中。修饰符在Linux4.4内核中被重新归类，大致可以分成如下几类。</p>
+<ul>
+<li>内存管理区修饰符（zone modifier）</li>
+<li>移动修饰符（mobility and placement modifier）</li>
+<li>水位修饰符（watermark modifier）</li>
+<li>页面回收修饰符（page reclaim modifier）</li>
+<li>行为修饰符（action modifier）</li>
+</ul>
+<p>下面详细介绍各种修饰符的标志。</p>
+<h2 id="内存管理区修饰符的标志"><a href="#内存管理区修饰符的标志" class="headerlink" title="内存管理区修饰符的标志"></a>内存管理区修饰符的标志</h2><p>内存管理区修饰符主要用于表示应当从哪些内存管理区中来分配物理内存。内存管理区修饰符使用gfp_mask的低4位来表示，其标志如下所示。</p>
+<ul>
+<li>__GFP_DMA: 从ZONE_DMA中分配内存</li>
+<li>__GFP_DMA32: 从ZONE DMA32中分配内存</li>
+<li>__GFP_HIGHMEM: 优先从ZONE_HIGHMEM中分配内存</li>
+<li>__GFP_MOVABLE: 页面可以被迁移或者回收，如用于内存规整机制</li>
+</ul>
+<h2 id="移动修饰符的标志"><a href="#移动修饰符的标志" class="headerlink" title="移动修饰符的标志"></a>移动修饰符的标志</h2><p>移动修饰符主要用于指示分配出来的页面具有的迁移属性，其标志如下所示。在Linux2.6.24内核中，为了解决外碎片化的问题，引入了迁移类型，因此在分配内存时需要指定所分配的页面具有哪些迁移属性。</p>
+<ul>
+<li>__GFP_RECLAIMABLE: 在slab分配器中指定了SLAB_RECLAIM_ACCOUNT标志位，表示slab分配器中使用的页面可以通过收割机来回收</li>
+<li>__GFP_HARDWALL: 使能cpuset内存分配策略</li>
+<li>__GFP_THISNODE: 从指定的内存节点中分配内存，并且没有回退机制</li>
+<li>__GFP_ACCOUNT: 分配过程会被kmemcg记录</li>
+</ul>
+<h2 id="水位修饰符的标志"><a href="#水位修饰符的标志" class="headerlink" title="水位修饰符的标志"></a>水位修饰符的标志</h2><p>水位修饰符用于控制是否可以访问系统预留的内存。所谓系统预留内存指的是最低警戒水位以下的内存，一般优先级的分配请求是不能访问它们的，只有高优先级的分配请求才能访问，如__GFP_HIGH、__GFP_ATOMIC等。水位修饰符的标志如下所示。</p>
+<ul>
+<li>__GFP_HIGH: 表示分配内存具有高优先级，并且这个分配请求是很有必要的，分配器可以使用系统预留的内存（即最低警戒水位线下的预留内存）</li>
+<li>__GFP_ATOMIC: 表示分配内存的过程不能执行页面回收或者睡眠动作，并且具有很高的优先级，可以访问系统预留的内存。常见的一个场景是在中断上下文中分配内存</li>
+<li>__GFP_MEMALLOC: 分配过程中允许访问所有的内存，包括系统预留的内存。分配内存进程通常要保证在分配内存过程中很快会有内存被释放，如进程退出或者页面回收</li>
+<li>__GFP_NOMEMALLOC: 分配过程不允许访问系统预留的内存</li>
+</ul>
+<h2 id="页面回收修饰符的标志"><a href="#页面回收修饰符的标志" class="headerlink" title="页面回收修饰符的标志"></a>页面回收修饰符的标志</h2><p>页面回收修饰符的常用标志如下所示。</p>
+<ul>
+<li>__GFP_IO: 允许开启I&#x2F;O传输</li>
+<li>__GFP_FS: 允许调用底层的文件系统。这个标志清零通常是为了避免死锁的发生，如果相应的文件系统操作路径上已经持有了锁，分配内存过程又递归地调用这个文件系统的相应操作路径，可能会产生死锁</li>
+<li>__GFP_DIRECT_RECLAIM: 分配内存的过程中允许使用页面直接回收机制</li>
+<li>__GFP_KSWAPD_RECLAIM: 表示当到达内存管理区的低水位时会唤醒kswapd内核线程，以异步地回收内存，直到内存管理区恢复到了高水位为止</li>
+<li>__GFP_RECLAIM: 用于允许或者禁止直接页面回收和kswapd内核线程</li>
+<li>__GFP_REPEAT: 当分配失败时会继续尝试</li>
+<li>__GFP_NOFAIL: 当分配失败时会无限地尝试下去，直到分配成功为止。当分配者希望分配内存不失败时，应该使用这个标志位，而不是自己写一个while循环来不断地调用页面分配接口函数</li>
+<li>__GFP_NORETRY: 当使用了直接页面回收和内存规整等机制还无法分配内存时，最好不要重复尝试分配了，直接返回NULL</li>
+</ul>
+<h2 id="行为修饰符的标志"><a href="#行为修饰符的标志" class="headerlink" title="行为修饰符的标志"></a>行为修饰符的标志</h2><p>行为修饰符的常见标志如下所示。</p>
+<ul>
+<li>__GFP_COLD: 分配的内存不会马上被使用。通常会返回一个空的高速缓存页面</li>
+<li>__GFP_NOWARN: 关闭分配过程中的一些错误报告</li>
+<li>__GFP_ZERO: 返回一个全部填充为0的页面</li>
+<li>__GFP_NOTRACK: 不被kmemcheck机制跟踪</li>
+<li>__GFP_OTHER_NODE: 在远端的一个内存节点上分配。通常在 khugepaged内核线程中使用</li>
+</ul>
+<p>前文列出了5大类修饰符的标志，对于内核开发者或者驱动开发者来说，要正确使用这些标志是一件很困难的事情，因此定义了一些常用的标志的组合类型标志（type flag），如下所示。类型标志提供了内核开发中常用的标志的组合，推荐开发者使用这些类型标志。</p>
+<ul>
+<li>GFP_KERNEL: 内核分配内存常用的标志之一。它可能会被阻塞，即分配过程中可能会睡眠</li>
+<li>GFP_ATOMIC: 调用者不能睡眠并且保证分配会成功。它可以访问系统预留的内存</li>
+<li>GFP_NOWAIT: 分配中不允许睡眠等待</li>
+<li>GFP_NOFS: 不会访问任何的文件系统的接口和操作</li>
+<li>GFP_NOIO: 不需要启动任何的I&#x2F;O操作。如使用直接回收机制丢弃干净的页面或者为slab分配的页面</li>
+<li>GFP_USER: 通常用户空间的进程用来分配内存，这些内存可以被内核或者硬件使用。常用的一个场景是硬件使用的DMA缓冲器要映射到用户空间，如显卡的缓冲器</li>
+<li>GFP_DMA&#x2F; GFP_DMA32: 使用ZONE_DMA或者ZONE_DMA32来分配内存</li>
+<li>GFP_HIGHUSER: 用户空间进程用来分配内存，优先使用ZONE_HIGHMEM，这些内存可以映射到用户空间，内核空间不会直接访问这些内存。另外，这些内存不能迁移</li>
+<li>GFP_HIGHUSER_MOVABLE: 类似于GFP_HIGHUSER，但是页面可以迁移</li>
+<li>GFP_TRANSHUGE &#x2F; GFP_TRANSHUGE_LIGHT: 通常用于透明页面分配</li>
+</ul>
+<p>上面这些都是常用的类型标志，在实际使用过程中需要注意以下事项。</p>
+<ul>
+<li>GFP_KERNEL主要用于分配内核使用的内存，在分配过程中会引起睡眠，在中断上下文和不能睡眠的内核路径里使用该类型标志需要特别警惕，因为这会引起死锁或者其他系统异常</li>
+<li>GFP_ATOMIC正好和GFP_KERNEL相反，它可以使用在不能睡眠的内存分配路径（如中断处理程序、软中断以及tasklet等）中。GFP_KERNEL可以让调用者睡眠等待系统页面回收来释放一此内存，但GFP_ATOMIC不可以，所以可能会分配失败</li>
+<li>GFP_USER、 GFP_HIGHUSER和GFP_HIGHUSER_MOVABLE这几个类型标志都是为用户空间进程分配内存的。不同之处在于，GFP_HIGHUSER首先使用高端内存，GFP_HIGHUSER MOVABLE优先使用高端内存并且分配的内存具有可移动属性</li>
+<li>GFP_NOIO和GFP_NOFS都会产生阻塞，它们用于避免某些其他的操作。GFPNOIO表示分配过程中绝不会启动任何磁盘I&#x2F;O的操作。GFP_NOFS表示可以启动磁盘I&#x2F;O，但是不会启动文件系统的相关操作。举一个例子，假设进程A在执行打开文件的操作中需要分配内存但内存短缺，那么进程A会睡眠等待，系统的OOM Killer机制会选择一个进程来终止。假设选择了进程B，而进程B退出时需要执行一些文件系统的操作，这些操作可能会申请锁，而恰巧进程A持有这个锁，所以死锁就发生了</li>
+<li>GFP_KERNEL分配的页面通常是不可迁移的，GFP_HIGHUSER_MOVABLE分配的页面是可迁移的</li>
+</ul>
+<h1 id="alloc-pages-函数"><a href="#alloc-pages-函数" class="headerlink" title="alloc_pages()函数"></a>alloc_pages()函数</h1><p>下面以GFP_KERNEL为例，看在理想情况下alloc_pages()函数是如何分配物理内存的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">《分配物理内存的例子》</span><br><span class="line">page = alloc_pages(GFP_KERNEL, order);</span><br></pre></td></tr></table></figure>
+
+<p>GFP_KERNEL类型标志定义在gfp.h头文件中，是一个标志组合。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> GFP_KERNEL	(__GFP_RECLAIM | __GFP_IO | __GFP_FS)</span></span><br></pre></td></tr></table></figure>
+
+<p>所以GFP_KERNEL类型标志包含了__GFP_RECLAIM、__GFP_IO和__GFP_FS这3个标志，其地址换算成十六进制是0x60 00 C0。</p>
+<p>其函数流程如下：<br><img src="/picture/linux/kernel/mem/alloc_pages.png"></p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>页面分配器是Linux内核内存管理中最基本的分配器，伙伴系统分配页面就是使用该方法，理解页面分配器需要关注如下几个方面。</p>
+<ul>
+<li>从分配掩码中知道可以从哪些zone中分配内存，分配内存的属性属于哪些MIGRATE_TYPES类型</li>
+<li>页面分配时应从哪个方向来扫描zone</li>
+<li>zone水位的判断</li>
+</ul>
+<p>本节介绍了理想情况下页面分配器如何分配物理页面，但是在Linux内核处于内存短缺的情况下又该如何分配内存呢？这涉及内存管理中最难的几个主题，如页面回收、直接内存回收内存规整和OOM Killer机制等。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>《奔跑吧Linux内核》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag"># 内存管理</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%89%EF%BC%89%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/" rel="prev" title="Linux内存管理（三）基础知识">
+                  <i class="fa fa-angle-left"></i> Linux内存管理（三）基础知识
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%BA%94%EF%BC%89slab%E5%88%86%E9%85%8D%E5%99%A8/" rel="next" title="Linux内存管理（五）伙伴系统和slab分配器">
+                  Linux内存管理（五）伙伴系统和slab分配器 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

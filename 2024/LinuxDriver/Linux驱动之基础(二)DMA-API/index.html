@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="There are two types of DMA mappings: Consistent DMA mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之基础(二)DMA-API">
+<meta property="og:url" content="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E5%9F%BA%E7%A1%80(%E4%BA%8C)DMA-API/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="There are two types of DMA mappings: Consistent DMA mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma3.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma4.png">
+<meta property="article:published_time" content="2024-05-02T15:20:16.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.779Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux驱动">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma1.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E5%9F%BA%E7%A1%80(%E4%BA%8C)DMA-API/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E5%9F%BA%E7%A1%80(%E4%BA%8C)DMA-API/","path":"2024/LinuxDriver/Linux驱动之基础(二)DMA-API/","title":"Linux驱动之基础(二)DMA-API"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux驱动之基础(二)DMA-API | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#There-are-two-types-of-DMA-mappings"><span class="nav-number">1.</span> <span class="nav-text">There are two types of DMA mappings:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#USAGE"><span class="nav-number">2.</span> <span class="nav-text">USAGE</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#DMA-Direction"><span class="nav-number">2.1.</span> <span class="nav-text">DMA Direction</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#QA"><span class="nav-number">3.</span> <span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dma-sync-single-for-device%E5%92%8Cdma-sync-single-for-cpu%E4%BB%A5%E5%8F%8Adirection%E4%B9%8B%E9%97%B4%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-number">3.1.</span> <span class="nav-text">dma_sync_single_for_device和dma_sync_single_for_cpu以及direction之间的差别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8ELinux-upstream%E7%A4%BE%E5%8C%BA"><span class="nav-number">3.1.1.</span> <span class="nav-text">对于Linux upstream社区</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Cache%E7%9A%84%E4%B8%89%E7%A7%8D%E6%93%8D%E4%BD%9C%EF%BC%9A"><span class="nav-number">3.2.</span> <span class="nav-text">Cache的三种操作：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E5%9F%BA%E7%A1%80(%E4%BA%8C)DMA-API/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux驱动之基础(二)DMA-API | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之基础(二)DMA-API
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-05-02 23:20:16" itemprop="dateCreated datePublished" datetime="2024-05-02T23:20:16+08:00">2024-05-02</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">驱动</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="There-are-two-types-of-DMA-mappings"><a href="#There-are-two-types-of-DMA-mappings" class="headerlink" title="There are two types of DMA mappings:"></a>There are two types of DMA mappings:</h1><ul>
+<li><p>Consistent DMA mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the CPU can access the data in parallel and will see updates made by each other without any explicit software flushing.</p>
+</li>
+<li><p>Streaming DMA mappings which are usually mapped for one DMA transfer, unmapped right after it (unless you use dma_sync_* below) and for which hardware can optimize for sequential accesses.</p>
+</li>
+</ul>
+<p>总结一下就是有两种DMA映射，一种是Consistent DMA映射，由硬件保证cache一致性，不需要软件去显示操作来保证cache一致性；另一种是Streaming DMA映射，需要软件来维护cache一致性问题。</p>
+<span id="more"></span>
+
+<h1 id="USAGE"><a href="#USAGE" class="headerlink" title="USAGE"></a>USAGE</h1><p><img src="/picture/linux_driver/base/dma1.png">   </p>
+<h2 id="DMA-Direction"><a href="#DMA-Direction" class="headerlink" title="DMA Direction"></a>DMA Direction</h2><p>The interfaces described in subsequent portions of this document take a DMA direction argument, which is an integer and takes on one of the following values:</p>
+<aside>
+💡 译文：
+本文档后续部分中描述的接口采用 DMA 方向参数，该参数是一个整数并采用以下值之一：
+</aside>
+
+<ul>
+<li>DMA_BIDIRECTIONAL</li>
+<li>DMA_TO_DEVICE</li>
+<li>DMA_FROM_DEVICE</li>
+<li>DMA_NONE</li>
+</ul>
+<p>You should provide the exact DMA direction if you know it.</p>
+<p>DMA_TO_DEVICE means “from main memory to the device”. DMA_FROM_DEVICE means “from the device to main memory”. It is the direction in which the data moves during the DMA transfer.</p>
+<p>You are <em>strongly</em> encouraged to specify this as precisely as you possibly can.</p>
+<p>If you absolutely cannot know the direction of the DMA transfer, specify DMA_BIDIRECTIONAL.  It means that the DMA can go in either direction.  The platform guarantees that you may legally specify this, and that it will work, but this may be at the cost of performance for example.</p>
+<aside>
+💡 译文：
+如果您absolutely 无法知道 DMA 传输的方向，请指定 DMA_BIDIRECTI NAL。这意味着 DMA 可以进入任一方向。平台保证您可以合法地指定这一点，并且它将起作用，但这可能会以性能为代价（应该是invalid +clean）。
+</aside>
+
+<p>The value DMA_NONE is to be used for debugging.  One can hold this in a data structure before you come to know the precise direction, and this will help catch cases where your direction tracking logic has failed to set things up properly.</p>
+<aside>
+💡 译文：
+值 DMA_NONE 用于调试。在您知道精确方向之前，可以将其保存在数据结构中，这将有助于捕获方向跟踪逻辑未能正确设置的情况。
+</aside>
+
+<p>Another advantage of specifying this value precisely (outside of potential platform-specific optimizations of such) is for debugging. Some platforms actually have a write permission boolean which DMA mappings can be marked with, much like page protections in the user program address space.  Such platforms can and do report errors in the kernel logs when the DMA controller hardware detects violation of the permission setting.</p>
+<aside>
+💡 译文：
+精确指定该值的另一个优点（除了潜在的特定于平台的优化之外）是为了调试。有些平台实际上有一个写权限布尔值，可以用它来标记 DMA 映射，就像用户程序地址空间中的页面保护一样。当 DMA 控制器硬件检测到违反权限设置时，此类平台可以并且确实会在内核日志中报告错误。
+</aside>
+
+<p>Only streaming mappings specify a direction, consistent mappings implicitly have a direction attribute setting of DMA_BIDIRECTIONAL.</p>
+<aside>
+💡 译文：
+仅流式映射指定方向，一致映射隐式具有方向属性设置DMA 双向。
+</aside>
+
+<p>For Networking drivers, it’s a rather simple affair.  For transmit packets, map&#x2F;unmap them with the DMA_TO_DEVICE direction specifier.  For receive packets, just the opposite, map&#x2F;unmap them with the DMA_FROM_DEVICE direction specifier.</p>
+<aside>
+💡 译文：
+对于网络驱动程序来说，这是一件相当简单的事情。对于传输数据包，使用 DMA_TO_DEVICE 映射/取消映射。对于接收数据包，正好相反，映射/取消映射，使用 DMA_FROM_DEVICE 方向说明符**。**
+</aside>
+
+<h1 id="QA"><a href="#QA" class="headerlink" title="QA"></a>QA</h1><h2 id="dma-sync-single-for-device和dma-sync-single-for-cpu以及direction之间的差别"><a href="#dma-sync-single-for-device和dma-sync-single-for-cpu以及direction之间的差别" class="headerlink" title="dma_sync_single_for_device和dma_sync_single_for_cpu以及direction之间的差别"></a>dma_sync_single_for_device和dma_sync_single_for_cpu以及direction之间的差别</h2><p><strong>调用栈:</strong></p>
+<figure class="highlight diff"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dma_sync_single_for_device/cpu</span><br><span class="line">	--&gt;dma_direct_sync_single_for_device/cpu</span><br><span class="line">		--&gt;arch_sync_dma_for_device/cpu</span><br><span class="line">			--&gt;_dma_map_area/__dma_unmap_area --&gt; dcache_clean_poc/dcache_inval_poc</span><br></pre></td></tr></table></figure>
+
+<h3 id="对于Linux-upstream社区"><a href="#对于Linux-upstream社区" class="headerlink" title="对于Linux upstream社区"></a>对于Linux upstream社区</h3><ul>
+<li><p><strong>kernel 5.x</strong></p>
+<p>  arch_sync_dma_for_device 全部执行clean cache<br>  arch_sync_dma_for_device 如果direction是DMA_TO_DEVICE则什么也不做否则执行invalid cache</p>
+<p>  <img src="/picture/linux_driver/base/dma2.png"><br>  <img src="/picture/linux_driver/base/dma3.png">   </p>
+</li>
+<li><p><strong>kernel 6.x</strong></p>
+<p>  在 arch_sync_dma_for_device 中 direction 被忽略掉，执行dcache_clean_poc(clean cache)<br>  在arch_sync_dma_for_cpu 中 dir为DMA_TO_DEVICE什么也不做直接返回，否则执行dcache_inval_poc（invalid cache）</p>
+<p>  <img src="/picture/linux_driver/base/dma4.png"></p>
+</li>
+</ul>
+<p>总结一下：</p>
+<ul>
+<li><strong>Linux upstream</strong><ul>
+<li>kernel 5.x<ul>
+<li>dma_sync_single_for_device： 忽略direction全部执行clean cache</li>
+<li>dma_sync_single_for_cpu： 如果direction是DMA_TO_DEVICE则什么也不做，否则执行invalid cache</li>
+</ul>
+</li>
+<li>kernel 6.x（同kernel 5.x逻辑一致，只是改了下api名称）</li>
+</ul>
+</li>
+</ul>
+<h2 id="Cache的三种操作："><a href="#Cache的三种操作：" class="headerlink" title="Cache的三种操作："></a>Cache的三种操作：</h2><ul>
+<li>clean:<br>  检查对应内存cache line 的dirty bit。如果dirty bit为1，将cache line的内容写回下一级存储，并将dirty bit置为0.</li>
+<li>invalid:<br>  检查对应内存cache line 的valid bit.如果valid bit 为1，置为0.</li>
+<li>flush:<br>  每条cache line 先clean，再invalid.</li>
+</ul>
+<p><strong>Q：</strong>在cache和ddr中的数据一致后，DMA将device数据搬运到ddr后（cache与ddr不一样）如果调用flush接口，flush先做clean操作会不会将cache中的数据写回DDR？？</p>
+<p><strong>A：</strong>不会。clean操作是检查dirty标志位，在硬件改写过程中dirty标志位一直是0（非dirty），所以此时flush操作中的clean操作只是检查一遍dirty bit,之后做invalid操作.</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>《Linux Document》   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/" rel="tag"># Linux驱动</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E5%9F%BA%E7%A1%80(%E4%B8%80)DeviceIO/" rel="prev" title="Linux驱动之基础(一)Device-I/O">
+                  <i class="fa fa-angle-left"></i> Linux驱动之基础(一)Device-I/O
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/hello-world/" rel="next" title="Hello World">
+                  Hello World <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

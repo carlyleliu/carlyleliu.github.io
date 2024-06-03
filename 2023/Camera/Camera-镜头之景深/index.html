@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="景深的计算相机景深：其指的是在某个物距之间，还能够清晰成像的距离： 如果sensor刚好在像距的位置上，物体的一个点，成的像也就是一个点。如果sensor在像距的前面或者后面，这个点也就成了一个圆，专业术语叫弥散圆。当这个圆大到一定的程度的时候，照片也就糊了。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Camera-镜头之景深">
+<meta property="og:url" content="http://carlyleliu.github.io/2023/Camera/Camera-%E9%95%9C%E5%A4%B4%E4%B9%8B%E6%99%AF%E6%B7%B1/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="景深的计算相机景深：其指的是在某个物距之间，还能够清晰成像的距离： 如果sensor刚好在像距的位置上，物体的一个点，成的像也就是一个点。如果sensor在像距的前面或者后面，这个点也就成了一个圆，专业术语叫弥散圆。当这个圆大到一定的程度的时候，照片也就糊了。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/lens/lens4.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/lens/lens5.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/lens/lens6.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/camera/lens/lens7.png">
+<meta property="article:published_time" content="2023-04-19T13:19:32.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.789Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Lens">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/camera/lens/lens4.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2023/Camera/Camera-%E9%95%9C%E5%A4%B4%E4%B9%8B%E6%99%AF%E6%B7%B1/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2023/Camera/Camera-%E9%95%9C%E5%A4%B4%E4%B9%8B%E6%99%AF%E6%B7%B1/","path":"2023/Camera/Camera-镜头之景深/","title":"Camera-镜头之景深"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Camera-镜头之景深 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%99%AF%E6%B7%B1%E7%9A%84%E8%AE%A1%E7%AE%97"><span class="nav-number">1.</span> <span class="nav-text">景深的计算</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%99%AF%E6%B7%B1%E4%B8%89%E8%A6%81%E7%B4%A0"><span class="nav-number">2.</span> <span class="nav-text">景深三要素</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%89%E5%9C%88"><span class="nav-number">2.1.</span> <span class="nav-text">光圈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%A9%E8%B7%9D"><span class="nav-number">2.2.</span> <span class="nav-text">物距</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%84%A6%E8%B7%9D"><span class="nav-number">2.3.</span> <span class="nav-text">焦距</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%99%AF%E6%B7%B1%E4%B8%8ESensor%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">3.</span> <span class="nav-text">景深与Sensor的关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2023/Camera/Camera-%E9%95%9C%E5%A4%B4%E4%B9%8B%E6%99%AF%E6%B7%B1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Camera-镜头之景深 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Camera-镜头之景深
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2023-04-19 21:19:32" itemprop="dateCreated datePublished" datetime="2023-04-19T21:19:32+08:00">2023-04-19</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/%E9%95%9C%E5%A4%B4/" itemprop="url" rel="index"><span itemprop="name">镜头</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="景深的计算"><a href="#景深的计算" class="headerlink" title="景深的计算"></a>景深的计算</h1><p>相机景深：其指的是在某个物距之间，还能够清晰成像的距离：<br><img src="/picture/camera/lens/lens4.png"></p>
+<p>如果sensor刚好在像距的位置上，物体的一个点，成的像也就是一个点。如果sensor在像距的前面或者后面，这个点也就成了一个圆，专业术语叫弥散圆。当这个圆大到一定的程度的时候，照片也就糊了。</p>
+<span id="more"></span>
+
+
+<p>景深公式依据下列6个关系式:<br>$$<br>d &#x3D; \frac{f}{N} \tag1<br>$$</p>
+<p>其中d为光圈直径，f为焦距，N代表镜头设定的光圈值（2.8、4、5.6、8、11、22）等。</p>
+<p>光学透镜成像公式（这个在光学原理一节有介绍，要通过相似三角形推导）：<br>$$<br>\frac{1}{s} + \frac{1}{v} &#x3D; \frac{1}{f} \tag2<br>$$</p>
+<p>其中v代表像距、s代表物距。</p>
+<p>后物体的成像公式：<br>$$<br>\frac{1}{D_N} &#x3D; \frac{1}{v_N} &#x3D; \frac{1}{f} \tag3<br>$$</p>
+<p>前物体的成像：<br>$$<br>\frac{1}{D_F} &#x3D; \frac{1}{v_F} &#x3D; \frac{1}{f} \tag4<br>$$</p>
+<p>$$<br>\frac{v_N - v}{v_F} &#x3D; \frac{c}{d}  \tag5<br>$$</p>
+<p>$$<br>\frac{v - v_F}{v_F} &#x3D; \frac{c}{d} \tag6<br>$$</p>
+<p>解以上方程组得：</p>
+<p>$$<br>D_F &#x3D; \frac{s(H - f)}{H - s}  \tag7<br>$$</p>
+<p>$$<br>D_N &#x3D; \frac{s(H - f)}{H - 2f + s}  \tag8<br>$$</p>
+<h1 id="景深三要素"><a href="#景深三要素" class="headerlink" title="景深三要素"></a>景深三要素</h1><h2 id="光圈"><a href="#光圈" class="headerlink" title="光圈"></a>光圈</h2><p>光圈值，是镜头的焦距&#x2F;镜头通光直径得出的相对值（相对孔径的倒数），光圈值越小，光圈越大。相同光圈值，sensor表面的照度相同。光圈越大，景深越小。<br><img src="/picture/camera/lens/lens5.png"></p>
+<p>如图，当光圈减小，虚线位置的弥散圈也在减小。弥散圈越小，成的像就越清晰。原来看不清楚的物体，弥散圈变小了，就能看清了，景深就变大了。夜间摄影的时候，增大光圈可以提高进光量，提升图像质量，但是大光圈也会导致景深太小，这个时候就需要两者权衡。拍人像的时候，我们又会要求景深小，这样就有背景虚化的效果，这个时候就需要大光圈。</p>
+<h2 id="物距"><a href="#物距" class="headerlink" title="物距"></a>物距</h2><p>物体越近，景深越小<br><img src="/picture/camera/lens/lens6.png"></p>
+<p>物体123是等距的，他们成的像分别是像123，但是像的位置不是等距的。由于sensor聚焦好之后只能在一个位置上，在这个位置上能看到更多的物体，就是景深大。物体1比较远，我们将sensor聚焦在像1上，像2距离像1很近，弥散圈很小，很容易看清楚物体2。相反的，物体3比较近，我们将sensor聚焦在像3上，像2离像3比较远，弥散圈大，不容易看清楚物体2。所以从图中可以很容易的看出，物体越近，景深越小。</p>
+<h2 id="焦距"><a href="#焦距" class="headerlink" title="焦距"></a>焦距</h2><p>焦距越长，景深越小。<br><img src="/picture/camera/lens/lens7.png"></p>
+<p>两个物体1和2，焦距fa &lt; fb。当焦距为fa，成的像分别是1a和2a，当焦距为fb时，成的像分别为1b和2b。当焦距比较小，为fa的时候，可以很明显的看到像1a和像1b距离很近，由于sensor只能固定在一个位置，更容易同时看清两个物体。因此焦距越短，景深越大。</p>
+<table>
+<thead>
+<tr>
+<th>景深</th>
+<th>光圈</th>
+<th>物距</th>
+<th>焦距</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>大</td>
+<td>小</td>
+<td>近</td>
+<td>短</td>
+</tr>
+<tr>
+<td>小</td>
+<td>大</td>
+<td>远</td>
+<td>长</td>
+</tr>
+</tbody></table>
+<h1 id="景深与Sensor的关系"><a href="#景深与Sensor的关系" class="headerlink" title="景深与Sensor的关系"></a>景深与Sensor的关系</h1><p>我们会有一个直观的理解就是弥散圆小于cmos的像原大小那么就不会对成像产生影响，就感觉景深变大了，实际上景深需要转换到等效参数下。<br>在等效焦距、等效光圈、对焦距离三者相同的条件下，不同尺寸的感光元件景深保持一致。其中焦距和等效焦距、光圈和等效光圈的换算普遍以135传感器为标准。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://www.qinxing.xyz/posts/b31d381e/">https://www.qinxing.xyz/posts/b31d381e/</a>   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Lens/" rel="tag"># Lens</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-Sensor%E7%9A%84%E7%89%B9%E6%80%A7/" rel="prev" title="Camera-Sensor的特性与噪声">
+                  <i class="fa fa-angle-left"></i> Camera-Sensor的特性与噪声
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2023/Camera/Camera-%E9%95%9C%E5%A4%B4%E4%B9%8B%E5%85%89%E5%AD%A6%E5%9F%BA%E7%A1%80/" rel="next" title="Camera-镜头之光学基础">
+                  Camera-镜头之光学基础 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

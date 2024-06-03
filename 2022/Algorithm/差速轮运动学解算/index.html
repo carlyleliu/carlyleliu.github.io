@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="差速轮运动学模型机器人坐标系下的变换运动特性为两轮差速驱动，其底部后方两个同构驱动轮的转动为其提供动力，前方的随动轮起支撑作用并不推动其运动，如下图两轮差速驱动示意图所示。  机器人的运动简化模型如图 4-1 所示，X 轴正方向为前进、Y 轴正方向为左平移、Z 轴正方向为逆时针。机器人两个轮子之间的间距为 D，机器人 X 轴和 Z 轴的速度分别为：$V_x$和$V_z$ ，机器人左轮和右轮的速度分">
+<meta property="og:type" content="article">
+<meta property="og:title" content="差速轮运动学解算">
+<meta property="og:url" content="http://carlyleliu.github.io/2022/Algorithm/%E5%B7%AE%E9%80%9F%E8%BD%AE%E8%BF%90%E5%8A%A8%E5%AD%A6%E8%A7%A3%E7%AE%97/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="差速轮运动学模型机器人坐标系下的变换运动特性为两轮差速驱动，其底部后方两个同构驱动轮的转动为其提供动力，前方的随动轮起支撑作用并不推动其运动，如下图两轮差速驱动示意图所示。  机器人的运动简化模型如图 4-1 所示，X 轴正方向为前进、Y 轴正方向为左平移、Z 轴正方向为逆时针。机器人两个轮子之间的间距为 D，机器人 X 轴和 Z 轴的速度分别为：$V_x$和$V_z$ ，机器人左轮和右轮的速度分">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/robot/differential_wheel_chassis.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/robot/rotate2.png">
+<meta property="article:published_time" content="2022-08-08T14:15:25.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.789Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Robot">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/algorithm/robot/differential_wheel_chassis.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2022/Algorithm/%E5%B7%AE%E9%80%9F%E8%BD%AE%E8%BF%90%E5%8A%A8%E5%AD%A6%E8%A7%A3%E7%AE%97/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2022/Algorithm/%E5%B7%AE%E9%80%9F%E8%BD%AE%E8%BF%90%E5%8A%A8%E5%AD%A6%E8%A7%A3%E7%AE%97/","path":"2022/Algorithm/差速轮运动学解算/","title":"差速轮运动学解算"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>差速轮运动学解算 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%AE%E9%80%9F%E8%BD%AE%E8%BF%90%E5%8A%A8%E5%AD%A6%E6%A8%A1%E5%9E%8B"><span class="nav-number">1.</span> <span class="nav-text">差速轮运动学模型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%9D%90%E6%A0%87%E7%B3%BB%E4%B8%8B%E7%9A%84%E5%8F%98%E6%8D%A2"><span class="nav-number">1.1.</span> <span class="nav-text">机器人坐标系下的变换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.2.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E5%8A%A8%E5%AD%A6%E6%AD%A3%E8%A7%A3"><span class="nav-number">1.2.0.1.</span> <span class="nav-text">运动学正解</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%BF%90%E5%8A%A8%E5%AD%A6%E9%80%86%E8%A7%A3"><span class="nav-number">1.2.0.2.</span> <span class="nav-text">运动学逆解</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9D%90%E6%A0%87%E7%B3%BB%E6%97%8B%E8%BD%AC"><span class="nav-number">2.</span> <span class="nav-text">坐标系旋转</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E5%9D%90%E6%A0%87%E7%B3%BB%E5%88%B0%E6%9C%BA%E5%99%A8%E4%BA%BA%E5%9D%90%E6%A0%87%E7%B3%BB%E7%9A%84%E5%8F%98%E6%8D%A2"><span class="nav-number">2.1.</span> <span class="nav-text">全局坐标系到机器人坐标系的变换</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0-1"><span class="nav-number">2.2.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AD%A3%E8%A7%A3"><span class="nav-number">2.2.0.1.</span> <span class="nav-text">正解</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%80%86%E8%A7%A3"><span class="nav-number">2.2.0.2.</span> <span class="nav-text">逆解</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">3.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2022/Algorithm/%E5%B7%AE%E9%80%9F%E8%BD%AE%E8%BF%90%E5%8A%A8%E5%AD%A6%E8%A7%A3%E7%AE%97/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="差速轮运动学解算 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          差速轮运动学解算
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-08-08 22:15:25" itemprop="dateCreated datePublished" datetime="2022-08-08T22:15:25+08:00">2022-08-08</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE/%E6%9C%BA%E5%99%A8%E4%BA%BA/" itemprop="url" rel="index"><span itemprop="name">机器人</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="差速轮运动学模型"><a href="#差速轮运动学模型" class="headerlink" title="差速轮运动学模型"></a>差速轮运动学模型</h1><h2 id="机器人坐标系下的变换"><a href="#机器人坐标系下的变换" class="headerlink" title="机器人坐标系下的变换"></a>机器人坐标系下的变换</h2><p>运动特性为两轮差速驱动，其底部后方两个同构驱动轮的转动为其提供动力，前方的随动轮起支撑作用并不推动其运动，如下图两轮差速驱动示意图所示。</p>
+<p><img src="/picture/algorithm/robot/differential_wheel_chassis.png"></p>
+<p>机器人的运动简化模型如图 4-1 所示，X 轴正方向为前进、Y 轴正方向为左平移、Z 轴正方向为逆时针。机器人两个轮子之间的间距为 D，机器人 X 轴和 Z 轴的速度分别为：$V_x$和$V_z$ ，机器人左轮和右轮的速度分别为：$V_l$ 和$V_r$。</p>
+<p>假设机器人往一个左前的方向行进了一段距离，设机器人的右轮比左轮多走的距离近似为 K,以机器人的轮子上的点作为参考点做延长参考线，可得：$θ_1 &#x3D; θ_2$ 。由于这个$Δ_t$ 很小，因此角度的变化量$θ_1$ 也很小，因此有近似公式：</p>
+<span id="more"></span>
+
+<p>$$<br>\theta_{2} \approx \sin \left(\theta_{2}\right)&#x3D;\frac{K}{D}<br>$$</p>
+<p>由数学分析可以得到下面的式子：</p>
+<p>$$<br>\begin{equation}<br>\mathrm{K}&#x3D;\left(\mathrm{V}<em>{\mathrm{R}}-\mathrm{V}</em>{\mathrm{L}}\right) * \Delta \mathrm{t}, \quad \omega&#x3D;\frac{\theta_{1}}{\Delta \mathrm{t}}<br>\end{equation}<br>$$</p>
+<p>由上面的公式和式子可以求解出运动学正解的结果：机器人 X 轴方向速度</p>
+<p>$$<br>V_x&#x3D;(V_l+V_r) &#x2F; 2<br>$$</p>
+<p>机器人 Z 轴方向速度:</p>
+<p>$$<br>V_z&#x3D;（V_r - V_l）&#x2F;D<br>$$</p>
+<p>由正解直接反推得出运动学逆解的结果：</p>
+<p>机器人左轮的速度:</p>
+<p>$$<br>V_l &#x3D; V_x -（V_z * D）&#x2F;2<br>$$</p>
+<p>机器人右轮的速度:</p>
+<p>$$<br>V_r &#x3D; V_x +（V_z * D）&#x2F;2<br>$$</p>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><h4 id="运动学正解"><a href="#运动学正解" class="headerlink" title="运动学正解"></a>运动学正解</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 轮子线速度到机器人坐标速度的变换</span></span><br><span class="line"><span class="comment"> *        Vx = (Vl + Vr) / 2</span></span><br><span class="line"><span class="comment"> *        Vz = (Vr - Vl) / D</span></span><br><span class="line"><span class="comment"> * @return Eigen::Vector3f 机器人坐标系下的速度</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">Eigen::Vector3f <span class="title">MotorToRobotSpeed</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    Eigen::Vector3f robot_speed;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">robot_speed</span>(<span class="number">0</span>) = <span class="number">-0.5f</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">0</span>) + <span class="number">0.5f</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">1</span>);</span><br><span class="line">    <span class="built_in">robot_speed</span>(<span class="number">1</span>) = <span class="number">0</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">0</span>) + <span class="number">0</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">1</span>);</span><br><span class="line">    <span class="built_in">robot_speed</span>(<span class="number">2</span>) = (<span class="number">0.5f</span> / body_radius_) * (<span class="built_in">motor_line_speed_measure_</span>(<span class="number">0</span>) + <span class="built_in">motor_line_speed_measure_</span>(<span class="number">1</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> robot_speed;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="运动学逆解"><a href="#运动学逆解" class="headerlink" title="运动学逆解"></a>运动学逆解</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 机器人坐标速度到轮子线速度的变换</span></span><br><span class="line"><span class="comment"> *        Vl = -Vx + (Vz * D) / 2</span></span><br><span class="line"><span class="comment"> *        Vr = Vx + (Vz * D) / 2</span></span><br><span class="line"><span class="comment"> * @param robot_speed 机器人坐标系下的速度</span></span><br><span class="line"><span class="comment"> * @return None</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">RobotToMotorSpeed</span><span class="params">(Eigen::Vector3f&amp; robot_speed)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="built_in">motor_line_speed_target_</span>(<span class="number">0</span>) =  <span class="number">-1</span> * <span class="built_in">robot_speed</span>(<span class="number">0</span>)  + <span class="number">0</span> * <span class="built_in">robot_speed</span>(<span class="number">1</span>) + body_radius_ * <span class="built_in">robot_speed</span>(<span class="number">2</span>);</span><br><span class="line">    <span class="built_in">motor_line_speed_target_</span>(<span class="number">1</span>) =   <span class="number">1</span> * <span class="built_in">robot_speed</span>(<span class="number">0</span>)  + <span class="number">0</span> * <span class="built_in">robot_speed</span>(<span class="number">1</span>) + body_radius_ * <span class="built_in">robot_speed</span>(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(motor_num_ &gt;= <span class="number">4</span>) &#123;</span><br><span class="line">        <span class="built_in">motor_line_speed_target_</span>(<span class="number">2</span>) = <span class="built_in">motor_line_speed_target_</span>(<span class="number">0</span>);</span><br><span class="line">        <span class="built_in">motor_line_speed_target_</span>(<span class="number">3</span>) = <span class="built_in">motor_line_speed_target_</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="坐标系旋转"><a href="#坐标系旋转" class="headerlink" title="坐标系旋转"></a>坐标系旋转</h1><h2 id="全局坐标系到机器人坐标系的变换"><a href="#全局坐标系到机器人坐标系的变换" class="headerlink" title="全局坐标系到机器人坐标系的变换"></a>全局坐标系到机器人坐标系的变换</h2><p>一个平面坐标系逆时针旋转一个角度后得到另一个坐标系，则同一个点在这两个坐标系之间的几何关系如下：</p>
+<p><img src="/picture/algorithm/robot/rotate2.png"></p>
+<p>由上图可得：</p>
+<p>$$<br>\begin{equation}<br>\begin{aligned}<br>x^{\prime} &amp;&#x3D;O B+B C \<br>&amp;&#x3D;O D \cos \theta+A D \sin \theta \<br>&amp;&#x3D;x \cos \theta+y \sin \theta<br>\end{aligned}<br>\end{equation}<br>$$</p>
+<p>$$<br>\begin{equation}<br>\begin{aligned}<br>y^{\prime} &amp;&#x3D;A E-C E \<br>&amp;&#x3D;A D \cos \theta-O D \sin \theta \<br>&amp;&#x3D;y \cos \theta-x \sin \theta<br>\end{aligned}<br>\end{equation}<br>$$</p>
+<p>则反过来的关系如下：</p>
+<p>$$<br>\begin{equation}<br>\left[\begin{array}{l}<br>x \<br>y<br>\end{array}\right]&#x3D;\left[\begin{array}{cc}<br>\cos \theta &amp; -\sin \theta \<br>\sin \theta &amp; \cos \theta<br>\end{array}\right]\left[\begin{array}{l}<br>x^{\prime} \<br>y^{\prime}<br>\end{array}\right]<br>\end{equation}<br>$$</p>
+<p>则反过来的关系如下：</p>
+<p>$$<br>\begin{equation}<br>\left[\begin{array}{l}<br>x \<br>y<br>\end{array}\right]&#x3D;\left[\begin{array}{cc}<br>\cos \theta &amp; -\sin \theta \<br>\sin \theta &amp; \cos \theta<br>\end{array}\right]\left[\begin{array}{l}<br>x^{\prime} \<br>y^{\prime}<br>\end{array}\right]<br>\end{equation}<br>$$</p>
+<h2 id="实现-1"><a href="#实现-1" class="headerlink" title="实现"></a>实现</h2><h4 id="正解"><a href="#正解" class="headerlink" title="正解"></a>正解</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 世界坐标到机器人坐标的速度变换</span></span><br><span class="line"><span class="comment"> * @param global_speed 为Global坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> * @return Eigen::Vector3f Robot坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">Eigen::Vector3f <span class="title">GlobalToRobotSpeed</span><span class="params">(Eigen::Vector3f&amp; global_speed)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    Eigen::Vector3f robot_speed;</span><br><span class="line">    Eigen::Matrix3f rotate_mat;</span><br><span class="line"></span><br><span class="line">    rotate_mat &lt;&lt;  <span class="built_in">cos</span>(global_coordinat_z_), <span class="built_in">sin</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  -<span class="built_in">sin</span>(global_coordinat_z_), <span class="built_in">cos</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  <span class="number">0.0f</span>,                      <span class="number">0.0f</span>,                     <span class="number">1.0f</span>;</span><br><span class="line">    robot_speed = rotate_mat * global_speed;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> robot_speed;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="逆解"><a href="#逆解" class="headerlink" title="逆解"></a>逆解</h4><figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 机器人坐标到世界坐标的速度变换</span></span><br><span class="line"><span class="comment"> * @param robot_speed Robot坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> * @return Eigen::Vector3f Global坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">Eigen::Vector3f <span class="title">RobotToGlobalSpeed</span><span class="params">(Eigen::Vector3f&amp; robot_speed)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    Eigen::Vector3f global_speed;</span><br><span class="line">    Eigen::Matrix3f rotate_mat;</span><br><span class="line"></span><br><span class="line">    rotate_mat &lt;&lt; <span class="built_in">cos</span>(global_coordinat_z_), -<span class="built_in">sin</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  <span class="built_in">sin</span>(global_coordinat_z_),  <span class="built_in">cos</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  <span class="number">0.0f</span>,                      <span class="number">0.0f</span>,                     <span class="number">1.0f</span>;</span><br><span class="line">    global_speed = rotate_mat * robot_speed;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> global_speed;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://www.guyuehome.com/33953">https://www.guyuehome.com/33953</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.csdn.net/LINEAR1024/article/details/104956774">https://blog.csdn.net/LINEAR1024/article/details/104956774</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.guyuehome.com/8392">https://www.guyuehome.com/8392</a></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Robot/" rel="tag"># Robot</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/Debug/Valgrind%E6%A3%80%E6%B5%8BC-%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F/" rel="prev" title="Valgrind检测C++内存泄漏">
+                  <i class="fa fa-angle-left"></i> Valgrind检测C++内存泄漏
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/Algorithm/FOC%E7%94%B5%E6%B5%81%E9%87%87%E6%A0%B7/" rel="next" title="FOC电流采样">
+                  FOC电流采样 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

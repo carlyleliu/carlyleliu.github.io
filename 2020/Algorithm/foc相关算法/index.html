@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="MTPA为什么要用MTPA当电机采用id&#x3D;0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下$$\tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]$$转矩分为永磁转矩Tr和磁阻转矩Tm，而id&#x3D;0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id&amp;#x3">
+<meta property="og:type" content="article">
+<meta property="og:title" content="foc相关算法">
+<meta property="og:url" content="http://carlyleliu.github.io/2020/Algorithm/foc%E7%9B%B8%E5%85%B3%E7%AE%97%E6%B3%95/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="MTPA为什么要用MTPA当电机采用id&#x3D;0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下$$\tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]$$转矩分为永磁转矩Tr和磁阻转矩Tm，而id&#x3D;0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id&amp;#x3">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/foc/mtpa.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/foc/qiankui.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/algorithm/foc/ff.png">
+<meta property="article:published_time" content="2020-06-13T07:47:48.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.789Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="FOC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/algorithm/foc/mtpa.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2020/Algorithm/foc%E7%9B%B8%E5%85%B3%E7%AE%97%E6%B3%95/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2020/Algorithm/foc%E7%9B%B8%E5%85%B3%E7%AE%97%E6%B3%95/","path":"2020/Algorithm/foc相关算法/","title":"foc相关算法"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>foc相关算法 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#MTPA"><span class="nav-number">1.</span> <span class="nav-text">MTPA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%94%A8MTPA"><span class="nav-number">1.1.</span> <span class="nav-text">为什么要用MTPA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A8%E5%AF%BC%E8%BF%87%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">推导过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%B1%E7%A3%81%E6%8E%A7%E5%88%B6"><span class="nav-number">2.</span> <span class="nav-text">弱磁控制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AE%80%E4%BB%8B"><span class="nav-number">2.1.</span> <span class="nav-text">简介</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A8%E5%AF%BC"><span class="nav-number">2.2.</span> <span class="nav-text">推导</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%B5%E6%B5%81%E5%89%8D%E9%A6%88"><span class="nav-number">3.</span> <span class="nav-text">电流前馈</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E9%A6%88%E7%90%86%E8%AE%BA"><span class="nav-number">3.1.</span> <span class="nav-text">前馈理论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%B5%E6%9C%BA%E6%8E%A7%E5%88%B6%E4%B8%AD%E7%9A%84%E5%89%8D%E9%A6%88%E6%8E%A7%E5%88%B6"><span class="nav-number">3.2.</span> <span class="nav-text">电机控制中的前馈控制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">3.3.</span> <span class="nav-text">参考文献</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Algorithm/foc%E7%9B%B8%E5%85%B3%E7%AE%97%E6%B3%95/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="foc相关算法 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          foc相关算法
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-06-13 15:47:48" itemprop="dateCreated datePublished" datetime="2020-06-13T15:47:48+08:00">2020-06-13</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE/" itemprop="url" rel="index"><span itemprop="name">项目</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E9%A1%B9%E7%9B%AE/%E6%9C%BA%E5%99%A8%E4%BA%BA/" itemprop="url" rel="index"><span itemprop="name">机器人</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="MTPA"><a href="#MTPA" class="headerlink" title="MTPA"></a>MTPA</h1><h2 id="为什么要用MTPA"><a href="#为什么要用MTPA" class="headerlink" title="为什么要用MTPA"></a>为什么要用MTPA</h2><p>当电机采用id&#x3D;0的控制策略，这种控制方法忽略了磁阻转矩的作用，电磁转钜方程如下<br>$$<br>\tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]<br>$$<br>转矩分为永磁转矩Tr和磁阻转矩Tm，而id&#x3D;0只剩下Tr。这会导致电流的利用率不高，系统的效率降低。所以id&#x3D;0的控制比较适用于隐极式电机（Ld&#x3D;Lq），而对于凸极式电机并不最优，所以需要重新考虑控制策略。</p>
+<span id="more"></span>
+
+<h2 id="推导过程"><a href="#推导过程" class="headerlink" title="推导过程"></a>推导过程</h2><p>电动机电压方程<br>$$<br>\begin{aligned}<br>U_d &#x3D; rI_d - L_qI_q\omega_e \<br>U_q &#x3D; rI_q + k_E\omega_e + L_dI_d\omega_e<br>\end{aligned}<br>$$<br>那么电动机消耗对有功功率为<br>$$<br>P &#x3D; \frac{3}{2}(U_dI_d + U_qI_q)<br>$$<br>将电动机方程代入功率方程得：<br>$$<br>P &#x3D; \frac{3}{2} r (I_d^2 + I_q^2) + [k_EI_q + (L_d - L_q)I_dI_q]\omega_e<br>$$</p>
+<p>电动机的有功功率一部分消耗在绕阻电阻上发热，另一部分用于输出机械功率：<br><img src="/picture/algorithm/foc/mtpa.png"></p>
+<p>电动机的机械功率为：<br>$$<br>P_{mech} &#x3D; \tau_e \omega_{mech}<br>$$<br>机械转速与电频率之间的关系为：<br>$$<br>\omega_e &#x3D; p \omega_{mech}<br>$$<br>所以：<br>$$<br>\tau_e \omega_{mech} &#x3D; \frac{3}{2} r (I_d^2 + I_q^2) + [k_EI_q + (L_d - L_q)I_dI_q] p \omega_{mech}<br>$$<br>得到电磁转钜公式：<br>$$<br>\tau _e &#x3D; \frac{3}{2}p[k_e \cdot i_q + (L_d - L_q)\cdot i_d \cdot i_q]<br>$$</p>
+<p>如果绕阻中电流峰值是I_s<br>$$<br>I_s^2 &#x3D; I_d^2 + I_q^2<br>$$<br>当输出电磁转钜一定时:<br>$$<br>I_q &#x3D; \frac{\tau_e}{\frac{3}{2}p[(k_E) + (L_d - L_q)I_d]}<br>$$<br>联立上两式得:<br>$$<br>I_s^2 &#x3D; I_d^2 + \left ( \frac{\tau_e}{\frac{3}{2}p[(k_E) + (L_d - L_q)I_d]} \right )^2<br>$$<br>上式可以看作是一个关于$I_d$的函数，上式有最小值，当电磁转钜一定时，有一个最小峰值电流$I_s$，取$I_s$最小时有：<br>$$<br>\begin{aligned}<br>\frac{\partial I_s^2}{\partial I_d} &amp;&#x3D; 2I_d + 2I_q \frac{\tau_e}{\frac{3}{2}p} \frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]^2} \<br>&amp; &#x3D; 2I_d + 2I_q \frac{\tau_e}{\frac{3}{2}p[k_E + (L_d - L_q)I_d]} \frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]} \<br>&amp; &#x3D; 2I_d + 2I_q^2\frac{-(L_d - L_q)}{[k_E + (L_d - L_q)I_d]} &#x3D; 0<br>\end{aligned}<br>$$<br>整理得：<br>$$<br>(L_d - L_q)I_d^2 + k_EI_d - (L_d - L_q)I_q^2 &#x3D; 0<br>$$</p>
+<p>求解$I_d$得到：<br>$$<br>I_d &#x3D; - \frac{k_E}{2(L_d - L_q)} \pm \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}<br>$$<br>如果$L_d &lt; L_q$时当电磁转钜一定时电流峰值$I_s$最小<br>$$<br>I_d &#x3D; - \frac{k_E}{2(L_d - L_q)} - \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}<br>$$</p>
+<h1 id="弱磁控制"><a href="#弱磁控制" class="headerlink" title="弱磁控制"></a>弱磁控制</h1><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p>弱磁控制的这个思想源还是来自他励直流电动机的调磁控制。当他励直流电动机端电压达到最大电压时，只能通过调节电机的励磁电流，进而改变励磁磁通，在保证输出电压最大值不变的条件下，使电机能恒功率运行于更高的转速。也就是说，他励直流电动机可以通过降低励磁电流达到弱磁扩速的目的。对于PMSM而言，励磁磁动势因永磁体产生而无法调节，只能通过调节定子电流，即增加定子直轴去磁电流分量来维持高速运行时电压的平衡。达到弱磁扩速的目的。</p>
+<h2 id="推导"><a href="#推导" class="headerlink" title="推导"></a>推导</h2><p>很多应用需要马达工作在高于额定速度的范围内，这里就需要弱磁控制来实现，电流的电压约束条件如下：<br>$$<br>(L_qI_q)^2 + (k_E + L_dI_d)^2 \leqslant \frac{U_{1-limit}^2}{\omega_e^2}<br>$$<br>电流幅值约束条件:<br>$$<br>I_d^2 + I_q^2 \leqslant I_{s-limit}^2<br>$$</p>
+<p>MTPA下有$I_d$：<br>$$<br>MTPA: I_d &#x3D; \left{\begin{matrix}</p>
+<ul>
+<li>\frac{k_E}{2(L_d - L_q)} + sign(L_d - L_q) \sqrt{\left ( \frac{k_E}{2(L_d - L_q)} \right )^2 + I_q^2}, L_d \neq L_q\<br>0, L_d &#x3D; L_q<br>\end{matrix}\right.<br>$$<br>其中：<br>$$<br>sign(x) &#x3D; \left{\begin{matrix}<br>1, x &gt; 0\<br>0, x &#x3D; 0\<br>-1, x &lt; 0<br>\end{matrix}\right.<br>$$<br>弱磁情况下有$I_d$:<br>$$<br>I_d &#x3D; \left{\begin{matrix}<br>-\frac{k_E}{L_d}+ \frac{\sqrt{(\frac{U_{1-limit}}{\omega_e})^2 - (L_qI_q)^2}}{L_d}, \frac{U_{1-limit}}{\omega_e} \geq L_qI_q\<br>n&#x2F;a, \frac{U_{1-limit}}{\omega_e} &lt; L_qI_q<br>\end{matrix}\right.<br>$$</li>
+</ul>
+<h1 id="电流前馈"><a href="#电流前馈" class="headerlink" title="电流前馈"></a>电流前馈</h1><h2 id="前馈理论"><a href="#前馈理论" class="headerlink" title="前馈理论"></a>前馈理论</h2><p>前馈控制是按照扰动量进行补偿都开环控制，当系统出现扰动时，按照扰动量当大小直接产生矫正作用。<br>前馈控制结构图如下：<br><img src="/picture/algorithm/foc/qiankui.png"></p>
+<p>图中$G_n(s)$是被控对象扰动通道的传递函数，$D_n(s)$是前馈控制器的传递函数，$G(s)$为被控对象控制通道传递函数，n、u、y分别为扰动量、控制量和输出量<br>假定输入量u1&#x3D;0，则有：<br>$$<br>Y(s) &#x3D; Y_1(s) + Y_2(s) &#x3D; [D_n(s)G(s) + G_n(s)]N(s)<br>$$<br>若使前馈控制作用完全补偿扰动作用，则应使$Y(s) &#x3D; 0$即：<br>$$<br>D_n(s)G(s) + G_n(s) &#x3D; 0<br>$$<br>所以前馈控制器的传递函数为：<br>$$<br>D_n(s) &#x3D; - \frac{G_n(s)}{G(s)}<br>$$<br>在实际应用中。因为前馈控制为一个开环系统。因此常常采用反馈+前馈的复合控制方式。</p>
+<h2 id="电机控制中的前馈控制"><a href="#电机控制中的前馈控制" class="headerlink" title="电机控制中的前馈控制"></a>电机控制中的前馈控制</h2><p>在电机控制中加入前馈控制，其结构框图如下：<br><img src="/picture/algorithm/foc/ff.png"></p>
+<h2 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h2><p>《2.ST MC SDK 5.x 矢量控制理论基础》<br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/23572313">永磁同步电机也能弱磁调速</a><br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/288031425">永磁同步电机弱磁控制</a><br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/78705084">永磁同步电机-弱磁</a>   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/FOC/" rel="tag"># FOC</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/Algorithm/foc%E5%8E%9F%E7%90%86/" rel="prev" title="foc原理">
+                  <i class="fa fa-angle-left"></i> foc原理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E8%AE%BE%E5%A4%87%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%9E%8B/" rel="next" title="Linux驱动之设备驱动模型">
+                  Linux驱动之设备驱动模型 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

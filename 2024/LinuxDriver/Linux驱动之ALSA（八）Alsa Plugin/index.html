@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="PCM (digital audio) pluginsPCM plugins extends functionality and features of PCM devices. The plugins take care about various sample conversions, sample copying among channels and so on.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之ALSA（八）Alsa Plugin">
+<meta property="og:url" content="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E5%85%AB%EF%BC%89Alsa%20Plugin/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="PCM (digital audio) pluginsPCM plugins extends functionality and features of PCM devices. The plugins take care about various sample conversions, sample copying among channels and so on.">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/snd_pcm_dsnoop_open.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/snd_pcm_readi.png">
+<meta property="article:published_time" content="2024-02-26T14:42:52.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.769Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux驱动">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/snd_pcm_dsnoop_open.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E5%85%AB%EF%BC%89Alsa%20Plugin/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E5%85%AB%EF%BC%89Alsa%20Plugin/","path":"2024/LinuxDriver/Linux驱动之ALSA（八）Alsa Plugin/","title":"Linux驱动之ALSA（八）Alsa Plugin"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux驱动之ALSA（八）Alsa Plugin | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#PCM-digital-audio-plugins"><span class="nav-number">1.</span> <span class="nav-text">PCM (digital audio) plugins</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Plugin-hw"><span class="nav-number">2.</span> <span class="nav-text">Plugin: hw</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Slave-definition"><span class="nav-number">3.</span> <span class="nav-text">Slave definition</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Plugin-Rate"><span class="nav-number">4.</span> <span class="nav-text">Plugin: Rate</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Plugin-Route-Volume"><span class="nav-number">5.</span> <span class="nav-text">Plugin: Route &amp; Volume</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Automatic-conversion-plugin"><span class="nav-number">6.</span> <span class="nav-text">Automatic conversion plugin</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Plugin-Multiple-streams-to-One"><span class="nav-number">7.</span> <span class="nav-text">Plugin: Multiple streams to One</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Plugin-dmix"><span class="nav-number">8.</span> <span class="nav-text">Plugin: dmix</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Plugin-dsnoop"><span class="nav-number">9.</span> <span class="nav-text">Plugin: dsnoop</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Open%E6%B5%81%E7%A8%8B"><span class="nav-number">10.</span> <span class="nav-text">Open流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Read%E6%B5%81%E7%A8%8B"><span class="nav-number">11.</span> <span class="nav-text">Read流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">12.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E5%85%AB%EF%BC%89Alsa%20Plugin/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux驱动之ALSA（八）Alsa Plugin | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之ALSA（八）Alsa Plugin
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-02-26 22:42:52" itemprop="dateCreated datePublished" datetime="2024-02-26T22:42:52+08:00">2024-02-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">驱动</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="PCM-digital-audio-plugins"><a href="#PCM-digital-audio-plugins" class="headerlink" title="PCM (digital audio) plugins"></a>PCM (digital audio) plugins</h1><p>PCM plugins extends functionality and features of PCM devices. The plugins take care about various sample conversions, sample copying among channels and so on.</p>
+<span id="more"></span>
+
+<h1 id="Plugin-hw"><a href="#Plugin-hw" class="headerlink" title="Plugin: hw"></a>Plugin: hw</h1><p>This plugin communicates directly with the ALSA kernel driver. It is a raw communication without any conversions. The emulation of mmap access can be optionally enabled, but expect worse latency in the case.</p>
+<p>The nonblock option specifies whether the device is opened in a non-blocking manner. Note that the blocking behavior for read&#x2F;write access won’t be changed by this option. This influences only on the blocking behavior at opening the device. If you would like to keep the compatibility with the older ALSA stuff, turn this option off.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">pcm.name &#123;</span><br><span class="line">    <span class="built_in">type</span> hw         <span class="comment"># Kernel PCM</span></span><br><span class="line">    card INT/STR        <span class="comment"># Card name (string) or number (integer)</span></span><br><span class="line">    [device INT]        <span class="comment"># Device number (default 0)</span></span><br><span class="line">    [subdevice INT]     <span class="comment"># Subdevice number (default -1: first available)</span></span><br><span class="line">    [sync_ptr_ioctl BOOL]   <span class="comment"># Use SYNC_PTR ioctl rather than the direct mmap access for control structures</span></span><br><span class="line">    [nonblock BOOL]     <span class="comment"># Force non-blocking open mode</span></span><br><span class="line">    [format STR]        <span class="comment"># Restrict only to the given format</span></span><br><span class="line">    [channels INT]      <span class="comment"># Restrict only to the given channels</span></span><br><span class="line">    [rate INT]      <span class="comment"># Restrict only to the given rate</span></span><br><span class="line">    [chmap MAP]     <span class="comment"># Override channel maps; MAP is a string array</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Example:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">pcm.!default&#123;</span><br><span class="line">    <span class="built_in">type</span> hw</span><br><span class="line">    card 0</span><br><span class="line">    device 1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">ctl.!default&#123;</span><br><span class="line">    <span class="built_in">type</span> hw</span><br><span class="line">    card 0</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">pcm.microphone &#123;</span><br><span class="line">    <span class="built_in">type</span> hw</span><br><span class="line">    card 0</span><br><span class="line">    device 2</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">pcm.avs_input &#123;</span><br><span class="line">    <span class="built_in">type</span> hw</span><br><span class="line">    card 0</span><br><span class="line">    device 4</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>给hw:0,1设备重命名为default</p>
+<p>Test：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aplay -D default test.wav</span><br></pre></td></tr></table></figure>
+
+<h1 id="Slave-definition"><a href="#Slave-definition" class="headerlink" title="Slave definition"></a>Slave definition</h1><p>The slave plugin can be specified directly with a string or the definition can be entered inside a compound configuration node. Some restrictions can be also specified (like static rate or count of channels).</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">pcm_slave.NAME &#123;</span><br><span class="line">    pcm STR     <span class="comment"># PCM name</span></span><br><span class="line">    <span class="comment"># or</span></span><br><span class="line">    pcm &#123; &#125;     <span class="comment"># PCM definition</span></span><br><span class="line">    format STR  <span class="comment"># Format or &quot;unchanged&quot;</span></span><br><span class="line">    channels INT    <span class="comment"># Count of channels or &quot;unchanged&quot; string</span></span><br><span class="line">    rate INT    <span class="comment"># Rate in Hz or &quot;unchanged&quot; string</span></span><br><span class="line">    period_time INT <span class="comment"># Period time in us or &quot;unchanged&quot; string</span></span><br><span class="line">    buffer_time INT <span class="comment"># Buffer time in us or &quot;unchanged&quot; string</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Example:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">pcm_slave.slave_rate44100Hz &#123;</span><br><span class="line">    pcm <span class="string">&quot;hw:0,0&quot;</span></span><br><span class="line">    rate 44100</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line">pcm.rate44100Hz &#123;</span><br><span class="line">    <span class="built_in">type</span> plug</span><br><span class="line">    slave slave_rate44100Hz</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>The equivalent configuration (in one compound):</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">pcm.rate44100Hz &#123;</span><br><span class="line">    <span class="built_in">type</span> plug</span><br><span class="line">    slave &#123;</span><br><span class="line">        pcm <span class="string">&quot;hw:0,0&quot;</span></span><br><span class="line">        rate 44100</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>将hw:0,0声卡的采样频率转换为44100hz。</strong></p>
+<p>Test：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aplay -D rate44100Hz test.wav</span><br></pre></td></tr></table></figure>
+
+<h1 id="Plugin-Rate"><a href="#Plugin-Rate" class="headerlink" title="Plugin: Rate"></a>Plugin: Rate</h1><p>This plugin converts a stream rate. The input and output formats must be linear.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">pcm.name &#123;</span><br><span class="line">    <span class="built_in">type</span> rate               <span class="comment"># Rate PCM</span></span><br><span class="line">        slave STR               <span class="comment"># Slave name</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        slave &#123;                 <span class="comment"># Slave definition</span></span><br><span class="line">                pcm STR         <span class="comment"># Slave PCM name</span></span><br><span class="line">                <span class="comment"># or</span></span><br><span class="line">                pcm &#123; &#125;         <span class="comment"># Slave PCM definition</span></span><br><span class="line">                rate INT        <span class="comment"># Slave rate</span></span><br><span class="line">                [format STR]    <span class="comment"># Slave format</span></span><br><span class="line">        &#125;</span><br><span class="line">    converter STR           <span class="comment"># optional</span></span><br><span class="line">    <span class="comment"># or</span></span><br><span class="line">    converter [ STR1 STR2 ... ] <span class="comment"># optional</span></span><br><span class="line">                <span class="comment"># Converter type, default is taken from</span></span><br><span class="line">                <span class="comment"># defaults.pcm.rate_converter</span></span><br><span class="line">    <span class="comment"># or</span></span><br><span class="line">    converter &#123;     <span class="comment"># optional</span></span><br><span class="line">        name STR    <span class="comment"># Convertor type</span></span><br><span class="line">        xxx yyy     <span class="comment"># optional convertor-specific configuration</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Plugin-Route-Volume"><a href="#Plugin-Route-Volume" class="headerlink" title="Plugin: Route &amp; Volume"></a>Plugin: Route &amp; Volume</h1><p>This plugin converts channels and applies volume during the conversion. The format and rate must match for both of them.</p>
+<p>SCHANNEL can be a channel name instead of a number (e g FL, LFE). If so, a matching channel map will be selected for the slave.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">pcm.name &#123;</span><br><span class="line">        <span class="built_in">type</span> route              <span class="comment"># Route &amp; Volume conversion PCM</span></span><br><span class="line">        slave STR               <span class="comment"># Slave name</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        slave &#123;                 <span class="comment"># Slave definition</span></span><br><span class="line">                pcm STR         <span class="comment"># Slave PCM name</span></span><br><span class="line">                <span class="comment"># or</span></span><br><span class="line">                pcm &#123; &#125;         <span class="comment"># Slave PCM definition</span></span><br><span class="line">                [format STR]    <span class="comment"># Slave format</span></span><br><span class="line">                [channels INT]  <span class="comment"># Slave channels</span></span><br><span class="line">        &#125;</span><br><span class="line">        ttable &#123;                <span class="comment"># Transfer table (bi-dimensional compound of cchannels * schannels numbers)</span></span><br><span class="line">                CCHANNEL &#123;</span><br><span class="line">                        SCHANNEL REAL   <span class="comment"># route value (0.0 - 1.0)</span></span><br><span class="line">                &#125;</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Automatic-conversion-plugin"><a href="#Automatic-conversion-plugin" class="headerlink" title="Automatic conversion plugin"></a>Automatic conversion plugin</h1><p>This plugin converts channels, rate and format on request.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">pcm.name &#123;</span><br><span class="line">        <span class="built_in">type</span> plug               <span class="comment"># Automatic conversion PCM</span></span><br><span class="line">        slave STR               <span class="comment"># Slave name</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        slave &#123;                 <span class="comment"># Slave definition</span></span><br><span class="line">                pcm STR         <span class="comment"># Slave PCM name</span></span><br><span class="line">                <span class="comment"># or</span></span><br><span class="line">                pcm &#123; &#125;         <span class="comment"># Slave PCM definition</span></span><br><span class="line">        [format STR]    <span class="comment"># Slave format (default nearest) or &quot;unchanged&quot;</span></span><br><span class="line">        [channels INT]  <span class="comment"># Slave channels (default nearest) or &quot;unchanged&quot;</span></span><br><span class="line">        [rate INT]  <span class="comment"># Slave rate (default nearest) or &quot;unchanged&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    route_policy STR    <span class="comment"># route policy for automatic ttable generation</span></span><br><span class="line">                <span class="comment"># STR can be &#x27;default&#x27;, &#x27;average&#x27;, &#x27;copy&#x27;, &#x27;duplicate&#x27;</span></span><br><span class="line">                <span class="comment"># average: result is average of input channels</span></span><br><span class="line">                <span class="comment"># copy: only first channels are copied to destination</span></span><br><span class="line">                <span class="comment"># duplicate: duplicate first set of channels</span></span><br><span class="line">                <span class="comment"># default: copy policy, except for mono capture - sum</span></span><br><span class="line">    ttable &#123;        <span class="comment"># Transfer table (bi-dimensional compound of cchannels * schannels numbers)</span></span><br><span class="line">        CCHANNEL &#123;</span><br><span class="line">            SCHANNEL REAL   <span class="comment"># route value (0.0 - 1.0)</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    rate_converter STR  <span class="comment"># type of rate converter</span></span><br><span class="line">    <span class="comment"># or</span></span><br><span class="line">    rate_converter [ STR1 STR2 ... ]</span><br><span class="line">                <span class="comment"># type of rate converter</span></span><br><span class="line">                <span class="comment"># default value is taken from defaults.pcm.rate_converter</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Example：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">pcm.nfbtout &#123;</span><br><span class="line">        <span class="built_in">type</span> plug</span><br><span class="line">        slave &#123;</span><br><span class="line">                pcm <span class="string">&quot;hw:1,0&quot;</span></span><br><span class="line">                rate 8000</span><br><span class="line">                channels 2</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Plugin-Multiple-streams-to-One"><a href="#Plugin-Multiple-streams-to-One" class="headerlink" title="Plugin: Multiple streams to One"></a>Plugin: Multiple streams to One</h1><p>This plugin converts multiple streams to one.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">pcm.name &#123;</span><br><span class="line">        <span class="built_in">type</span> multi              <span class="comment"># Multiple streams conversion PCM</span></span><br><span class="line">        slaves &#123;        <span class="comment"># Slaves definition</span></span><br><span class="line">        ID STR      <span class="comment"># Slave PCM name</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        ID &#123;</span><br><span class="line">            pcm STR     <span class="comment"># Slave PCM name</span></span><br><span class="line">            <span class="comment"># or</span></span><br><span class="line">            pcm &#123; &#125;     <span class="comment"># Slave PCM definition</span></span><br><span class="line">            channels INT    <span class="comment"># Slave channels</span></span><br><span class="line">        &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    bindings &#123;      <span class="comment"># Bindings table</span></span><br><span class="line">        N &#123;</span><br><span class="line">            slave STR   <span class="comment"># Slave key</span></span><br><span class="line">            channel INT <span class="comment"># Slave channel</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    [master INT]        <span class="comment"># Define the master slave</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>For example, to bind two PCM streams with two-channel stereo (hw:0,0 and hw:0,1) as one 4-channel stereo PCM stream, define like this:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">pcm.quad &#123;</span><br><span class="line">    <span class="built_in">type</span> multi</span><br><span class="line"> </span><br><span class="line">    slaves.a.pcm <span class="string">&quot;hw:0,0&quot;</span></span><br><span class="line">    slaves.a.channels 2</span><br><span class="line">    slaves.b.pcm <span class="string">&quot;hw:0,1&quot;</span></span><br><span class="line">    slaves.b.channels 2</span><br><span class="line"> </span><br><span class="line">    bindings.0.slave a</span><br><span class="line">    bindings.0.channel 0</span><br><span class="line">    bindings.1.slave a</span><br><span class="line">    bindings.1.channel 1</span><br><span class="line">    bindings.2.slave b</span><br><span class="line">    bindings.2.channel 0</span><br><span class="line">    bindings.3.slave b</span><br><span class="line">    bindings.3.channel 1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Note that the resultant pcm “quad” is not in the interleaved format but in the “complex” format. Hence, it’s not accessible by applications which can handle only the interleaved (or the non-interleaved) format. In such a case, wrap this PCM with route or plug plugin.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">pcm.quad2 &#123;</span><br><span class="line">    <span class="built_in">type</span> route</span><br><span class="line">    slave.pcm <span class="string">&quot;quad&quot;</span></span><br><span class="line">    ttable.0.0 1</span><br><span class="line">    ttable.1.1 1</span><br><span class="line">    ttable.2.2 1</span><br><span class="line">    ttable.3.3 1</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Plugin-dmix"><a href="#Plugin-dmix" class="headerlink" title="Plugin: dmix"></a>Plugin: dmix</h1><p>This plugin provides direct mixing of multiple streams. The resolution for 32-bit mixing is only 24-bit. The low significant byte is filled with zeros. The extra 8 bits are used for the saturation.</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">pcm.name &#123;</span><br><span class="line">    <span class="built_in">type</span> dmix       <span class="comment"># Direct mix</span></span><br><span class="line">    ipc_key INT     <span class="comment"># unique IPC key</span></span><br><span class="line">    ipc_key_add_uid BOOL    <span class="comment"># add current uid to unique IPC key</span></span><br><span class="line">    ipc_perm INT        <span class="comment"># IPC permissions (octal, default 0600)</span></span><br><span class="line">    hw_ptr_alignment STR    <span class="comment"># Slave application and hw pointer alignment type</span></span><br><span class="line">                <span class="comment"># STR can be one of the below strings :</span></span><br><span class="line">                <span class="comment"># no</span></span><br><span class="line">                <span class="comment"># roundup</span></span><br><span class="line">                <span class="comment"># rounddown</span></span><br><span class="line">                <span class="comment"># auto (default)</span></span><br><span class="line">    slave STR</span><br><span class="line">    <span class="comment"># or</span></span><br><span class="line">    slave &#123;         <span class="comment"># Slave definition</span></span><br><span class="line">        pcm STR     <span class="comment"># slave PCM name</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        pcm &#123; &#125;     <span class="comment"># slave PCM definition</span></span><br><span class="line">        format STR  <span class="comment"># format definition</span></span><br><span class="line">        rate INT    <span class="comment"># rate definition</span></span><br><span class="line">        channels INT</span><br><span class="line">        period_time INT <span class="comment"># in usec</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        period_size INT <span class="comment"># in bytes</span></span><br><span class="line">        buffer_time INT <span class="comment"># in usec</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        buffer_size INT <span class="comment"># in bytes</span></span><br><span class="line">        periods INT <span class="comment"># when buffer_size or buffer_time is not specified</span></span><br><span class="line">    &#125;</span><br><span class="line">    bindings &#123;      <span class="comment"># note: this is client independent!!!</span></span><br><span class="line">        N INT       <span class="comment"># maps slave channel to client channel N</span></span><br><span class="line">    &#125;</span><br><span class="line">    slowptr BOOL        <span class="comment"># slow but more precise pointer updates</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ipc_key必须是整数形式的唯一ipc key。对于每个不同的dmix定义，这个数字必须是唯一的，因为共享内存是用这个key创建的。当ipc_key_add_uid设置为true时，uid值将添加到ipc_key设置中。这样可以避免同一个IPC密钥与不同用户同时发生冲突。</p>
+<p>hw_ptr_alignment这个配置默认是auto</p>
+<p>An example configuration for setting 44100 Hz, <code>S32_LE</code> format as the slave PCM of “hw:0” is like below:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">pcm.dmix_44 &#123;</span><br><span class="line">    <span class="built_in">type</span> dmix</span><br><span class="line">    ipc_key 321456  <span class="comment"># any unique value</span></span><br><span class="line">    ipc_key_add_uid <span class="literal">true</span></span><br><span class="line">    slave &#123;</span><br><span class="line">        pcm <span class="string">&quot;hw:0&quot;</span></span><br><span class="line">        format S32_LE</span><br><span class="line">        rate 44100</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Test：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aplay -Dplug:dmix_44 foo_48k.wav</span><br></pre></td></tr></table></figure>
+
+<h1 id="Plugin-dsnoop"><a href="#Plugin-dsnoop" class="headerlink" title="Plugin: dsnoop"></a>Plugin: dsnoop</h1><p>此插件将一个capture流拆分为多个。它的工作方式与dmix插件相反，从多个客户端同时读取共享捕获缓冲区。以下参数的含义与dmix插件几乎相同。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">pcm.name &#123;</span><br><span class="line">    <span class="built_in">type</span> dsnoop     <span class="comment"># Direct snoop</span></span><br><span class="line">    ipc_key INT     <span class="comment"># unique IPC key</span></span><br><span class="line">    ipc_key_add_uid BOOL    <span class="comment"># add current uid to unique IPC key</span></span><br><span class="line">    ipc_perm INT        <span class="comment"># IPC permissions (octal, default 0600)</span></span><br><span class="line">    slave STR</span><br><span class="line">    <span class="comment"># or</span></span><br><span class="line">    slave &#123;         <span class="comment"># Slave definition</span></span><br><span class="line">        pcm STR     <span class="comment"># slave PCM name</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        pcm &#123; &#125;     <span class="comment"># slave PCM definition</span></span><br><span class="line">        format STR  <span class="comment"># format definition</span></span><br><span class="line">        rate INT    <span class="comment"># rate definition</span></span><br><span class="line">        channels INT</span><br><span class="line">        period_time INT <span class="comment"># in usec</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        period_size INT <span class="comment"># in bytes</span></span><br><span class="line">        buffer_time INT <span class="comment"># in usec</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        buffer_size INT <span class="comment"># in bytes</span></span><br><span class="line">        periods INT <span class="comment"># when buffer_size or buffer_time is not specified</span></span><br><span class="line">    &#125;</span><br><span class="line">    bindings &#123;      <span class="comment"># note: this is client independent!!!</span></span><br><span class="line">        N INT       <span class="comment"># maps slave channel to client channel N</span></span><br><span class="line">    &#125;</span><br><span class="line">    slowptr BOOL        <span class="comment"># slow but more precise pointer updates</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="Open流程"><a href="#Open流程" class="headerlink" title="Open流程"></a>Open流程</h1><p>下面以dsnoop插件为例梳理下alsa-lib使用插件的流程，详细如下：</p>
+<p><a target="_blank" rel="noopener" href="https://www.processon.com/view/link/65db097a5a48bc027688833d">原图</a><br><img src="/picture/linux_driver/ALSA/snd_pcm_dsnoop_open.png"></p>
+<ul>
+<li>解析配置文件并生成配置树</li>
+<li>打开实际设备，通过mmap映射驱动中的控制信息和buffer</li>
+</ul>
+<h1 id="Read流程"><a href="#Read流程" class="headerlink" title="Read流程"></a>Read流程</h1><p>以下是read流程，write流程不再列出来了。</p>
+<p><a target="_blank" rel="noopener" href="https://www.processon.com/view/link/65db09ac9a343d3e899d9182">原图</a><br><img src="/picture/linux_driver/ALSA/snd_pcm_readi.png"></p>
+<ul>
+<li>memcopy驱动DMA buffer中的数据</li>
+<li>hw_ptr数据指针的sync</li>
+</ul>
+<p>可以看到alsa plug支持多进程，可以多个进程打开同一个slave声卡，多进程间通过信号量同步。<br>如果要自己创建一个声卡，同时让创建的声卡支持plugin，那么最好不要使用appl_ptr和依赖appl_ptr的api。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://www.alsa-project.org/alsa-doc/alsa-lib/pcm_plugins.html">https://www.alsa-project.org/alsa-doc/alsa-lib/pcm_plugins.html</a><br><a target="_blank" rel="noopener" href="https://alsa.opensrc.org/ALSA_plugins">https://alsa.opensrc.org/ALSA_plugins</a>   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/" rel="tag"># Linux驱动</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%B8%83%EF%BC%89XRUN/" rel="prev" title="Linux驱动之ALSA（七）XRUN">
+                  <i class="fa fa-angle-left"></i> Linux驱动之ALSA（七）XRUN
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/LinuxKernel/Linux%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95%EF%BC%88%E4%B8%89%EF%BC%89VM%E5%8F%82%E6%95%B0%E8%B0%83%E8%AF%95/" rel="next" title="Linux内核调试（三）VM参数调试">
+                  Linux内核调试（三）VM参数调试 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原论文: &lt; A Hybrid Motion Estimation for Video Stabilization Based on an IMU Sensor &gt;  Abstract在本文中，我们提出了一种混合方法来估计运动并通过切换函数稳定视频，该方法在 Kanade-Lucus-Tomasi (KLT) 跟踪器和 IMU 辅助运动估计器之间切换估计的运动。为了实现这一点，由于">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于IMU传感器的视频稳定混合运动估计">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Science/%E5%9F%BA%E4%BA%8EIMU%E4%BC%A0%E6%84%9F%E5%99%A8%E7%9A%84%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E6%B7%B7%E5%90%88%E8%BF%90%E5%8A%A8%E4%BC%B0%E8%AE%A1/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原论文: &lt; A Hybrid Motion Estimation for Video Stabilization Based on an IMU Sensor &gt;  Abstract在本文中，我们提出了一种混合方法来估计运动并通过切换函数稳定视频，该方法在 Kanade-Lucus-Tomasi (KLT) 跟踪器和 IMU 辅助运动估计器之间切换估计的运动。为了实现这一点，由于">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm3.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm4.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm5.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm6.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/ahm10.png">
+<meta property="article:published_time" content="2021-08-14T05:06:10.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.779Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="论文翻译">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/eis/ahm1.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Science/%E5%9F%BA%E4%BA%8EIMU%E4%BC%A0%E6%84%9F%E5%99%A8%E7%9A%84%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E6%B7%B7%E5%90%88%E8%BF%90%E5%8A%A8%E4%BC%B0%E8%AE%A1/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2021/Science/%E5%9F%BA%E4%BA%8EIMU%E4%BC%A0%E6%84%9F%E5%99%A8%E7%9A%84%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E6%B7%B7%E5%90%88%E8%BF%90%E5%8A%A8%E4%BC%B0%E8%AE%A1/","path":"2021/Science/基于IMU传感器的视频稳定混合运动估计/","title":"基于IMU传感器的视频稳定混合运动估计"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>基于IMU传感器的视频稳定混合运动估计 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Abstract"><span class="nav-number">1.</span> <span class="nav-text">Abstract</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Introduction"><span class="nav-number"></span> <span class="nav-text">Introduction</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Related-Work"><span class="nav-number"></span> <span class="nav-text">Related Work</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Proposed-Framework"><span class="nav-number"></span> <span class="nav-text">Proposed Framework</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Motion-Estimation"><span class="nav-number"></span> <span class="nav-text">Motion Estimation</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#A-KLT-Tracker"><span class="nav-number">1.</span> <span class="nav-text">A KLT Tracker</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#An-IMU-Aided-Motion-Estimator"><span class="nav-number">2.</span> <span class="nav-text">An IMU-Aided Motion Estimator</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Motion-Smoothing-and-Image-Warping"><span class="nav-number"></span> <span class="nav-text">Motion Smoothing and Image Warping</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Experimental-Results-and-Discussion"><span class="nav-number"></span> <span class="nav-text">Experimental Results and Discussion</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Science/%E5%9F%BA%E4%BA%8EIMU%E4%BC%A0%E6%84%9F%E5%99%A8%E7%9A%84%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E6%B7%B7%E5%90%88%E8%BF%90%E5%8A%A8%E4%BC%B0%E8%AE%A1/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="基于IMU传感器的视频稳定混合运动估计 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基于IMU传感器的视频稳定混合运动估计
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-08-14 13:06:10" itemprop="dateCreated datePublished" datetime="2021-08-14T13:06:10+08:00">2021-08-14</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/%E9%98%B2%E6%8A%96/" itemprop="url" rel="index"><span itemprop="name">防抖</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>原论文: &lt; A Hybrid Motion Estimation for Video Stabilization Based on an IMU Sensor &gt;</p>
+</blockquote>
+<h2 id="Abstract"><a href="#Abstract" class="headerlink" title="Abstract"></a>Abstract</h2><p>在本文中，我们提出了一种混合方法来估计运动并通过切换函数稳定视频，该方法在 Kanade-Lucus-Tomasi (KLT) 跟踪器和 IMU 辅助运动估计器之间切换估计的运动。为了实现这一点，由于 KLT 跟踪器在较大运动期间的性能不佳，我们使用 KLT 跟踪器来校正低旋转的运动，并使用 IMU 辅助运动估计器来校正高旋转，此外，卡尔曼滤波器用于去除不需要的运动，从而平滑轨迹。</p>
+<span id="more"></span>
+
+<h1 id="Introduction"><a href="#Introduction" class="headerlink" title="Introduction"></a>Introduction</h1><p>在相机市场，光学图像稳定（OIS）系统安装在相机镜头或图像传感器上，价格相当昂贵[3]。另一方面，数字稳定系统通过在相机移动时补偿捕获图像的移动来处理图像，它可以分为三个步骤，即运动估计、运动平滑和图像扭曲[4,5]。</p>
+<p>数字视频稳定中运动估计的常用技术是分别使用块匹配 [9]、KLT (Kanade-Lucus-Tomasi) 跟踪器 [10,11]、SIFT [12] 和 SURF [13]。最近，Dong et al. [14] and Lim等人 [15] 使用 KLT 跟踪器以高帧率和低计算成本实时估计运动， KLT 跟踪器通过 Good Feature to Track 检测特征点，并使用 Lucas-Kanade 方法估计连续帧的光流。该跟踪器在评估小运动中的运动方面取得了成功，但在局部运动和全局运动发生显着变化时失败[15]，然而，可以通过使用 IMU（惯性测量单元）数据来估计大运动。</p>
+<p>我们提出了一种混合函数来切换运动估计算法，以确定两个连续帧之间的转换。 在低运动的情况下，我们应用 KLT 跟踪器来计算两个连续帧上运动物体的光流。 然而，在快速旋转的情况下，来自 IMU 传感器的旋转数据用于通过计算来自预定义运动点和参考点的运动来估计运动。</p>
+<h1 id="Related-Work"><a href="#Related-Work" class="headerlink" title="Related Work"></a>Related Work</h1><p>Karpenko 等人 [3]仅使用陀螺仪数据创建滚动快门以实现视频稳定。此外，一些研究分别包括 IMU 数据和特征跟踪，例如 Ryu 等人 [26] 提出了通过将旋转运动纳入 KLT 跟踪的运动估计，它使用来自 IMU 的位置来预测下一帧，从而证明速度和准确性。</p>
+<h1 id="Proposed-Framework"><a href="#Proposed-Framework" class="headerlink" title="Proposed Framework"></a>Proposed Framework</h1><p>本文的挑战是如何估计连续帧在移动相机上的运动，例如，由于相机旋转引起的大旋转和基于场景中运动物体的局部运动。 根据我们的目标，我们应用了一种混合方法来近似确定估计移动相机运动的方法，如图 1 中的流程图所示。<br><img src="/picture/eis/ahm1.png"></p>
+<p>为了使用混合方法估计运动，我们采用由IMU传感器 $w^{imu}$ 测量和相机$w^{cam}$的旋转速度来确定估计方法。 但是，这两个设备是不同的位置，因此我们需要将$w^{imu}$转换为具有相对方向 $R^{ci}$ 的 $w^{cam}$。 因此，相机的旋转速度定义为：</p>
+<p>$$<br>w^{cam}(t+t_{off}) &#x3D; R^{ci}(w^{imu}(t) + b^{imu}) \tag1<br>$$</p>
+<p>其中 $b^{imu}$ 是陀螺仪偏置，$t_{off}$ 表示来自IMU的时间戳与Cam时间戳的时间偏移。相机和IMU传感器校准如下：</p>
+<ul>
+<li>使用OpenCV（开源计算机视觉）中的相机校准模块校准相机以找出焦距（f）</li>
+<li>校准陀螺仪以防止陀螺仪漂移问题与偏置偏移。我们可以通过测量陀螺仪长时间静止时的输出信号来评估偏置偏移，并通过卡尔曼滤波器降低噪声</li>
+<li>使用 Li 和 Ren [16] 提出的陀螺仪数据和光流之间的关系估计 $R^{ci}$，使用 CC+LS13 方法</li>
+<li>确定陀螺仪和相机输入之间的 $t_{off}$ 时间偏差。然后，我们可以正确估计$w^{cam}$</li>
+</ul>
+<h1 id="Motion-Estimation"><a href="#Motion-Estimation" class="headerlink" title="Motion Estimation"></a>Motion Estimation</h1><p>为了挑战每个环境中的运动估计，我们开发了一种可靠且有效的方法，用于通过混合算法切换算法，以计算连续帧的运动流。 该方法分为两个功能，其中包括 KLT 跟踪器和 IMU 辅助运动估计器。</p>
+<h2 id="A-KLT-Tracker"><a href="#A-KLT-Tracker" class="headerlink" title="A KLT Tracker"></a>A KLT Tracker</h2><p>如果 $w^{cam}$ z的绝对值小于 0.5 rad&#x2F;s，则刚性变换由相应的特征点集估计。 我们使用 Good Feature to Track，这是一种实时计算光流的高效检测器。特征点由 Harris 角点检测器检测，该检测器使用强度差异对 (u, v) 在所有方向上的位移，定义如下：</p>
+<p>$$<br>\varepsilon (u,v) &#x3D; \sum_{x,y}^{} w(x,y)[I(x+u,y+v) - I(x,y)]^2 \<br>\approx \begin{bmatrix} u &amp; v\end{bmatrix} M \begin{bmatrix} u\ v \end{bmatrix} \tag2<br>$$</p>
+<p>其中 $I(x, y)$ 表示来自参考图像的图像像素，而 $I(x + u, y + v)$ 是下一张图像的图像像素。 $w(x, y)$ 是一个高斯函数，它为周围的像素分配权重，$M$ 是从特征点的指定邻域中函数的梯度导出的汇总矩阵。此外，由 Shi-Tomasi [29] 修改的 Harris 角点检测器得分函数是：</p>
+<p>$$<br>R &#x3D; min(\lambda _1,\lambda _2) \tag3<br>$$</p>
+<p>其中 $\lambda _1$ 和 $\lambda _2$ 是M的特征值。 R的结果可以分为三种情况：</p>
+<p>(1) 如果$\lambda _1$和$\lambda _2$都小，这意味着 R 也小，则该区域是平坦的；<br>(2) 如果$\lambda _1$大于$\lambda _2$，则R为负，则该区域为边；<br>(3) 如果$\lambda _1$和$\lambda _2$都大，则R大，区域为corner。</p>
+<p>这种改进后的方法被称为 Good Feature to Track。</p>
+<p>然而，为了实时运行算法，特征点和它们的匹配在计算时间内必须在两个连续的帧内。我们对拼接全景图进行了实验，以确认一定数量的特征点的效率，这对于单应矩阵来说是足够的。 图 2a 显示了拼接前的原始图像，图 2b、c 分别说明了使用 200 个特征点和 2000 个特征点的全景图像。 这些图像是相似的，但大特征点过度计算了拼接图像。因此，我们提出的方法使用少于 200 个特征点来允许对运动变换的合理估计。<br><img src="/picture/eis/ahm2.png"></p>
+<p>两个连续帧之间的特征点匹配需要快速逼近，因此，我们使用光流来匹配检测到的角点。光流是图像对象在连续帧之间由于物体或相机的运动而产生的明显运动的模式。它表示角点在 dt 时间后从前一帧 $I(x, y, t)$ 移动到当前帧时 2D 矢量场 $(dx, dy)$ 的位移。 光流假设亮度不变，则给出以下等式：</p>
+<p>$$<br>I(x,y,t) &#x3D; I(x+d_x, y+d_y, t+d_t) \tag4<br>$$</p>
+<p>等式（4）可以通过去除公共项并在右手边采取泰勒级数近似后除以dt 以简单的形式表述。 我们获得了图像梯度 $f_x$ 和 $f_y$ 以及沿时间 $f_t$ 的梯度以编写以下等式：</p>
+<p>$$<br>f_xu + f_yv + f_t &#x3D; 0 \tag5<br>$$</p>
+<p>$$<br>f_x &#x3D; \frac{\partial f}{\partial x}; f_y &#x3D; \frac{\partial f}{\partial y}; u &#x3D; \frac{d_x}{d_t}; v &#x3D; \frac{d_y}{d_t} \tag6<br>$$</p>
+<p>然而，式(5) 在一个方程中有两个未知数 (u, v)。 一些研究人员提出了解决这个问题的方法，但我们使用了 Lucas-Kanade 方法，这是估计光流的标准方法。 Lucas-Kanade 通过在拐角点周围取 3 × 3 块的相邻像素解决了这个问题，假设所有 9 个点都具有相同的运动。 然后，可以使用最小二乘拟合方法求解具有正确方程的两个未知数，其定义如下：</p>
+<p>$$<br>\begin{bmatrix} u \ v \end{bmatrix} &#x3D;<br>\begin{bmatrix} \sum_{i}^{}f_{x_i}^2   &amp; \sum_{i}^{}f_{x_i}f_{y_i}  \ \sum_{i}^{}f_{x_i}f_{y_i}  &amp; \sum_{i}^{}f_{y_i}^2  \end{bmatrix}^{-1}<br>\begin{bmatrix} -\sum_{i}^{}f_{x_i}f_{t_i} \ -\sum_{i}^{}f_{y_i}f_{t_i} \end{bmatrix}  \tag7<br>$$</p>
+<p><img src="/picture/eis/ahm3.png"></p>
+<p>例如，图 3a、b 分别显示了在正常运动和快速运动期间来自 KLT 特征跟踪器的光流。 后一种运动情况是无序的，导致对单应矩阵的估计效率低下。在大运动期间，KLT 特征跟踪器确实失败了。因此，我们在大运动的情况下使用 IMU 辅助的运动估计器方法来减少任何运动矢量误差。</p>
+<p>总之，KLT 跟踪器已经根据前一帧中的特征点和当前帧中移动到新位置的特征点创建了运动向量。 这两组来自 KLT 跟踪器的特征点用于估计刚性变换的单应矩阵以稳定图像帧。</p>
+<h2 id="An-IMU-Aided-Motion-Estimator"><a href="#An-IMU-Aided-Motion-Estimator" class="headerlink" title="An IMU-Aided Motion Estimator"></a>An IMU-Aided Motion Estimator</h2><p>在$w_{𝑧}^{𝑐𝑎𝑚}$ 的绝对值大于 0.5 rad&#x2F;s 的情况下，IMU 传感器将估计运动。 首先，我们需要在第一张图像$I_0(x_{ij}, y_{ij})$上创建参考点的集合为如图 4 所示，由 $(i, j)$ 的对称分布点组成。 $(i, j)$ 的大小由 $(2e + 1) x(2f + 1), e , f &#x3D; 1, 2, …, n $计算，其中 e 和 f 应在5到30之间，以准确地近似运动 分别在 x 和 y 方向上的计算负载。<br><img src="/picture/eis/ahm4.png"></p>
+<p>$I_0(x_{ij}, y_{ij})$ 的所有参考点都位于图像中心 $(x0, y0)$ 的周围，由以下等式确定:</p>
+<p>$$<br>\left{\begin{matrix}<br>x_{ij} &#x3D; x_0 - \frac{x_{sp}(2e-1)}{2} + ix_{sp} \<br>y_{ij} &#x3D; y_0 - \frac{y_{sp}(2f-1)}{2} + jy_{sp}<br>\end{matrix}\right. \tag8<br>$$</p>
+<p>其中 $x_{sp}$ 和 $y_{sp}$ 分别是 x 和 y 方向参考点之间的像素空间。下一帧上的运动点$I_{imu}(p, q)$可以从 (1)中 z 轴上的 $w_{cam}$ 计算得出：</p>
+<p>$$<br>\left{\begin{matrix}<br>p &#x3D; (x_{ij} - \frac{H}{2} ) \cos \varphi + (y_{ij} - \frac{W}{2} ) \sin \varphi + \frac{H}{2}  \<br>Q &#x3D; (x_{ij} - \frac{H}{2} ) \sin \varphi + (y_{ij} - \frac{W}{2} ) \cos \varphi + \frac{W}{2}<br>\end{matrix}\right. \tag9<br>$$</p>
+<p>其中 j 等于$w_{z}^{cam}$ 除以输入视频的帧率，H 和 W 分别是图像的高度和宽度。然而，Li和Ren [16] 进行了z轴旋转运动具有抵消作用的运动点，表示如下：</p>
+<p>$$<br>\varphi &#x3D;\left{\begin{matrix}<br>-\frac{8}{F_{fps}}, w_{z}^{cam} &lt; -6 \<br>-\frac{4}{F_{fps}}, -6 \le w_{z}^{cam}\le -2\<br>0,  0.5 \le \left | w_{z}^{cam} \right | \le 2 \<br>\frac{4}{F_{fps}}, 2 \le w_{z}^{cam}\le 6 \<br>\frac{8}{F_{fps}}, w_{z}^{cam} &gt; 6<br>\end{matrix}\right. \tag{10}<br>$$</p>
+<p>(9) 和 (10) 可以由来自 IMU 传感器的运动矢量合成。运动矢量的方向和大小取决于测量的旋转。 图 5 显示了从一组具有不同 φ 值的点计算的运动矢量,对于图 5a 中的低旋转速率，运动矢量在方向和大小方面相似。另外，快速旋转中运动矢量在不同的方向和大小上是有序的，如图5b,c<br><img src="/picture/eis/ahm5.png"></p>
+<p>来自 IMU 传感器的一组参考点和新位置点被应用于估计刚性变换的单应性矩阵。两种方法的运动流比较运动矢量如图6所示，KLT跟踪器的光流为快速运动矢量如图6所示，同时组织从 IMU 数据估计运动。<br><img src="/picture/eis/ahm6.png"></p>
+<p>上一步中参考图像（S0）和当前图像（Sn）的近似设定点用于定义运动模型。运动估计通过找到 2 × 2 矩阵 A 和 2 × 1 向量 t 来近似这些设定点之间的仿射变换 [A|t]，其公式如下所示：<br>$$<br>[A^*|t^*] &#x3D; arg min\sum_{i}^{} \begin{Vmatrix}<br>S_0[i] - AS_n[i]^T - t<br>\end{Vmatrix}^2 \tag{11}<br>$$</p>
+<p>为了求解（11）中的 $[A|t]$，匹配对最少需要三对才能生成仿射变换。 因此，运动估计被发现为仿射变换，应用于 $I(x, y)$以映射变形图像$I_{warp}(x’, y’)$。<br>$$<br>\begin{bmatrix} x’\ y’\ 1 \end{bmatrix} &#x3D;<br>\begin{bmatrix} S \cos \theta   &amp; -S \sin \theta   &amp; t_x\ S \sin \theta  &amp; S \cos \theta &amp; t_y\ 0  &amp; 0 &amp; 1<br>\end{bmatrix}<br>\begin{bmatrix} x\ y\ 1 \end{bmatrix} \tag{12}<br>$$</p>
+<p>自由度 (12) 包括标度 (S)、旋转角度 (q) 以及 x 轴和 y 轴上的平移$t_x$ 和 $t_y$。 因此，式(12)中的总自由度为4，称为相似变换。 然而，在本文中，我们使用刚性变换来扭曲稳定的框架，使尺度等于 1，以减少用于计算尺度向量的存储区域</p>
+<h1 id="Motion-Smoothing-and-Image-Warping"><a href="#Motion-Smoothing-and-Image-Warping" class="headerlink" title="Motion Smoothing and Image Warping"></a>Motion Smoothing and Image Warping</h1><p>为了从估计的运动中去除噪声，我们使用卡尔曼滤波器来减少噪声并获得平滑的运动 [30]。 卡尔曼滤波器通过使用前一个状态 [31] 来近似下一个状态，这适合连续帧的动态系统。$x_k$的预测状态由下式给出：</p>
+<p>$$<br>x_k &#x3D; F_{x_{k-1}} + B_{u_k} + w_k \tag{13}<br>$$<br>其中 F 矩阵是前一状态 $x_{k−1}$ 中的状态转移模型，B 矩阵是控制输入模型，$u_k$是控制向量，$w_k$是高斯分布中的过程噪声。 系统状态$x_k$在时间k的状态$z_k$由下式给出：<br>$$<br>z_k &#x3D; H_kx_k + v_k \tag{14}<br>$$</p>
+<p>其中 $H_k$ 和$v_k$分别是观测矩阵和观测噪声。 来自卡尔曼滤波器的过滤运动以平滑的轨迹扭曲了稳定的框架。 因此，刚性变换的校正可以发现为：<br>$$<br>\begin{bmatrix} x_{sta} \ y_{sta} \ 1 \end{bmatrix} &#x3D; \begin{bmatrix}<br>\cos (\theta - \hat{\theta} )  &amp; -\sin (\theta - \hat{\theta} ) &amp; t_x - \hat{t_x}\<br>\sin (\theta - \hat{\theta} )  &amp; \cos (\theta - \hat{\theta} ) &amp; t_y - \hat{t_y}\<br> 0 &amp; 0 &amp; 1 \end{bmatrix}<br>\begin{bmatrix} x’ \ y’ \ 1 \end{bmatrix} \tag{15}<br>$$<br>其中 $(\hat{\theta},\hat{t_x},\hat{t_y})$是来自卡尔曼滤波器的滤波后的运动。 稳定的视频是用这种校正运动和平滑轨迹创建的。</p>
+<h1 id="Experimental-Results-and-Discussion"><a href="#Experimental-Results-and-Discussion" class="headerlink" title="Experimental Results and Discussion"></a>Experimental Results and Discussion</h1><p>假设IMU和Camera之间的延迟是常数 [32]。它可以通过应用围绕 z 轴移动相机以测量 $w_z^{cam}$ 所需的小正弦信号来识别偏移时间。然后，对光流和陀螺数据的平均幅度进行比较，如图9所示，光流是用图像插值算法[33]估计的，陀螺数据由等式（1）计算。 来自光流和陀螺仪数据的存档数据包含相同的相位，因此由$t_{off}$ 表示的两个测量数据之间的最大相位滞后等于 -0.035 s，<br><img src="/picture/eis/ahm10.png"></p>
+<p>我们提出的方法与独立的 KTL 跟踪器和 IMU 辅助运动估计器进行了比较。 为了合理的评估稳定视频的性能，我们使用帧间变换保真度（ITF）[34]通过总结峰值信噪比（PSNR）以单个值表示稳定视频的质量 ，由下式给出：</p>
+<p>$$<br>ITF &#x3D; \frac{1}{N_{max}-1} \sum_{k&#x3D;1}^{N_{max}-1}  PSNR \tag{16}<br>$$</p>
+<p>其中$N_{max}$是帧数，PSNR用于执行稳定方法的有效性，其定义为：</p>
+<p>$$<br>PSNR(I_n, I_{n+1}) &#x3D; 10log\frac{I_{max}^2}{MSE(I_n,I_{i+1})}  \tag{17}<br>$$</p>
+<p>其中$I_max$是视频帧的最大像素强度，MSE是连续两个帧之间的均方误差，$I_n$和$I_{n+1}$，在稳定视频中连续帧的每个像素中计算，可以定义为：</p>
+<p>$$<br>MSE(I_n,I_{i+1}) &#x3D; \frac{1}{MN}\sum_{j&#x3D;1}^{N}\sum_{i&#x3D;1}^{M}(I_n(i,j) - I_{n+1}(i,j))^2  \tag{18}<br>$$</p>
+<p>其中 N 和 M 是视频尺寸。 ITF和PSNR的高代表稳定视频的质量。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91/" rel="tag"># 论文翻译</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/Science/EIS%E7%94%B5%E5%AD%90%E9%98%B2%E6%8A%96/" rel="prev" title="EIS电子防抖基本原理">
+                  <i class="fa fa-angle-left"></i> EIS电子防抖基本原理
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/Science/%E4%BD%BF%E7%94%A8%E9%99%80%E8%9E%BA%E4%BB%AA%E7%9A%84%E6%95%B0%E5%AD%97%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E5%92%8C%E5%8D%B7%E5%B8%98%E5%BF%AB%E9%97%A8%E6%A0%A1%E6%AD%A3/" rel="next" title="使用陀螺仪的数字视频稳定和卷帘快门校正">
+                  使用陀螺仪的数字视频稳定和卷帘快门校正 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

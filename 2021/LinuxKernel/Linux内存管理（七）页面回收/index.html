@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内存管理（七）页面回收">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/lru1.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/lru2.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/lru3.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/lru4.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/lru5.jpg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/lru6.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/mem/RefaultDistance.png">
+<meta property="article:published_time" content="2021-11-28T08:00:32.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.779Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="内存管理">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6/","path":"2021/LinuxKernel/Linux内存管理（七）页面回收/","title":"Linux内存管理（七）页面回收"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux内存管理（七）页面回收 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#LRU%E9%93%BE%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">LRU链表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1%E6%9C%BA%E4%BC%9A%E6%B3%95"><span class="nav-number">2.</span> <span class="nav-text">第二次机会法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#LRU%E9%93%BE%E8%A1%A8%E7%BB%B4%E6%8A%A4"><span class="nav-number">3.1.</span> <span class="nav-text">LRU链表维护</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8C%BF%E5%90%8D%E9%A1%B5%E9%9D%A2%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-number">3.2.</span> <span class="nav-text">匿名页面的处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A6%E5%8F%91%E6%9C%BA%E5%88%B6"><span class="nav-number">4.</span> <span class="nav-text">触发机制</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E4%B8%8D%E5%9B%9E%E6%94%B6"><span class="nav-number">4.1.</span> <span class="nav-text">设置不回收</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#OOM"><span class="nav-number">4.2.</span> <span class="nav-text">OOM</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Refault-Distance%E7%AE%97%E6%B3%95"><span class="nav-number">5.</span> <span class="nav-text">Refault Distance算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">6.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E4%B8%83%EF%BC%89%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux内存管理（七）页面回收 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux内存管理（七）页面回收
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-11-28 16:00:32" itemprop="dateCreated datePublished" datetime="2021-11-28T16:00:32+08:00">2021-11-28</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E5%86%85%E6%A0%B8/" itemprop="url" rel="index"><span itemprop="name">内核</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="/picture/linux/brief/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86-%E9%A1%B5%E9%9D%A2%E5%9B%9E%E6%94%B6.png"><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/623859201e085306f8c80acd">原图</a></p>
+<span id="more"></span>
+
+<p>Linux操作系统会使用存储设备作为交换分区，内核将很少使用的内存换出到交换分区，以便释放出物理内存，这个机制称为页交换（swapping），这些处理机制统称为页面回收(pagereclaim)。</p>
+<h1 id="LRU链表"><a href="#LRU链表" class="headerlink" title="LRU链表"></a>LRU链表</h1><p>Linux内核中采用的页交换算法主要是经典LRU链表算法和第二次机会（secondchance）法。<br>LRU是Least Recently Used的缩写，意为最近最少使用。根据局部性原理，LRU假定最近不使用的页面在较短的时间内也不会频繁使用，在内存不足时，这些页面将成为被换出的候选者。内核使用双向链表来定义LRU链表，并且根据页面的类型将LRU链表分为LRU_ANON和LRU_FILE。每种类型根据页面的活跃性分为活跃LRU链表和不活跃LRU链表，所以内核中一共有如下5个LRU链表。</p>
+<ul>
+<li>不活跃匿名页面链表LRU_INACTIVE_ANON</li>
+<li>活跃匿名页面链表LRU_ACTIVE_ANON</li>
+<li>不活跃文件映射页面链表LRU_INACTIVE_FILE</li>
+<li>活跃文件映射页面链表LRU_ACTIVE_FILE</li>
+<li>不可回收页面链表LRU_UNEVICTABLE</li>
+</ul>
+<p>LRU链表之所以要分成这样，是因为当内存紧缺时总是优先换出文件映射的文件缓存页面（LRU FILE链表中的页面）而匿名页面总是要在写入交换分区之后，才能被换出。</p>
+<p>LRU链表按照内存节点（之前版本是zpone）配置，也就是说，每个内存节点中都有一整套LRU链表，因此内存节点的描述符数据结构（pglist_data）中有一个成员lruvec指向这些链表。枚举类型变量lru_list列举出上述各种LRU链表的类型，lruvec数据结构中定义了上述各种LRU类型的链表。</p>
+<h1 id="第二次机会法"><a href="#第二次机会法" class="headerlink" title="第二次机会法"></a>第二次机会法</h1><p>第二次机会法的改进是为了避免把经常使用的页面置换出去。当选择置换页面时，依然和经典LRU链表算法一样，选择最早置入链表的页面，第二次机会法设置了一个访问状态位（硬件控制的位），所以要检查页面的访问位。如果访问位是0，就淘汰这个页面；如果访问位是1，就给它第二次机会，并选择下一个页面来换出。当该页面得到第二次机会时，它的访问位被清零，如果该页面在此期间再次被访问过，则访问位设置为1。于是，给了第二次机会的页面将不会被淘汰，直至其他页面被淘汰（或者也给了第二次机会）。因此，如果一个页面经常被使用，其访问位总保持为1，它一直不会被淘汰。</p>
+<p>Linux内核使用PG_active和PG_referenced 这两个标志位来实现第二次机会法。PG_active表示该页面是否活跃，PG_referenced表示该页面是否被引用过。</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><h2 id="LRU链表维护"><a href="#LRU链表维护" class="headerlink" title="LRU链表维护"></a>LRU链表维护</h2><p>我们需要有timestamp来标识一个page最近被访问的时间，然而像x86这样的架构并没有从硬件上提供这种机制。</p>
+<p>Linux采用的方法是维护2个双向链表，一个是包含了最近使用页面的active list，另一个是包含了最近不使用页面的inactive list，并且在struct page的page flags中使用了PG_referenced和PG_active两个标志位来标识页面的活跃程度。</p>
+<ul>
+<li>PG_active标志位决定page在哪个链表，也就是说active list中的pages的PG_active都为1，而inactive list中的pages的PG_active都为0。</li>
+<li>PG_referenced标志位则是表明page最近是否被使用过。当一个page被访问，mark_page_accessed()会检测该page的PG_referenced位，如果PG_referenced为0，则将其置为1。</li>
+</ul>
+<p>如果inactive list上PG_referenced为1的page在回收之前被再次访问到，也就是说它在inactive list中时被访问了2次，mark_page_accessed()就会调用activate_page()将其置换到active list的头部，同时将其PG_active位置1，PG_referenced位清0（可以理解为两个PG_referenced才换来一个PG_active），这个过程叫做promotion（逆袭）。</p>
+<p>这3种情景的代码实现是这样的（为了演示需要在源代码的基础上做了简化和修改）：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">mark_page_accessed</span><span class="params">(<span class="keyword">struct</span> page *page)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (!PageActive(page) &amp;&amp; PageReferenced(page)) &#123;</span><br><span class="line">	    activate_page(page);</span><br><span class="line">	&#125;</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (!PageReferenced(page)) &#123;</span><br><span class="line">	    SetPageReferenced(page);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当active list中的一个page在到达链表尾端时，如果其PG_referenced位为1，则被放回链表头部，但同时其PG_referenced会被清0。如果其PG_referenced位为0，那么就会被放入inactive list的头部，这个过程叫做demotion。可见，Linux采用的这种active list和inactive list并不是严格按照时间顺序来置换page的，所以是一种伪LRU算法。</p>
+<p>Inactive list中尾端的页面不断被释放，相当于一个消费者，active list则不断地将尾端PG_referenced为0的页面放入inactive list，相当于一个生产者。不难想象，这2个链表的锁（lru_lock）应该是高度竞争的，如果从active list向inactive list的页面转移是一个一个进行的，那对锁的争抢将会十分严重。</p>
+<p>为了解决这个问题，内核加入了一个per-CPU的lru cache（用struct pagevec表示），从active list换出的页面先放入当前CPU的lru cache中，直到lru cache中已经积累了PAGEVEC_SIZE（15）个页面，再获取lru_lock，将这些页面批量放入inactive list中。<br><img src="/picture/linux/kernel/mem/lru1.jpg"></p>
+<p>如果inactive list比较长，那么每个页面在被回收之前有充分的时间被再次访问，从而被promote到active list，这样可以减少刚刚被回收又发生refault的页面数量（page thrashing）。但是由于内存总量有限，inactive list较长就意味着active list相对较短，那这2个链表应该分别多长比较合适呢？</p>
+<p>我们可以在一个页面被回收时记录一个timestamp，当这个页面refault被换入时再记录一个timestamp，如果将inactive list的长度增加，使得页面回收增长的时间超过这2个timestamp的差值时，那么这个页面就可以因为在inactive list中被再次访问，避免了被回收的命运，也减小了refault造成的开销。</p>
+<p>可是前面也提到过，由于硬件的限制，给每个page维护一个timestamp是不现实的。还是类似的解决办法，用inactive中回收页面的个数来替代timestamp，每回收一个页面，计数器加1（相当于用counter替代了timer）。那这个counter的值保存在哪里呢？</p>
+<p>对于属于page cache的页面，由于其被换出之前是放在radix tree&#x2F;xarray中的，当页面被回收时，我们可以把它曾经所在的entry利用起来，记录一下当前的counter值，页面被换入的时候再比较一下entry中的counter值，这种entry被称为shadow entry。</p>
+<p>对于一个基于文件的page frame，好像它既在page cache结构中，又在active&#x2F;inactive list结构中？没错，放在page cache中以radix tree&#x2F;xarray的方式组织，是为了方便快速查找和读写它的内容，放在active&#x2F;inactive list中则是为了方便内存回收。当一个基于文件的page frame被创建时，它就已经被加入到这2个结构中了：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">add_to_page_cache_lru</span><span class="params">(<span class="keyword">struct</span> page *page, <span class="keyword">struct</span> address_space *mapping,</span></span><br><span class="line"><span class="params">			  <span class="type">pgoff_t</span> offset, <span class="type">gfp_t</span> gfp_mask)</span></span><br><span class="line">&#123;</span><br><span class="line">    __add_to_page_cache_locked(page, mapping, offset,  gfp_mask, &amp;shadow);</span><br><span class="line">    lru_cache_add(page);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里同样是先放入lru cache，而不是直接放进active&#x2F;inactive list中。</p>
+<h2 id="匿名页面的处理"><a href="#匿名页面的处理" class="headerlink" title="匿名页面的处理"></a>匿名页面的处理</h2><p>对于anonymous pages，总是需要先写入swap area才能回收。而对于page cache，有一些可以直接discard（比如elf的text段对应的页面，data段对应的页面中clean的部分），有一些dirty的页面需要先write back同步到磁盘。</p>
+<p>由于有flusher thread定期的write back，回收时还是dirty的page cache页面不会太多。而且，page cache中的页面有对应的文件和在文件中的位置信息，需要换入恢复的时候也更加容易。</p>
+<p>因此，内核通常更倾向于换出page cache中的页面，只有当内存压力变得相对严重时，才会选择回收 anonymous pages。用户可以根据具体应用场景的需要，通过”&#x2F;proc&#x2F;sys&#x2F;vm&#x2F;swappiness”调节内存回收时anonymous pages和page cache的比重。</p>
+<p>swappiness的值从0到100不等（默认一般是60），这个值越高，则回收的时候越优先选择anonymous pages。当swappiness等于100的时候，anonymous pages和page cache就具有相同的优先级。至于为什么不从开销最小的角度将swappiness设为0，将在后面给出答案。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * With swappiness at 100, anonymous and file have the same priority.</span></span><br><span class="line"><span class="comment"> * This scanning priority is essentially the inverse of IO cost.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">anon_prio = swappiness;</span><br><span class="line">file_prio = <span class="number">200</span> - anon_prio</span><br></pre></td></tr></table></figure>
+
+<p>早期的Linux实现中，每个 zone 中有 active 和 inactive 两个链表，每个链表上存放的页面不区分类型。为了实现优先回收page cache，之后每个链表拆分成了LRU_ANON和LRU_FILE，因此形成了LRU_INACTIVE_ANON, LRU_ACTIVE_ANON, LRU_INACTIVE_FILE和LRU_ACTIVE_FILE四种链表，而且改成了一个node对应一组链表（per-node），由代表node的struct pglist_data中的struct lruvec包含各个链表的头结点 。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> LRU_BASE 0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LRU_ACTIVE 1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> LRU_FILE 2</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">enum</span> <span class="title">lru_list</span> &#123;</span></span><br><span class="line">	LRU_INACTIVE_ANON = LRU_BASE,</span><br><span class="line">	LRU_ACTIVE_ANON = LRU_BASE + LRU_ACTIVE,</span><br><span class="line">	LRU_INACTIVE_FILE = LRU_BASE + LRU_FILE</span><br><span class="line">	LRU_ACTIVE_FILE = LRU_BASE + LRU_FILE + LRU_ACTIVE,</span><br><span class="line">	LRU_UNEVICTABLE,</span><br><span class="line">	NR_LRU_LISTS</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">lruvec</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">lists</span>[<span class="title">NR_LRU_LISTS</span>];</span></span><br><span class="line">        ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里还有一个LRU_UNEVICTABLE链表。这个链表存储了flag为PG_unevictable的页面，因为unevictable的页面是不可以回收的，扫描的时候忽略LRU_UNEVICTABLE链表，将可以减少回收时扫描页面的总体时间。</p>
+<p>可以通过”&#x2F;proc&#x2F;zoneinfo”查看这4种链表在node的各个zone上的分布：<br><img src="/picture/linux/kernel/mem/lru2.jpg"></p>
+<p>更丰富的信息则包含在”&#x2F;proc&#x2F;meminfo”中，比如”Dirty”表示修改后还没有write back的页面，”Writeback”表示正在执行I&#x2F;O操作进行回写的页面，还有就是系统所有”active”和”inactive”的page cache和anonymous page的统计数据。</p>
+<p>如果swappiness的值为0，那么内核在启动内存回收时，将完全忽略anonymous pages，这将带来一个好处，就是内核只需要扫描page cache对应的inactive list（LRU_ACTIVE_FILE）就可以了，根本不用扫描anonymous pages对应的inactive list（LRU_ACTIVE_ANON），这样能极大的节约内存回收时花在扫描LRU链表上的时间。</p>
+<p>但是，swappiness设置为0只适用于系统中page cache比较多的场景，如果系统中anonymous pages比page cache多很多，只回收page cache的话，可能无法满足direct relaim或者kswapd的需求。</p>
+<p>这时本来系统中还有很多anonymous pages可供回收以释放内存，由于swappiness的限制，内核也许只有选择OOM killer了，所以用户在设置swappiness参数的时候，需要对自己的应用场景和内存的使用情况有比较深入的了解，要不然你可能会困惑：明明available的内存还很多啊，为啥老有进程被OOM kill呢。</p>
+<h1 id="触发机制"><a href="#触发机制" class="headerlink" title="触发机制"></a>触发机制</h1><p>Linux内核中触发页面回收的机制大致有3个。</p>
+<ul>
+<li>直接页面回收机制。在内核态里调用页面分配接口函数alloe_pages()分配物理页面时，由于系统内存短缺，不能满足分配请求，因此内核会直接自陷到页面回收机制，这称为直接页面回收</li>
+<li>周期性回收内存机制。这是kswapd 内核线程的工作职责。当内核路径调用alloc_pages()分配物理页面时，由于系统内存短缺，没法在低水位情况下分配出内存，因此会唤醒kswapd内核线程来异步回收内存</li>
+<li>slab收割机（slab shrinker）机制。这是用来回收slb对象的。当内存短缺时，直接页面回收和周期性回收内存两种机制都会调用slab收割机机制来回收slab对象。slab机制分配的内存主要用于slab对象和kmalloc接口，也可用于内核空间的内存分配，而本节重点介绍的是用户内存的回收</li>
+</ul>
+<p>读者需要注意的是，直接回收内存的进程主体是调用者本身。另外，还有一个重要的特点一直接回收内存是同步回收，这会阻塞调用者进程的执行。<br>kswapd本身是内核线程，它和调用者的关系是异步的。</p>
+<p>一个理想的情况是，我们能在内存压力不那么大的时候，就提前启动内存回收。而且，在某些场景下（比如在interrupt context或持有spinlock时），内存分配根本就是不能等待的。因此，Linux中另一种更为常见的内存回收机制是使用kswapd。</p>
+<p>每个node对应一个内核线程kswapd，kswapd在被唤醒后将扫描各个zone的内存使用状态，并据此进行必要的内存回收操作，因此kswapd的回收方式又被称为”background reclaim”。至于什么情况下触发direct reclaim，什么情况下又会触发background reclaim，是由内存的”watermark”决定的。<br><img src="/picture/linux/kernel/mem/lru3.jpg"></p>
+<p>Kswapd虽然名字中含有”swap”，但它不光处理anonymous page的swap out回收，同样处理page cache的回收，而且它还肩负着平衡active list和inactive list的重任，所以被它调用的函数叫做balance_pgdat()。</p>
+<p>不管是direct reclaim，还是kswapd，最终都是调用shrink_zone() –&gt; shrink_page_list() 进行回收操作。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">shrink_list</span><span class="params">(<span class="keyword">enum</span> lru_list lru, <span class="type">unsigned</span> <span class="type">long</span> nr_to_scan,</span></span><br><span class="line"><span class="params">				 <span class="keyword">struct</span> lruvec *lruvec, <span class="keyword">struct</span> scan_control *sc)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (is_active_lru(lru)) &#123;</span><br><span class="line">		<span class="keyword">if</span> (inactive_list_is_low(lruvec, is_file_lru(lru), sc, <span class="literal">true</span>))</span><br><span class="line">			shrink_active_list(nr_to_scan, lruvec, sc, lru);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> shrink_inactive_list(nr_to_scan, lruvec, sc, lru);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当inactive list中的页面比较少时，shrink_active_list()会从active list尾端转移一部分页面到inactive list中。这里的“少”是相对的，通常物理内存越大，inactive list的页面占比可以越小（页面总数还是增加的），因为inactive list的长度主要是用来减少短时间内refault的。</p>
+<p>shrink_inactive_list –&gt; shrink_page_list 将从inactive list尾端移除选定数目的页面，进行释放。<br><img src="/picture/linux/kernel/mem/lru4.jpg"></p>
+<p>回收一个页面之前，如果该页面当前是被映射的（根据struct page的_mapcount域判断），需要调用try_to_unmap()，通过reserve mapping更改所有指向这个页面的PTEs。对于anonymous page，还需要在swap space中分配slot，并且将这个page标记为dirty的。anonymous page是没有backing store的，从dirty的角度，它可以算是一直dirty的。</p>
+<p>前面提到过，不是所有的页面都可以被回收的。如果检测到页面的flag是PG_locked或者是PG_reserved的，则只能跳过。对于正在回写的（flag是PG_writeback的），通常也是放弃回收，有这功夫去等待回写完成，还不如去找链表上其他的clean page。<br><img src="/picture/linux/kernel/mem/lru5.jpg"></p>
+<p>之后，对于flag是PG_dirty的页面，启动pageout()将这些页面备份或者同步到外部磁盘，这里“备份”针对的是anonymous page，“同步”针对的是page cache。</p>
+<h2 id="设置不回收"><a href="#设置不回收" class="headerlink" title="设置不回收"></a>设置不回收</h2><p>进程可以用申请swap token，拥有了swap token，就可以被内存回收算法暂时豁免，除非，内存实在已经紧张的不行了。在3.4版本中被移除了。</p>
+<h2 id="OOM"><a href="#OOM" class="headerlink" title="OOM"></a>OOM</h2><p>虽然OOM killer有时候可能导致严重的损失，但总比系统完全崩溃要好。这个无辜的bad process可不是随便挑的，应该优先选择这些：</p>
+<ul>
+<li>占有page frames比较多的，占有的多释放的才多，kill掉才有意义</li>
+<li>静态优先级比较低的</li>
+</ul>
+<p>而不能选择这些：</p>
+<ul>
+<li>内核线程，因为内核线程往往执行的都是比较关键的任务</li>
+<li>进程号为1的init进程。如果父进程退出，而它的一个或多个子进程还在运行，那么这些子进程将被init进程托管，kill掉init进程是内核不允许的行为</li>
+<li>直接访问硬件设备的进程，如果强行终结这样的进程，可能将硬件置于一个不确定的状态</li>
+</ul>
+<h1 id="Refault-Distance算法"><a href="#Refault-Distance算法" class="headerlink" title="Refault Distance算法"></a>Refault Distance算法</h1><p>在学术界和Linux内核社区，页面回收算法的优化一直没有停止过，其中Refault Distance算法在Linux3.15内核中加入，作者是社区专家Johannes Weiner，该算法目前只针对页面高速缓存类型的页面。<br>如下图所示，对于内容缓存类型的LRU链表来说，有两个链表值得关注，分别是活跃LRU链表和不活跃LRU链表。新产生的页面总是被添加到不活跃LRU链表的头部，页面回收也总是从不活跃LRU链表的尾部开始。不活跃LRU链表的页面第二次访问时会升级（promote）为活跃LRU链表的页面，防止被回收；另一方面，如果活跃LRU链表增长太快，那么活跃页面也会被降级（demote）到不活跃LRU链表中。<br><img src="/picture/linux/kernel/mem/lru6.png"></p>
+<p>实际上，一些场景下，某些页面经常被访问，但是在下一次访问之前在不活跃LRU链表中回收并释放了它们，因此须从存储系统中读取这些内容缓存页面，这会产生颠簸（thrashing）现象。当我们观察文件缓存中不活跃LRU链表的行为特征时，会发现如下有趣特征。</p>
+<ul>
+<li>第一次访问一个文件缓存页面时，它被添加到不活跃LRU链表头，然后慢慢从链表头向链表尾方向移动，链表尾的内容缓存会被移出LRU链表且释放页面，这个过程叫作移出</li>
+<li>当第二次访问时，页面高速缓存被升级为活跃LRU链表中的页面高速缓存，这样不活跃LRU链表也空出一个位置，在不活跃LRU链表的页面整体移动了一个位置，这个过程叫作激活</li>
+<li>从宏观时间轴来看，移出过程处理的页面数量与激活过程处理的页面数量的总和等于不活跃LRU链表的长度NR_inactive</li>
+<li>要从不活跃LRU链表中释放一个页面，需要移动N个页面（N表示不活跃链表长度）</li>
+</ul>
+<p>综合上面的一些行为特征，定义了Refault Distance的概念。第一次访问内容缓存称为fault，第二次访问该页称为refault。内容缓存页面第一次被移出LRU链表并回收的时刻称为E，第二次再访问该页面的时刻称为R，那么R-E的时间里需要移动的页面个数称为Refault Distance。</p>
+<p>Refault Distance概念再加上第一次访问的时刻，可以用一个公式来概括第一次和第二次访问的间隙（read distance）。</p>
+<pre><code>read_distance=nr_inactive + (R - E)
+</code></pre>
+<p>如果页面想一直保持在LRU链表中，那么read_distance不应该比内存的大小还大；否则，该页面永远会被移出LRU链表。因此，下式成立。</p>
+<pre><code>NR_inactive + (R - E) ≤ NR_inactive + NR_active
+(R - E) ≤ NR_active
+</code></pre>
+<p>换句话说，Refault Distance可以理解为不活跃LRU链表的“财政赤字”。如果不活跃LRU链表的长度至少再延长到Refault Distance，就可以保证该内容缓存在第二次访间之前不会被移出LRU链表并释放内存：否则，就要把该内容缓存重新加入活跃LRU链表加以保护，以防颠簸。在理想情况下，内容缓存的平均访问间隙要大于不活跃LRU链表的大小、小于总的内存大小。<br>上述内容讨论了两次读的间隙小于或等于内存大小的情况，即NR_inactive+（R-E）≤ NR_inactive - NR_active。如果两次读的间隙大于内存大小呢？这种特殊情况不是Refault Distance算法能解决的，因为它在第二次访问时己经永远被移出LRU链表，可以假设第二次访向发生在遥远的末来，但谁都无法保证它在LRU链表中。其实Refault Distance算法用于在第二次访问时，人为地把内容缓存添加到活跃LRU链表中，从而防止该内容缓存被移出LRU链表而带来的内存颠簸。</p>
+<p>Refault Distance：算法如下图所示。T0时刻表示第一次访问一个内容缓存这时会调用add_to_page_cache_lru而配一个shadow来存储zone-&gt;inactive_age 值。每当有页面被升级为活跃LRU链表中的页面时，zone-&gt;inactive_age值会加1每当有面被移出不活跃LU表时，zone-&gt;inactive_age 值也加1. T1时刻，该页面被移出LRU链表并从LRU链表中回收释放因此把当前T1时刻的zone-&gt;inactive_age 的值编码存放到shadow中。T2时刻，第二次访问该页面，因此要计算Refault Distance，Refault Distance：&#x3D;T2-T1，如果Retault Distances ≤ NR_active.说明该内容缓存极有可能在下一次读时已经被移出LRU链表，因此要人为地激活该页面并且将其加入活跃LRU链表中。<br><img src="/picture/linux/kernel/mem/RefaultDistance.png"></p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/70964195">https://zhuanlan.zhihu.com/p/70964195</a><br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/72998605">https://zhuanlan.zhihu.com/p/72998605</a><br>《奔跑吧Linux内核》   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86/" rel="tag"># 内存管理</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AD%EF%BC%89%E8%BF%9B%E7%A8%8B%E5%9C%B0%E5%9D%80%E7%A9%BA%E9%97%B4/" rel="prev" title="Linux内存管理（六）进程地址空间">
+                  <i class="fa fa-angle-left"></i> Linux内存管理（六）进程地址空间
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%EF%BC%88%E5%85%AB%EF%BC%89%E9%A1%B5%E9%9D%A2%E8%BF%81%E7%A7%BB%E5%92%8C%E5%86%85%E5%AD%98%E8%A7%84%E6%95%B4/" rel="next" title="Linux内存管理（八）页面迁移和内存规整">
+                  Linux内存管理（八）页面迁移和内存规整 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

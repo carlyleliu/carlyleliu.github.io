@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="概述V4L2 是专门为 linux 设备设计的一套视频框架，其主体框架在 linux 内核，可以理解为是整个 linux 系统上面的视频源捕获驱动框架。其广泛应用在嵌入式设备以及移动端、个人电脑设备上面，市面上的编码产品类如：SDV、手机、IPC、行车记录仪都会用到这个框架来进行视频采集。 框架 该图描述了v4l2驱动框架的整体结构，v4l2本质上也是一个字符设备驱动程序，图中芯片模块对应Soc的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之V4L2子系统">
+<meta property="og:url" content="http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BV4L2%E5%AD%90%E7%B3%BB%E7%BB%9F/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="概述V4L2 是专门为 linux 设备设计的一套视频框架，其主体框架在 linux 内核，可以理解为是整个 linux 系统上面的视频源捕获驱动框架。其广泛应用在嵌入式设备以及移动端、个人电脑设备上面，市面上的编码产品类如：SDV、手机、IPC、行车记录仪都会用到这个框架来进行视频采集。 框架 该图描述了v4l2驱动框架的整体结构，v4l2本质上也是一个字符设备驱动程序，图中芯片模块对应Soc的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/V4L2/V4L2_Framework.jpeg">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/V4L2/V4L2_Struct.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/V4L2/entity.png">
+<meta property="article:published_time" content="2020-10-22T05:55:53.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.769Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux驱动">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/V4L2/V4L2_Framework.jpeg">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BV4L2%E5%AD%90%E7%B3%BB%E7%BB%9F/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BV4L2%E5%AD%90%E7%B3%BB%E7%BB%9F/","path":"2020/LinuxDriver/Linux驱动之V4L2子系统/","title":"Linux驱动之V4L2子系统"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux驱动之V4L2子系统 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6"><span class="nav-number">2.</span> <span class="nav-text">框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BV4L2%E5%AD%90%E7%B3%BB%E7%BB%9F/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux驱动之V4L2子系统 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之V4L2子系统
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2020-10-22 13:55:53" itemprop="dateCreated datePublished" datetime="2020-10-22T13:55:53+08:00">2020-10-22</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">驱动</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>V4L2 是专门为 linux 设备设计的一套视频框架，其主体框架在 linux 内核，可以理解为是整个 linux 系统上面的视频源捕获驱动框架。其广泛应用在嵌入式设备以及移动端、个人电脑设备上面，市面上的编码产品类如：SDV、手机、IPC、行车记录仪都会用到这个框架来进行视频采集。</p>
+<h1 id="框架"><a href="#框架" class="headerlink" title="框架"></a>框架</h1><p><img src="/picture/linux_driver/V4L2/V4L2_Framework.jpeg"></p>
+<p>该图描述了v4l2驱动框架的整体结构，v4l2本质上也是一个字符设备驱动程序，图中芯片模块对应Soc的各个子模块，video_device结构体主要用来控制Soc的video模块，v4l2_device会包含多个v4l2_subdev ，每个v4l2_subdev 用来控制各自的子模块，某些驱动不需要v4l2_subdev ，依靠video模块就能实现功能。</p>
+<ul>
+<li>video_device：一个字符设备，为用户空间提供设备节点（&#x2F;dev&#x2F;videoX），提供系统调用的相关操作，是采集设备的抽象接口</li>
+<li>vb2_queue：与vb2_v4l2_buffer一起用于数据流的实际逻辑和DMA操作</li>
+<li>v4l2_device：表示一个v4l2设备的实例</li>
+<li>v4l2_subdev：属于v4l2设备的子设备，一个v4l2设备可以拥有多个子设备</li>
+<li>videobuf：v4l2驱动的缓存管理</li>
+</ul>
+<span id="more"></span>
+
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>整体数据结构如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/6175161563768912b56334e0">原图</a><br><img src="/picture/linux_driver/V4L2/V4L2_Struct.png"></p>
+<ul>
+<li><p>v4l2_device<br>  这个是整个输入设备的总结构体，是所有子设备的根节点，负责管理所有子设备。由该结构体引申出来 v4l2_subdev。用于视频输入设备整体的管理，有多少输入设备就有多少个v4l2_device抽象（比如一个USB摄像头整体就可以看作是一个 V4L2 device）。再往下分是输入子设备，对应的是例如 ISP、CSI、MIPI 等设备，它们是从属于一个 V4L2 device 之下的</p>
+</li>
+<li><p>media_device<br>  用于运行时数据流的管理，嵌入在 V4L2 device 内部，运行时的意思就是：一个 V4L2 device 下属可能有非常多同类型的子设备（两个或者多个 sensor、ISP 等），那么在设备运行的时候我怎么知道我的数据流需要用到哪一个类型的哪一个子设备呢。这个时候就轮到 media_device 出手了，它为这一坨的子设备建立一条虚拟的连线，建立起来一个运行时的 pipeline（管道），并且可以在运行时动态改变、管理接入的设备</p>
+</li>
+<li><p>v4l2_ctrl_handler<br>  控制模块，提供子设备（主要是 video 和 ISP 设备）在用户空间的特效操作接口，比如你想改变下输出图像的亮度、对比度、饱和度等等，都可以通过这个来完成</p>
+</li>
+<li><p>v4l2_ctrl<br>  control 的结构体抽象，一个 control 就用一个实例化的 v4l2_ctrl 变量来表示</p>
+</li>
+<li><p>v4l2_ctrl_ref<br>  一个实例化的 v4l2_ctrl 的引用，可以看到该结构体里面包含了一个 struct v4l2_ctrl * 类型的指针变量成员，该指针成员指向的就是与之一一对应的 v4l2_ctrl 实例化对象</p>
+</li>
+<li><p>vb2_queue<br>  供内核与用户空间的 buffer 流转接口，输入设备产生了一坨图像数据，在内核里面应该放在哪里呢？能放几个呢？是整段连续的还是还是分段连续的又或者是物理不连续的？用户怎么去取用呢？都是它在管理</p>
+</li>
+</ul>
+<p>entity、link和pad该怎么理解呢，这里在网上找到一张图挺形象的，这里贴出来，如下：<br><img src="/picture/linux_driver/V4L2/entity.png"></p>
+<p>待续…</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://www.freesion.com/article/210999599/">https://www.freesion.com/article/210999599/</a><br><a target="_blank" rel="noopener" href="https://yellowmax.blog.csdn.net/article/details/80718831">https://yellowmax.blog.csdn.net/article/details/80718831</a><br><a target="_blank" rel="noopener" href="https://yellowmax.blog.csdn.net/article/details/83242446">https://yellowmax.blog.csdn.net/article/details/83242446</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/u013904227/article/details/80889947">https://blog.csdn.net/u013904227/article/details/80889947</a>   </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/" rel="tag"># Linux驱动</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BRegulator%E5%AD%90%E7%B3%BB%E7%BB%9F/" rel="prev" title="Linux驱动之Regulator子系统">
+                  <i class="fa fa-angle-left"></i> Linux驱动之Regulator子系统
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/Camera/%E7%9B%B8%E6%9C%BA%E6%A0%A1%E5%87%86%E6%A8%A1%E5%9E%8B/" rel="next" title="相机校准模型">
+                  相机校准模型 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

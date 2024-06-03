@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="Interrupts中断用于通知host音频功能的当前状态发生了变化。本规范目前定义了两种不同类型的中断:  Memory Change:某些内部实体的内存位置已更新。可以通知主机软件，以便采取适当的行动。 Control Change:音频函数内部的某些可寻址控件更改了其一个或多个属性值  时钟实体、单元或终端内部的音频控件可以是中断的源。同样，AudioControl接口中的任何可寻址Cont">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之UAC(三)Spec-Interrupt">
+<meta property="og:url" content="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUAC(%E4%B8%89)Spec-Interrupt/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="Interrupts中断用于通知host音频功能的当前状态发生了变化。本规范目前定义了两种不同类型的中断:  Memory Change:某些内部实体的内存位置已更新。可以通知主机软件，以便采取适当的行动。 Control Change:音频函数内部的某些可寻址控件更改了其一个或多个属性值  时钟实体、单元或终端内部的音频控件可以是中断的源。同样，AudioControl接口中的任何可寻址Cont">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/uac/uac15.png">
+<meta property="article:published_time" content="2024-04-03T02:15:21.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.769Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux驱动">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/usb/uac/uac15.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUAC(%E4%B8%89)Spec-Interrupt/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUAC(%E4%B8%89)Spec-Interrupt/","path":"2024/LinuxDriver/Linux驱动之UAC(三)Spec-Interrupt/","title":"Linux驱动之UAC(三)Spec-Interrupt"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux驱动之UAC(三)Spec-Interrupt | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Interrupts"><span class="nav-number">1.</span> <span class="nav-text">Interrupts</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Interrupt-Data-Message"><span class="nav-number">2.</span> <span class="nav-text">Interrupt Data Message</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Interrupt-Sources"><span class="nav-number">3.</span> <span class="nav-text">Interrupt Sources</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">4.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUAC(%E4%B8%89)Spec-Interrupt/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux驱动之UAC(三)Spec-Interrupt | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之UAC(三)Spec-Interrupt
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-04-03 10:15:21" itemprop="dateCreated datePublished" datetime="2024-04-03T10:15:21+08:00">2024-04-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">驱动</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="Interrupts"><a href="#Interrupts" class="headerlink" title="Interrupts"></a><strong>Interrupts</strong></h1><p>中断用于通知host音频功能的当前状态发生了变化。本规范目前定义了两种不同类型的中断:</p>
+<ul>
+<li>Memory Change:某些内部实体的内存位置已更新。可以通知主机软件，以便采取适当的行动。</li>
+<li>Control Change:音频函数内部的某些可寻址控件更改了其一个或多个属性值</li>
+</ul>
+<p>时钟实体、单元或终端内部的音频控件可以是中断的源。同样，AudioControl接口中的任何可寻址Control或任何AudioStreaming接口都可以生成中断。最后所有与音频端点相关的可寻址控件都可能是中断的源。</p>
+<p>音频功能的状态变化通常是由发生的特定事件引起的。事件可以是用户发起的，也可以是设备发起的。用户发起的插孔插入或移除是用户发起事件的典型示例。主机可以切换选择器或混音器，以便从刚刚插入的设备 (例如耳机)播放音频，并停止从当前设备(例如扬声器) 播放音频。设备启动事件的示例如下:一个外部设备 (例如 A&#x2F;V接收器可以在其光学数字输出上从PCM转换为AC-3编码数据，这取决于当前正在播放的材料如果此设备连接到具有自动检测功能的音频功能的光学数字输入，则该音频功能上的接口可能需要重新配置(例如，启动AC-3解码过程)，这可能会导致所有其他接口的格式发生某些变化，甚至变得不可用。设备可以发出中断，让主机知道音频功能需要重新配置。</p>
+<span id="more"></span>
+
+<h1 id="Interrupt-Data-Message"><a href="#Interrupt-Data-Message" class="headerlink" title="Interrupt Data Message"></a><strong>Interrupt Data Message</strong></h1><p>实际的中断类型（内存更改或控制更改）及其发起者通过中断端点发送的中断数据消息传递给主机。然后，主机负责通过获取内存请求或第5.2节“类特定请求”中定义的获取控制请求之一来查询音频功能，以获得关于中断原因的更详细信息。</p>
+<p>中断被认为是“edge-triggered”类型，这意味着当事件发生时就会生成中断，但是Host不需要采取特定的操作来清除中断条件。当Host响应中断发出获取请求时，将返回控件属性的最新值。</p>
+<p>中断数据消息的长度始终为6个字节。所有中断数据消息都需要第一个bInfo字段。它包含D0中的信息，表明这是特定于供应商的中断（D0 &#x3D; 0b1）还是特定于类的中断（D0 &#x3D; 0b0）。位D1表示中断是来自接口（D1 &#x3D; 0b0）还是来自端点（D1 &#x3D; 0b1）。bInfo字段的位D7..2被保留为将来的扩展，并且必须设置为零。对于特定于供应商的中断，将不会对中断消息的其余部分的布局进行定义。对于特定于类的中断，其布局定义如下。</p>
+<p>当中断来自接口中的实体（bInfo字段中的D1&#x3D;0b0）时，wIndex字段指定低字节和实体ID（时钟实体ID、单元ID、终端ID、编码器ID或解码器ID）中的接口。为了指示接口本身，必须在高字节中指定实体ID。</p>
+<p>当中断来自一个端点（bInfo字段中的D1&#x3D;0b1）时，wIndex字段指定要以低字节处理的端点和以高字节处理的零端点。</p>
+<p>wValue字段的解释由wIndex字段中的值限定。wValue字段的布局根据地址的实体而变化。对于每个支持的Gat value控制请求，wValue字段遵循第5节“请求”中概述的完全相同的规则。wValue字段返回高字节中的控制选择器（CS）和低字节中的通道号（CN）。控制选择器和通道号（CN）一起准确地指示哪个控制产生中断的。如果一个控制是通道独立的，则控制被认为是一个主控制，并返回虚拟信道零以指示它（CN &#x3D; 0）。</p>
+<p>上面有两个例外。第一个是当混合器单元控制请求返回高字节中的CS &#x3D; MU_MIXER_CONTROL时。然后以低字节返回混合器控制号（MCN）。第二个是内存请求，其中wValue字段指定一个基于零的偏移值，该值表示生成中断的实体的内存空间中的位置的地址。如果偏移值为零，则表示多个内存位置可能发生了更改，需要检查整个内存空间</p>
+<p><strong>bAttribute</strong>字段包含一个常量，用来标识被寻址的控件或实体的哪个属性导致了中断。可能的属性包括：</p>
+<ul>
+<li>Current setting attribute (CUR)</li>
+<li>Range attribute (RANGE)</li>
+<li>Memory space attribute (MEM)</li>
+</ul>
+<p>当没有挂起的中断时，中断端点在轮询时必须为NAK。下表指定了当D0 &#x3D; 0b0时，中断消息的格式：</p>
+<p><img src="/picture/linux_driver/usb/uac/uac15.png">   </p>
+<h1 id="Interrupt-Sources"><a href="#Interrupt-Sources" class="headerlink" title="Interrupt Sources"></a><strong>Interrupt Sources</strong></h1><p>音频功能的可寻址实体内的任何控制都可以是中断的源。中断消息包含足够的信息来确定究竟是哪个控制导致了中断。然后，主机可以发出正常的控制请求，以进一步确定中断的原因。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>《USB2.0协议规范》<br>《UAC2协议规范》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/" rel="tag"># Linux驱动</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUAC(%E4%BA%8C)Spec-Requests/" rel="prev" title="Linux驱动之UAC(二)Spec-Requests">
+                  <i class="fa fa-angle-left"></i> Linux驱动之UAC(二)Spec-Requests
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BUAC(%E5%9B%9B)HID/" rel="next" title="Linux驱动之UAC(四)HID">
+                  Linux驱动之UAC(四)HID <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

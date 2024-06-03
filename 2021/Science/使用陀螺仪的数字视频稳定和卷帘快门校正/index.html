@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原论文: &lt; Digital Video Stabilization and Rolling Shutter Correction using Gyroscopes &gt;   Abstract在本文中，我们提出了一种基于商用陀螺仪的强大实时视频稳定和滚动快门校正技术。首先来对相机运动和卷帘快门扭曲进行建模，然后从单个视频捕获自动校准陀螺仪和相机输出。 这种校准使我们能够仅使用陀螺仪数据">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用陀螺仪的数字视频稳定和卷帘快门校正">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/Science/%E4%BD%BF%E7%94%A8%E9%99%80%E8%9E%BA%E4%BB%AA%E7%9A%84%E6%95%B0%E5%AD%97%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E5%92%8C%E5%8D%B7%E5%B8%98%E5%BF%AB%E9%97%A8%E6%A0%A1%E6%AD%A3/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原论文: &lt; Digital Video Stabilization and Rolling Shutter Correction using Gyroscopes &gt;   Abstract在本文中，我们提出了一种基于商用陀螺仪的强大实时视频稳定和滚动快门校正技术。首先来对相机运动和卷帘快门扭曲进行建模，然后从单个视频捕获自动校准陀螺仪和相机输出。 这种校准使我们能够仅使用陀螺仪数据">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs3.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs4.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs5.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs6.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/eis/dvs7.png">
+<meta property="article:published_time" content="2021-08-20T23:21:54.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.779Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="论文翻译">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/eis/dvs1.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/Science/%E4%BD%BF%E7%94%A8%E9%99%80%E8%9E%BA%E4%BB%AA%E7%9A%84%E6%95%B0%E5%AD%97%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E5%92%8C%E5%8D%B7%E5%B8%98%E5%BF%AB%E9%97%A8%E6%A0%A1%E6%AD%A3/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2021/Science/%E4%BD%BF%E7%94%A8%E9%99%80%E8%9E%BA%E4%BB%AA%E7%9A%84%E6%95%B0%E5%AD%97%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E5%92%8C%E5%8D%B7%E5%B8%98%E5%BF%AB%E9%97%A8%E6%A0%A1%E6%AD%A3/","path":"2021/Science/使用陀螺仪的数字视频稳定和卷帘快门校正/","title":"使用陀螺仪的数字视频稳定和卷帘快门校正"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>使用陀螺仪的数字视频稳定和卷帘快门校正 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Abstract"><span class="nav-number">1.</span> <span class="nav-text">Abstract</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Video-Stabilization-and-Rolling-Shutter-Correction"><span class="nav-number"></span> <span class="nav-text">Video Stabilization and Rolling Shutter Correction</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Camera-Model"><span class="nav-number">1.</span> <span class="nav-text">Camera Model</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Camera-Motion"><span class="nav-number">2.</span> <span class="nav-text">Camera Motion</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Rolling-Shutter-Compensation"><span class="nav-number">3.</span> <span class="nav-text">Rolling Shutter Compensation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Image-Warping"><span class="nav-number">4.</span> <span class="nav-text">Image Warping</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Camera-and-Gyroscope-Calibration"><span class="nav-number"></span> <span class="nav-text">Camera and Gyroscope Calibration</span></a></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/Science/%E4%BD%BF%E7%94%A8%E9%99%80%E8%9E%BA%E4%BB%AA%E7%9A%84%E6%95%B0%E5%AD%97%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E5%92%8C%E5%8D%B7%E5%B8%98%E5%BF%AB%E9%97%A8%E6%A0%A1%E6%AD%A3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="使用陀螺仪的数字视频稳定和卷帘快门校正 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          使用陀螺仪的数字视频稳定和卷帘快门校正
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-08-21 07:21:54" itemprop="dateCreated datePublished" datetime="2021-08-21T07:21:54+08:00">2021-08-21</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/" itemprop="url" rel="index"><span itemprop="name">摄影</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E6%91%84%E5%BD%B1/%E9%98%B2%E6%8A%96/" itemprop="url" rel="index"><span itemprop="name">防抖</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><blockquote>
+<p>原论文: &lt; Digital Video Stabilization and Rolling Shutter Correction using Gyroscopes &gt;</p>
+</blockquote>
+<p><img src="/picture/eis/dvs1.png"></p>
+<h2 id="Abstract"><a href="#Abstract" class="headerlink" title="Abstract"></a>Abstract</h2><p>在本文中，我们提出了一种基于商用陀螺仪的强大实时视频稳定和滚动快门校正技术。首先来对相机运动和卷帘快门扭曲进行建模，然后从单个视频捕获自动校准陀螺仪和相机输出。 这种校准使我们能够仅使用陀螺仪数据来有效校正卷帘快门扭曲并稳定视频。</p>
+<span id="more"></span>
+
+<h1 id="Video-Stabilization-and-Rolling-Shutter-Correction"><a href="#Video-Stabilization-and-Rolling-Shutter-Correction" class="headerlink" title="Video Stabilization and Rolling Shutter Correction"></a>Video Stabilization and Rolling Shutter Correction</h1><p>我们系统中的相机运动仅根据旋转进行建模。 我们忽略平移运动，加速度计数据必须被积分两次才能获得位移，因此它们很难使用IMU准确测量。即使我们可以准确地测量平移，这也是不够的，因为在相机相同平移量的情况下不同深度的物体移动的量不同，我们将不得不依赖立体或基于特征的运动结构（SfM）算法来获取深度信息。这些方法并不健壮，而且目前在移动平台上实时运行计算成本太高。</p>
+<p>Forsse ́n和Ringaby[2010]试图在他们的系统中模拟相机位移，但发现结果比只考虑旋转的模型表现更差。 他们假设优化器在尝试从特征跟踪器重建位移时陷入局部最小值。他们的算法还假设相机正在对纯平面场景（即恒定深度）进行成像。 因此，由于视频中的未建模视差，平移重建有时会失败。<br><img src="/picture/eis/dvs2.png"></p>
+<p>为了避免这些问题，我们没有将平移合并到我们的模型中。 幸运的是，相机抖动和卷帘快门扭曲主要来自旋转。之所以如此，是因为平移随着深度的增加而迅速衰减，并且物体通常离镜头足够远，平移相机抖动不会在图像中产生明显的运动。 这一结论得到了我们的稳定结果的支持。</p>
+<h2 id="Camera-Model"><a href="#Camera-Model" class="headerlink" title="Camera Model"></a>Camera Model</h2><p>我们的旋转卷帘快门相机模型基于针孔相机模型。在针孔相机中，图像之间的关系在齐次坐标中的点x和对应点在3D世界坐标系中的X（图 2）可以通过以下方式表示：</p>
+<p>$$<br>x&#x3D;KX, X&#x3D;\lambda K^{-1}x \tag1<br>$$</p>
+<p>其中$\lambda$是未知比例因子，$K$是相机内参矩阵，我们假定内参矩阵的逆如下:</p>
+<p>$$<br>K^{-1} &#x3D; \begin{bmatrix} 1 &amp; 0 &amp; -o_x\ 0 &amp; 1 &amp; -o_y\ 0 &amp; 0 &amp; f \end{bmatrix} \tag2<br>$$</p>
+<p>其中，$(o_x, o_y)$ 是图像平面中相机轴的原点坐标，f是焦距。</p>
+<h2 id="Camera-Motion"><a href="#Camera-Motion" class="headerlink" title="Camera Motion"></a>Camera Motion</h2><p>我们将世界原点设置在相机原点。然后可以用R(t)来描述相机在时间t时刻的运动。因此，对于任何世界坐标点点X，对应的图像点x在时间t由下式给出：</p>
+<p>$$<br>x &#x3D; KR(t)X \tag3<br>$$<br><img src="/picture/eis/dvs3.png"></p>
+<p>旋转矩阵$R(t) \in SO(3)$是通过相机旋转角度$\Delta \theta (t)$计算得到的。然后对其使用SLERP（球形四元数线性插值）来平滑的得到足够多的旋转矩阵。$\Delta \theta (t)$可以通过陀螺仪的角速度获得：</p>
+<p>$$<br>\Delta \theta (t) &#x3D; (w(t + t_d) + w_d) * dt \tag4<br>$$</p>
+<p>这里$w_d$是陀螺仪漂移，$t_d$是陀螺仪和相机时间戳的差，这些参数都是未知的需要进行校准获得。</p>
+<h2 id="Rolling-Shutter-Compensation"><a href="#Rolling-Shutter-Compensation" class="headerlink" title="Rolling Shutter Compensation"></a>Rolling Shutter Compensation</h2><p>我们现在将卷帘快门的概念引入我们的相机模型中。在RS相机中，每个图像行的曝光时间略有不同，因此曝光期间相机的旋转将导致图像的扭曲。例如，如果相机在快门滚动时左右摇摆，则输出图像将扭曲，如图2所示。更正式地说，我们可以说x在时间t(i, y)期间成像：</p>
+<p>$$<br>t(i,y) &#x3D; t_i + t_s * y &#x2F; h; where  x &#x3D; (x,y,1)^T \tag5<br>$$</p>
+<p>其中y是点x对应的图像行，h是帧中的总行数，$t_i$是第i帧的时间戳。 $t_s$是一帧曝光所需时间，也就是从上到下逐行读出完整帧所需的时间。</p>
+<h2 id="Image-Warping"><a href="#Image-Warping" class="headerlink" title="Image Warping"></a>Image Warping</h2><p>现在我们推导出一帧图像两个坐标点之间的旋转关系。对于场景点X，在i帧和j帧的图像平面中的投影点$x_i$和$x_j$由下式给出：</p>
+<p>$$<br>x_i &#x3D; KR(t(i,y_i))X, and x_j &#x3D; KR(t(j,y_j))X \tag6<br>$$<br>联立两式整理得到:</p>
+<p>$$<br>x_j &#x3D; KR(t(j,y_j))R^{T}(t(i,y_i))K^{-1}x_i \tag7<br>$$<br><img src="/picture/eis/dvs4.png"></p>
+<p>想在我们已经考虑了同一个视频中的两帧之间的关系，我们加入限制条件两帧图像的原点相同，将$R(t)$映射到$R’(t)$,现在重新定义扭曲矩阵将一个点映射到另一个相机坐标系下：</p>
+<p>$$<br>W(t1,t2) &#x3D; KR’(t1)R^T(t2)K^{-1} \tag8<br>$$<br>我们可以得到如下：</p>
+<p>$$<br>x_j &#x3D; W(t(j,y_j),t(i,y_i))x_i, R’ &#x3D; R \tag9<br>$$</p>
+<p>还要注意，W分别取决于图像点$x_i$和$x_j$的图像行$y_i$和$y_j$。该变换矩阵可用于将帧i中的点与帧j中的对应点进行匹配，同时在两帧中都考虑卷帘快门的影响。给定这种变形矩阵的公式，滚动快门校正和视频稳定的算法就变得简单了。我们创建了一个具有平滑运动和全局快门的合成视频。该相机的运动是通过对输入相机的运动应用高斯低通滤波器来计算的，这会产生一组新的旋转矩阵R0。我们将合成相机的滚动快门持续时间ts设置为0（即全局快门），然后我们在当前帧i的每个图像行$y_i$处计算$W(t_i; t(i; y_i))$，并将扭曲应用于该行。 请注意W的第一项现在仅取决于帧时间$t_i$。此操作将所有输入帧映射到我们的合成视频上；因此可以同时消除滚动快门扭曲和视频抖动。<br><img src="/picture/eis/dvs5.png"></p>
+<p>实际上，我们不会为每个图像行$y_i$计算$W(t_i; t(i; y_i))$。相反我们细分输入图像（图 5a）并计算每个垂直细分的扭曲（图 5c 和 5d）。本质上，我们从输入图像创建一个扭曲的网格，它是非线性扭曲的分段线性近似。我们发现十个细分通常足以去除任何可见的 RS 拖影。Forssen和Ringaby [2010] 将这种采样方法称为´逆插值。他们还提出了两种额外的插值技术，他们凭经验证明在合成视频数据集上表现更好。然而，我们使用逆插值是因为使用顶点着色器很容易在GPU上实现一个高效的版本。GPU的片段着色器负责使用双线性插值对网格扭曲图像进行重新采样。我们发现，由于双线性逆插值实际视频中的RS扭曲通常不足以产生混叠拖影，因此逆插值在实践中效果也很好.</p>
+<h1 id="Camera-and-Gyroscope-Calibration"><a href="#Camera-and-Gyroscope-Calibration" class="headerlink" title="Camera and Gyroscope Calibration"></a>Camera and Gyroscope Calibration</h1><p>我们现在展示用于找到未知的相机和陀螺仪参数。 这个校准步骤是必要的，它使我们能够直接从陀螺仪数据中计算W。 我们模型中的未知参数是：相机的焦距 f、滚动快门的持续时间 $t_s$、陀螺仪和帧样本时间戳之间的延迟 $t_d$ 以及陀螺仪漂移 $w_d$</p>
+<p>请注意，制造商可能会给定其中一些参数，例如相机的焦距，也可以通过实验测量这些参数。 例如，Forssen 和 Ringaby [2010] 使用快速闪烁的显示器来测量滚动快门持续时间 $t_s$。 然而这些技术往往不精确且容易出错；而且它们也太繁琐，普通用户无法执行。滚动快门的持续时间通常在毫秒范围内。因此，$t_d$ 或$t_s$中的小偏差将导致卷帘门整流失败。</p>
+<p>我们的方法是从单个视频和陀螺仪捕获中估计这些参数。用户被要求记录视频和陀螺仪轨迹，在那里他们站着不动并在指向建筑物时晃动相机。持续时间约为10秒的短片通常以估计所有未知数。 请注意，这只需为每个摄像头和陀螺仪设置完成一次。<br><img src="/picture/eis/dvs6.png"></p>
+<p>在我们的方法中，我们使用 SIFT [Lowe 2004] 在连续视频帧中找到匹配点，并且我们使用 RANSAC [Fischler and Bolles 1981] 来丢弃异常值。 结果是捕获视频中所有相邻帧的一组点对应关系 $x_i$ 和 $x_j$ （图 6）。鉴于这一基本事实，我们可以将校准表述为一个优化问题，我们希望最小化所有点对应的均方重投影误差：<br>$$<br>J &#x3D; \sum_{i,j} \left | x_j - W(t(j,yj); t(i, yi))x_i \right |^2 \tag{10}<br>$$</p>
+<p>请注意，这是一个非线性优化问题。许多非线性优化器可用于最小化我们的目标函数。 然而，我们发现通过直接目标函数评估的坐标下降可以快速收敛。每次我们在目标函数 J 不减小的情况下迈出一步，我们就反转步长方向并减小相应参数的步长。一旦所有参数的步长降到所需阈值以下（即，当我们达到目标精度时），算法就会终止。对于时长约 10 秒的校准视频，我们的 Matlab&#x2F;C++ 实现通常会在 2 秒内收敛。</p>
+<p>我们通过将焦距设置为相机具有 45° 的视野来初始化优化算法,并将所有其他参数设置为 0。我们发现在这些初始条件下，优化器收敛到我们数据集的正确解。 更一般地，我们可以通过重新启动我们的坐标下降算法以获取一系列合理参数并选择最佳解决方案来避免陷入局部最小值（例如，当陀螺仪和帧时间戳之间的延迟很大时）。正确恢复参数的平均重新投影误差通常约为 1 个像素。</p>
+<p>我们模型中的另一个未知数是陀螺仪与相机的相对方向。 例如，绕陀螺仪 y 轴的旋转可以对应于绕相机 x 轴的旋转。为了发现陀螺仪的方向，我们排列了它的 3 个旋转轴并为每个排列运行我们的优化器，最小化目标的排列最好对应于相机的轴顺序。我们发现不正确排列的重投影误差要大得多。 因此，这种方法在实践中效果很好.</p>
+<p>在我们的讨论中，我们假设相机具有垂直滚动快门。RS 模型可以很容易地修改为适用于图像列而不是行。 找到两种情况下的最小重投影误差将告诉我们相机是否具有水平或垂直滚动快门。<br><img src="/picture/eis/dvs7.png"></p>
+<p>最后，为了更好地了解校准所获得的结果，我们展示了校准前后视频和陀螺仪信号的可视化效果。 如果我们假设连续帧之间的旋转很小，那么图像中的平移可以通过旋转近似计算如下：<br>$$<br>\dot{x} \approx f * \hat{\omega }(t+t_d), where \left{\begin{matrix}<br>\dot{x} &#x3D; (\dot{x},\dot{y})^T\<br>\dot{y} &#x3D; (w_y,w_x)^T<br>\end{matrix}\right. \tag{11}<br>$$</p>
+<p>在这里，我们还假设滚动快门没有影响（即 $t_s$ &#x3D; 0），并且我们忽略绕 z 轴的旋转（即 $\omega_z$）。 我们让 $\dot{x}$ 是连续帧中所有点对应沿 x 和 y 的平均平移率。 如果我们的优化器收敛到正确的焦距 f 和陀螺延迟 $t_d$，那么两个信号应该对齐。 图 7 绘制了对齐前后信号 $\dot{x}$ 和 $f ∗ \hat{\omega }(t + t_d)$ 的第一维。 请注意陀螺仪数据与图像运动的匹配程度。 MEMS 陀螺仪的这种惊人的精度使我们的方法能够在视频稳定和滚动快门校正任务上表现良好。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E8%AE%BA%E6%96%87%E7%BF%BB%E8%AF%91/" rel="tag"># 论文翻译</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/Science/%E5%9F%BA%E4%BA%8EIMU%E4%BC%A0%E6%84%9F%E5%99%A8%E7%9A%84%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E6%B7%B7%E5%90%88%E8%BF%90%E5%8A%A8%E4%BC%B0%E8%AE%A1/" rel="prev" title="基于IMU传感器的视频稳定混合运动估计">
+                  <i class="fa fa-angle-left"></i> 基于IMU传感器的视频稳定混合运动估计
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/Science/%E5%9F%BA%E4%BA%8E%E9%99%80%E8%9E%BA%E4%BB%AA%E7%9A%84%E8%A7%86%E9%A2%91%E7%A8%B3%E5%AE%9A%E9%9D%9E%E7%BA%BF%E6%80%A7%E6%BB%A4%E6%B3%A2%E5%99%A8/" rel="next" title="基于陀螺仪的视频稳定非线性滤波器">
+                  基于陀螺仪的视频稳定非线性滤波器 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

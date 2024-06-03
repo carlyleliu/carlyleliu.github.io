@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="编解码器类驱动程序是最基本的，他实现的代码应该利用编解码器设备并公开其硬件属性，以便amixer等用户空间工具可以使用它。 由于驱动程序针对特定的编解码器，因此它应该包含音频控制、音频接口功能、编解码器DAPM定义和I&#x2F;O功能，每个编解码器必须满足：  通过定义DAI和PCM配置来提供与其他模块的接口 提供编解码器控制I&#x2F;O hook（使用I2C、SPI的API） 根据用户空间">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux驱动之ALSA（二）编解码器类驱动相关概念">
+<meta property="og:url" content="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%BA%8C%EF%BC%89%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8%E7%B1%BB%E9%A9%B1%E5%8A%A8/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="编解码器类驱动程序是最基本的，他实现的代码应该利用编解码器设备并公开其硬件属性，以便amixer等用户空间工具可以使用它。 由于驱动程序针对特定的编解码器，因此它应该包含音频控制、音频接口功能、编解码器DAPM定义和I&#x2F;O功能，每个编解码器必须满足：  通过定义DAI和PCM配置来提供与其他模块的接口 提供编解码器控制I&#x2F;O hook（使用I2C、SPI的API） 根据用户空间">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/asoc_codec.png">
+<meta property="article:published_time" content="2024-01-15T22:42:52.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.769Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux驱动">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux_driver/ALSA/asoc_codec.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%BA%8C%EF%BC%89%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8%E7%B1%BB%E9%A9%B1%E5%8A%A8/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%BA%8C%EF%BC%89%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8%E7%B1%BB%E9%A9%B1%E5%8A%A8/","path":"2024/LinuxDriver/Linux驱动之ALSA（二）编解码器类驱动/","title":"Linux驱动之ALSA（二）编解码器类驱动相关概念"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux驱动之ALSA（二）编解码器类驱动相关概念 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Component"><span class="nav-number">1.</span> <span class="nav-text">Component</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DAI"><span class="nav-number">2.</span> <span class="nav-text">DAI</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Control"><span class="nav-number">3.</span> <span class="nav-text">Control</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E5%BC%80%E5%85%B3%E6%8E%A7%E4%BB%B6"><span class="nav-number">3.1.</span> <span class="nav-text">设置开关控件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E5%B8%A6%E6%9C%89%E9%9F%B3%E9%87%8F%E7%BA%A7%E5%88%AB%E7%9A%84%E5%BC%80%E5%85%B3"><span class="nav-number">3.2.</span> <span class="nav-text">设置带有音量级别的开关</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AB%8B%E4%BD%93%E5%A3%B0%E6%8E%A7%E4%BB%B6"><span class="nav-number">3.3.</span> <span class="nav-text">立体声控件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B8%A6%E9%9F%B3%E9%87%8F%E7%BA%A7%E5%88%AB%E7%9A%84%E7%AB%8B%E4%BD%93%E5%A3%B0%E6%8E%A7%E4%BB%B6"><span class="nav-number">3.4.</span> <span class="nav-text">带音量级别的立体声控件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%B7%E9%9F%B3%E5%99%A8%E6%8E%A7%E4%BB%B6"><span class="nav-number">3.5.</span> <span class="nav-text">混音器控件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DAPM-dynamic-audio-power-management"><span class="nav-number">4.</span> <span class="nav-text">DAPM(dynamic audio power management)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#widget"><span class="nav-number">4.1.</span> <span class="nav-text">widget</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9A%E4%B9%89widget"><span class="nav-number">4.2.</span> <span class="nav-text">定义widget</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E7%9A%84%E6%A6%82%E5%BF%B5%E2%80%93widget%E4%B9%8B%E9%97%B4%E7%9A%84%E8%BF%9E%E6%8E%A5%E5%99%A8"><span class="nav-number">4.3.</span> <span class="nav-text">路径的概念–widget之间的连接器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1%E7%9A%84%E6%A6%82%E5%BF%B5%E2%80%93widget%E4%BA%92%E8%81%94"><span class="nav-number">4.4.</span> <span class="nav-text">路由的概念–widget互联</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">5.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">6.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%BA%8C%EF%BC%89%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8%E7%B1%BB%E9%A9%B1%E5%8A%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux驱动之ALSA（二）编解码器类驱动相关概念 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux驱动之ALSA（二）编解码器类驱动相关概念
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-01-16 06:42:52" itemprop="dateCreated datePublished" datetime="2024-01-16T06:42:52+08:00">2024-01-16</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E9%A9%B1%E5%8A%A8/" itemprop="url" rel="index"><span itemprop="name">驱动</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>编解码器类驱动程序是最基本的，他实现的代码应该利用编解码器设备并公开其硬件属性，以便amixer等用户空间工具可以使用它。</p>
+<p>由于驱动程序针对特定的编解码器，因此它应该包含音频控制、音频接口功能、编解码器DAPM定义和I&#x2F;O功能，每个编解码器必须满足：</p>
+<ul>
+<li>通过定义DAI和PCM配置来提供与其他模块的接口</li>
+<li>提供编解码器控制I&#x2F;O hook（使用I2C、SPI的API）</li>
+<li>根据用户空间的需要，公开其他内核控件（Kernel control，Kcontrol）以动态控制模块行为</li>
+<li>定义DAPM widget，为动态电源切换建立DAPM路由，并提供DAC数字静音控制（option）</li>
+</ul>
+<span id="more"></span>
+
+<h1 id="Component"><a href="#Component" class="headerlink" title="Component"></a>Component</h1><p>包含编解码器的路由、widget、控件金额一组编解码器相关函数回调指针，以及一个或多个dai驱动。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* component interface */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_component_driver</span> &#123;</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *name;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Default control and setup, added after probe() is run */</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_kcontrol_new</span> *<span class="title">controls</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> num_controls;</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dapm_widget</span> *<span class="title">dapm_widgets</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> num_dapm_widgets;</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dapm_route</span> *<span class="title">dapm_routes</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> num_dapm_routes;</span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> (*probe)(<span class="keyword">struct</span> snd_soc_component *component);</span><br><span class="line">	<span class="type">void</span> (*remove)(<span class="keyword">struct</span> snd_soc_component *component);</span><br><span class="line">	<span class="type">int</span> (*suspend)(<span class="keyword">struct</span> snd_soc_component *component);</span><br><span class="line">	<span class="type">int</span> (*resume)(<span class="keyword">struct</span> snd_soc_component *component);</span><br><span class="line"></span><br><span class="line">	<span class="type">unsigned</span> <span class="title function_">int</span> <span class="params">(*read)</span><span class="params">(<span class="keyword">struct</span> snd_soc_component *component,</span></span><br><span class="line"><span class="params">			     <span class="type">unsigned</span> <span class="type">int</span> reg)</span>;</span><br><span class="line">	<span class="type">int</span> (*write)(<span class="keyword">struct</span> snd_soc_component *component,</span><br><span class="line">		     <span class="type">unsigned</span> <span class="type">int</span> reg, <span class="type">unsigned</span> <span class="type">int</span> val);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* pcm creation and destruction */</span></span><br><span class="line">	<span class="type">int</span> (*pcm_new)(<span class="keyword">struct</span> snd_soc_pcm_runtime *rtd);</span><br><span class="line">	<span class="type">void</span> (*pcm_free)(<span class="keyword">struct</span> snd_pcm *pcm);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* component wide operations */</span></span><br><span class="line">	<span class="type">int</span> (*set_sysclk)(<span class="keyword">struct</span> snd_soc_component *component,</span><br><span class="line">			  <span class="type">int</span> clk_id, <span class="type">int</span> source, <span class="type">unsigned</span> <span class="type">int</span> freq, <span class="type">int</span> dir);</span><br><span class="line">	<span class="type">int</span> (*set_pll)(<span class="keyword">struct</span> snd_soc_component *component, <span class="type">int</span> pll_id,</span><br><span class="line">		       <span class="type">int</span> source, <span class="type">unsigned</span> <span class="type">int</span> freq_in, <span class="type">unsigned</span> <span class="type">int</span> freq_out);</span><br><span class="line">	<span class="type">int</span> (*set_jack)(<span class="keyword">struct</span> snd_soc_component *component,</span><br><span class="line">			<span class="keyword">struct</span> snd_soc_jack *jack,  <span class="type">void</span> *data);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* DT */</span></span><br><span class="line">	<span class="type">int</span> (*of_xlate_dai_name)(<span class="keyword">struct</span> snd_soc_component *component,</span><br><span class="line">				 <span class="keyword">struct</span> of_phandle_args *args,</span><br><span class="line">				 <span class="type">const</span> <span class="type">char</span> **dai_name);</span><br><span class="line">	<span class="type">int</span> (*of_xlate_dai_id)(<span class="keyword">struct</span> snd_soc_component *comment,</span><br><span class="line">			       <span class="keyword">struct</span> device_node *endpoint);</span><br><span class="line">	<span class="type">void</span> (*seq_notifier)(<span class="keyword">struct</span> snd_soc_component *component,</span><br><span class="line">			     <span class="keyword">enum</span> snd_soc_dapm_type type, <span class="type">int</span> subseq);</span><br><span class="line">	<span class="type">int</span> (*stream_event)(<span class="keyword">struct</span> snd_soc_component *component, <span class="type">int</span> event);</span><br><span class="line">	<span class="type">int</span> (*set_bias_level)(<span class="keyword">struct</span> snd_soc_component *component,</span><br><span class="line">			      <span class="keyword">enum</span> snd_soc_bias_level level);</span><br><span class="line"></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_pcm_ops</span> *<span class="title">ops</span>;</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_compr_ops</span> *<span class="title">compr_ops</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* probe ordering - for components with runtime dependencies */</span></span><br><span class="line">	<span class="type">int</span> probe_order;</span><br><span class="line">	<span class="type">int</span> remove_order;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * signal if the module handling the component should not be removed</span></span><br><span class="line"><span class="comment">	 * if a pcm is open. Setting this would prevent the module</span></span><br><span class="line"><span class="comment">	 * refcount being incremented in probe() but allow it be incremented</span></span><br><span class="line"><span class="comment">	 * when a pcm is opened and decremented when it is closed.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> module_get_upon_open:<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* bits */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> idle_bias_on:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> suspend_bias_off:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> use_pmdown_time:<span class="number">1</span>; <span class="comment">/* care pmdown_time at stop */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> endianness:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> non_legacy_dai_naming:<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* this component uses topology and ignore machine driver FEs */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *ignore_machine;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *topology_name_prefix;</span><br><span class="line">	<span class="type">int</span> (*be_hw_params_fixup)(<span class="keyword">struct</span> snd_soc_pcm_runtime *rtd,</span><br><span class="line">				  <span class="keyword">struct</span> snd_pcm_hw_params *params);</span><br><span class="line">	<span class="type">bool</span> use_dai_pcm_id;	<span class="comment">/* use DAI link PCM ID as PCM device number */</span></span><br><span class="line">	<span class="type">int</span> be_pcm_base;	<span class="comment">/* base device ID for all BE PCMs */</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>name: 此组件的名称对于编解码器和platform来说都是必须的，platform可能不需要其他字段</li>
+<li>probe：组件驱动probe函数，组件probe函数，当组件驱动被mechine驱动probe到时（实际上是当machine驱动向ASOC core注册一个由该组件组成的card时）执行，必要时完成组件初始化</li>
+<li>control：控制接口指针，如控制音量，通道选择等，主要用于编解码器</li>
+<li>set_pll: 设置锁相环的函数指针</li>
+<li>read：读取编解码器寄存器的函数</li>
+<li>write：写入编解码器寄存器的函数</li>
+<li>dapm_widget: dapm的widget指针</li>
+<li>dapm_routes: dapm路由指针</li>
+<li>ops： platform DMA相关回调</li>
+</ul>
+<p>此结构体同时抽象编解码器和Platform机器DAI驱动程序</p>
+<h1 id="DAI"><a href="#DAI" class="headerlink" title="DAI"></a>DAI</h1><p>编解码驱动程序包括编解码设备本身和DAI组件，他们在与platform绑定时使用。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dai_driver</span> &#123;</span></span><br><span class="line">	<span class="comment">/* DAI description */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *name;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> id;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> base;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dobj</span> <span class="title">dobj</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* DAI driver callbacks */</span></span><br><span class="line">	<span class="type">int</span> (*probe)(<span class="keyword">struct</span> snd_soc_dai *dai);</span><br><span class="line">	<span class="type">int</span> (*remove)(<span class="keyword">struct</span> snd_soc_dai *dai);</span><br><span class="line">	<span class="type">int</span> (*suspend)(<span class="keyword">struct</span> snd_soc_dai *dai);</span><br><span class="line">	<span class="type">int</span> (*resume)(<span class="keyword">struct</span> snd_soc_dai *dai);</span><br><span class="line">	<span class="comment">/* compress dai */</span></span><br><span class="line">	<span class="type">int</span> (*compress_new)(<span class="keyword">struct</span> snd_soc_pcm_runtime *rtd, <span class="type">int</span> num);</span><br><span class="line">	<span class="comment">/* Optional Callback used at pcm creation*/</span></span><br><span class="line">	<span class="type">int</span> (*pcm_new)(<span class="keyword">struct</span> snd_soc_pcm_runtime *rtd,</span><br><span class="line">		       <span class="keyword">struct</span> snd_soc_dai *dai);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* ops */</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dai_ops</span> *<span class="title">ops</span>;</span></span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_cdai_ops</span> *<span class="title">cops</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* DAI capabilities */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_pcm_stream</span> <span class="title">capture</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_pcm_stream</span> <span class="title">playback</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> symmetric_rates:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> symmetric_channels:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> symmetric_samplebits:<span class="number">1</span>;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> bus_control:<span class="number">1</span>; <span class="comment">/* DAI is also used for the control bus */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* probe ordering - for components with runtime dependencies */</span></span><br><span class="line">	<span class="type">int</span> probe_order;</span><br><span class="line">	<span class="type">int</span> remove_order;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>name: DAI接口名称</li>
+<li>probe：dai probe函数，当machine 驱动程序probe到该dai驱动程序所属的组件驱动程序时（实际是machine驱动程序向ASOC core注册card时）执行</li>
+<li>ops：提供用于配置和控制DAI的回调函数</li>
+<li>capture：它表示音频采集的硬件参数，包括通道数、rate、format等</li>
+<li>playback：它表示音频回放的硬件参数，包括通道数、rate、format等</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dai_ops</span> &#123;</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * DAI clocking configuration, all optional.</span></span><br><span class="line"><span class="comment">	 * Called by soc_card drivers, normally in their hw_params.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">int</span> (*set_sysclk)(<span class="keyword">struct</span> snd_soc_dai *dai,</span><br><span class="line">		<span class="type">int</span> clk_id, <span class="type">unsigned</span> <span class="type">int</span> freq, <span class="type">int</span> dir);</span><br><span class="line">	<span class="type">int</span> (*set_pll)(<span class="keyword">struct</span> snd_soc_dai *dai, <span class="type">int</span> pll_id, <span class="type">int</span> source,</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">int</span> freq_in, <span class="type">unsigned</span> <span class="type">int</span> freq_out);</span><br><span class="line">	<span class="type">int</span> (*set_clkdiv)(<span class="keyword">struct</span> snd_soc_dai *dai, <span class="type">int</span> div_id, <span class="type">int</span> div);</span><br><span class="line">	<span class="type">int</span> (*set_bclk_ratio)(<span class="keyword">struct</span> snd_soc_dai *dai, <span class="type">unsigned</span> <span class="type">int</span> ratio);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * DAI format configuration</span></span><br><span class="line"><span class="comment">	 * Called by soc_card drivers, normally in their hw_params.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">int</span> (*set_fmt)(<span class="keyword">struct</span> snd_soc_dai *dai, <span class="type">unsigned</span> <span class="type">int</span> fmt);</span><br><span class="line">	<span class="type">int</span> (*xlate_tdm_slot_mask)(<span class="type">unsigned</span> <span class="type">int</span> slots,</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">int</span> *tx_mask, <span class="type">unsigned</span> <span class="type">int</span> *rx_mask);</span><br><span class="line">	<span class="type">int</span> (*set_tdm_slot)(<span class="keyword">struct</span> snd_soc_dai *dai,</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">int</span> tx_mask, <span class="type">unsigned</span> <span class="type">int</span> rx_mask,</span><br><span class="line">		<span class="type">int</span> slots, <span class="type">int</span> slot_width);</span><br><span class="line">	<span class="type">int</span> (*set_channel_map)(<span class="keyword">struct</span> snd_soc_dai *dai,</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">int</span> tx_num, <span class="type">unsigned</span> <span class="type">int</span> *tx_slot,</span><br><span class="line">		<span class="type">unsigned</span> <span class="type">int</span> rx_num, <span class="type">unsigned</span> <span class="type">int</span> *rx_slot);</span><br><span class="line">	<span class="type">int</span> (*get_channel_map)(<span class="keyword">struct</span> snd_soc_dai *dai,</span><br><span class="line">			<span class="type">unsigned</span> <span class="type">int</span> *tx_num, <span class="type">unsigned</span> <span class="type">int</span> *tx_slot,</span><br><span class="line">			<span class="type">unsigned</span> <span class="type">int</span> *rx_num, <span class="type">unsigned</span> <span class="type">int</span> *rx_slot);</span><br><span class="line">	<span class="type">int</span> (*set_tristate)(<span class="keyword">struct</span> snd_soc_dai *dai, <span class="type">int</span> tristate);</span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> (*set_sdw_stream)(<span class="keyword">struct</span> snd_soc_dai *dai,</span><br><span class="line">			<span class="type">void</span> *stream, <span class="type">int</span> direction);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * DAI digital mute - optional.</span></span><br><span class="line"><span class="comment">	 * Called by soc-core to minimise any pops.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">int</span> (*digital_mute)(<span class="keyword">struct</span> snd_soc_dai *dai, <span class="type">int</span> mute);</span><br><span class="line">	<span class="type">int</span> (*mute_stream)(<span class="keyword">struct</span> snd_soc_dai *dai, <span class="type">int</span> mute, <span class="type">int</span> stream);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * ALSA PCM audio operations - all optional.</span></span><br><span class="line"><span class="comment">	 * Called by soc-core during audio PCM operations.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">int</span> (*startup)(<span class="keyword">struct</span> snd_pcm_substream *,</span><br><span class="line">		<span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">	<span class="type">void</span> (*shutdown)(<span class="keyword">struct</span> snd_pcm_substream *,</span><br><span class="line">		<span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">	<span class="type">int</span> (*hw_params)(<span class="keyword">struct</span> snd_pcm_substream *,</span><br><span class="line">		<span class="keyword">struct</span> snd_pcm_hw_params *, <span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">	<span class="type">int</span> (*hw_free)(<span class="keyword">struct</span> snd_pcm_substream *,</span><br><span class="line">		<span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">	<span class="type">int</span> (*prepare)(<span class="keyword">struct</span> snd_pcm_substream *,</span><br><span class="line">		<span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">NOTE:</span> Commands passed to the trigger function are not necessarily</span></span><br><span class="line"><span class="comment">	 * compatible with the current state of the dai. For example this</span></span><br><span class="line"><span class="comment">	 * sequence of commands is possible: START STOP STOP.</span></span><br><span class="line"><span class="comment">	 * So do not unconditionally use refcounting functions in the trigger</span></span><br><span class="line"><span class="comment">	 * function, e.g. clk_enable/disable.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">int</span> (*trigger)(<span class="keyword">struct</span> snd_pcm_substream *, <span class="type">int</span>,</span><br><span class="line">		<span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">	<span class="type">int</span> (*bespoke_trigger)(<span class="keyword">struct</span> snd_pcm_substream *, <span class="type">int</span>,</span><br><span class="line">		<span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * For hardware based FIFO caused delay reporting.</span></span><br><span class="line"><span class="comment">	 * Optional.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="type">snd_pcm_sframes_t</span> (*delay)(<span class="keyword">struct</span> snd_pcm_substream *,</span><br><span class="line">		<span class="keyword">struct</span> snd_soc_dai *);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>第一类：时钟配置回调函数</strong>   </p>
+<ul>
+<li>set_sysclk:设置DAI的主时钟</li>
+<li>set_pll: 设置PLL函数</li>
+<li>set_clkdiv: 设置时钟分频值</li>
+</ul>
+<p><strong>第二类：DAI的格式配置函数</strong>   </p>
+<ul>
+<li>set_fmt:设置DAI的格式</li>
+<li>set_tdm_slot: 设置TDM的时隙</li>
+<li>set_channel_map: 通道TDM的映射设置 machine驱动通过snd_soc_dai_set_channel_map调用</li>
+<li>set_tristate: 设置DAI引脚的状态，在于其他DAI并行使用同一引脚时需要使用该状态</li>
+</ul>
+<p><strong>第三类：普通的标准前端</strong>   </p>
+<ul>
+<li>startup：打开采集&#x2F;回放设备时，在打开PCM子流时由ALSA调用</li>
+<li>hw_params：设置音频流时调用</li>
+<li>prepare：当PCM准备好时调用</li>
+<li>trigger： PCM启动、停止、暂停时调用</li>
+</ul>
+<h1 id="Control"><a href="#Control" class="headerlink" title="Control"></a>Control</h1><p>编解码器驱动程序通常需要公开一些可以从用户空间更改的编解码器属性，这些就是编解码器控件（control）。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_kcontrol_new</span> &#123;</span></span><br><span class="line">	<span class="type">snd_ctl_elem_iface_t</span> iface;	<span class="comment">/* interface identifier */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> device;		<span class="comment">/* device/client number */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> subdevice;		<span class="comment">/* subdevice (substream) number */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">unsigned</span> <span class="type">char</span> *name;	<span class="comment">/* ASCII name of item */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> index;		<span class="comment">/* index of item */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> access;		<span class="comment">/* access rights */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> count;		<span class="comment">/* count of same elements */</span></span><br><span class="line">	<span class="type">snd_kcontrol_info_t</span> *info;</span><br><span class="line">	<span class="type">snd_kcontrol_get_t</span> *get;</span><br><span class="line">	<span class="type">snd_kcontrol_put_t</span> *put;</span><br><span class="line">	<span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">		<span class="type">snd_kcontrol_tlv_rw_t</span> *c;</span><br><span class="line">		<span class="type">const</span> <span class="type">unsigned</span> <span class="type">int</span> *p;</span><br><span class="line">	&#125; tlv;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> private_value;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>iface :控件类型 可能是简单开关控件、立体声控件（Stereo）、混音器（MIXER）、MUX控件等</li>
+<li>name： 控件名称，命名包含源（Master、PCM、CD、Line）、方向（playback、capture、Bypass）以及功能（switch、volume、route等）</li>
+<li>access : 控件访问权限，READ、WRITE、VOLATILE等</li>
+<li>get : 读取控件的当前值并返回给用户空间</li>
+<li>put : 按照应用程序要求设置控件值</li>
+<li>tlv : 为控件提供元数据，有些混音器控件需要以分贝（db）为单位提供信息，可以使用DECLARE_TLV_xxx宏定义一些包含这些信息的变量，然后将控制tlv.p字段指向的变量，tlv是类型-长度-值（type-length-value）是一种编码方案。</li>
+</ul>
+<h2 id="设置开关控件"><a href="#设置开关控件" class="headerlink" title="设置开关控件"></a>设置开关控件</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SOC_SINGLE(xname, reg,shift.max,invert)</span><br></pre></td></tr></table></figure>
+<p>这种类型的控件只有一个设置，一般用于组件开关</p>
+<h2 id="设置带有音量级别的开关"><a href="#设置带有音量级别的开关" class="headerlink" title="设置带有音量级别的开关"></a>设置带有音量级别的开关</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SOC_SINGLE_TLV(name, reg,shift.max,invert,tlv_array)</span><br></pre></td></tr></table></figure>
+<p>用于定义具有增益的控件，如音量控件、EQ均衡器等</p>
+<h2 id="立体声控件"><a href="#立体声控件" class="headerlink" title="立体声控件"></a>立体声控件</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SOC_DOUBLE_R(xname, reg_left,reg_right,xshift,xmax,xinvert)</span><br></pre></td></tr></table></figure>
+<p>在一个寄存器中控制两个相似的变量，因此可以同时控制左右声道</p>
+<h2 id="带音量级别的立体声控件"><a href="#带音量级别的立体声控件" class="headerlink" title="带音量级别的立体声控件"></a>带音量级别的立体声控件</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">SOC_DOUBLE_R_TLV(xname, reg_left,reg_right,xshift,xmax,xinvert,tlv_array)</span><br></pre></td></tr></table></figure>
+
+<h2 id="混音器控件"><a href="#混音器控件" class="headerlink" title="混音器控件"></a>混音器控件</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">SOC_SINGLE(<span class="string">&quot;Input Switch&quot;</span>, WM8960_SPEAKER_MIXER,<span class="number">7</span>,<span class="number">1</span>,<span class="number">0</span>)</span><br><span class="line">SOC_SINGLE(<span class="string">&quot;Output Switch&quot;</span>, WM8960_SPEAKER_MIXER,<span class="number">3</span>,<span class="number">1</span>,<span class="number">0</span>)</span><br><span class="line">SOC_SINGLE(<span class="string">&quot;DAC Switch&quot;</span>, WM8960_SPEAKER_MIXER,<span class="number">6</span>,<span class="number">1</span>,<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+
+<h1 id="DAPM-dynamic-audio-power-management"><a href="#DAPM-dynamic-audio-power-management" class="headerlink" title="DAPM(dynamic audio power management)"></a>DAPM(dynamic audio power management)</h1><h2 id="widget"><a href="#widget" class="headerlink" title="widget"></a>widget</h2><p>普通kcontrol具有以下特点：</p>
+<ul>
+<li>自我描述，无法描述每个kcontrol之间的关系</li>
+<li>缺乏电源管理机制</li>
+<li>缺乏响应回放、停止、开机、关机等音频事件的时间处理机制</li>
+<li>缺少爆音防止机制</li>
+<li>无法自动关闭音频路径中涉及的所有控件</li>
+</ul>
+<p>为解决以上问题，DAPM引入widget，widget是kcontrol的进一步升级和封装。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dapm_widget</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">enum</span> <span class="title">snd_soc_dapm_type</span> <span class="title">id</span>;</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *name;		<span class="comment">/* widget name */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *sname;	<span class="comment">/* stream name */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">list</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dapm_context</span> *<span class="title">dapm</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="type">void</span> *priv;				<span class="comment">/* widget specific data */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">regulator</span> *<span class="title">regulator</span>;</span>		<span class="comment">/* attached regulator */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">pinctrl</span> *<span class="title">pinctrl</span>;</span>		<span class="comment">/* attached pinctrl */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* dapm control */</span></span><br><span class="line">	<span class="type">int</span> reg;				<span class="comment">/* negative reg = no direct dapm */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> shift;			<span class="comment">/* bits to shift */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> mask;			<span class="comment">/* non-shifted mask */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> on_val;			<span class="comment">/* on state value */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> off_val;			<span class="comment">/* off state value */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> power:<span class="number">1</span>;			<span class="comment">/* block power status */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> active:<span class="number">1</span>;			<span class="comment">/* active stream on DAC, ADC&#x27;s */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> connected:<span class="number">1</span>;		<span class="comment">/* connected codec pin */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> new:<span class="number">1</span>;			<span class="comment">/* cnew complete */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> force:<span class="number">1</span>;			<span class="comment">/* force state */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> ignore_suspend:<span class="number">1</span>;         <span class="comment">/* kept enabled over suspend */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> new_power:<span class="number">1</span>;		<span class="comment">/* power from this run */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> power_checked:<span class="number">1</span>;		<span class="comment">/* power checked this run */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> is_supply:<span class="number">1</span>;		<span class="comment">/* Widget is a supply type widget */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">char</span> is_ep:<span class="number">2</span>;			<span class="comment">/* Widget is a endpoint type widget */</span></span><br><span class="line">	<span class="type">int</span> subseq;				<span class="comment">/* sort within widget type */</span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> (*power_check)(<span class="keyword">struct</span> snd_soc_dapm_widget *w);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* external events */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">short</span> event_flags;		<span class="comment">/* flags to specify event types */</span></span><br><span class="line">	<span class="type">int</span> (*event)(<span class="keyword">struct</span> snd_soc_dapm_widget*, <span class="keyword">struct</span> snd_kcontrol *, <span class="type">int</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* kcontrols that relate to this widget */</span></span><br><span class="line">	<span class="type">int</span> num_kcontrols;</span><br><span class="line">	<span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">snd_kcontrol_new</span> *<span class="title">kcontrol_news</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_kcontrol</span> **<span class="title">kcontrols</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dobj</span> <span class="title">dobj</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* widget input and output edges */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">edges</span>[2];</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* used during DAPM updates */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">work_list</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">power_list</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">dirty</span>;</span></span><br><span class="line">	<span class="type">int</span> endpoints[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">clk</span> *<span class="title">clk</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> channel;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>id: widget类型，如snd_soc_dapm_output、snd_soc_dapm_mixer等</li>
+<li>name:widget 名称</li>
+<li>shift和mask：用于控制widget的电源状态，对应寄存器地址reg</li>
+<li>on_val和off_val：表示更改widget当前电源状态的值</li>
+<li>event：表示DAPM事件处理回调函数指针</li>
+<li>kcontrol_news：组成该kcontrol的控件数组</li>
+<li>dirty：当widget状态改变时，dirty用于将这个widget插入到dirty列表中，然后扫描整个列表执行整个路径的更新</li>
+</ul>
+<h2 id="定义widget"><a href="#定义widget" class="headerlink" title="定义widget"></a>定义widget</h2><p>有很多宏定义来定义widget控件，包括：</p>
+<ul>
+<li>编解码域：如VREF和VMID，可以提供参考电压widget</li>
+<li>platform&#x2F;machine domain：需要物理连接的platfoem或板卡的输入输出接口，如耳机、扬声器、麦克风等</li>
+<li>音频路径域：指在编解码器中控制音频路径的MUX、Mixer和其他widget</li>
+<li>音频流域：处理音频流数据，如ADC、DAC等</li>
+</ul>
+<h2 id="路径的概念–widget之间的连接器"><a href="#路径的概念–widget之间的连接器" class="headerlink" title="路径的概念–widget之间的连接器"></a>路径的概念–widget之间的连接器</h2><p>由struct snd_soc_dapm_path结构体表示，该结构体表示两个widget之间的连接，他的source字段指向连接的开始widget，而sink字段则指向连接到达的widget。所有输入端点的snd_soc_dapm_path连接到list_node[SND_SOC_DAPM_DIR_IN]列表中，所有输出端点的snd_soc_dapm_path连接到list_node[SND_SOC_DAPM_DIR_OUT]列表中。</p>
+<h2 id="路由的概念–widget互联"><a href="#路由的概念–widget互联" class="headerlink" title="路由的概念–widget互联"></a>路由的概念–widget互联</h2><p>为了不想处理path，引入route概念，路由至少包括，起始widget，跳线路径jumper path和接收方widger组成，使用struct snd_soc_dapm_route表示。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dapm_route</span> &#123;</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *sink;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *control;</span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *source;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Note: currently only supported for links where source is a supply */</span></span><br><span class="line">	<span class="type">int</span> (*connected)(<span class="keyword">struct</span> snd_soc_dapm_widget *source,</span><br><span class="line">			 <span class="keyword">struct</span> snd_soc_dapm_widget *sink);</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">snd_soc_dobj</span> <span class="title">dobj</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>sink: 指向到达widget的名称串</li>
+<li>source：指向起始widget的名称串</li>
+<li>control：指向负责控制连接的kcontrol名称串</li>
+<li>connected：定义了自定义连接检查的回调函数</li>
+</ul>
+<p>source通过kcontrol连接到sink，可以调用connected检查连接状态</p>
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>前面列出了一些关键数据结构，除此之外还有很多其他关键数据结构，以及各数据结构之间的关系没有一一列出来，下面只通过一副图片来将相关数据结构以及他们之间的关系列出来。</p>
+<p><a target="_blank" rel="noopener" href="https://www.processon.com/view/link/65d2b4f7ea4c17022fc64c41">原图</a><br><img src="/picture/linux_driver/ALSA/asoc_codec.png"></p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>《Linux设备驱动开发-约翰-马德奥》  </p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Linux%E9%A9%B1%E5%8A%A8/" rel="tag"># Linux驱动</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%B8%80%EF%BC%89%E6%A6%82%E8%BF%B0/" rel="prev" title="Linux驱动之ALSA（一）概述">
+                  <i class="fa fa-angle-left"></i> Linux驱动之ALSA（一）概述
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8BALSA%EF%BC%88%E4%B8%89%EF%BC%89%E7%BC%96%E8%A7%A3%E7%A0%81%E5%99%A8%E7%B1%BB%E9%A9%B1%E5%8A%A8%E5%AE%9E%E4%BE%8B/" rel="next" title="Linux驱动之ALSA（三）编解码器类驱动实例">
+                  Linux驱动之ALSA（三）编解码器类驱动实例 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

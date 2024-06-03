@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="前言应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器syslog能快速解决90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过syslog就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是这里尝试提供">
+<meta property="og:type" content="article">
+<meta property="og:title" content="应用崩溃调试分析">
+<meta property="og:url" content="http://carlyleliu.github.io/2022/Debug/%E5%BA%94%E7%94%A8%E5%B4%A9%E6%BA%83%E8%B0%83%E8%AF%95%E5%88%86%E6%9E%90/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="前言应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器syslog能快速解决90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过syslog就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是这里尝试提供">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/start_core.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/strip.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/g.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core1.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core2.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core3.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core4.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core5.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core6.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core7.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core8.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/debug/core9.png">
+<meta property="article:published_time" content="2022-03-26T11:44:15.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.769Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Debug">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/debug/start_core.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2022/Debug/%E5%BA%94%E7%94%A8%E5%B4%A9%E6%BA%83%E8%B0%83%E8%AF%95%E5%88%86%E6%9E%90/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2022/Debug/%E5%BA%94%E7%94%A8%E5%B4%A9%E6%BA%83%E8%B0%83%E8%AF%95%E5%88%86%E6%9E%90/","path":"2022/Debug/应用崩溃调试分析/","title":"应用崩溃调试分析"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>应用崩溃调试分析 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E5%90%AFcore-dump-%E5%8A%9F%E8%83%BD"><span class="nav-number">2.</span> <span class="nav-text">开启core dump 功能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E6%B7%BB%E5%8A%A0%E8%B0%83%E8%AF%95%E4%BF%A1%E6%81%AF%E5%92%8C%E7%AC%A6%E5%8F%B7%E8%A1%A8"><span class="nav-number">3.</span> <span class="nav-text">添加添加调试信息和符号表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E6%8E%89%E7%BC%96%E8%AF%91%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%85%A8%E5%B1%80strip%EF%BC%88%E7%94%B1strip%E6%94%B9%E4%B8%BAnone%EF%BC%89"><span class="nav-number">3.1.</span> <span class="nav-text">去掉编译系统的全局strip（由strip改为none）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E4%B8%AD%E6%B7%BB%E5%8A%A0%E7%AC%A6%E5%8F%B7%E4%BF%A1%E6%81%AF"><span class="nav-number">3.2.</span> <span class="nav-text">应用中添加符号信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AFgdb"><span class="nav-number">3.3.</span> <span class="nav-text">开启gdb</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E5%BA%94%E7%94%A8%E5%B4%A9%E6%BA%83%E7%8E%B0%E5%9C%BA"><span class="nav-number">4.</span> <span class="nav-text">调试应用崩溃现场</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8pc%E4%B8%8A%E8%BF%9B%E8%A1%8C%E8%B0%83%E8%AF%95"><span class="nav-number">5.</span> <span class="nav-text">在pc上进行调试</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E6%8E%89gdb"><span class="nav-number">5.1.</span> <span class="nav-text">去掉gdb</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E9%93%BE%EF%BC%88gdb%EF%BC%89"><span class="nav-number">5.2.</span> <span class="nav-text">设置交叉编译工具链（gdb）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8B%B7%E8%B4%9D%E6%96%87%E4%BB%B6-xxxapp%E5%92%8Ccore-dump%E6%96%87%E4%BB%B6%EF%BC%8C%E8%A6%81%E6%8B%B7%E8%B4%9D%E5%B8%A6%E7%AC%A6%E5%8F%B7%E8%A1%A8%E7%9A%84xxxapp"><span class="nav-number">5.3.</span> <span class="nav-text">拷贝文件(xxxapp和core dump文件，要拷贝带符号表的xxxapp)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E9%93%BE%E4%B8%AD%E7%9A%84gdb%E7%A8%8B%E5%BA%8F"><span class="nav-number">5.4.</span> <span class="nav-text">运行交叉编译工具链中的gdb程序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E8%BF%90%E8%A1%8Cgdb%E4%B9%8B%E5%90%8E%E8%AE%BE%E7%BD%AE%E7%B3%BB%E7%BB%9F%E5%BA%93%E8%B7%AF%E5%BE%84%EF%BC%88%E7%94%B1%E4%BA%8E%E6%98%AF%E5%9C%A8pc%E7%AB%AF%E8%BF%90%E8%A1%8C%EF%BC%8Cxxxapp%E9%87%8C%E4%B8%8D%E5%8C%85%E5%90%AB%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%86%85%E5%AE%B9%E4%BD%86%E6%98%AFsdk%E8%B7%AF%E5%BE%84%E9%87%8C%E6%98%AF%E6%9C%89rootfs%E6%96%87%E4%BB%B6%E7%9A%84%EF%BC%89"><span class="nav-number">5.5.</span> <span class="nav-text">在运行gdb之后设置系统库路径（由于是在pc端运行，xxxapp里不包含共享库的内容但是sdk路径里是有rootfs文件的）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%93%E5%8D%B0%E8%BF%BD%E6%BA%AF%E6%A0%88"><span class="nav-number">5.6.</span> <span class="nav-text">打印追溯栈</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2022/Debug/%E5%BA%94%E7%94%A8%E5%B4%A9%E6%BA%83%E8%B0%83%E8%AF%95%E5%88%86%E6%9E%90/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="应用崩溃调试分析 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          应用崩溃调试分析
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-03-26 19:44:15" itemprop="dateCreated datePublished" datetime="2022-03-26T19:44:15+08:00">2022-03-26</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BC%96%E7%A8%8B/" itemprop="url" rel="index"><span itemprop="name">编程</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/%E7%BC%96%E7%A8%8B/%E8%B0%83%E8%AF%95/" itemprop="url" rel="index"><span itemprop="name">调试</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h1><p>应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器syslog能快速解决90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过syslog就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是这里尝试提供一种方法来快速定位问题。当然这类问题都是一个路子，掌握这种分析方法以后遇到这类问题就都可以轻松处理了。</p>
+<p>本文提供的一种解决方案是通过gdb+core dump文件分析调试方法，具体如下：</p>
+<span id="more"></span>
+
+<h1 id="开启core-dump-功能"><a href="#开启core-dump-功能" class="headerlink" title="开启core dump 功能"></a>开启core dump 功能</h1><p>在init脚本的start_service中添加</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">procd_set_param limits core=<span class="string">&quot;unlimited&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>这样一条代码，例如xxxapp中的添加如下：<br><img src="/picture/debug/start_core.png" alt="start_core"></p>
+<p>或者直接在shell中执行:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -c unlimited</span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;/tmp/core-%e-%p-%t&quot;</span> &gt; /proc/sys/kernel/core_pattern</span><br></pre></td></tr></table></figure>
+
+<p>然后执行应用。</p>
+<h1 id="添加添加调试信息和符号表"><a href="#添加添加调试信息和符号表" class="headerlink" title="添加添加调试信息和符号表"></a>添加添加调试信息和符号表</h1><h2 id="去掉编译系统的全局strip（由strip改为none）"><a href="#去掉编译系统的全局strip（由strip改为none）" class="headerlink" title="去掉编译系统的全局strip（由strip改为none）"></a>去掉编译系统的全局strip（由strip改为none）</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make menuconfig </span><br><span class="line">    -&gt; Global build settings  </span><br><span class="line">        ---&gt; Binary stripping method (none)  </span><br></pre></td></tr></table></figure>
+
+<p><img src="/picture/debug/strip.png"></p>
+<blockquote>
+<p>注意:因为xxxapp上存储容量限制，可以在strip模式下编译完系统后再改为none，然后在编译xxxapp，这样就只有xxxapp有符号表和调试信息.</p>
+</blockquote>
+<h2 id="应用中添加符号信息"><a href="#应用中添加符号信息" class="headerlink" title="应用中添加符号信息"></a>应用中添加符号信息</h2><p>应用或者库中添加符号信息只需要在gcc编译的时候加上-g选项，一般为了方便调试需要去掉-Ox选项。例如xxxapp调试时的编译选项如下：<br><img src="/picture/debug/g.png"></p>
+<h2 id="开启gdb"><a href="#开启gdb" class="headerlink" title="开启gdb"></a>开启gdb</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make menuconfig </span><br><span class="line">    -&gt; Development  </span><br><span class="line">        ---&gt; &lt;*&gt; gdb</span><br></pre></td></tr></table></figure>
+
+<h1 id="调试应用崩溃现场"><a href="#调试应用崩溃现场" class="headerlink" title="调试应用崩溃现场"></a>调试应用崩溃现场</h1><p>在小机端使用“gdb 可执行程序 core文件”开启gdb，例如:</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ gdb /usr/bin/xxxapp /tmp/core-startEventCall-675-1610194273</span><br></pre></td></tr></table></figure>
+
+<p>加载完符号表之后，就可以查看程序dump时候的栈追溯，命令为bt</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) bt</span><br></pre></td></tr></table></figure>
+
+<p>如果没有符号表，bt打印的就只有地址;如果有符号表，bt的打印如下：<br><img src="/picture/debug/core1.png"></p>
+<blockquote>
+<p>说明：这个调用栈是从#0到#12这个顺序看的，就是说应用是在#0这个点退出，调用顺序是从#12到#0,</p>
+</blockquote>
+<p>如果既有符号表，又有debug信息，函数的参数会同步打印出来<br><img src="/picture/debug/core2.png"></p>
+<blockquote>
+<p>说明：添加符号表后会标识出调用函数所在的文件和行数，以及调用的时候的参数，通过调用栈可以知道程序是在#2（BitmapDDAScalerEx）这个点出错，然后进入到了c库的崩溃处理函数</p>
+</blockquote>
+<p>进入#2帧进行调试的命令如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ frame 2</span><br></pre></td></tr></table></figure>
+
+<p><img src="/picture/debug/core3.png"></p>
+<blockquote>
+<p>说明：通过pc端打开bitmap.c定位到1989行（也可以把文件放到tf卡上使用gdb同步调试）</p>
+</blockquote>
+<p>这部分的代码如下：<br><img src="/picture/debug/core4.png"></p>
+<p>对照源码可以打印现场dp1，dp2以及sx的值<br><img src="/picture/debug/core5.png"></p>
+<blockquote>
+<p>说明：通过源码可以看出这里的dp1已经是一个错误的地址，程序无法访问，接来下就要探索dp1的值从哪里来的。</p>
+</blockquote>
+<p>找到该程序的上下文<br><img src="/picture/debug/core6.png"></p>
+<p>通过源码走读，需要打印的变量如下：<br><img src="/picture/debug/core7.png"></p>
+<blockquote>
+<p>说明：通过这里我们可以知道这里是要将一个长为59，宽为24的图片，缩放成长为50，宽为28的图片，图片的像素宽度为4个字节，但是图片的内容已经被改写没有了。</p>
+</blockquote>
+<p>但是没有有找到dp1对应的值的来源，汇编看看：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) disassemble</span><br></pre></td></tr></table></figure>
+
+<p><img src="/picture/debug/core8.png"></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) info registers</span><br></pre></td></tr></table></figure>
+
+<p><img src="/picture/debug/core9.png"></p>
+<blockquote>
+<p>说明：通过现场能够知道dp1对应地址为栈上的地址0xbe973990，这个地址里保存的值为0x135c，但是这个函数的汇编太长了，追踪内存很耗时先放弃了。。。</p>
+</blockquote>
+<p>通过在xxxapp中查找对应的图片，能够知道目前缩放的图片是电池电量图标的图片，这个是minigui里的一个bug，跟图标刷新有关。这里不再继续下去了。以上就是一个应用崩溃后通过gdb+core dump文件对现场进行分析调试过程。以后遇到的应用崩溃问题都可以通过类似分析方法进行分析。</p>
+<h1 id="在pc上进行调试"><a href="#在pc上进行调试" class="headerlink" title="在pc上进行调试"></a>在pc上进行调试</h1><p>最近在开发中遇到一个新问题，flash（16M nor flash）满了，机器端flash没有空间放gdb了，内存、带宽和cpu都超极限了，需要对系统进行优化，而优化的改动是很大的，期间非常容易引入各种死机问题，而此时又没有gdb了。只能通过syslog来调试，一些低概率的老化很久才会出现的问题很难通过syslog的打印查找出来，还是需要gdb+core dump文件才能快速定位问题。为此我们又研究了在pc端使用gdb和core dump文件的方法。具体差异点如下：</p>
+<h2 id="去掉gdb"><a href="#去掉gdb" class="headerlink" title="去掉gdb"></a>去掉gdb</h2><p>当然你的flash已经容不下gdb了，此时。</p>
+<h2 id="设置交叉编译工具链（gdb）"><a href="#设置交叉编译工具链（gdb）" class="headerlink" title="设置交叉编译工具链（gdb）"></a>设置交叉编译工具链（gdb）</h2><p>在~&#x2F;.bashrc文件里添加如下：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$PATH</span>:/home/liushuai/workspace/project/prebuilt/gcc/linux-x86/arm/toolchain-sunxi-musl/toolchain/bin</span><br></pre></td></tr></table></figure>
+
+<h2 id="拷贝文件-xxxapp和core-dump文件，要拷贝带符号表的xxxapp"><a href="#拷贝文件-xxxapp和core-dump文件，要拷贝带符号表的xxxapp" class="headerlink" title="拷贝文件(xxxapp和core dump文件，要拷贝带符号表的xxxapp)"></a>拷贝文件(xxxapp和core dump文件，要拷贝带符号表的xxxapp)</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> ~/workspace/project/out/v833-perf1/staging_dir/target/rootfs/usr/bin/***app ./</span><br></pre></td></tr></table></figure>
+<p>将机器端复现到问题后产生的core文件拷贝到pc端，adb pull &#x2F;tmp&#x2F;core****</p>
+<h2 id="运行交叉编译工具链中的gdb程序"><a href="#运行交叉编译工具链中的gdb程序" class="headerlink" title="运行交叉编译工具链中的gdb程序"></a>运行交叉编译工具链中的gdb程序</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arm-openwrt-linux-gdb vegoapp core-startEventCall-675-1610194273</span><br></pre></td></tr></table></figure>
+
+<h2 id="在运行gdb之后设置系统库路径（由于是在pc端运行，xxxapp里不包含共享库的内容但是sdk路径里是有rootfs文件的）"><a href="#在运行gdb之后设置系统库路径（由于是在pc端运行，xxxapp里不包含共享库的内容但是sdk路径里是有rootfs文件的）" class="headerlink" title="在运行gdb之后设置系统库路径（由于是在pc端运行，xxxapp里不包含共享库的内容但是sdk路径里是有rootfs文件的）"></a>在运行gdb之后设置系统库路径（由于是在pc端运行，xxxapp里不包含共享库的内容但是sdk路径里是有rootfs文件的）</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) <span class="built_in">set</span> sysroot /home/liushuai/workspace/project/out/v833-perf1/staging_dir/target/rootfs</span><br></pre></td></tr></table></figure>
+
+<h2 id="打印追溯栈"><a href="#打印追溯栈" class="headerlink" title="打印追溯栈"></a>打印追溯栈</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) bt</span><br></pre></td></tr></table></figure>
+
+<p>剩下的就跟在机器端调试一样了。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Debug/" rel="tag"># Debug</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/Debug/CC-%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B/" rel="prev" title="C/C++内存泄露分析过程">
+                  <i class="fa fa-angle-left"></i> C/C++内存泄露分析过程
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2022/Debug/Valgrind%E6%A3%80%E6%B5%8BC-%E5%86%85%E5%AD%98%E6%B3%84%E6%BC%8F/" rel="next" title="Valgrind检测C++内存泄漏">
+                  Valgrind检测C++内存泄漏 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>

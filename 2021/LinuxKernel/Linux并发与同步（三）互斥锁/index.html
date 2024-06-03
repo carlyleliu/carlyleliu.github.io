@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":false,"style":null},"fold":{"enable":false,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux并发与同步（三）互斥锁">
+<meta property="og:url" content="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%89%EF%BC%89%E4%BA%92%E6%96%A5%E9%94%81/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5-%E4%BA%92%E6%96%A5%E9%94%81.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/mutex.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux/kernel/sync/optimistic_lock.png">
+<meta property="article:published_time" content="2021-12-11T07:55:05.000Z">
+<meta property="article:modified_time" content="2024-06-03T14:24:33.779Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="并发与同步">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://carlyleliu.github.io/picture/linux/brief/%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5-%E4%BA%92%E6%96%A5%E9%94%81.png">
+
+
+<link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%89%EF%BC%89%E4%BA%92%E6%96%A5%E9%94%81/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%89%EF%BC%89%E4%BA%92%E6%96%A5%E9%94%81/","path":"2021/LinuxKernel/Linux并发与同步（三）互斥锁/","title":"Linux并发与同步（三）互斥锁"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux并发与同步（三）互斥锁 | Matrix</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mutex%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">mutex数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%92%E6%96%A5%E9%94%81%E7%9A%84%E5%BF%AB%E9%80%9F%E9%80%9A%E9%81%93"><span class="nav-number">3.</span> <span class="nav-text">互斥锁的快速通道</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%92%E6%96%A5%E9%94%81%E7%9A%84%E6%85%A2%E9%80%9F%E9%80%9A%E9%81%93"><span class="nav-number">4.</span> <span class="nav-text">互斥锁的慢速通道</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B9%90%E8%A7%82%E8%87%AA%E6%97%8B%E7%AD%89%E5%BE%85%E6%9C%BA%E5%88%B6"><span class="nav-number">5.</span> <span class="nav-text">乐观自旋等待机制</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BB%E5%86%99%E9%94%81"><span class="nav-number">6.</span> <span class="nav-text">读写锁</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">7.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-number">8.</span> <span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">134</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">15</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">26</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2021/LinuxKernel/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%B8%89%EF%BC%89%E4%BA%92%E6%96%A5%E9%94%81/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux并发与同步（三）互斥锁 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux并发与同步（三）互斥锁
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-12-11 15:55:05" itemprop="dateCreated datePublished" datetime="2021-12-11T15:55:05+08:00">2021-12-11</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2024-06-03 22:24:33" itemprop="dateModified" datetime="2024-06-03T22:24:33+08:00">2024-06-03</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Linux/%E5%86%85%E6%A0%B8/" itemprop="url" rel="index"><span itemprop="name">内核</span></a>
+        </span>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="/picture/linux/brief/%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5-%E4%BA%92%E6%96%A5%E9%94%81.png"><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/6239a7d307912906f510fb40">原图</a></p>
+<span id="more"></span>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>互斥锁类似于 count值等于1的信号量，为什么内核社区要重新开发互斥锁，mutex有如下优点：</p>
+<ul>
+<li>mutex数据结构的定义比信号量小</li>
+<li>互斥锁相对于信号量要简单轻便一些，在锁争用激烈的测试场景下，互斥锁比信号量执行速度更快</li>
+<li>可扩展性更好</li>
+</ul>
+<h1 id="mutex数据结构"><a href="#mutex数据结构" class="headerlink" title="mutex数据结构"></a>mutex数据结构</h1><p>下面来看 mutex数据结构的定义。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/mutex.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mutex</span> &#123;</span></span><br><span class="line">	<span class="type">atomic_long_t</span>		owner;</span><br><span class="line">	<span class="type">raw_spinlock_t</span>		wait_lock;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_MUTEX_SPIN_ON_OWNER</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">optimistic_spin_queue</span> <span class="title">osq</span>;</span> <span class="comment">/* Spinner MCS lock */</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">list_head</span>	<span class="title">wait_list</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_DEBUG_MUTEXES</span></span><br><span class="line">	<span class="type">void</span>			*magic;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span>	<span class="title">dep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>wait_lock：自旋锁，用于保护 wait_list 睡眠等待队列</li>
+<li>wait_list：用于管理所有在互斥锁上睡眠的进程，没有成功获取锁的进程会在此链表上睡眠</li>
+<li>owner： Linux4.10内核把原来的 count成员和 owner成员合并成一个。原来的count是一个原子值，1表示锁没有被持有，0表示锁被持有，负数表示锁被持有且有等待者在排队。现在新版本的 owner中，0表示锁没有未被持有，非零值则表示锁持有者的task_struct指针的值。另外，最低3位有特殊的含义</li>
+</ul>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> MUTEX_FLAG_WAITERS	0x01</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MUTEX_FLAG_HANDOFF	0x02</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MUTEX_FLAG_PICKUP	0x04</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MUTEX_FLAGS		0x07</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>osq：用于实现MCS锁机制<br>  MUTEX_FLAG_WAITERS：表示互斥锁的等待队列里有等待者，解锁的时候必须唤醒这些等候的进程。<br>  MUTEX_FLAG_HANDOFF：对互斥锁的等待队列中的第一个等待者会设置这个标志位，锁持有者在解锁的时候把锁直接传递给第一个等待者。<br>  MUTEX_FLAG_PICKUP：表示锁的传递已经完成。</li>
+</ul>
+<p>互斥锁实现了乐观自旋（ optimistic spinnig）等待机制。准确地说，互斥锁比读写信号量更早地实现了自旋等待机制。自旋等待机制的核心原理是当发现锁持有者正在临界区执行并且没有其它优先级高的进程要调度时，当前进程坚信锁持有者会很快离开临界区并释放锁，因此与其睡眠等待不如乐观地自旋等待，以减少陲眠唤醒的开销。在实现自旋等待机制时，内核实现了一套MCS锁机制来保证只有一个等待者自旋等待锁持有者释放锁。</p>
+<h1 id="互斥锁的快速通道"><a href="#互斥锁的快速通道" class="headerlink" title="互斥锁的快速通道"></a>互斥锁的快速通道</h1><p>互斥锁的初化有两种方式，一种是静态使用DEFINE_MUTE宏，另一种是在内核代码中动态使用mutex_init()函数。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> __MUTEX_INITIALIZER(lockname) \</span></span><br><span class="line"><span class="meta">		&#123; .owner = ATOMIC_LONG_INIT(0) \</span></span><br><span class="line"><span class="meta">		, .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(lockname.wait_lock) \</span></span><br><span class="line"><span class="meta">		, .wait_list = LIST_HEAD_INIT(lockname.wait_list) \</span></span><br><span class="line"><span class="meta">		__DEBUG_MUTEX_INITIALIZER(lockname) \</span></span><br><span class="line"><span class="meta">		__DEP_MAP_MUTEX_INITIALIZER(lockname) &#125;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> DEFINE_MUTEX(mutexname) \</span></span><br><span class="line"><span class="meta">	struct mutex mutexname = __MUTEX_INITIALIZER(mutexname)</span></span><br></pre></td></tr></table></figure>
+
+<p>下面来看mutex_lock()函数是如何实现的。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> __sched <span class="title function_">mutex_lock</span><span class="params">(<span class="keyword">struct</span> mutex *lock)</span></span><br><span class="line">&#123;</span><br><span class="line">	might_sleep();</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!__mutex_trylock_fast(lock))</span><br><span class="line">		__mutex_lock_slowpath(lock);</span><br><span class="line">&#125;</span><br><span class="line">EXPORT_SYMBOL(mutex_lock);</span><br></pre></td></tr></table></figure>
+
+<p>__mutex_trylock_fast()函数判断是否可以快速获取锁若不能通过快速通道获取锁，那么要进入慢速通道 __mutex_lock_slowpath().</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> __always_inline <span class="type">bool</span> __mutex_trylock_fast(<span class="keyword">struct</span> mutex *lock)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> curr = (<span class="type">unsigned</span> <span class="type">long</span>)current;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> zero = <span class="number">0UL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (atomic_long_try_cmpxchg_acquire(&amp;lock-&gt;owner, &amp;zero, curr))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>__mutex_trylock_fast()函数实现的重点是 atomic_long_try_cmpxchg_acquire()函数，如果以cmpxchg()函数的语义来理解，会得出错误的结论。比如，当lock-&gt;owner和zero相等时，说明lock这个锁没有被持有，那么可以成功获取锁，把当前进程的 task_struct-&gt;curr的值赋给lock-&gt;owner，然后函数返回lock-&gt;owner的旧值，也就是0。这时if判断语句应该判断atomic_long_try_cmpxchg_acquire()函数是否返回0オ对。但是在 Linux5.0内核的代码里和我们想的完全相反，那是怎么回事呢？<br>细心的读者可以通过翻阅 Linux内核的git日志信息找到答案。在 Linux4.18内核中有个优化的补丁。锁的子系统维护者 Peter Zijlstra通过比较反汇编代码发现在x86_64架构下使用try_cmpxchg()代替cmpxchg()数可以少执行ー次test指令。try_cmpxchg()函数的核心还是调用 cmpxchg()函数，但是返回值发生了变化，它返回一个布尔值，表示 cmpxchg()函数的返回值是否和第二个参数的值相等。<br>因此，当原子地判断出lock-&gt;owr字段为0时，说明锁没有被进程持有，那么可以进入快速通道以迅速获取锁，把当前进程的task_struct指针的值原子设置到lock-&gt;owner字段中。若lock-&gt;owner字段不为0，则说明该锁已经被进程持有，那么要进入慢速通道__mutex_lock_slowpath()。</p>
+<h1 id="互斥锁的慢速通道"><a href="#互斥锁的慢速通道" class="headerlink" title="互斥锁的慢速通道"></a>互斥锁的慢速通道</h1><p>__mutex_lock_slowpath()函数调用__mutex_lock()–&gt;__mutex_lock_common()函数来实现.</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Lock a mutex (possibly interruptible), slowpath:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> __always_inline <span class="type">int</span> __sched</span><br><span class="line">__mutex_lock_common(<span class="keyword">struct</span> mutex *lock, <span class="type">unsigned</span> <span class="type">int</span> state, <span class="type">unsigned</span> <span class="type">int</span> subclass,</span><br><span class="line">		    <span class="keyword">struct</span> lockdep_map *nest_lock, <span class="type">unsigned</span> <span class="type">long</span> ip,</span><br><span class="line">		    <span class="keyword">struct</span> ww_acquire_ctx *ww_ctx, <span class="type">const</span> <span class="type">bool</span> use_ww_ctx)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">mutex_waiter</span> <span class="title">waiter</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">ww_mutex</span> *<span class="title">ww</span>;</span></span><br><span class="line">	<span class="type">int</span> ret;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!use_ww_ctx)</span><br><span class="line">		ww_ctx = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	might_sleep();</span><br><span class="line"></span><br><span class="line">	MUTEX_WARN_ON(lock-&gt;magic != lock);</span><br><span class="line"></span><br><span class="line">	ww = container_of(lock, <span class="keyword">struct</span> ww_mutex, base);</span><br><span class="line">	<span class="keyword">if</span> (ww_ctx) &#123;</span><br><span class="line">		<span class="keyword">if</span> (unlikely(ww_ctx == READ_ONCE(ww-&gt;ctx)))</span><br><span class="line">			<span class="keyword">return</span> -EALREADY;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (ww_ctx-&gt;acquired == <span class="number">0</span>)</span><br><span class="line">			ww_ctx-&gt;wounded = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">		nest_lock = &amp;ww_ctx-&gt;dep_map;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	preempt_disable();</span><br><span class="line">	mutex_acquire_nest(&amp;lock-&gt;dep_map, subclass, <span class="number">0</span>, nest_lock, ip);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (__mutex_trylock(lock) ||</span><br><span class="line">	    mutex_optimistic_spin(lock, ww_ctx, <span class="literal">NULL</span>)) &#123;</span><br><span class="line">		<span class="comment">/* got the lock, yay! */</span></span><br><span class="line">		lock_acquired(&amp;lock-&gt;dep_map, ip);</span><br><span class="line">		<span class="keyword">if</span> (ww_ctx)</span><br><span class="line">			ww_mutex_set_context_fastpath(ww, ww_ctx);</span><br><span class="line">		preempt_enable();</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	raw_spin_lock(&amp;lock-&gt;wait_lock);</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * After waiting to acquire the wait_lock, try again.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">if</span> (__mutex_trylock(lock)) &#123;</span><br><span class="line">		<span class="keyword">if</span> (ww_ctx)</span><br><span class="line">			__ww_mutex_check_waiters(lock, ww_ctx);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">goto</span> skip_wait;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	debug_mutex_lock_common(lock, &amp;waiter);</span><br><span class="line">	waiter.task = current;</span><br><span class="line">	<span class="keyword">if</span> (use_ww_ctx)</span><br><span class="line">		waiter.ww_ctx = ww_ctx;</span><br><span class="line"></span><br><span class="line">	lock_contended(&amp;lock-&gt;dep_map, ip);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!use_ww_ctx) &#123;</span><br><span class="line">		<span class="comment">/* add waiting tasks to the end of the waitqueue (FIFO): */</span></span><br><span class="line">		__mutex_add_waiter(lock, &amp;waiter, &amp;lock-&gt;wait_list);</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		ret = __ww_mutex_add_waiter(&amp;waiter, lock, ww_ctx);</span><br><span class="line">		<span class="keyword">if</span> (ret)</span><br><span class="line">			<span class="keyword">goto</span> err_early_kill;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	set_current_state(state);</span><br><span class="line">	<span class="keyword">for</span> (;;) &#123;</span><br><span class="line">		<span class="type">bool</span> first;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (__mutex_trylock(lock))</span><br><span class="line">			<span class="keyword">goto</span> acquired;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (signal_pending_state(state, current)) &#123;</span><br><span class="line">			ret = -EINTR;</span><br><span class="line">			<span class="keyword">goto</span> err;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (ww_ctx) &#123;</span><br><span class="line">			ret = __ww_mutex_check_kill(lock, &amp;waiter, ww_ctx);</span><br><span class="line">			<span class="keyword">if</span> (ret)</span><br><span class="line">				<span class="keyword">goto</span> err;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		raw_spin_unlock(&amp;lock-&gt;wait_lock);</span><br><span class="line">		schedule_preempt_disabled();</span><br><span class="line"></span><br><span class="line">		first = __mutex_waiter_is_first(lock, &amp;waiter);</span><br><span class="line"></span><br><span class="line">		set_current_state(state);</span><br><span class="line">		<span class="keyword">if</span> (__mutex_trylock_or_handoff(lock, first) ||</span><br><span class="line">		    (first &amp;&amp; mutex_optimistic_spin(lock, ww_ctx, &amp;waiter)))</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">		raw_spin_lock(&amp;lock-&gt;wait_lock);</span><br><span class="line">	&#125;</span><br><span class="line">	raw_spin_lock(&amp;lock-&gt;wait_lock);</span><br><span class="line">acquired:</span><br><span class="line">	__set_current_state(TASK_RUNNING);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ww_ctx) &#123;</span><br><span class="line">		<span class="keyword">if</span> (!ww_ctx-&gt;is_wait_die &amp;&amp;</span><br><span class="line">		    !__mutex_waiter_is_first(lock, &amp;waiter))</span><br><span class="line">			__ww_mutex_check_waiters(lock, ww_ctx);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	__mutex_remove_waiter(lock, &amp;waiter);</span><br><span class="line"></span><br><span class="line">	debug_mutex_free_waiter(&amp;waiter);</span><br><span class="line"></span><br><span class="line">skip_wait:</span><br><span class="line">	<span class="comment">/* got the lock - cleanup and rejoice! */</span></span><br><span class="line">	lock_acquired(&amp;lock-&gt;dep_map, ip);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (ww_ctx)</span><br><span class="line">		ww_mutex_lock_acquired(ww, ww_ctx);</span><br><span class="line"></span><br><span class="line">	raw_spin_unlock(&amp;lock-&gt;wait_lock);</span><br><span class="line">	preempt_enable();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">err:</span><br><span class="line">	__set_current_state(TASK_RUNNING);</span><br><span class="line">	__mutex_remove_waiter(lock, &amp;waiter);</span><br><span class="line">err_early_kill:</span><br><span class="line">	raw_spin_unlock(&amp;lock-&gt;wait_lock);</span><br><span class="line">	debug_mutex_free_waiter(&amp;waiter);</span><br><span class="line">	mutex_release(&amp;lock-&gt;dep_map, ip);</span><br><span class="line">	preempt_enable();</span><br><span class="line">	<span class="keyword">return</span> ret;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将其绘制出一张图如下：<br><img src="/picture/linux/kernel/sync/mutex.png"></p>
+<h1 id="乐观自旋等待机制"><a href="#乐观自旋等待机制" class="headerlink" title="乐观自旋等待机制"></a>乐观自旋等待机制</h1><p>乐观自旋等待机制是互斥锁的一个新特性。乐观自旋等待机制其实就是判断锁持有者正在临界区执行时，可以断定锁持有者会很快退出临界区并且释放锁，与其进入睡眠队列，不如像自旋锁一样自旋等待，因为睡眠与唤醒的代价可能更高。乐观自旋等待机制的实现在mutex_optimistic_spin()函数里。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> __always_inline <span class="type">bool</span></span><br><span class="line"><span class="title function_">mutex_optimistic_spin</span><span class="params">(<span class="keyword">struct</span> mutex *lock, <span class="keyword">struct</span> ww_acquire_ctx *ww_ctx,</span></span><br><span class="line"><span class="params">		      <span class="keyword">struct</span> mutex_waiter *waiter)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">if</span> (!waiter) &#123;</span><br><span class="line">		<span class="keyword">if</span> (!mutex_can_spin_on_owner(lock))</span><br><span class="line">			<span class="keyword">goto</span> fail;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (!osq_lock(&amp;lock-&gt;osq))</span><br><span class="line">			<span class="keyword">goto</span> fail;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> (;;) &#123;</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">owner</span>;</span></span><br><span class="line"></span><br><span class="line">		<span class="comment">/* Try to acquire the mutex... */</span></span><br><span class="line">		owner = __mutex_trylock_or_owner(lock);</span><br><span class="line">		<span class="keyword">if</span> (!owner)</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (!mutex_spin_on_owner(lock, owner, ww_ctx, waiter))</span><br><span class="line">			<span class="keyword">goto</span> fail_unlock;</span><br><span class="line"></span><br><span class="line">		cpu_relax();</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!waiter)</span><br><span class="line">		osq_unlock(&amp;lock-&gt;osq);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span>;</span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>采用一张图来表示如下：<br><img src="/picture/linux/kernel/sync/optimistic_lock.png"></p>
+<p>详细内容不做分析。</p>
+<h1 id="读写锁"><a href="#读写锁" class="headerlink" title="读写锁"></a>读写锁</h1><p>上述介绍的信号量有一个明显的缺点–没有区分临界区的读写属性。读写锁通常允许多个线程并发地读访问临界区，但是写访问只限制于一个线程。读写锁能有效地提高并发性，在多处理器系统中允许有多个读者同时访问共享资源，但写者是排他性的，读写锁具有如特性。</p>
+<ul>
+<li>允许多个读者同时进入临界区，但同一时刻写者不能进入</li>
+<li>同一时刻只允许一个写者进入临界区</li>
+<li>读者和写者不能同时进入临界区</li>
+</ul>
+<p>读写锁有两种，分别是读者自旋锁类型和读者信号量。自旋锁类型的读写锁数据结构定义在 include&#x2F;linux&#x2F;rwlock_types.h头文件中。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/rwlock_types.h&gt;</span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">	<span class="type">arch_rwlock_t</span> raw_lock;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_DEBUG_SPINLOCK</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span> magic, owner_cpu;</span><br><span class="line">	<span class="type">void</span> *owner;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_DEBUG_LOCK_ALLOC</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">lockdep_map</span> <span class="title">dep_map</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">&#125; <span class="type">rwlock_t</span>;</span><br><span class="line">...</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * The queue read/write lock data structure</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">qrwlock</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">		<span class="type">atomic_t</span> cnts;</span><br><span class="line">		<span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __LITTLE_ENDIAN</span></span><br><span class="line">			u8 wlocked;	<span class="comment">/* Locked for write? */</span></span><br><span class="line">			u8 __lstate[<span class="number">3</span>];</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">			u8 __lstate[<span class="number">3</span>];</span><br><span class="line">			u8 wlocked;	<span class="comment">/* Locked for write? */</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">		&#125;;</span><br><span class="line">	&#125;;</span><br><span class="line">	<span class="type">arch_spinlock_t</span>		wait_lock;</span><br><span class="line">&#125; <span class="type">arch_rwlock_t</span>;</span><br></pre></td></tr></table></figure>
+
+<p>常用的函数如下:</p>
+<ul>
+<li>rwlock_init()：初始化 rwlock</li>
+<li>write_lock()：申请写者锁</li>
+<li>write_unlock()：释放写者锁</li>
+<li>read_lock()：申请读者锁</li>
+<li>read_unlock()：释放读者锁</li>
+<li>read_lock_irq()：关闭中断并且申请读者锁</li>
+<li>write_lock_irg()：关闭中断并且申请写者锁</li>
+<li>write_unlock_irq()：打开中断并且释放写者锁</li>
+</ul>
+<p>和自旋锁一样，读写锁有关闭中断和下半部的版本。自旋锁类型的读写锁实现比较简单。</p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>互斥锁最先实现自旋等待机制</li>
+<li>互斥锁在睡眠之前尝试获取锁</li>
+<li>互斥锁通过实现MCS锁来避免多个CPU争用锁而导致CPU高速缓存行颠簸现象，正是因为互斥锁的简洁性和高效性，所以互斥锁的使用场景比信号量要更严格</li>
+</ul>
+<p>使用互斥锁需要注意的约束条件如下：</p>
+<ul>
+<li>同ー时刻只有一个线程可以持有互斥锁</li>
+<li>只有锁持有者可以解锁。不能在一个进程中持有互斥锁，而在另外一个进程释放它。因此互斥锁不适合内核与用户空间复杂的同步场景，信号量和读写信号量则比较合适</li>
+<li>不允许递归地加锁和解锁</li>
+<li>当进程持有互斥锁时，进程不可以退出</li>
+<li>互斥锁必须使用官方接口函数来初始化</li>
+<li>互斥锁可以睡眠，所以不允许在中断处理程序或者中断下半部（如 tasklet、定时器）中使用</li>
+</ul>
+<p>在实际项目中，该如何选择自旋锁、信号量和互斥锁呢？<br>在中断上下文中可以毫不犹豫地使用自旋锁，如果临界区有睡眠、隐含睡眠的动作及内核接口函数，应避免选择自旋锁。在信号量和互斥锁中该如何选择呢？除非代码场景不符合上述互斥锁的约束中的某一条，否则可以优先使用互斥锁。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>《奔跑吧Linux内核》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5/" rel="tag"># 并发与同步</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E4%BA%8C%EF%BC%89%E4%BF%A1%E5%8F%B7%E9%87%8F/" rel="prev" title="Linux并发与同步（二）信号量">
+                  <i class="fa fa-angle-left"></i> Linux并发与同步（二）信号量
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/2021/LinuxKernel/Linux%E5%B9%B6%E5%8F%91%E4%B8%8E%E5%90%8C%E6%AD%A5%EF%BC%88%E5%9B%9B%EF%BC%89RCU/" rel="next" title="Linux并发与同步（四）RCU">
+                  Linux并发与同步（四）RCU <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+</html>
