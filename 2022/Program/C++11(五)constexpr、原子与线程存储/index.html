@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
     <meta name="description" content="原图">
 <meta property="og:type" content="article">
@@ -378,7 +378,20 @@
 <li>提供了一种保证在编译期完成初始化的方法（可以在编译时期执行某些函数调用）</li>
 </ul>
 <p>考虑下面这段代码：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">enum</span> <span class="title class_">Flags</span> { good=<span class="number">0</span>, fail=<span class="number">1</span>, bad=<span class="number">2</span>, eof=<span class="number">4</span> };</span><br><span class="line"></span><br><span class="line"><span class="keyword">constexpr</span> <span class="type">int</span> <span class="keyword">operator</span>|(Flags f1, Flags f2)</span><br><span class="line">{ <span class="keyword">return</span> <span class="built_in">Flags</span>(<span class="built_in">int</span>(f1)|<span class="built_in">int</span>(f2)); }</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">f</span><span class="params">(Flags x)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">switch</span> (x) {</span><br><span class="line">    <span class="keyword">case</span> bad:         <span class="comment">/* … */</span> <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> eof:         <span class="comment">/* … */</span> <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">case</span> bad|eof:     <span class="comment">/* … */</span> <span class="keyword">break</span>;</span><br><span class="line">    <span class="keyword">default</span>:          <span class="comment">/* … */</span> <span class="keyword">break</span>;</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">enum Flags { good=0, fail=1, bad=2, eof=4 };
+
+constexpr int operator|(Flags f1, Flags f2)
+{ return Flags(int(f1)|int(f2)); }
+
+void f(Flags x)
+{
+    switch (x) {
+    case bad:         /* … */ break;
+    case eof:         /* … */ break;
+    case bad|eof:     /* … */ break;
+    default:          /* … */ break;
+    }
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>虽然“bad|eof”是一个表达式，但是因为这两个参数都是常量，在编译时期，就可以计算出它的结果，因而可以作为常量对待，可以在编译时期被动地计算表达式的值。</p>
 <p>constexpr并不是const的通用版，反之亦然：</p>
 <ul>
@@ -399,64 +412,173 @@
 <p>常量表达式函数的返回值必须是常量表达式的原因很简单，如果想在程序编译阶段获得某个函数返回的常量，则该函数的 return 语句中就不能包含程序运行阶段才能确定值的变量。</p>
 <h2 id="constexpr修饰类的构造函数">constexpr修饰类的构造函数</h2>
 <p>对于 C++ 内置类型的数据，可以直接用 constexpr 修饰，但如果是自定义的数据类型（用 struct 或者 class 实现），直接用 constexpr 修饰是不行的。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//此程序是无法通过编译的，编译器会抛出“constexpr不能修饰自定义类型”的异常。</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="comment">//自定义类型的定义</span></span><br><span class="line"><span class="keyword">constexpr</span> <span class="keyword">struct</span> <span class="title class_">myType</span> {</span><br><span class="line">    <span class="type">const</span> <span class="type">char</span>* name;</span><br><span class="line">    <span class="type">int</span> age;</span><br><span class="line">    <span class="comment">//其它结构体成员</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="keyword">struct</span> <span class="title class_">myType</span> mt { <span class="string">"zhangsan"</span>, <span class="number">10</span> };</span><br><span class="line">    cout &lt;&lt; mt.name &lt;&lt; <span class="string">" "</span> &lt;&lt; mt.age &lt;&lt; endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">//此程序是无法通过编译的，编译器会抛出“constexpr不能修饰自定义类型”的异常。
+#include &lt;iostream&gt;
+
+using namespace std;
+
+//自定义类型的定义
+constexpr struct myType {
+    const char* name;
+    int age;
+    //其它结构体成员
+};
+
+int main()
+{
+    constexpr struct myType mt { "zhangsan", 10 };
+    cout &lt;&lt; mt.name &lt;&lt; " " &lt;&lt; mt.age &lt;&lt; endl;
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>当我们想自定义一个可产生常量的类型时，正确的做法是在该类型的内部添加一个常量构造函数。例如，修改上面的错误示例如下：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="comment">//自定义类型的定义</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">myType</span> {</span><br><span class="line">    <span class="function"><span class="keyword">constexpr</span> <span class="title">myType</span><span class="params">(<span class="type">char</span> *name,<span class="type">int</span> age)</span>:name(name),age(age){</span>};</span><br><span class="line">    <span class="type">const</span> <span class="type">char</span>* name;</span><br><span class="line">    <span class="type">int</span> age;</span><br><span class="line">    <span class="comment">//其它结构体成员</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">constexpr</span> <span class="keyword">struct</span> <span class="title class_">myType</span> mt { <span class="string">"zhangsan"</span>, <span class="number">10</span> };</span><br><span class="line">    cout &lt;&lt; mt.name &lt;&lt; <span class="string">" "</span> &lt;&lt; mt.age &lt;&lt; endl;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;iostream&gt;
+
+using namespace std;
+
+//自定义类型的定义
+struct myType {
+    constexpr myType(char *name,int age):name(name),age(age){};
+    const char* name;
+    int age;
+    //其它结构体成员
+};
+
+int main()
+{
+    constexpr struct myType mt { "zhangsan", 10 };
+    cout &lt;&lt; mt.name &lt;&lt; " " &lt;&lt; mt.age &lt;&lt; endl;
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>可以看到，在 myType 结构体中自定义有一个构造函数，借助此函数，用 constexpr 修饰的 myType 类型的 my 常量即可通过编译。</p>
 <h2 id="constexpr修饰模板函数">constexpr修饰模板函数</h2>
 <p>C++11 语法中，constexpr 可以修饰模板函数，但由于模板中类型的不确定性，因此模板函数实例化后的函数是否符合常量表达式函数的要求也是不确定的。针对这种情况下，C++11 标准规定，如果 constexpr 修饰的模板函数实例化结果不满足常量表达式函数的要求，则 constexpr 会被自动忽略，即该函数就等同于一个普通函数。</p>
 <h1 id="变长模板">变长模板</h1>
 <h2 id="变长函数和变长的模板参数">变长函数和变长的模板参数</h2>
 <p>printf则使用了C语言的函数变长参数特性，通过使用变长函数（ variadic funciton）， printf 的实现能够接受任何长度的参数列表。不过无论是宏，还是变长参数，整个机制的设计上，没有任何一个对于传递参数的类型是了解的。我们可以看看变长函数的例子。通常情况下，一个变长函数可以如下代码所示。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">double</span> <span class="title">Sumoffloat</span><span class="params">(<span class="type">int</span> count,...)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    va_list ap;</span><br><span class="line">    <span class="type">double</span> sum =<span class="number">0</span></span><br><span class="line">    <span class="built_in">va_start</span>(ap, count);            <span class="comment">//获得变长列表的句柄ap</span></span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> i=<span class="number">0</span>: i &lt; count: i++)</span><br><span class="line">        sum += <span class="built_in">va_arg</span>(ap， <span class="type">double</span>);   <span class="comment">//一次获得一个参数</span></span><br><span class="line">    <span class="built_in">va_end</span>(ap);</span><br><span class="line">    <span class="keyword">return</span> sum;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"f% \n"</span>, <span class="built_in">Sumoffloat</span>(<span class="number">3</span>, <span class="number">1.2f</span>, <span class="number">3.4</span>, <span class="number">5.6</span>));</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;stdio.h&gt;
+#include &lt;stdarg.h&gt;
+
+double Sumoffloat(int count,...)
+{
+    va_list ap;
+    double sum =0
+    va_start(ap, count);            //获得变长列表的句柄ap
+    for(int i=0: i &lt; count: i++)
+        sum += va_arg(ap， double);   //一次获得一个参数
+    va_end(ap);
+    return sum;
+}
+
+int main()
+{
+    printf("f% \n", Sumoffloat(3, 1.2f, 3.4, 5.6));
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>在上述代码中，我们声明了一个名为 Sumoffloat变长函数。变长函数的第一个参数 count表示的是变长参数的个数，这必须由 Sumoffloat 的调用者传递进来。而在被调用者中，则需要通过一个类型为 va_list 的数据结构ap来辅助地获得参数。可以看到，这里代码首先使用va_star函数对ap进行初始化，使得ap成为被传递的变长参数的一个“句柄”（ handler）。而后代码再使用 va_arg函数从ap中将参数一取出用于运算。由于这里是计算浮点数的和，所以每次总是给va_arg传递一个 double类型作为参数。下图显示了一种变长函数的可能的实现方式，即以句柄ap为指向各个变长参数的指针，而va_arg则通过改变指针的方式（每次增加 sizeof（ double）字节）来返回下一个指针所指向的对象。 <img src="/picture/program/c++/performace1.png"></p>
 <p>可以看到，在本例中，只有使用表达式va_arg（ap，double）的时候，我们才按照类型（实际是按类型长度）去变长参数列表中获得指定参数。而如何打印则得益于传递在字符串中的形如“s% d%”这样的转义字，以及传递的 count参数。事实上，函数“本身”完全无法知道参数数量或者参数类型。因此，对于一些没有定义转义字的非POD的数据来说，使用变长函数就会导致未定义的程序行为。比如:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">char</span> *msg = <span class="string">"hello %s"</span>;</span><br><span class="line"><span class="built_in">printf</span>(msg, std::<span class="built_in">string</span>(<span class="string">"world"</span>));</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">const char *msg = "hello %s";
+printf(msg, std::string("world"));<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>这样的代码就会导致 printf 出错。 从另一个角度讲，变长函数这种实现方式，对于C++这种强调类型的语言来说相当于开了一个“不规范”的后门。这是C++标准中所不愿意看到的（即使它能够工作）。因此，客观上，C++需要引入一种更为“现代化”的变长参数的实现方式，即类型和变量同时能够传递给变长参数的函数。一个好的方式就是使用C++的函数模板</p>
 <p>此外在一些情况下，类也需要不定长度的模板参数。最为典型的就是C++11标准库中的 tuple类模板。如果读者熟悉C++98中的pair类模板的话，那么理解 tuple也就不困难了。具体来讲，pair是两个不同类型的数据的集合。比如 pair&lt;int，double&gt;就能够容纳int类型和double类型的两种数据。一些如std::map的标准库容器，其成员就需要是类模板pair的。在C++11中， tuple是pair类的一种更为泛化的表现形式。比起pair， tuple是可以接受任意多个不同类型的元素的集合。比如我们可以通过:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">std::tuple&lt;<span class="type">double</span>, <span class="type">char</span>, std::string&gt; collections;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">std::tuple&lt;double, char, std::string&gt; collections;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>来声明一个 tuple模板类。该 collections变量可以容纳 double、char、std::string三种类型的数据。当然，读者还可以用更多的参数来声明 collection，因为 tuple可以接受任意多的参数。此外，和pair类似地，我们也可以更为简单地使用C++11的模板函数 make_tuple来创造一个 tuple模板类型。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">std: <span class="built_in">make_tuple</span>(<span class="number">9.8</span>, <span class="string">'g'</span>, <span class="string">"gravity"</span>);</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">std: make_tuple(9.8, 'g', "gravity");<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>由于 tuple包含的类型数量可以任意地多，那么在客观上，就需要类模板能够接受变长的参数。因此，在C++11中我们就看到了所谓的变长模板（ variadic template）的实现。</p>
 <h2 id="变长模板模板参数包和函数参数包">变长模板：模板参数包和函数参数包</h2>
 <p>我们先看看变长模板的语法，还是以前面提到的 tuple为例，我们需要以下代码来声明tuple是一个变长类模板</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> ... Elements&gt; <span class="keyword">class</span> <span class="title class_">tuple</span>;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename ... Elements&gt; class tuple;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>可以看到，我们在标示符 Elements之前的使用了省略号（三个“点”）来表示该参数是变长的。在C++11中， Elements被称作是一个“模板参数包"（ template parameter pack）这是一种新的模板参数类型。有了这样的参数包，类模板 tuple就可以接受任意多个参数作为模板参数。对于以下实例化的tuple模板类:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tuple&lt;<span class="type">int</span>, <span class="type">char</span>, <span class="type">double</span>&gt;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">tuple&lt;int, char, double&gt;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>编译器则可以将多个模板参数打包成为“单个的”模板参数包 Elements，即 Element在进行模板推导的时候，就是一个包含int、char和 double三种类型类型集合。</p>
 <p>与普通的模板参数类似，模板参数包也可以是非类型的，比如:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="type">int</span>...A&gt; <span class="keyword">class</span> <span class="title">Nontypevariadictemplate</span><span class="params">()</span></span>;</span><br><span class="line">Nontypevariadictemplate&lt;<span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>&gt; ntvt;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;int...A&gt; class Nontypevariadictemplate();
+Nontypevariadictemplate&lt;1, 0, 2&gt; ntvt;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>就定义了接受非类型参数的变长模板 Nontypevariadictemplate。这里，我们实例化一个三参数（1，0，2）的模板实例ntvt。该声明方式相当于：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="type">int</span>, <span class="type">int</span>, <span class="type">int</span>&gt; <span class="keyword">class</span> <span class="title class_">Nontypevariadictemplate</span>:</span><br><span class="line">Nontypevariadictemplate&lt;<span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>&gt; ntvt:</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;int, int, int&gt; class Nontypevariadictemplate:
+Nontypevariadictemplate&lt;1, 0, 2&gt; ntvt:<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>这样的类模板定义和实例化。 除了类型的模板参数包和非类型的模板参数包，模板参数包实际上还是模板类型的，不过这样的声明会比较复杂，我们在后面再讨论一个模板参数包在模板推导时会被认为是模板的单个参数（虽然实际上它将会打包任意数量的实参）。为了使用模板参数包，我们总是需要将其解包（ unpack）。在C++11中，这通常是通过一个名为包扩展（ pack expansion）的表达式来完成。比如:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>...A&gt; <span class="keyword">class</span> <span class="title class_">Template</span>: <span class="keyword">private</span> B&lt;A...&gt;{};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename...A&gt; class Template: private B&lt;A...&gt;{};<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>这里的表达式A...（即参数包A加上三个“点”）就是一个包扩展。直观地看，参数包会在包扩展的位置展开为多个参数。比如：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T1, <span class="keyword">typename</span> T2&gt; <span class="keyword">class</span> <span class="title class_">B</span>{};</span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>...A&gt; <span class="keyword">class</span> <span class="title class_">Template</span>: <span class="keyword">private</span> B&lt;A...&gt;{}:</span><br><span class="line">Template&lt;X, Y&gt; xy;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename T1, typename T2&gt; class B{};
+template&lt;typename...A&gt; class Template: private B&lt;A...&gt;{}:
+Template&lt;X, Y&gt; xy;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>这里我们为类模板声明了一个参数包A，而使用参数包A...则是在 Template 的私有基类B&lt;A...&gt;中，那么最后一个表达式就声明了一个基类为B&lt;X，Y&gt;的模板类 Template&lt;X，Y&gt;的对象xy。其中X、Y两个模板参数先是被打包为参数包A，而后又在包扩展表达式A...中被还原。读者可以体会一下这样的使用方式。</p>
 <p>不过上面对象xy的例子是基于类模板B总是接受两个参数的前提下的。倘若我们在这里声明了一个 Template&lt;X，Y，Z&gt;，就必然会发生模板推导的错误。这跟我们之前提到的“变长”似乎没有任何关系。那么如何才能利用模板参数包及包扩展，使得模板能够接受任意多的模板参数，且均能实例化出有效的对象呢？</p>
 <p>事实上，在C++11中，实现 tuple模板的方式给出了一种使用模板参数包的答案。这个思路是使用数学的归纳法，转换为计算机能够实现的手段则是递归。通过定义递归的模板偏特化定义，我们可以使得模板参数包在实例化时能够层层展开，直到参数包中的参数逐渐耗尽或到达某个数量的边界为止。下面的例子是一个用变长模板实现 tuple（简化的 tuple实现）的代码，如下代码所示。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>...Elements&gt; <span class="keyword">class</span> <span class="title class_">tuple</span>;  <span class="comment">//变长模板的声明</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Head, <span class="keyword">typename</span>...Tail&gt;    <span class="comment">//递归的偏特化定义</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">tuple</span>&lt;Head, Tail...&gt;: <span class="keyword">private</span> tuple&lt;Tail...&gt;{</span><br><span class="line">    Head head;</span><br><span class="line">}</span><br><span class="line"><span class="keyword">template</span>&lt;&gt; <span class="keyword">class</span> <span class="title class_">tuple</span>&lt;&gt;    <span class="comment">//边界条件</span></span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename...Elements&gt; class tuple;  //变长模板的声明
+
+template&lt;typename Head, typename...Tail&gt;    //递归的偏特化定义
+class tuple&lt;Head, Tail...&gt;: private tuple&lt;Tail...&gt;{
+    Head head;
+}
+template&lt;&gt; class tuple&lt;&gt;    //边界条件<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>在代码中，我们声明了变长模板类 tuple，其只包含一个模板参数，即Elements 模板参数包。此外，我们又偏特化地定义了一个双参数的 tuple的版本。该偏特化版本的 tuple包含了两个参数，一个是类型模板参数Head，另一个则是模板参数包Tail在代码的实现中，我们将Head型的数据作为 tuple&lt;Head，Tail...&gt;的第一个成员，而将使用了包扩展表达式的模板类 tuple&lt;Tail...&gt;作为 tuple&lt;Head，Tail...&gt;的私有基类。这样来，当程序员实例化一个形如 tuple &lt;double，int，char， float&gt;的类型时，则会引起基类的递归构造，这样的递归在 tuple 的参数包为0个的时候会结束。这是由于我们定义了边界条件或者说初始条件，即 tuples&lt;&gt;这样不包含参数的偏特化版本而造成的。在代码中， tuples&lt;&gt;偏特化版本是一个没有成员的空类型。这样一来，编译器将从 tuples建造出 tuple&lt;float...&gt;，继而造出 tuple&lt;char，foat&gt;、 tuple&lt;int，char，foat&gt;，最后就建造出了tuple&lt;double，int，char，foa&gt;类型。 下图是 tuple&lt;double，in，char，nioa&gt;实例化后的继承结构示意图。我们用方框表示类型，而方框内的方框则表示类型由其内部的方框所代表的类型私有派生而来。 <img src="/picture/program/c++/performace2.png"></p>
 <p>这种变长模板的定义方式稍显复杂，不过却有效地解决了模板参数个数这样的向题。当然，这样做的前提是模板类/函数的定义要具有能够递推的结构。</p>
 <p>除了变长的模板类，在C++11中，我们还可以声明变长模板的函数。对于变长模板函数而言，除了声明可以容纳变长个模板参数的模板参数包之外，相应地，变长的函数参数也可以声明成函数参数包（ function parameter pack）。比如:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span>...T&gt; <span class="type">void</span> <span class="title">f</span><span class="params">(T...args)</span></span>;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename...T&gt; void f(T...args);<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>这个例子中，由于T是个变长模板参数（类型），因此args则是对应于这些变长类型的数据，即函数参数包。值得注意的是，在C++11中，标准要求函数参数包必须唯一，且是函数的最后一个参数（模板参数包没有这样的要求）。 有了模板参数包和函数参数包两个概念，我们就可以实现C中变长函数的功能了。</p>
 <h1 id="原子类型与原子操作">原子类型与原子操作</h1>
 <h2 id="并行编程多线程与c11">并行编程、多线程与C++11</h2>
 <p>在C++11之前，在C/C++中程序中使用线程却并非鲜见。这样的代码主要使用 POSIX线程（ pthread）和 OpenMP编译器指令两种编程模型来完成程序的线程化。而在C++11中，标准的一个相当大的变化就是引入了多线程的支持，这使得C/C++语言在进行线程编程时，不必依赖第三方库和标准。而C++对线程的支持，一个最为重要的部分，就是在原子操作中引入了原子类型的概念。</p>
 <h2 id="原子操作与c11原子类型">原子操作与C++11原子类型</h2>
 <p>通常情况下，原子操作都是通过“互斥”（ mutual exclusive）的访问来保证的。借助 POSIX标准的 pthread库中的互斥锁（ mutex）也可以做到。不过显而易见地，基于 pthread的方法虽然可行，但代码编写却很麻烦。程序员需要为共享变量创建互斥锁，并在进入临界区前后进行加锁和解锁的操作。不过在C++11中，通过对并行编程更为良好的抽象，要实现同样的功能就简单了很多。我们可以看看下面的例子。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">std::atomic_llong total = <span class="number">0</span>;            <span class="comment">// atomic_llong相当于long long，但是本身就拥有原子性</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">func</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">long</span> <span class="type">long</span> i = <span class="number">0</span>; i &lt; <span class="number">100000000LL</span>; ++i)</span><br><span class="line">    {</span><br><span class="line">        total += i;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(func)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(func)</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; total &lt;&lt; std::endl;     <span class="comment">// 9999999900000000</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">std::atomic_llong total = 0;            // atomic_llong相当于long long，但是本身就拥有原子性
+
+void func()
+{
+    for (long long i = 0; i &lt; 100000000LL; ++i)
+    {
+        total += i;
+    }
+}
+
+int main(void)
+{
+    std::thread t1(func);
+    std::thread t2(func);
+
+    t1.join();
+    t2.join();
+
+    std::cout &lt;&lt; total &lt;&lt; std::endl;     // 9999999900000000
+
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>可以看到，使用了原子类型atomic_llong之后，不需要使用额外的互斥接口来保证total的同步。除了atomic_llong类型，C++11还提供了其他的原子类型。 <img src="/picture/program/c++/performace3.png"></p>
 <p>当我们去看这些类型的定义时会发现，起始它们都是用atomic<t>模板来定义的。例如std::atomic_llong就是用std::atomic<long long="">来定义的。</long></t></p>
 <p>C++11中将原子操作定义为atomic模板类的成员函数，包括了大多数类型的操作，比如读写、交换等。对于内置类型，主要通过重载全局操作符来实现。下面列出所有atomic类型及其支持的相关操作列表： <img src="/picture/program/c++/performace4.png"></p>
 <p>列表中的atomic-intergral-type以及atomic<intergral-type>就是前面的原子类型列表中的类型，class-type是自定义类型。对于大部分原子类型，都支持读(load)、写(store)、交换(exchange)等操作。</intergral-type></p>
 <h2 id="内存模型顺序一致性和memory_order">内存模型、顺序一致性和memory_order</h2>
 <p>了解这一小节的内容之前，先看一段代码：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">func1</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    a = <span class="number">1</span>;</span><br><span class="line">    b = <span class="number">2</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">func2</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    std::cout &lt;&lt; a &lt;&lt; <span class="string">","</span> &lt;&lt; b &lt;&lt; std::endl;     <span class="comment">// 不定</span></span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="function">std::thread <span class="title">t1</span><span class="params">(func1)</span></span>;</span><br><span class="line">    <span class="function">std::thread <span class="title">t2</span><span class="params">(func2)</span></span>;</span><br><span class="line"></span><br><span class="line">    t1.<span class="built_in">join</span>();</span><br><span class="line">    t2.<span class="built_in">join</span>();</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; a &lt;&lt; <span class="string">","</span> &lt;&lt; b &lt;&lt; std::endl;   <span class="comment">// 1,2</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">void func1()
+{
+    a = 1;
+    b = 2;
+}
+
+void func2()
+{
+    std::cout &lt;&lt; a &lt;&lt; "," &lt;&lt; b &lt;&lt; std::endl;     // 不定
+}
+
+int main(void)
+{
+    std::thread t1(func1);
+    std::thread t2(func2);
+
+    t1.join();
+    t2.join();
+
+    std::cout &lt;&lt; a &lt;&lt; "," &lt;&lt; b &lt;&lt; std::endl;   // 1,2
+
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>以上的代码，在主线程中打印a和b结果必定是1,2，而在线程func2中打印结果就不一定了，可能是0,0或者1,2或者1,0。因为线程的执行并不能保证先创建的一定先运行，两者运行顺序存在多种可能。但是对于原子类型来说，func2中的打印不可能出现0,2的情况，因为原子类型的变量在线程中总是保持顺序执行的特性(顺序一致性)。</p>
 <p>不过在C++11中顺序一致性只是多种内存模型中的一种，代码并非必须按照顺序执行，因为顺序往往意味着最低效的同步方式。在了解其他内存模型之前，我们需要先了解一些处理器和编译器相关的知识。现代的处理器并不是逐条处理机器指令的：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>: Load    reg3, <span class="number">1</span>;           <span class="comment">// 将立即数1放入寄存器reg3</span></span><br><span class="line"><span class="number">2</span>: Move    reg4,reg3;         <span class="comment">// 将reg3的数据放入reg4</span></span><br><span class="line"><span class="number">3</span>: Store   reg4, a;           <span class="comment">// 将reg4的数据存入内存地址a</span></span><br><span class="line"><span class="number">4</span>: Load    reg5, <span class="number">2</span>;           <span class="comment">// 将立即数2放入寄存器reg5</span></span><br><span class="line"><span class="number">5</span>: Store   reg5, b;           <span class="comment">// 将reg5的数据存入内存地址b</span></span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">1: Load    reg3, 1;           // 将立即数1放入寄存器reg3
+2: Move    reg4,reg3;         // 将reg3的数据放入reg4
+3: Store   reg4, a;           // 将reg4的数据存入内存地址a
+4: Load    reg5, 2;           // 将立即数2放入寄存器reg5
+5: Store   reg5, b;           // 将reg5的数据存入内存地址b<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>以上的伪汇编代码代表了temp = 1; a = temp; b = 2，通常情况下指令都是按照1~5的顺序执行，这种内存模型称为强顺序(strong ordered)。不过可以看到，指令1、2、3和指令4、5的运行顺序不影响结果，有一些处理器可能会将指令的顺序打乱，例如按照1-4-2-5-3的顺序执行，这种内存模型称为弱顺序(weak ordered)。</p>
 <p>介绍了硬件内存模型后，再来说说C++11中定义的内存模型和顺序一致性和硬件中的关系。高级语言和机器指令是通过编译器来进行转换的，而编译器处于代码优化的考虑，会将指令进行移动。对于C++11的内存模型而言，要保证代码的顺序一致性，需要同时做到以下几点：</p>
 <ul>
@@ -464,7 +586,11 @@
 <li>处理器对原子操作的汇编指令的执行顺序不变。这对于x86这样的强顺序的体系结构而言没有任何问题，而对于一些弱顺序的平台则需要每个原子操作之后要加入内存栅栏</li>
 </ul>
 <p>对于上文打印a，b的代码来说，如果只需要在主线程中打印结果，那么代码的执行顺序并不重要。但是atomic原子类型默认的顺序一致性会要求编译器禁用优化，这无疑增加了性能开销。于是C++11中，设计了能够对原子类型指定内存顺序memory_order。我们把上文打印a，b的代码中的func1做一下修改：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">func1</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    a.<span class="built_in">store</span>(<span class="number">1</span>, std::memory_order_relaxed);</span><br><span class="line">    b.<span class="built_in">store</span>(<span class="number">2</span>, std::memory_order_relaxed);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">void func1()
+{
+    a.store(1, std::memory_order_relaxed);
+    b.store(2, std::memory_order_relaxed);
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>上面的代码使用了store函数进行赋值，store函数接受两个参数，第一个是要写入的值，第二个是名为memory_order的枚举值。这里使用了std::memory_order_relaxed，表示松散内存顺序，该枚举值代表编译器可以任由编译器重新排序或则由处理器乱序处理。这样a和b的赋值执行顺序性就被解除了，对于func2中的打印语句，打印出0,2的结果也就是合理的了。在C++11中一共有7种memory_order枚举值，默认按照memory_order_seq_cst执行： <img src="/picture/program/c++/performace5.png"></p>
 <p>需要注意的是，不是所有的memory_order都能被atomic成员使用：</p>
 <ul>
@@ -476,7 +602,7 @@
 <p>最后说明一下，在除非必要的情况下，不用使用std::memory_order，std::atmoic默认用的是最强限制。</p>
 <h1 id="线程局部存储">线程局部存储</h1>
 <p>线程局部存储（TLS， thread local storage）是一个已有的概念。简单地说，所谓线程局部存储变量，就是拥有线程生命期及线程可见性的变量。线程局部存储实际上是由单线程程序中的全局/静态变量被应用到多线程程序中被线程共享而来。我们可以简单地回顾一下所谓的线程模型。通常情况下，线程会拥有自己的栈空间，但是堆空间、静态数据区则是共享的。这样一来，全局、静态变量在这种多线程模型下就总是在线程间共享的。 C++11声明一个TLS变量的语法很简单，即通过 thread_local修饰符声明变量即可:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="keyword">thread_local</span> errcode;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">int thread_local errcode;<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>一旦声明一个变量为 thread_local，其值将在线程开始时被初始化，而在线程结束时，该值也将不再有效。对于 thread_local变量地址取值（&amp;），也只可以获得当前线程中的TLS变量的地址值。</p>
 <h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L1dpemFyZHRvSC9hcnRpY2xlL2RldGFpbHMvODExMTE1NDk=">https://blog.csdn.net/WizardtoH/article/details/81111549<i class="fa fa-external-link-alt"></i></span><br>

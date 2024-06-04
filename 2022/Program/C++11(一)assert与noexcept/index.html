@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
     <meta name="description" content="原图">
 <meta property="og:type" content="article">
@@ -375,43 +375,94 @@
 <p>当然， noexcept更大的作用是保证应用程序的安全。比如一个类析构函数不应该抛出异常，那么对于常被析构函数调用的 delete函数来说，C++默认将 delete函数设置成 noexcept，就可以提高应用程序的安全性。而同样出于安全考虑，C++11标准中让类的析构函数默认也是 noexcept(true)的。当然，如果程序员显式地为析构函数指定了 noexcept，或者类的基类或成员有 noexcept(false)的析构函数，析构函数就不会再保持默认值。</p>
 <h1 id="非静态成员的-sizeof">非静态成员的 sizeof</h1>
 <p>从C语言被发明开始， sizeof就是一个运算符，也是C语言中除了加减乘除以外为数不多的特殊运算符之一。而在C++引入类（ class）类型之后， sizeof的定义也随之进行了拓展。不过在C++98标准中，对非静态成员变量使用 sizeof是不能够通过编译的。我们可以看看下面的例子。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std:</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">People</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="type">int</span> hand;</span><br><span class="line">    <span class="type">static</span> People * all;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    People p;</span><br><span class="line">    cout &lt;&lt; <span class="built_in">sizeof</span>(p.hand) &lt;&lt; endl;         <span class="comment">//C++98中通过，C++11中通过</span></span><br><span class="line">    cout &lt;&lt; <span class="built_in">sizeof</span>(People::all）&lt;&lt;endl；    <span class="comment">//c++98中通过，C+11中通过</span></span><br><span class="line">    cout &lt;&lt; <span class="built_in">sizeof</span>(People::hand）&lt;&lt; end1;   <span class="comment">//C++98中错误，C++11中通过</span></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;iostream&gt;
+using namespace std:
+struct People
+{
+  public:
+    int hand;
+    static People * all;
+};
+
+int main()
+{
+    People p;
+    cout &lt;&lt; sizeof(p.hand) &lt;&lt; endl;         //C++98中通过，C++11中通过
+    cout &lt;&lt; sizeof(People::all）&lt;&lt;endl；    //c++98中通过，C+11中通过
+    cout &lt;&lt; sizeof(People::hand）&lt;&lt; end1;   //C++98中错误，C++11中通过
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>注意最后一个 sizeof操作。在C++11中，对非静态成员变量使用 sizeof操作是合法的。而在C++98中，只有静态成员，或者对象的实例才能对其成员进行 sizeof操作。因此如果读者只有一个支持C++98标准的编译器，在没有定义类实例的时候，要获得类成员的大小，我们通常会采用以下的代码:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sizeof</span> (((People*)<span class="number">0</span>)-&gt;hand)</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">sizeof (((People*)0)-&gt;hand)<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>这里我们强制转换0为一个 People类的指针，继而通过指针的解引用获得其成员变量并用 sizeof求得该成员变量的大小。而在C++11中，我们无需这样的技巧，因为 sizeof可以作用的表达式包括了类成员表达式。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sizeof</span>(People::hand);</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">sizeof(People::hand);<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>可以看到，无论从代码的可读性还是编写的便利性，C++11的规则都比强制指针转换的方案更胜一筹。</p>
 <h1 id="扩展的friend语法">扩展的friend语法</h1>
 <p>friend关键字用于声明类的友元，友元可以无视类中成员的属性。无论成员是 public、 protected或是 private的，友元类或友元函数都可以访问，这就完全破坏了面向对象编程中封装性的概念。因此，使用 friend关键字充满了争议性。在通常情况下，面向对象程序开发的专家会建议程序员使用 Get/Set接口来访问类的成员，但有的时候， friend关键字确实会让程序员少写很多代码。因此即使存在争论， friend还是在很多程序中被使用到。而C++11对 friend关键字进行了一些改进，以保证其更加好用，我们可以看看下面的例子。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Poly</span>;</span><br><span class="line"><span class="keyword">typedef</span> Poly P;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Lilei</span> {</span><br><span class="line">    <span class="keyword">friend</span> <span class="keyword">class</span> <span class="title class_">Poly</span>;  <span class="comment">//C++98通过，C++11通过</span></span><br><span class="line">};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Jim</span> {</span><br><span class="line">    <span class="keyword">friend</span> Poly;        <span class="comment">//C++98失败，C++11通过</span></span><br><span class="line">};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Hanmeimei</span> {</span><br><span class="line">    <span class="keyword">friend</span> p;           <span class="comment">//C++98失败，C++11通过</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class Poly;
+typedef Poly P;
+
+class Lilei {
+    friend class Poly;  //C++98通过，C++11通过
+};
+class Jim {
+    friend Poly;        //C++98失败，C++11通过
+};
+class Hanmeimei {
+    friend p;           //C++98失败，C++11通过
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>虽然在C++11中这是一个小的改进，却会带来一点应用的变化一程序员可以为类模板声明友元了。这在C++98中是无法做到的。比如下面这个例子，如代码清单2-20所示。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">P</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">People</span>{</span><br><span class="line">    <span class="keyword">friend</span> T;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line">People&lt;P&gt; PP;   <span class="comment">//类型P在这里是 People类型的友元</span></span><br><span class="line">People&lt;<span class="type">int</span>&gt; P;  <span class="comment">//对于int类型模板参数，友元声明被忽略</span></span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class P;
+
+template &lt;typename T&gt;
+class People{
+    friend T;
+};
+
+People&lt;P&gt; PP;   //类型P在这里是 People类型的友元
+People&lt;int&gt; P;  //对于int类型模板参数，友元声明被忽略<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>从代码中我们看到，对于 People这个模板类，在使用类P为模板参数时，P是People&lt; P &gt; 的一个 friend类。而在使用内置类型int作为模板参数的时候， People&lt; int &gt;会被实例化为一个普通的没有友元定义的类型。这样一来，我们就可以在模板实例化时才确定一个模板类是否有友元，以及谁是这个模板类的友元。这是一个非常有趣的小特性，在编写一些测试用例的时候，使用该特性是很有好处的。</p>
 <h1 id="finaloverride控制">final/override控制</h1>
 <p>final关键字的作用是使派生类不可覆盖它所修饰的虚函数：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">object</span>{</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">fun</span><span class="params">()</span></span>=<span class="number">0</span>;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Base</span>: <span class="keyword">public</span> object {</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">fun</span><span class="params">()</span> <span class="keyword">final</span></span>;       <span class="comment">//声明为fina1</span></span><br><span class="line">};</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Derived</span>: <span class="keyword">public</span> Base {</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">fun</span><span class="params">()</span></span>;             <span class="comment">//无法通过编译</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">struct object{
+    virtual void fun()=0;
+};
+
+struct Base: public object {
+    void fun() final;       //声明为fina1
+};
+struct Derived: public Base {
+    void fun();             //无法通过编译
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>派生于 Object的Base类重载了 Object 的fun接口，并将本类中的fun函数声明为final的。那么派生于Base的 Derived类对接口fun的重载则会导致编译时的错误。</p>
 <p>在C++11中为了帮助程序员写继承结构复杂的类型，引入了虚函数描述符 override，如果派生类在虚函数声明时使用了 override描述符，那么该函数必须重载其基类中的同名函数否则代码将无法通过编译。</p>
 <h1 id="外部模板">外部模板</h1>
 <h2 id="为什么需要外部模板">为什么需要外部模板</h2>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">fun</span><span class="params">(T)</span> </span>{}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template &lt;typename T&gt;
+void fun(T) {}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>在第一个 test1.pp文件中，我们定义了以下代码</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> test. h<span class="string">"</span></span></span><br><span class="line"><span class="string"><span class="meta">void test1() {fun(3)};</span></span></span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include test. h"
+void test1() {fun(3)};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>而在另一个test2.cpp文件中，我们定义了以下代码</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">"test.h"</span></span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">test2</span><span class="params">()</span> </span>{<span class="built_in">fun</span>(<span class="number">4</span>)};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include "test.h"
+void test2() {fun(4)};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>由于两个源代码使用的模板函数的参数类型一致，所以在编译 test1.cpp 的时候，编译器实例化出了函数 fun<int>(int)，而当编译test2.cpp的时候，编译器又再一次实例化出了函数fun<int>(int)。那么可以想象，在 test1.o目标文件和test2.o目标文件中，会有两份一模一样的函数 fun<int>(int)代码。而代码重复，为了节省空间，保留其中之一就可以了。事实上，大部分链接器也是这样做的，在链接的时候，链接器通过一些编译器辅助的手段将重复的模板函数代码 fun<int>(int)删除掉，只保留了单个副本。我们可以看看下图中的模板函数的编译与链接的过程示意。 <img src="/picture/program/c++/c++11_1.png"></int></int></int></int></p>
 <p>不过读者也注意到了，对于源代码中出现的每一处模板实例化，编译器都需要去做实例化的工作；而在链接时，链接器还需要移除重复的实例化代码。会极大地增加编译器的编译时间和链接时间。解决这个问题的方法就是使用“外部的”模板。</p>
 <h2 id="显式的实例化与外部模板的声明">显式的实例化与外部模板的声明</h2>
 <p>外部模板的使用实际依赖于C++98中一个已有的特性，即显式实例化。显式实例化的语法很简单，比如对于以下模板：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">fun</span><span class="params">(T)</span></span>{}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template &lt;typename T&gt;
+void fun(T){}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>我们只需要声明:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> <span class="type">void</span> <span class="built_in">fun</span>&lt;<span class="type">int</span>&gt;(<span class="type">int</span>);</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template void fun&lt;int&gt;(int);<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>这就可以使编译器在本编译单元中实例化出一个 fun<int>(int)版本的函数（这种做法也被称为强制实例化）。而在C++11标准中，又加入了外部模板（ Extern Template）的声明。语法上，外部模板的声明跟显式的实例化差不多，只是多了一个关键字 extern。对于上面的例子，我们可以通过:</int></p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">extern</span> <span class="keyword">template</span> <span class="type">void</span> <span class="built_in">fun</span>&lt;<span class="type">int</span>&gt;(<span class="type">int</span>)</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">extern template void fun&lt;int&gt;(int)<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p>首先，在 test1.cpp做显式地实例化:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">"test.h"</span></span></span><br><span class="line"><span class="keyword">template</span> <span class="type">void</span> <span class="built_in">fun</span>&lt;<span class="type">int</span>&gt;(<span class="type">int</span>);    <span class="comment">//显示地实例化</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">test1</span><span class="params">()</span></span>{<span class="built_in">fun</span>(<span class="number">3</span>)};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include "test.h"
+template void fun&lt;int&gt;(int);    //显示地实例化
+void test1(){fun(3)};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>接下来，在test2.cpp中做外部模板的声明:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#incude <span class="string">"test.h"</span></span></span><br><span class="line"><span class="keyword">extern</span> <span class="keyword">template</span> <span class="type">void</span> fun&lt;<span class="type">int</span>&gt;（<span class="type">int</span>）;   <span class="comment">//外部模板的声明</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">test1</span><span class="params">()</span> </span>{<span class="built_in">fun</span>(<span class="number">3</span>)};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#incude "test.h"
+extern template void fun&lt;int&gt;（int）;   //外部模板的声明
+void test1() {fun(3)};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p>这样一来，在test2.o中不会再生成 fun<int>(int)的实例代码。整个模板的实例化流程如下图所示。 <img src="/picture/program/c++/c++11_2.png"></int></p>
 <p>可以看到，由于test2.o不再包含 fun<int>(int)的实例，因此链接器的工作很轻松，基本跟外部变量的做法是一样的，即只需要保证让 test1.cpp和test2.cpp共享一份代码位置即可。而同时，编译器也不用每次都产生一份 fun<int>(int)的代码，所以可以减少编译时间。这里也可以把外部模板声明放在头文件中，这样所有包含 test.h的头文件就可以共享这个外部模板声明了，这一点跟使用外部变量声明是完全一致的。</int></int></p>
 <h1 id="参考文献">参考文献</h1>
