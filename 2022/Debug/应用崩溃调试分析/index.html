@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
     <meta name="description" content="前言 应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器syslog能快速解决90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过syslog就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是这里尝试提">
 <meta property="og:type" content="article">
@@ -380,17 +380,14 @@
 <span id="more"></span>
 <h1 id="开启core-dump-功能">开启core dump 功能</h1>
 <p>在init脚本的start_service中添加</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">procd_set_param limits <span class="token assign-left variable">core</span><span class="token operator">=</span><span class="token string">"unlimited"</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">procd_set_param limits core=<span class="string">"unlimited"</span></span><br></pre></td></tr></tbody></table></figure>
 <p>这样一条代码，例如xxxapp中的添加如下： <img src="/picture/debug/start_core.png" alt="start_core"></p>
 <p>或者直接在shell中执行:</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">ulimit</span> <span class="token parameter variable">-c</span> unlimited
-<span class="token builtin class-name">echo</span> <span class="token string">"/tmp/core-%e-%p-%t"</span> <span class="token operator">&gt;</span> /proc/sys/kernel/core_pattern<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -c unlimited</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/tmp/core-%e-%p-%t"</span> &gt; /proc/sys/kernel/core_pattern</span><br></pre></td></tr></tbody></table></figure>
 <p>然后执行应用。</p>
 <h1 id="添加添加调试信息和符号表">添加添加调试信息和符号表</h1>
 <h2 id="去掉编译系统的全局strip由strip改为none">去掉编译系统的全局strip（由strip改为none）</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">make</span> menuconfig 
-    -<span class="token operator">&gt;</span> Global build settings  
-        ---<span class="token operator">&gt;</span> Binary stripping method <span class="token punctuation">(</span>none<span class="token punctuation">)</span>  <span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make menuconfig </span><br><span class="line">    -&gt; Global build settings  </span><br><span class="line">        ---&gt; Binary stripping method (none)  </span><br></pre></td></tr></tbody></table></figure>
 <p><img src="/picture/debug/strip.png"></p>
 <blockquote>
 <p>注意:因为xxxapp上存储容量限制，可以在strip模式下编译完系统后再改为none，然后在编译xxxapp，这样就只有xxxapp有符号表和调试信息.</p>
@@ -398,14 +395,12 @@
 <h2 id="应用中添加符号信息">应用中添加符号信息</h2>
 <p>应用或者库中添加符号信息只需要在gcc编译的时候加上-g选项，一般为了方便调试需要去掉-Ox选项。例如xxxapp调试时的编译选项如下： <img src="/picture/debug/g.png"></p>
 <h2 id="开启gdb">开启gdb</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">make</span> menuconfig 
-    -<span class="token operator">&gt;</span> Development  
-        ---<span class="token operator">&gt;</span> <span class="token operator">&lt;</span>*<span class="token operator">&gt;</span> gdb<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make menuconfig </span><br><span class="line">    -&gt; Development  </span><br><span class="line">        ---&gt; &lt;*&gt; gdb</span><br></pre></td></tr></tbody></table></figure>
 <h1 id="调试应用崩溃现场">调试应用崩溃现场</h1>
 <p>在小机端使用“gdb 可执行程序 core文件”开启gdb，例如:</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ gdb /usr/bin/xxxapp /tmp/core-startEventCall-675-1610194273<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ gdb /usr/bin/xxxapp /tmp/core-startEventCall-675-1610194273</span><br></pre></td></tr></tbody></table></figure>
 <p>加载完符号表之后，就可以查看程序dump时候的栈追溯，命令为bt</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token punctuation">(</span>gdb<span class="token punctuation">)</span> bt<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) bt</span><br></pre></td></tr></tbody></table></figure>
 <p>如果没有符号表，bt打印的就只有地址;如果有符号表，bt的打印如下： <img src="/picture/debug/core1.png"></p>
 <blockquote>
 <p>说明：这个调用栈是从#0到#12这个顺序看的，就是说应用是在#0这个点退出，调用顺序是从#12到#0,</p>
@@ -415,7 +410,7 @@
 <p>说明：添加符号表后会标识出调用函数所在的文件和行数，以及调用的时候的参数，通过调用栈可以知道程序是在#2（BitmapDDAScalerEx）这个点出错，然后进入到了c库的崩溃处理函数</p>
 </blockquote>
 <p>进入#2帧进行调试的命令如下：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ frame <span class="token number">2</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ frame 2</span><br></pre></td></tr></tbody></table></figure>
 <p><img src="/picture/debug/core3.png"></p>
 <blockquote>
 <p>说明：通过pc端打开bitmap.c定位到1989行（也可以把文件放到tf卡上使用gdb同步调试）</p>
@@ -431,9 +426,9 @@
 <p>说明：通过这里我们可以知道这里是要将一个长为59，宽为24的图片，缩放成长为50，宽为28的图片，图片的像素宽度为4个字节，但是图片的内容已经被改写没有了。</p>
 </blockquote>
 <p>但是没有有找到dp1对应的值的来源，汇编看看：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token punctuation">(</span>gdb<span class="token punctuation">)</span> disassemble<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) disassemble</span><br></pre></td></tr></tbody></table></figure>
 <p><img src="/picture/debug/core8.png"></p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token punctuation">(</span>gdb<span class="token punctuation">)</span> info registers<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) info registers</span><br></pre></td></tr></tbody></table></figure>
 <p><img src="/picture/debug/core9.png"></p>
 <blockquote>
 <p>说明：通过现场能够知道dp1对应地址为栈上的地址0xbe973990，这个地址里保存的值为0x135c，但是这个函数的汇编太长了，追踪内存很耗时先放弃了。。。</p>
@@ -445,16 +440,16 @@
 <p>当然你的flash已经容不下gdb了，此时。</p>
 <h2 id="设置交叉编译工具链gdb">设置交叉编译工具链（gdb）</h2>
 <p>在~/.bashrc文件里添加如下：</p>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token builtin class-name">export</span> <span class="token assign-left variable"><span class="token environment constant">PATH</span></span><span class="token operator">=</span><span class="token environment constant">$PATH</span>:/home/liushuai/workspace/project/prebuilt/gcc/linux-x86/arm/toolchain-sunxi-musl/toolchain/bin<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$PATH</span>:/home/liushuai/workspace/project/prebuilt/gcc/linux-x86/arm/toolchain-sunxi-musl/toolchain/bin</span><br></pre></td></tr></tbody></table></figure>
 <h2 id="拷贝文件xxxapp和core-dump文件要拷贝带符号表的xxxapp">拷贝文件(xxxapp和core dump文件，要拷贝带符号表的xxxapp)</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token function">cp</span> ~/workspace/project/out/v833-perf1/staging_dir/target/rootfs/usr/bin/***app ./<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> ~/workspace/project/out/v833-perf1/staging_dir/target/rootfs/usr/bin/***app ./</span><br></pre></td></tr></tbody></table></figure>
 <p>将机器端复现到问题后产生的core文件拷贝到pc端，adb pull /tmp/core****</p>
 <h2 id="运行交叉编译工具链中的gdb程序">运行交叉编译工具链中的gdb程序</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">arm-openwrt-linux-gdb vegoapp core-startEventCall-675-1610194273<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arm-openwrt-linux-gdb vegoapp core-startEventCall-675-1610194273</span><br></pre></td></tr></tbody></table></figure>
 <h2 id="在运行gdb之后设置系统库路径由于是在pc端运行xxxapp里不包含共享库的内容但是sdk路径里是有rootfs文件的">在运行gdb之后设置系统库路径（由于是在pc端运行，xxxapp里不包含共享库的内容但是sdk路径里是有rootfs文件的）</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token punctuation">(</span>gdb<span class="token punctuation">)</span> <span class="token builtin class-name">set</span> sysroot /home/liushuai/workspace/project/out/v833-perf1/staging_dir/target/rootfs<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) <span class="built_in">set</span> sysroot /home/liushuai/workspace/project/out/v833-perf1/staging_dir/target/rootfs</span><br></pre></td></tr></tbody></table></figure>
 <h2 id="打印追溯栈">打印追溯栈</h2>
-<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash">$ <span class="token punctuation">(</span>gdb<span class="token punctuation">)</span> bt<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) bt</span><br></pre></td></tr></tbody></table></figure>
 <p>剩下的就跟在机器端调试一样了。</p>
 
     </div>

@@ -21,14 +21,14 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="dtb数据解析 内核启动阶段获得dtb位置指针 以arm64为例，内核启动如下： __HEAD _head:  #ifdef CONFIG_EFI 	add	x13, x18, #0x16 	b	stext #else 	b	stext				&#x2F;&#x2F; branch to kernel start, magic 	.long	0				&#x2F;&#x2F; reserved #endif ... 在开启UEFI支持时">
+    <meta name="description" content="dtb数据解析 内核启动阶段获得dtb位置指针 以arm64为例，内核启动如下： 1234567891011__HEAD_head:#ifdef CONFIG_EFI	add	x13, x18, #0x16	b	stext#else	b	stext				&#x2F;&#x2F; branch to kernel start, magic	.long	0				&#x2F;&#x2F; reserved#endif... 在开启UEFI">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之设备树">
 <meta property="og:url" content="http://carlyleliu.github.io/2020/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E8%AE%BE%E5%A4%87%E6%A0%91/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="dtb数据解析 内核启动阶段获得dtb位置指针 以arm64为例，内核启动如下： __HEAD _head:  #ifdef CONFIG_EFI 	add	x13, x18, #0x16 	b	stext #else 	b	stext				&#x2F;&#x2F; branch to kernel start, magic 	.long	0				&#x2F;&#x2F; reserved #endif ... 在开启UEFI支持时">
+<meta property="og:description" content="dtb数据解析 内核启动阶段获得dtb位置指针 以arm64为例，内核启动如下： 1234567891011__HEAD_head:#ifdef CONFIG_EFI	add	x13, x18, #0x16	b	stext#else	b	stext				&#x2F;&#x2F; branch to kernel start, magic	.long	0				&#x2F;&#x2F; reserved#endif... 在开启UEFI">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/DTS/StartKernel.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/DTS/fdt.png">
@@ -368,44 +368,11 @@
     <div class="post-body" itemprop="articleBody"><h1 id="dtb数据解析">dtb数据解析</h1>
 <h2 id="内核启动阶段获得dtb位置指针">内核启动阶段获得dtb位置指针</h2>
 <p>以arm64为例，内核启动如下：</p>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">__HEAD
-_head:
-
-#ifdef CONFIG_EFI
-	add	x13, x18, #0x16
-	b	stext
-#else
-	b	stext				// branch to kernel start, magic
-	.long	0				// reserved
-#endif
-...<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">__HEAD</span><br><span class="line">_head:</span><br><span class="line"></span><br><span class="line">#ifdef CONFIG_EFI</span><br><span class="line">	add	x13, x18, #0x16</span><br><span class="line">	b	stext</span><br><span class="line">#else</span><br><span class="line">	b	stext				// branch to kernel start, magic</span><br><span class="line">	.long	0				// reserved</span><br><span class="line">#endif</span><br><span class="line">...</span><br></pre></td></tr></tbody></table></figure>
 <p>在开启UEFI支持时, add x13, x18, #0x16这个code实际上是为了满足EFI格式的”MZ”头. 如果使用UEFI来启动kernel, 会识别出来并走UEFI启动的流程, 如果是普通的启动过程如使用uboot的booti进行引导, 那么第一条指令就是一条dummy指令，第二条就跳转到stext运行了。</p>
 <span id="more"></span>
 <p>x0寄存器保存的是dtb里blob块的物理地址，x0寄存器内容由uboot设置，uboot将dtb地址传递给内核，跳转到stext，如下：</p>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">ENTRY(stext)
-	bl	preserve_boot_args
-	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode
-	adrp	x23, __PHYS_OFFSET
-	and	x23, x23, MIN_KIMG_ALIGN - 1	// KASLR offset, defaults to 0
-	bl	set_cpu_boot_mode_flag
-	bl	__create_page_tables
-	bl	__cpu_setup			// initialise processor
-	b	__primary_switch
-ENDPROC(stext)
-...
-preserve_boot_args:
-	mov	x21, x0				// x21=FDT
-
-	adr_l	x0, boot_args		// record the contents of
-	stp	x21, x1, [x0]			// x0 .. x3 at kernel entry
-	stp	x2, x3, [x0, #16]
-
-	dmb	sy				// needed before dc ivac with
-						// MMU off
-
-	add	x1, x0, #0x20		// 4 x 8 bytes
-	b	__inval_cache_range	// tail call
-ENDPROC(preserve_boot_args)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">ENTRY(stext)</span><br><span class="line">	bl	preserve_boot_args</span><br><span class="line">	bl	el2_setup			// Drop to EL1, w0=cpu_boot_mode</span><br><span class="line">	adrp	x23, __PHYS_OFFSET</span><br><span class="line">	and	x23, x23, MIN_KIMG_ALIGN - 1	// KASLR offset, defaults to 0</span><br><span class="line">	bl	set_cpu_boot_mode_flag</span><br><span class="line">	bl	__create_page_tables</span><br><span class="line">	bl	__cpu_setup			// initialise processor</span><br><span class="line">	b	__primary_switch</span><br><span class="line">ENDPROC(stext)</span><br><span class="line">...</span><br><span class="line">preserve_boot_args:</span><br><span class="line">	mov	x21, x0				// x21=FDT</span><br><span class="line"></span><br><span class="line">	adr_l	x0, boot_args		// record the contents of</span><br><span class="line">	stp	x21, x1, [x0]			// x0 .. x3 at kernel entry</span><br><span class="line">	stp	x2, x3, [x0, #16]</span><br><span class="line"></span><br><span class="line">	dmb	sy				// needed before dc ivac with</span><br><span class="line">						// MMU off</span><br><span class="line"></span><br><span class="line">	add	x1, x0, #0x20		// 4 x 8 bytes</span><br><span class="line">	b	__inval_cache_range	// tail call</span><br><span class="line">ENDPROC(preserve_boot_args)</span><br></pre></td></tr></tbody></table></figure>
 <p>arm64 linux寄存器规定如下：</p>
 <pre><code>x0 = physical address of device tree blob (dtb) in system RAM.
 x1 = 0 (reserved for future use)
@@ -413,86 +380,17 @@ x2 = 0 (reserved for future use)
 x3 = 0 (reserved for future use)</code></pre>
 <p>将dtb的物理地址保存在x21寄存器中。 __inval_cache_range这个函数用来invalidate指定区域的cache。如果指定内存区域有跨越cacheline, 那么对两边跨越了cacheline的地址使用的clean + invalidate, 对于中间区域可以直接invalidate不用写回内存, 从而加快invalidate速度.</p>
 <p>调用__primary_switch如下：</p>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">__primary_switch:
-
-	bl	__enable_mmu
-#ifdef CONFIG_RELOCATABLE
-	bl	__relocate_kernel
-#ifdef CONFIG_RANDOMIZE_BASE
-	ldr	x8, =__primary_switched
-	adrp	x0, __PHYS_OFFSET
-	blr	x8
-...
-	bl	__relocate_kernel
-#endif
-#endif
-	ldr	x8, =__primary_switched
-	adrp	x0, __PHYS_OFFSET
-	br	x8
-ENDPROC(__primary_switch)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">__primary_switch:</span><br><span class="line"></span><br><span class="line">	bl	__enable_mmu</span><br><span class="line">#ifdef CONFIG_RELOCATABLE</span><br><span class="line">	bl	__relocate_kernel</span><br><span class="line">#ifdef CONFIG_RANDOMIZE_BASE</span><br><span class="line">	ldr	x8, =__primary_switched</span><br><span class="line">	adrp	x0, __PHYS_OFFSET</span><br><span class="line">	blr	x8</span><br><span class="line">...</span><br><span class="line">	bl	__relocate_kernel</span><br><span class="line">#endif</span><br><span class="line">#endif</span><br><span class="line">	ldr	x8, =__primary_switched</span><br><span class="line">	adrp	x0, __PHYS_OFFSET</span><br><span class="line">	br	x8</span><br><span class="line">ENDPROC(__primary_switch)</span><br></pre></td></tr></tbody></table></figure>
 <p>调用__primary_switched函数：</p>
-<pre class="line-numbers language-asm" data-language="asm"><code class="language-asm">__primary_switched:
-	adrp	x4, init_thread_union
-	add	sp, x4, #THREAD_SIZE
-	msr	sp_el0, x4			// Save thread_info
-
-	adr_l	x8, vectors			// load VBAR_EL1 with virtual
-	msr	vbar_el1, x8			// vector table address
-	isb
-
-	stp	xzr, x30, [sp, #-16]!
-	mov	x29, sp
-
-	str_l	x21, __fdt_pointer, x5		// Save FDT pointer
-...
-	b	start_kernel
-ENDPROC(__primary_switched)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">__primary_switched:</span><br><span class="line">	adrp	x4, init_thread_union</span><br><span class="line">	add	sp, x4, #THREAD_SIZE</span><br><span class="line">	msr	sp_el0, x4			// Save thread_info</span><br><span class="line"></span><br><span class="line">	adr_l	x8, vectors			// load VBAR_EL1 with virtual</span><br><span class="line">	msr	vbar_el1, x8			// vector table address</span><br><span class="line">	isb</span><br><span class="line"></span><br><span class="line">	stp	xzr, x30, [sp, #-16]!</span><br><span class="line">	mov	x29, sp</span><br><span class="line"></span><br><span class="line">	str_l	x21, __fdt_pointer, x5		// Save FDT pointer</span><br><span class="line">...</span><br><span class="line">	b	start_kernel</span><br><span class="line">ENDPROC(__primary_switched)</span><br></pre></td></tr></tbody></table></figure>
 <p>通过str_l x21, __fdt_pointer, x5 这句将dtb的地址保存在__fdt_pointer指针里，以便后续内核可以找到dtb并解析设备树文件。</p>
 <p>关于linux启动过程可以参考下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjEyOWYxZDhlMGIzNGQzNTUwZjBiNjFi">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/DTS/StartKernel.png"></p>
 <h2 id="dtb解析过程">dtb解析过程</h2>
 <p>start_kernel阶段会处理dtb文件生成device_node结构体以及他们之间的组织关系。整体的调用逻辑如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQ4ZjA2Mzc2ODkyMWZhMjRmY2Vl">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/DTS/fdt.png"></p>
 <p>下面以一个简单的设备树为例：</p>
-<pre class="line-numbers language-c" data-language="c"><code class="language-c"><span class="token operator">/</span> <span class="token punctuation">{</span>
-    leds <span class="token punctuation">{</span>
-        act <span class="token punctuation">{</span>
-            gpios <span class="token operator">=</span> <span class="token operator">&lt;</span><span class="token operator">&amp;</span>gpio <span class="token number">42</span> GPIO_ACTIVE_HIGH<span class="token operator">&gt;</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span><span class="token punctuation">;</span>
-
-        pwr <span class="token punctuation">{</span>
-            label <span class="token operator">=</span> <span class="token string">"PWR"</span><span class="token punctuation">;</span>
-            gpios <span class="token operator">=</span> <span class="token operator">&lt;</span><span class="token operator">&amp;</span>expgpio <span class="token number">2</span> GPIO_ACTIVE_LOW<span class="token operator">&gt;</span><span class="token punctuation">;</span>
-            <span class="token keyword">default</span><span class="token operator">-</span>state <span class="token operator">=</span> <span class="token string">"keep"</span><span class="token punctuation">;</span>
-            linux<span class="token punctuation">,</span><span class="token keyword">default</span><span class="token operator">-</span>trigger <span class="token operator">=</span> <span class="token string">"default-on"</span><span class="token punctuation">;</span>
-        <span class="token punctuation">}</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span><span class="token punctuation">;</span>
-
-    wifi_pwrseq<span class="token operator">:</span> wifi<span class="token operator">-</span>pwrseq <span class="token punctuation">{</span>
-        compatible <span class="token operator">=</span> <span class="token string">"mmc-pwrseq-simple"</span><span class="token punctuation">;</span>
-        reset<span class="token operator">-</span>gpios <span class="token operator">=</span> <span class="token operator">&lt;</span><span class="token operator">&amp;</span>expgpio <span class="token number">1</span> GPIO_ACTIVE_LOW<span class="token operator">&gt;</span><span class="token punctuation">;</span>
-    <span class="token punctuation">}</span><span class="token punctuation">;</span>
-
-<span class="token punctuation">}</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/ {</span><br><span class="line">    leds {</span><br><span class="line">        act {</span><br><span class="line">            gpios = &lt;&amp;gpio <span class="number">42</span> GPIO_ACTIVE_HIGH&gt;;</span><br><span class="line">        };</span><br><span class="line"></span><br><span class="line">        pwr {</span><br><span class="line">            label = <span class="string">"PWR"</span>;</span><br><span class="line">            gpios = &lt;&amp;expgpio <span class="number">2</span> GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">            <span class="keyword">default</span>-state = <span class="string">"keep"</span>;</span><br><span class="line">            linux,<span class="keyword">default</span>-trigger = <span class="string">"default-on"</span>;</span><br><span class="line">        };</span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">    wifi_pwrseq: wifi-pwrseq {</span><br><span class="line">        compatible = <span class="string">"mmc-pwrseq-simple"</span>;</span><br><span class="line">        reset-gpios = &lt;&amp;expgpio <span class="number">1</span> GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>该设备树经过populate_node()解析处理后，结构体关系如下：</p>
-<pre class="line-numbers language-none"><code class="language-none">- /节点：
-    - parent：NULL
-    - sibling：NULL
-    - child：wifi_pwrseq
-- led节点：
-    - parent：/
-    - sibling：NULL
-    - child：pwr
-- act节点：
-    - parent：led
-    - sibling：NULL
-    - child：NULL
-- pwr节点：
-    - parent：led
-    - sibling：act
-    - child：NULL
-- wifi_pwrseq节点：
-    - parent：/
-    - sibling：led
-    - child：NULL<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">- /节点：</span><br><span class="line">    - parent：NULL</span><br><span class="line">    - sibling：NULL</span><br><span class="line">    - child：wifi_pwrseq</span><br><span class="line">- led节点：</span><br><span class="line">    - parent：/</span><br><span class="line">    - sibling：NULL</span><br><span class="line">    - child：pwr</span><br><span class="line">- act节点：</span><br><span class="line">    - parent：led</span><br><span class="line">    - sibling：NULL</span><br><span class="line">    - child：NULL</span><br><span class="line">- pwr节点：</span><br><span class="line">    - parent：led</span><br><span class="line">    - sibling：act</span><br><span class="line">    - child：NULL</span><br><span class="line">- wifi_pwrseq节点：</span><br><span class="line">    - parent：/</span><br><span class="line">    - sibling：led</span><br><span class="line">    - child：NULL</span><br></pre></td></tr></tbody></table></figure>
 <h2 id="device_node与device绑定">device_node与device绑定</h2>
 <p>kernel会为设备树root节点下所有带'compatible' 属性的节点都分配并注册一个platform_device；另外，如果某节点的'compatible' 符合某些matches条件，则会为该节点下所有带'compatible' 属性的子节点（child）也分配并注册一个platform_device。 整体调用流程如下图所示：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQ5MmI2Mzc2ODkyMWZhMjRmZDQx">原图<i class="fa fa-external-link-alt"></i></span> <img src="/picture/linux_driver/DTS/FDT_BindDevice.png"></p>
 <p>至此，为所有设备树中所有符合条件的node都创建了platform_device结构体，node下描述的资源也解析到了platform_device中，并通过dev成员将该node描述的设备加入了统一设备模型。</p>
