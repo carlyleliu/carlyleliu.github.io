@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
     <meta name="description" content="原图">
 <meta property="og:type" content="article">
@@ -367,7 +367,11 @@
 <span id="more"></span>
 <h1 id="右尖括号的改进">右尖括号&gt;的改进</h1>
 <p>在C++98中，有一条需要程序员规避的规则：如果在实例化模板的时候出现了连续的两个右尖括号&gt;，那么它们之间需要一个空格来进行分隔，以避免发生编译时的错误。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="type">int</span> i&gt; <span class="keyword">class</span> <span class="title class_">X</span>{};</span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">class</span> <span class="title class_">T</span>&gt; <span class="keyword">class</span> <span class="title class_">Y</span>{};</span><br><span class="line"></span><br><span class="line">Y&lt;X&lt;<span class="number">1</span>&gt; &gt; x1;   <span class="comment">//编译成功</span></span><br><span class="line">Y&lt;X&lt;<span class="number">2</span>&gt;&gt; x2;   <span class="comment">//编译失败</span></span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template &lt;int i&gt; class X{};
+template &lt;class T&gt; class Y{};
+
+Y&lt;X&lt;1&gt; &gt; x1;   //编译成功
+Y&lt;X&lt;2&gt;&gt; x2;   //编译失败<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>在x2的定义中，编译器会把&gt;&gt;优先解析为右移符号。</p>
 <p>C++98同样会将&gt;&gt;优先解析为右移。C++11中，这种限制被取消了。事实上，C++11标准要求编译器智能地去判断在哪些情况下&gt;&gt;不是右移符号。使用C++11标准，上述所示代码则会成功地通过编译。</p>
 <h1 id="auto关键字">auto关键字</h1>
@@ -388,7 +392,8 @@
 <h2 id="decltype与auto的区别">decltype与auto的区别</h2>
 <p>既然已经有了 auto 关键字，为什么还需要 decltype 关键字呢？因为 auto 并不适用于所有的自动类型推导场景，在某些特殊情况下 auto 用起来非常不方便，甚至压根无法使用，所以 decltype 关键字也被引入到 C++11 中。</p>
 <p>auto 和 decltype 关键字都可以自动推导出变量的类型，但它们的用法是有区别的：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> varname = value;</span><br><span class="line"><span class="keyword">decltype</span>(exp) varname = value;</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">auto varname = value;
+decltype(exp) varname = value;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p>其中，varname 表示变量名，value 表示赋给变量的值，exp 表示一个表达式。</p>
 <p>auto 根据=右边的初始值 value 推导出变量的类型，而 decltype 根据 exp 表达式推导出变量的类型，跟=右边的 value 没有关系。</p>
 <p>另外，auto 要求变量必须初始化，而 decltype 不要求。这很容易理解，auto 是根据变量的初始值来推导出变量类型的，如果不初始化，变量的类型也就无法推导了。decltype 可以写成下面的形式： decltype(exp) varname;</p>
@@ -404,17 +409,83 @@
 <h2 id="decltype-的实际应用">decltype 的实际应用</h2>
 <p>auto 的语法格式比 decltype 简单，所以在一般的类型推导中，使用 auto 比使用 decltype 更加方便，本节仅演示只能使用 decltype 的情形。</p>
 <p>我们知道，auto 只能用于类的静态成员，不能用于类的非静态成员（普通成员），如果我们想推导非静态成员的类型，这个时候就必须使用 decltype 了。下面是一个模板的定义：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Base</span> {</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">func</span><span class="params">(T&amp; container)</span> </span>{</span><br><span class="line">        m_it = container.<span class="built_in">begin</span>();</span><br><span class="line">    }</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">typename</span> T::iterator m_it;  <span class="comment">//注意这里</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="type">const</span> vector&lt;<span class="type">int</span>&gt; v;</span><br><span class="line">    Base&lt;<span class="type">const</span> vector&lt;<span class="type">int</span>&gt;&gt; obj;</span><br><span class="line">    obj.<span class="built_in">func</span>(v);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;vector&gt;
+
+using namespace std;
+
+template &lt;typename T&gt;
+class Base {
+public:
+    void func(T&amp; container) {
+        m_it = container.begin();
+    }
+private:
+    typename T::iterator m_it;  //注意这里
+};
+
+int main()
+{
+    const vector&lt;int&gt; v;
+    Base&lt;const vector&lt;int&gt;&gt; obj;
+    obj.func(v);
+    return 0;
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>单独看 Base 类中 m_it 成员的定义，很难看出会有什么错误，但在使用 Base 类的时候，如果传入一个 const 类型的容器，编译器马上就会弹出一大堆错误信息。原因就在于，T::iterator并不能包括所有的迭代器类型，当 T 是一个 const 容器时，应当使用 const_iterator。</p>
 <p>要想解决这个问题，在之前的 C++98/03 版本下只能想办法把 const 类型的容器用模板特化单独处理，增加了不少工作量，看起来也非常晦涩。但是有了 C++11 的 decltype 关键字，就可以直接这样写：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Base</span> {</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">func</span><span class="params">(T&amp; container)</span> </span>{</span><br><span class="line">        m_it = container.<span class="built_in">begin</span>();</span><br><span class="line">    }</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">decltype</span>(<span class="built_in">T</span>().<span class="built_in">begin</span>()) m_it;  <span class="comment">//注意这里</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template &lt;typename T&gt;
+class Base {
+public:
+    void func(T&amp; container) {
+        m_it = container.begin();
+    }
+private:
+    decltype(T().begin()) m_it;  //注意这里
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <h1 id="基于范围的for循环">基于范围的for循环</h1>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std；</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="type">int</span> arr[<span class="number">5</span>]={<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>};</span><br><span class="line">    <span class="type">int</span> * p;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (p= arr; p &lt; arr +<span class="built_in">sizeof</span>(arr)/<span class="built_in">sizeof</span>(arr[<span class="number">0</span>]); ++p){</span><br><span class="line">        *p *= <span class="number">2</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">for</span>(p =arr; p &lt; arr +<span class="built_in">sizeof</span>(arr)/<span class="built_in">sizeof</span>(arr[<span class="number">0</span>]); ++p){</span><br><span class="line">        cout &lt; *p &lt; <span class="string">"\t"</span>;</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;iostream&gt;
+
+using namespace std；
+
+int main()
+{
+    int arr[5]={1,2,3,4,5};
+    int * p;
+
+    for (p= arr; p &lt; arr +sizeof(arr)/sizeof(arr[0]); ++p){
+        *p *= 2;
+    }
+    for(p =arr; p &lt; arr +sizeof(arr)/sizeof(arr[0]); ++p){
+        cout &lt; *p &lt; "\t";
+    }
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>在上述代码中，我们使用了指针p来遍历数组arr中的内容，两个循环分别完成了每个元素自乘以2和打印工作。而C++的标准模板库中，我们还可以找到形如 for_each的模板函数。如果我们使用 for_each来完成上述代码中的工作，代码看起来会是这个样子。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;algorithm&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std:</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">action1</span><span class="params">(<span class="type">int</span> &amp; e)</span> </span>{e*=<span class="number">2</span>;};</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">action2</span><span class="params">(<span class="type">int</span> &amp;e)</span> </span>{cout &lt;&lt; e &lt;&lt; <span class="string">'\t'</span>};</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="type">int</span> arr[<span class="number">5</span>]={<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>}</span><br><span class="line">    for_each(arr, arr + <span class="built_in">sizeof</span>(arr)/<span class="built_in">sizeof</span>(arr[<span class="number">0</span>]), action1);</span><br><span class="line">    for_each(arr, arr + <span class="built_in">sizeof</span>(arr)/<span class="built_in">sizeof</span>(arr[<span class="number">0</span>]), action2);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;algorithm&gt;
+#include &lt;iostream&gt;
+
+using namespace std:
+
+int action1(int &amp; e) {e*=2;};
+int action2(int &amp;e) {cout &lt;&lt; e &lt;&lt; '\t'};
+
+int main()
+{
+    int arr[5]={1,2,3,4,5}
+    for_each(arr, arr + sizeof(arr)/sizeof(arr[0]), action1);
+    for_each(arr, arr + sizeof(arr)/sizeof(arr[0]), action2);
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>for_each使用了迭代器的概念，其迭代器就是指针，迭代器内含了自增操作。</p>
 <p>我们可以看一下基于范围的for循环改写的例子:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="type">int</span> arr[<span class="number">5</span>] = {<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>};</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> &amp;e: arr)</span><br><span class="line">        e *= <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> &amp;e: arr)</span><br><span class="line">        cout &lt;&lt; e &lt;&lt; <span class="string">"\t"</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;iostream&gt;
+using namespace std;
+
+int main()
+{
+    int arr[5] = {1, 2, 3, 4, 5};
+    for (int &amp;e: arr)
+        e *= 2;
+    for (int &amp;e: arr)
+        cout &lt;&lt; e &lt;&lt; "\t";
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>上述代码就是一个基于范围的for循环的实例。for循环后的括号由冒号“：”分为两部分，第一部分是范围内用于迭代的变量，第二部分则表示将被迭代的范围。这样一来，遍历数组和STL容器就非常容易了。</p>
 <p>值得指出的是，是否能够使用基于范围的for循环，必须依赖于一些条件。首先，就是for循环迭代的范围是可确定的。对于类来说，如果该类有 begin和end函数，那么 begin和end之间就是for循环迭代的范围。对于数组而言，就是数组的第一个和最后一个元素间的范围。其次，基于范围的for循环还要求迭代的对象实现++和=等操作符。对于标准库中的容器，如 string、aray、 vector、 deque、it、 queue、map、set等，不会有问题，因为标准库总是保证其容器定义了相关的操作。普通的已知长度的数组也不会有问题。而用户自己写的类，则需要自行提供相关操作。相反，如果我们数组大小不能确定的话，是不能够使用基于范围的for循环的。</p>
 <h1 id="参考文献">参考文献</h1>

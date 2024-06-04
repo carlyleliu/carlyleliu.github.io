@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
     <meta name="description" content="原图">
 <meta property="og:type" content="article">
@@ -368,7 +368,15 @@
 <h1 id="模板与泛型编程">模板与泛型编程</h1>
 <h3 id="条款41了解隐式接口和编译期多态">条款41：了解隐式接口和编译期多态</h3>
 <p>面向对象编程世界总是以显式接口（ explicit interfaces）和运行期多态（ runtime polymorphism）解决问题。Templates及泛型编程的世界，与面向对象有根本上的不同。在此世界中显式接口和运行期多态仍然存在，但重要性降低。反倒是隐式接口（ implicit interfaces）和编译期多态（ compile-time polymorphism）移到前头了。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">doprocessing</span><span class="params">(T&amp; w)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">if</span> (w.<span class="built_in">size</span>() &gt; <span class="number">10</span> &amp;&amp; w != somenastywidget) {</span><br><span class="line">        <span class="function">T <span class="title">temp</span> <span class="params">(w)</span></span>;</span><br><span class="line">        temp.<span class="built_in">normalize</span> ();</span><br><span class="line">        temp.<span class="built_in">swap</span>(w);</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename T&gt;
+void doprocessing(T&amp; w)
+{
+    if (w.size() &gt; 10 &amp;&amp; w != somenastywidget) {
+        T temp (w);
+        temp.normalize ();
+        temp.swap(w);
+    }
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <ul>
 <li>w必须支持哪一种接口，系由 template中执行于w身上的操作来决定。本例看来w的类型好像必须支持size， normalize和swap成员函数、copy构造函数（用以建立temp）、不等比较（ inequality comparison，用来比较 somenasty-Widget）。我们很快会看到这并非完全正确，但对目前而言足够真实。重要的是，这一组表达式（对此 template而言必须有效编译）便是必须支持的一组隐式接口 (implicit interface)</li>
 <li>凡涉及w的任何函数调用，例如 operator&gt;和 operator!=，有可能造成 template具现化（ instantiated），使这些调用得以成功。这样的具现行为发生在编译期。“以不同的 template参数具现化 function templates”会导致调用不同的函数，这便是所谓的编译期多态（ compile-time polymorphism）</li>
@@ -385,16 +393,84 @@
 </ul>
 <h3 id="条款43学习处理模板化基类内的名称">条款43：学习处理模板化基类内的名称</h3>
 <p>假设我们需要撰写一个程序，它能够传送信息到若干不同的公司去。信息要不译成密码，要不就是未经加工的文字。如果编译期间我们有足够信息来决定哪一个信息传至哪一家公司，就可以采用基于 template的解法：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">Class CompanyA</span><br><span class="line">{</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendcleartext</span><span class="params">(<span class="type">const</span> std: string&amp; msg)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendencrypted</span><span class="params">(<span class="type">const</span> std: string&amp; msg)</span></span>;</span><br><span class="line">    ...</span><br><span class="line">};</span><br><span class="line">Class CompanyB</span><br><span class="line">{</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendcleartext</span><span class="params">(<span class="type">const</span> std: string&amp; msg)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendencrypted</span><span class="params">(<span class="type">const</span> std: :string&amp; msg)</span></span>;</span><br><span class="line">    ...</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line">...                         <span class="comment">//针对其他公司设计的 classes</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Msginfo</span> {...};        <span class="comment">//这个 class用来保存信息，以备将来产生信息</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Company&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">MsgSender</span> {</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    ...                     <span class="comment">//构造函数、析构函数等等。</span></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendclear</span><span class="params">(<span class="type">const</span> Msginfo&amp; info)</span></span>{</span><br><span class="line">        std::string msg;</span><br><span class="line">        <span class="comment">//在这儿，根据info产生信息；</span></span><br><span class="line">        Company c;</span><br><span class="line">        c.<span class="built_in">sendcleartext</span>(msg);</span><br><span class="line">    }</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendSecret</span><span class="params">(<span class="type">const</span> Msginfoinfo)</span>  <span class="comment">//类似 sendclear，唯一不同是</span></span></span><br><span class="line"><span class="function">    </span>{...}                               <span class="comment">//这里调用c.sendencrypted</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">Class CompanyA
+{
+    void sendcleartext(const std: string&amp; msg);
+    void sendencrypted(const std: string&amp; msg);
+    ...
+};
+Class CompanyB
+{
+    void sendcleartext(const std: string&amp; msg);
+    void sendencrypted(const std: :string&amp; msg);
+    ...
+};
+
+...                         //针对其他公司设计的 classes
+
+class Msginfo {...};        //这个 class用来保存信息，以备将来产生信息
+
+template&lt;typename Company&gt;
+class MsgSender {
+  public:
+    ...                     //构造函数、析构函数等等。
+    void sendclear(const Msginfo&amp; info){
+        std::string msg;
+        //在这儿，根据info产生信息；
+        Company c;
+        c.sendcleartext(msg);
+    }
+    void sendSecret(const Msginfoinfo)  //类似 sendclear，唯一不同是
+    {...}                               //这里调用c.sendencrypted
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>这个做法行得通。但假设我们有时候想要在每次送出信息时志记（log）某些信息。 derived class可轻易加上这样的生产力，那似乎是个合情合理的解法：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Company&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Loggingmsgsender</span>: <span class="keyword">public</span> MsgSender&lt;Company&gt;</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    ...                                 <span class="comment">//构造函数、析构函数等等</span></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendclearmsg</span><span class="params">(<span class="type">const</span> Msginfo&amp; info)</span></span>{</span><br><span class="line">        <span class="comment">//将“传送前”的信息写至log</span></span><br><span class="line">        <span class="built_in">sendclear</span>(info);    <span class="comment">//调用 base class 函数；这段码无法通过编译。编译器会抱怨 sendclear不存在</span></span><br><span class="line">        <span class="comment">//将“传送后”的信息写至log；</span></span><br><span class="line">    }</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename Company&gt;
+class Loggingmsgsender: public MsgSender&lt;Company&gt;
+{
+  public:
+    ...                                 //构造函数、析构函数等等
+    void sendclearmsg(const Msginfo&amp; info){
+        //将“传送前”的信息写至log
+        sendclear(info);    //调用 base class 函数；这段码无法通过编译。编译器会抱怨 sendclear不存在
+        //将“传送后”的信息写至log；
+    }
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>问题在于，当编译器遭遇 class template Loggingmsgsender定义式时，并不知道它继承什么样的 class当然它继承的是 MsgSender<company>，但其中的 Company是个 template参数，不到后来（当 Loggingmsg Sender被具现化）无法确切知道它是什么。而如果不知道 Company是什么，就无法知道 class MsgSender<company>看起来像什么一更明确地说是没办法知道它是否有个 sendclear函数。</company></company></p>
 <p>有三个办法，第一是在 base class函数调用动作之前加上 "this-&gt;":</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Company&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Loggingmsgsender</span>: <span class="keyword">public</span> Msgsender&lt;Company&gt;</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendclearmsg</span><span class="params">(<span class="type">const</span> Msginfo&amp; info)</span></span>{</span><br><span class="line">        <span class="comment">//将“传送前”的信息写至log</span></span><br><span class="line">        <span class="keyword">this</span>-&gt;<span class="built_in">sendclear</span>(info);   <span class="comment">//成立假设sendClean被继承</span></span><br><span class="line">        <span class="comment">//将“传送后”的信息写至log；</span></span><br><span class="line">    }</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename Company&gt;
+class Loggingmsgsender: public Msgsender&lt;Company&gt;
+{
+  public:
+    void sendclearmsg(const Msginfo&amp; info){
+        //将“传送前”的信息写至log
+        this-&gt;sendclear(info);   //成立假设sendClean被继承
+        //将“传送后”的信息写至log；
+    }
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>第二是使用 using声明式。如果你已读过条款33，这个解法应该会令你感到熟悉。条款33描述 using声明式如何将“被掩盖的 base class 2名称”带入个 derived class作用域内。我们可以这样写下 sendclearmsg:</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Company&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Loggingmsgsender</span>: <span class="keyword">public</span> Msgsender&lt;Company&gt;</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">using</span> Msgsender&lt;Company&gt;::sendclear；<span class="comment">//告诉编译器，请它假设</span></span><br><span class="line">    ...                                 <span class="comment">// sendclear位于 base class内。</span></span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendclearmsg</span><span class="params">(<span class="type">const</span> Msginfo&amp; info)</span></span>{</span><br><span class="line">        <span class="comment">//将“传送前”的信息写至log</span></span><br><span class="line">        <span class="keyword">this</span>-&gt;<span class="built_in">sendclear</span>(info);   <span class="comment">//OK，假设 sendclear将被继承下来。</span></span><br><span class="line">        <span class="comment">//将“传送后”的信息写至log；</span></span><br><span class="line">    }</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename Company&gt;
+class Loggingmsgsender: public Msgsender&lt;Company&gt;
+{
+  public:
+    using Msgsender&lt;Company&gt;::sendclear；//告诉编译器，请它假设
+    ...                                 // sendclear位于 base class内。
+    void sendclearmsg(const Msginfo&amp; info){
+        //将“传送前”的信息写至log
+        this-&gt;sendclear(info);   //OK，假设 sendclear将被继承下来。
+        //将“传送后”的信息写至log；
+    }
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>第三个做法是，明白指出被调用的函数位于 base class内：</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> Company&gt;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Loggingmsgsender</span>: <span class="keyword">public</span> Msgsender&lt;Company&gt;</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">sendclearmsg</span><span class="params">(<span class="type">const</span> Msginfo&amp; info)</span></span>{</span><br><span class="line">        <span class="comment">//将“传送前”的信息写至log</span></span><br><span class="line">        Msgsender&lt;Company&gt;::<span class="built_in">sendclear</span>(info);  <span class="comment">//OK, sendclear</span></span><br><span class="line">        <span class="comment">//将“传送后”的信息写至log；</span></span><br><span class="line">    }</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;typename Company&gt;
+class Loggingmsgsender: public Msgsender&lt;Company&gt;
+{
+  public:
+    void sendclearmsg(const Msginfo&amp; info){
+        //将“传送前”的信息写至log
+        Msgsender&lt;Company&gt;::sendclear(info);  //OK, sendclear
+        //将“传送后”的信息写至log；
+    }
+};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>但这往往是最不让人满意的一个解法，因为如果被调用的是 virtual 函数，上述的明确资格修饰（ explicit qualification）会关闭“ virtual绑定行为”。</p>
 <p><strong>请记住</strong></p>
 <p>可在 derived class templates内通过" this-&gt;"指涉 base class templates内的成员名称，或藉由一个明白写出的“base class资格修佈符”完成。</p>
@@ -415,10 +491,21 @@
 <p>对于模板函数，可能对于接收参数的不同类型，有不同的实现。此时，可以提供一个traits class，其中包含了某一系列类型的类型信息（通常以枚举区分具体类型），然后，在该类中实现接收多种traits参数的重载工具函数，用来根据标识的不同类进行不同的具体函数操作。这使得该行为能在编译期就被区分。</p>
 <h3 id="条款48认识模板元编程tmp">条款48：认识模板元编程（TMP）</h3>
 <p>所谓 template metaprogram（模板元程序）是以C++写成、执行于C++编译器内的程序。一旦TMP程序结束执行，其输出，也就是从 templates具现出来的若干C++源码，便会一如往常地被编译。</p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span>&lt;<span class="type">unsigned</span> n&gt;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Factorial</span> {</span><br><span class="line">    <span class="keyword">enum</span> { value = n * Factorial&lt;n<span class="number">-1</span>&gt;::value };</span><br><span class="line">};</span><br><span class="line"><span class="keyword">template</span>&lt;&gt;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Factorial</span>&lt;<span class="number">0</span>&gt; {</span><br><span class="line">    <span class="keyword">enum</span> { value = <span class="number">1</span> };</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">template&lt;unsigned n&gt;
+struct Factorial {
+    enum { value = n * Factorial&lt;n-1&gt;::value };
+};
+template&lt;&gt;
+struct Factorial&lt;0&gt; {
+    enum { value = 1 };
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>有了这个 template metaprogram（其实只是个单一的 template metafuncti acterial），只要你指涉 Factoria<n>： value就可以得到阶乘值。</n></p>
 <p>循环发生在 template具现体 Factorial<n>内部指涉另一个 template具现体Factorial<n-1>之时。和所有良好递归一样，我们需要一个特殊情况造成递归结束。这里的特殊情况是 template特化体 Factorial&lt;0&gt;。</n-1></n></p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    std: cout &lt;&lt; Factorial&lt;<span class="number">5</span>&gt;::value;    <span class="comment">//印出120</span></span><br><span class="line">    std: cout &lt;&lt; Factorial&lt;<span class="number">10</span>&gt;::value;   <span class="comment">//印出3628800</span></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">int main()
+{
+    std: cout &lt;&lt; Factorial&lt;5&gt;::value;    //印出120
+    std: cout &lt;&lt; Factorial&lt;10&gt;::value;   //印出3628800
+}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p><strong>请记住</strong></p>
 <ul>
 <li>Template metaprogramming（TMP，模板元编程）可将工作由运行期移往编译期因而得以实现早期错误侦测和更高的执行效率</li>
