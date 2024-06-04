@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
     <meta name="description" content="差速轮运动学模型 机器人坐标系下的变换 运动特性为两轮差速驱动，其底部后方两个同构驱动轮的转动为其提供动力，前方的随动轮起支撑作用并不推动其运动，如下图两轮差速驱动示意图所示。  机器人的运动简化模型如图 4-1 所示，X 轴正方向为前进、Y 轴正方向为左平移、Z 轴正方向为逆时针。机器人两个轮子之间的间距为 D，机器人 X 轴和 Z 轴的速度分别为：\(V_x\)和\(V_z\) ，机器人左轮和">
 <meta property="og:type" content="article">
@@ -399,40 +399,9 @@ V_r = V_x +（V_z * D）/2
 \]</span></p>
 <h2 id="实现">实现</h2>
 <h4 id="运动学正解">运动学正解</h4>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">/**
- * @brief 轮子线速度到机器人坐标速度的变换
- *        Vx = (Vl + Vr) / 2
- *        Vz = (Vr - Vl) / D
- * @return Eigen::Vector3f 机器人坐标系下的速度
- */
-Eigen::Vector3f MotorToRobotSpeed(void)
-{
-    Eigen::Vector3f robot_speed;
-
-    robot_speed(0) = -0.5f * motor_line_speed_measure_(0) + 0.5f * motor_line_speed_measure_(1);
-    robot_speed(1) = 0 * motor_line_speed_measure_(0) + 0 * motor_line_speed_measure_(1);
-    robot_speed(2) = (0.5f / body_radius_) * (motor_line_speed_measure_(0) + motor_line_speed_measure_(1));
-
-    return robot_speed;
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 轮子线速度到机器人坐标速度的变换</span></span><br><span class="line"><span class="comment"> *        Vx = (Vl + Vr) / 2</span></span><br><span class="line"><span class="comment"> *        Vz = (Vr - Vl) / D</span></span><br><span class="line"><span class="comment"> * @return Eigen::Vector3f 机器人坐标系下的速度</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">Eigen::Vector3f <span class="title">MotorToRobotSpeed</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    Eigen::Vector3f robot_speed;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">robot_speed</span>(<span class="number">0</span>) = <span class="number">-0.5f</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">0</span>) + <span class="number">0.5f</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">1</span>);</span><br><span class="line">    <span class="built_in">robot_speed</span>(<span class="number">1</span>) = <span class="number">0</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">0</span>) + <span class="number">0</span> * <span class="built_in">motor_line_speed_measure_</span>(<span class="number">1</span>);</span><br><span class="line">    <span class="built_in">robot_speed</span>(<span class="number">2</span>) = (<span class="number">0.5f</span> / body_radius_) * (<span class="built_in">motor_line_speed_measure_</span>(<span class="number">0</span>) + <span class="built_in">motor_line_speed_measure_</span>(<span class="number">1</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> robot_speed;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <h4 id="运动学逆解">运动学逆解</h4>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">/**
- * @brief 机器人坐标速度到轮子线速度的变换
- *        Vl = -Vx + (Vz * D) / 2
- *        Vr = Vx + (Vz * D) / 2
- * @param robot_speed 机器人坐标系下的速度
- * @return None
- */
-void RobotToMotorSpeed(Eigen::Vector3f&amp; robot_speed)
-{
-    motor_line_speed_target_(0) =  -1 * robot_speed(0)  + 0 * robot_speed(1) + body_radius_ * robot_speed(2);
-    motor_line_speed_target_(1) =   1 * robot_speed(0)  + 0 * robot_speed(1) + body_radius_ * robot_speed(2);
-
-    if(motor_num_ &gt;= 4) {
-        motor_line_speed_target_(2) = motor_line_speed_target_(0);
-        motor_line_speed_target_(3) = motor_line_speed_target_(1);
-    }
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 机器人坐标速度到轮子线速度的变换</span></span><br><span class="line"><span class="comment"> *        Vl = -Vx + (Vz * D) / 2</span></span><br><span class="line"><span class="comment"> *        Vr = Vx + (Vz * D) / 2</span></span><br><span class="line"><span class="comment"> * @param robot_speed 机器人坐标系下的速度</span></span><br><span class="line"><span class="comment"> * @return None</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">RobotToMotorSpeed</span><span class="params">(Eigen::Vector3f&amp; robot_speed)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="built_in">motor_line_speed_target_</span>(<span class="number">0</span>) =  <span class="number">-1</span> * <span class="built_in">robot_speed</span>(<span class="number">0</span>)  + <span class="number">0</span> * <span class="built_in">robot_speed</span>(<span class="number">1</span>) + body_radius_ * <span class="built_in">robot_speed</span>(<span class="number">2</span>);</span><br><span class="line">    <span class="built_in">motor_line_speed_target_</span>(<span class="number">1</span>) =   <span class="number">1</span> * <span class="built_in">robot_speed</span>(<span class="number">0</span>)  + <span class="number">0</span> * <span class="built_in">robot_speed</span>(<span class="number">1</span>) + body_radius_ * <span class="built_in">robot_speed</span>(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span>(motor_num_ &gt;= <span class="number">4</span>) {</span><br><span class="line">        <span class="built_in">motor_line_speed_target_</span>(<span class="number">2</span>) = <span class="built_in">motor_line_speed_target_</span>(<span class="number">0</span>);</span><br><span class="line">        <span class="built_in">motor_line_speed_target_</span>(<span class="number">3</span>) = <span class="built_in">motor_line_speed_target_</span>(<span class="number">1</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <h1 id="坐标系旋转">坐标系旋转</h1>
 <h2 id="全局坐标系到机器人坐标系的变换">全局坐标系到机器人坐标系的变换</h2>
 <p>一个平面坐标系逆时针旋转一个角度后得到另一个坐标系，则同一个点在这两个坐标系之间的几何关系如下：</p>
@@ -488,41 +457,9 @@ y^{\prime}
 \]</span></p>
 <h2 id="实现-1">实现</h2>
 <h4 id="正解">正解</h4>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">/**
- * @brief 世界坐标到机器人坐标的速度变换
- * @param global_speed 为Global坐标的速度向量xyw
- * @return Eigen::Vector3f Robot坐标的速度向量xyw
- */
-Eigen::Vector3f GlobalToRobotSpeed(Eigen::Vector3f&amp; global_speed)
-{
-    Eigen::Vector3f robot_speed;
-    Eigen::Matrix3f rotate_mat;
-
-    rotate_mat &lt;&lt;  cos(global_coordinat_z_), sin(global_coordinat_z_), 0.0f,
-                  -sin(global_coordinat_z_), cos(global_coordinat_z_), 0.0f,
-                  0.0f,                      0.0f,                     1.0f;
-    robot_speed = rotate_mat * global_speed;
-
-    return robot_speed;
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 世界坐标到机器人坐标的速度变换</span></span><br><span class="line"><span class="comment"> * @param global_speed 为Global坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> * @return Eigen::Vector3f Robot坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">Eigen::Vector3f <span class="title">GlobalToRobotSpeed</span><span class="params">(Eigen::Vector3f&amp; global_speed)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    Eigen::Vector3f robot_speed;</span><br><span class="line">    Eigen::Matrix3f rotate_mat;</span><br><span class="line"></span><br><span class="line">    rotate_mat &lt;&lt;  <span class="built_in">cos</span>(global_coordinat_z_), <span class="built_in">sin</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  -<span class="built_in">sin</span>(global_coordinat_z_), <span class="built_in">cos</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  <span class="number">0.0f</span>,                      <span class="number">0.0f</span>,                     <span class="number">1.0f</span>;</span><br><span class="line">    robot_speed = rotate_mat * global_speed;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> robot_speed;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <h4 id="逆解">逆解</h4>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">/**
- * @brief 机器人坐标到世界坐标的速度变换
- * @param robot_speed Robot坐标的速度向量xyw
- * @return Eigen::Vector3f Global坐标的速度向量xyw
- */
-Eigen::Vector3f RobotToGlobalSpeed(Eigen::Vector3f&amp; robot_speed)
-{
-    Eigen::Vector3f global_speed;
-    Eigen::Matrix3f rotate_mat;
-
-    rotate_mat &lt;&lt; cos(global_coordinat_z_), -sin(global_coordinat_z_), 0.0f,
-                  sin(global_coordinat_z_),  cos(global_coordinat_z_), 0.0f,
-                  0.0f,                      0.0f,                     1.0f;
-    global_speed = rotate_mat * robot_speed;
-
-    return global_speed;
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * @brief 机器人坐标到世界坐标的速度变换</span></span><br><span class="line"><span class="comment"> * @param robot_speed Robot坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> * @return Eigen::Vector3f Global坐标的速度向量xyw</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function">Eigen::Vector3f <span class="title">RobotToGlobalSpeed</span><span class="params">(Eigen::Vector3f&amp; robot_speed)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    Eigen::Vector3f global_speed;</span><br><span class="line">    Eigen::Matrix3f rotate_mat;</span><br><span class="line"></span><br><span class="line">    rotate_mat &lt;&lt; <span class="built_in">cos</span>(global_coordinat_z_), -<span class="built_in">sin</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  <span class="built_in">sin</span>(global_coordinat_z_),  <span class="built_in">cos</span>(global_coordinat_z_), <span class="number">0.0f</span>,</span><br><span class="line">                  <span class="number">0.0f</span>,                      <span class="number">0.0f</span>,                     <span class="number">1.0f</span>;</span><br><span class="line">    global_speed = rotate_mat * robot_speed;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> global_speed;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly93d3cuZ3V5dWVob21lLmNvbS8zMzk1Mw==">https://www.guyuehome.com/33953<i class="fa fa-external-link-alt"></i></span></p>
 <p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L0xJTkVBUjEwMjQvYXJ0aWNsZS9kZXRhaWxzLzEwNDk1Njc3NA==">https://blog.csdn.net/LINEAR1024/article/details/104956774<i class="fa fa-external-link-alt"></i></span></p>

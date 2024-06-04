@@ -21,7 +21,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
     <meta name="description" content="原图">
 <meta property="og:type" content="article">
@@ -380,24 +380,11 @@
 <li>以上规则并不适用于内置类型，以及STL的迭代器和函数对象。对它们而言pass-by-value往往比较适当</li>
 </ul>
 <h3 id="条款21必须返回对象时别妄想返回其引用">条款21：必须返回对象时，别妄想返回其引用</h3>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">const Rational&amp; operator* (const Rational&amp; lhs
-                            const Rational&amp;rhs)
-{                               //警告，又一堆烂代码
-    static Rational result;     // static对象，此函数将返回其 reference
-    result = ...                //将lhs乘以rhs，并将结果置于 result内
-    return result;
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> Rational&amp; <span class="keyword">operator</span>* (<span class="type">const</span> Rational&amp; lhs</span><br><span class="line">                            <span class="type">const</span> Rational&amp;rhs)</span><br><span class="line">{                               <span class="comment">//警告，又一堆烂代码</span></span><br><span class="line">    <span class="type">static</span> Rational result;     <span class="comment">// static对象，此函数将返回其 reference</span></span><br><span class="line">    result = ...                <span class="comment">//将lhs乘以rhs，并将结果置于 result内</span></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>就像所有用上 static对象的设计一样，这一个也立刻造成我们对多线程安全性的疑虑。不过那还只是它显而易见的弱点。如果想看看更深层的瑕疵，考虑以下面这些完全合理的客户代码</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">bool operator==(const Rational&amp; lhs     //ー个针对 Rationals
-                const Rational&amp; rhs）； //而写的 operator：==
-Rational a, b, c, d;
-if（（a*b） == (c*d) {
-    ...     //当乘积相等时，做适当的相应动作
-} else {
-    ...     //当乘积不等时，做适当的相应动作
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">bool</span> <span class="keyword">operator</span>==(<span class="type">const</span> Rational&amp; lhs     <span class="comment">//ー个针对 Rationals</span></span><br><span class="line">                <span class="type">const</span> Rational&amp; rhs）； <span class="comment">//而写的 operator：==</span></span><br><span class="line">Rational a, b, c, d;</span><br><span class="line"><span class="keyword">if</span>（（a*b） == (c*d) {</span><br><span class="line">    ...     <span class="comment">//当乘积相等时，做适当的相应动作</span></span><br><span class="line">} <span class="keyword">else</span> {</span><br><span class="line">    ...     <span class="comment">//当乘积不等时，做适当的相应动作</span></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>猜想怎么着？表达式（a * b）==（c * d））总是被核算为true，不论a，b，c和d的值是什么！ 一旦将代码重新写为等价的函数形式，很容易就可以了解出了什么意外：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">if (operator==(operator*(a, b), operator*(c, d)))<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">operator</span>==(<span class="keyword">operator</span>*(a, b), <span class="keyword">operator</span>*(c, d)))</span><br></pre></td></tr></tbody></table></figure>
 <p>注意，在 operator==被调用前，已有两个 operator* 调用式起作用，每一个都返回 reference指向operator的内部定义的 static Rational对象。因此 operator=被要求将“ operator* 内的 static Rational对象值”拿来和“ operator* 内的 static Rational对象值”比较，如果比较结果不相等，那オ奇怪呢。（译注：这里我补充说明：两次 operator*调用的确各自改变了 static Rational对象值，但由于它们返回的都是 reference，因此调用端看到的永远是 static Rational对象的“现值”。）</p>
 <p><strong>请记住</strong></p>
 <p>绝不要返回 pointer或 reference指向一个 local stack对象，或返回 reference指向个heap allocated对象，或返回 pointer或 reference指向一个 local static对象而有可能同时需要多个这样的对象。</p>
@@ -412,50 +399,18 @@ if（（a*b） == (c*d) {
 <p>将所有便利函数放在多个头文件内但隶属同一个命名空间，意味客户可以轻松扩展这一组便利函数。他们需要做的就是添加更多non-member non-friend函数到此命名空间内。</p>
 <h3 id="条款24若所有参数皆需类型转换请为此采用non-member函数">条款24：若所有参数皆需类型转换，请为此采用non-member函数</h3>
 <p>假设你这样开始你的Rational class：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class Rational
-{
-  public:
-    Rational(int numerator =0,  //构造函数刻意不为 explicit
-            int denominator=1）；//允许 int-to-Rational 隐式转换。
-    int numerator() const;      //分子（ numerator）和分母（ denominator）
-    int denominator() const;    //的访问函数（ accessors）
-  private:
-    ...
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Rational</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Rational</span>(<span class="type">int</span> numerator =<span class="number">0</span>,  <span class="comment">//构造函数刻意不为 explicit</span></span><br><span class="line">            <span class="type">int</span> denominator=<span class="number">1</span>）；<span class="comment">//允许 int-to-Rational 隐式转换。</span></span><br><span class="line">    <span class="type">int</span> <span class="built_in">numerator</span>() <span class="type">const</span>;      <span class="comment">//分子（ numerator）和分母（ denominator）</span></span><br><span class="line">    <span class="type">int</span> <span class="built_in">denominator</span>() <span class="type">const</span>;    <span class="comment">//的访问函数（ accessors）</span></span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>你想支持算术运算诸如加法、乘法等等，但你不确定是否该由 member函数、non-member函数，或可能的话由non-member friend函数来实现它们，先研究一下将operator*写成 Rational成员函数的写法：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class Rational
-{
-  public:
-    const Rational operator*(const Rational&amp; lhs) const;
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Rational</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="type">const</span> Rational <span class="keyword">operator</span>*(<span class="type">const</span> Rational&amp; lhs) <span class="type">const</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>这个设计使你能够将两个有理数以最轻松自在的方式相乘：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">Rational oneEighth(1, 8);
-Rational oneHalf(1, 2);
-Rational result= oneHalf * oneEighth;   //很好
-result = result * oneEighth;            //很好<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Rational <span class="title">oneEighth</span><span class="params">(<span class="number">1</span>, <span class="number">8</span>)</span></span>;</span><br><span class="line"><span class="function">Rational <span class="title">oneHalf</span><span class="params">(<span class="number">1</span>, <span class="number">2</span>)</span></span>;</span><br><span class="line">Rational result= oneHalf * oneEighth;   <span class="comment">//很好</span></span><br><span class="line">result = result * oneEighth;            <span class="comment">//很好</span></span><br></pre></td></tr></tbody></table></figure>
 <p>但你还不满足。你希望支持混合式运算，也就是拿 Rationals和……嗯例如int相乘。毕竟很少有什么东西会比两个数值相乘更自然的了一即使是两个不同类型的数值。然而当你尝试混合式算术，你发现只有一半行得通:</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">result = oneHalf * 2;   //很好
-result =2 * oneHalf     //错误！<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">result = oneHalf * <span class="number">2</span>;   <span class="comment">//很好</span></span><br><span class="line">result =<span class="number">2</span> * oneHalf     <span class="comment">//错误！</span></span><br></pre></td></tr></tbody></table></figure>
 <p>这不是好兆头。乘法应该满足交换律，不是吗？当你以对应的函数形式重写上述两个式子，问题所在便一目了然了：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">result= oneHalf.operator*(2);   //很好
-result =2.operator*(oneHalf);   //错误！<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">result= oneHalf.<span class="keyword">operator</span>*(<span class="number">2</span>);   <span class="comment">//很好</span></span><br><span class="line">result =<span class="number">2.</span><span class="keyword">operator</span>*(oneHalf);   <span class="comment">//错误！</span></span><br></pre></td></tr></tbody></table></figure>
 <p>是的， oneHalf是一个内涵 operator* 函数的 class 的对象，所以编译器调用该函数。然而整数2并没有相应的 class，也就没有 operator* 成员函数。</p>
 <p>结论是，只有当参数被列于参数列（ parameter list）内，这个参数才是隐式类型转换的合格参与者。这就是为什么上述第一次调用可通过编译，第二次调用则否，因为第一次调用伴随一个放在参数列内的参数，第二次调用则否。 然而你一定也会想要支持混合式算术运算。可行之道终于拨云见日：让 operator成为一个non-member函数，俾允许编译器在每一个实参身上执行隐式类型转换:</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class Rational
-{
-    ... //不包括 operator
-}
-const Rational operator*(const Rational&amp; lhs,       //现在成了一个
-                            const Rational&amp; rhs);   //non- member函数
-{
-    return Rational (lhs.numerator() * rhs.numerator(),
-                     lhs.denominator() * rhs.denominator());
-}
-
-Rational onefourth(1, 4);
-Rational result;
-result = onefourth * 2; //没问题
-result =2 * onefourth;  //万岁，通过编译了！<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Rational</span></span><br><span class="line">{</span><br><span class="line">    ... <span class="comment">//不包括 operator</span></span><br><span class="line">}</span><br><span class="line"><span class="type">const</span> Rational <span class="keyword">operator</span>*(<span class="type">const</span> Rational&amp; lhs,       <span class="comment">//现在成了一个</span></span><br><span class="line">                            <span class="type">const</span> Rational&amp; rhs);   <span class="comment">//non- member函数</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">Rational</span> (lhs.<span class="built_in">numerator</span>() * rhs.<span class="built_in">numerator</span>(),</span><br><span class="line">                     lhs.<span class="built_in">denominator</span>() * rhs.<span class="built_in">denominator</span>());</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function">Rational <span class="title">onefourth</span><span class="params">(<span class="number">1</span>, <span class="number">4</span>)</span></span>;</span><br><span class="line">Rational result;</span><br><span class="line">result = onefourth * <span class="number">2</span>; <span class="comment">//没问题</span></span><br><span class="line">result =<span class="number">2</span> * onefourth;  <span class="comment">//万岁，通过编译了！</span></span><br></pre></td></tr></tbody></table></figure>
 <h1 id="实现">实现</h1>
 <h3 id="条款26尽可能延后变量定义式的出现时间">条款26：尽可能延后变量定义式的出现时间</h3>
 <p>尽可能延后变量定义式的出现，既包括延后构造它，保证只有真正使用才构造；也包括只有到赋值时才构造它，避免默认构造函数无谓调用。 对于循环操作，在循环前还是中进行构造，取决于赋值操作与构造+析构操作的成本对比。</p>
@@ -470,24 +425,7 @@ result =2 * onefourth;  //万岁，通过编译了！<span aria-hidden="true" cl
 <p>记住， inline只是对编译器的一个申请，不是强制命令。这项申请可以隐喻提出，也可以明确提出。隐喻方式是将函数定义于 class定义式内。</p>
 <h3 id="条款31将文件间的编译依存关系降至最低">条款31：将文件间的编译依存关系降至最低</h3>
 <p>针对 Person我们可以这样做：把 Person分割为两个classes，一个只提供接口，另一个负责实现该接口。如果负责实现的那个所谓implementation class 取名为PersonImpl， Person将定义如下：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">#include &lt;string&gt;   //标准程序库组件不该被前置声明。
-#include &lt;memory&gt;    //此乃为了tr1： shared ptr而含入；详后
-
-class PersonImpl;   // Person实现类的前置声明。
-class Date;         // Person接口用到的 classes 的前置声明。
-class Address;
-
-class Person {
-  public:
-    Person(const std: string&amp; name, const Date&amp; birthday,
-            const Address&amp; addr);
-    std::string name()const;
-    std::string birthdate() const;
-    std::string address() const;
-  private:
-    std::tr1::shared_ptr&lt;PersonImpl&gt; pimpl；//指针，指向实现物
-                                            //std::tr1::shared_ptr见条款13.
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span>   <span class="comment">//标准程序库组件不该被前置声明。</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory&gt;</span>    <span class="comment">//此乃为了tr1： shared ptr而含入；详后</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PersonImpl</span>;   <span class="comment">// Person实现类的前置声明。</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Date</span>;         <span class="comment">// Person接口用到的 classes 的前置声明。</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Address</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span> {</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Person</span>(<span class="type">const</span> std: string&amp; name, <span class="type">const</span> Date&amp; birthday,</span><br><span class="line">            <span class="type">const</span> Address&amp; addr);</span><br><span class="line">    <span class="function">std::string <span class="title">name</span><span class="params">()</span><span class="type">const</span></span>;</span><br><span class="line">    <span class="function">std::string <span class="title">birthdate</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">    <span class="function">std::string <span class="title">address</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    std::tr1::shared_ptr&lt;PersonImpl&gt; pimpl；<span class="comment">//指针，指向实现物</span></span><br><span class="line">                                            <span class="comment">//std::tr1::shared_ptr见条款13.</span></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>这样就不必include Date、Address等头文件而只是声明该class（定义式改声明式）。</p>
 <h4 id="pimp方式">pimp方式</h4>
 <p>在这里， class Person只内含一个指针成员，指向其实现类（ PersonImpl）。这般设计常被称为 pimpl idiom(pimp是" pointer to implementation"的缩写)。</p>
@@ -508,15 +446,7 @@ class Person {
 <li>为了让被遮掩的名称再见天日，可使用 using声明式或转交函数（ forwarding functions)</li>
 </ul>
 <h3 id="条款34区分接口继承和实现继承">条款34：区分接口继承和实现继承</h3>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class Shape
-{
-  public
-    virtual void draw() const = 0;
-    virtual void error(const std: string&amp; msg);
-    int objectid( ) const;
-};
-class Rectangle: public Shape {...};
-class Ellipse: public Shape {...};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Shape</span></span><br><span class="line">{</span><br><span class="line">  <span class="function"><span class="keyword">public</span></span></span><br><span class="line"><span class="function">    <span class="keyword">virtual</span> <span class="type">void</span> <span class="title">draw</span><span class="params">()</span> <span class="type">const</span> </span>= <span class="number">0</span>;</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">error</span><span class="params">(<span class="type">const</span> std: string&amp; msg)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">objectid</span><span class="params">( )</span> <span class="type">const</span></span>;</span><br><span class="line">};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Rectangle</span>: <span class="keyword">public</span> Shape {...};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Ellipse</span>: <span class="keyword">public</span> Shape {...};</span><br></pre></td></tr></tbody></table></figure>
 <p>shape class声明了三个函数。draw是个 pure virtual函数； error是个简朴的（非纯） impure virtual函数； objectid是个non-virtual 函数。这些不同的声明带来什么样的暗示呢？</p>
 <ul>
 <li>声明一个 pure virtual 函数的目的是为了让 derived classes只继承函数接口</li>
@@ -525,49 +455,16 @@ class Ellipse: public Shape {...};<span aria-hidden="true" class="line-numbers-r
 </ul>
 <h3 id="条款35考虑虚函数以外的其他选择">条款35：考虑虚函数以外的其他选择</h3>
 <p>假设你正在写一个视频游戏软件，你打算为游戏内的人物设计一个继承体系。你的游戏属于暴力砍杀类型，剧中人物被伤害或因其他因素而降低健康状态的情况并不罕见。你因此决定提供一个成员函数 healthvalue，它会返回一个整数，表示人物的健康程度。由于不同的人物可能以不同的方式计算他们的健康指数，将healthvalue声明为 virtual似乎是再明白不过的做法：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class GameCharacter
-{
-  public:
-    virtual int heal_thvalue() const； //返回人物的健康指数
-    ...                               // derived classes可重新定义它。
-}<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">GameCharacter</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">int</span> <span class="title">heal_thvalue</span><span class="params">()</span> <span class="type">const</span>； <span class="comment">//返回人物的健康指数</span></span></span><br><span class="line"><span class="function">    ...                               <span class="comment">// derived classes可重新定义它。</span></span></span><br><span class="line"><span class="function">}</span></span><br></pre></td></tr></tbody></table></figure>
 <p>healthvalue并未被声明为 pure virtual，这暗示我们将会有个计算健康指数的缺省算法。这的确是再明白不过的设计，但是从某个角度说却反而成了它的弱点。由于这个设计如此明显，你可能因此没有认真考虑其他替代方案。为了帮助你跳脱面向对象设计路上的常轨，让我们考虑其他一些解法。</p>
 <h4 id="藉由non-virtual-interface手法实现-template-method模式">藉由Non-Virtual Interface手法实现 Template Method模式</h4>
 <p>我们将从一个有趣的思想流派开始，这个流派主张 virtual函数应该几乎总是private。这个流派的拥护者建议，较好的设计是保留 healthvalue为 public成员函数，但让它成为non-virtual，并调用一个 private virtual函数（例如 dohealthvalue）进行实际工作:</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class GameCharacter
-{
-  public:
-    int healthvalue() const;        // derived classes不重新定义它，
-    {                               //见条款36
-        ...                         //做一些事前工作，详下
-        int retval=dohealthvalue(); //做真正的工作。
-        ...                         //做一些事后工作，详下。
-        return retval
-    }
-    ...
-  private:
-    virtual int dohealthvalue() const;  // derived classes可重新定义它。
-    {
-        ...                             //缺省算法，计算健康指数。
-    }<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">GameCharacter</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">healthvalue</span><span class="params">()</span> <span class="type">const</span></span>;        <span class="comment">// derived classes不重新定义它，</span></span><br><span class="line">    {                               <span class="comment">//见条款36</span></span><br><span class="line">        ...                         <span class="comment">//做一些事前工作，详下</span></span><br><span class="line">        <span class="type">int</span> retval=<span class="built_in">dohealthvalue</span>(); <span class="comment">//做真正的工作。</span></span><br><span class="line">        ...                         <span class="comment">//做一些事后工作，详下。</span></span><br><span class="line">        <span class="keyword">return</span> retval</span><br><span class="line">    }</span><br><span class="line">    ...</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    <span class="keyword">virtual</span> <span class="type">int</span> <span class="built_in">dohealthvalue</span>() <span class="type">const</span>;  <span class="comment">// derived classes可重新定义它。</span></span><br><span class="line">    {</span><br><span class="line">        ...                             <span class="comment">//缺省算法，计算健康指数。</span></span><br><span class="line">    }</span><br></pre></td></tr></tbody></table></figure>
 <p>令客户通过 public non-virtual成员函数间接调用 private virtual 函数，称为mom-virtual interface（NVI）手法。它是所谓 Template Method设计模式（与C++ templates并无关联）的一个独特表现形式。</p>
 <p>NVI手法的一个优点隐身在上述代码注释“做一些事前工作”和“做一些事后工作”之中。那些注释用来告诉你当时的代码保证在“ virtual 函数进行真正工作之前和之后”被调用。</p>
 <h4 id="藉由-function-pointers实现-strategy模式">藉由 Function Pointers实现 Strategy模式</h4>
 <p>另一个更戏剧性的设计主张“人物健康指数的计算与人物类型无关”，这样的计算完全不需要“人物”这个成分。例如我们可能会要求每个人物的构造函数接受一个指针，指向一个健康计算函数，而我们可以调用该函数进行实际计算:</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class Gamecharacter;         //前置声明（ forward declaration）
-//以下函数是计算健康指数的缺省算法。
-int defaulthealthcalc(const Gamecharacter&amp; gc);
-
-class Gamecharacter
-{
-  public:
-    typedef int (*Healthcalcfunc)(const Gamecharacter&amp;);
-    explicit GameCharacter(Healthcalcfunc hcf= defaulthealthcalc) :healtheunc(hcf)
-    {}
-    int healthvalue() const { return healthfunc (*this); };
-  private:
-    Healthcalcfunc healtheunc;
-};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Gamecharacter</span>;         <span class="comment">//前置声明（ forward declaration）</span></span><br><span class="line"><span class="comment">//以下函数是计算健康指数的缺省算法。</span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">defaulthealthcalc</span><span class="params">(<span class="type">const</span> Gamecharacter&amp; gc)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Gamecharacter</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">typedef</span> <span class="title">int</span> <span class="params">(*Healthcalcfunc)</span><span class="params">(<span class="type">const</span> Gamecharacter&amp;)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">GameCharacter</span><span class="params">(Healthcalcfunc hcf= defaulthealthcalc)</span> :healtheunc(hcf)</span></span><br><span class="line"><span class="function">    {</span>}</span><br><span class="line">    <span class="function"><span class="type">int</span> <span class="title">healthvalue</span><span class="params">()</span> <span class="type">const</span> </span>{ <span class="keyword">return</span> <span class="built_in">healthfunc</span> (*<span class="keyword">this</span>); };</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    Healthcalcfunc healtheunc;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>这个做法是常见的 Strategy设计模式的简单应用。拿它和“植基于GameCharacter继承体系内之 virtual函数”的做法比较，它提供了某些有趣弹性：</p>
 <ul>
 <li>同一人物类型之不同实体可以有不同的健康计算函数</li>
@@ -576,23 +473,7 @@ class Gamecharacter
 <h4 id="藉由tr1-function完成-strategy模式">藉由tr1： function完成 Strategy模式</h4>
 <p>一旦习惯了 templates以及它们对隐式接口的使用，基于函数指针的做法看起来便过分苛刻而死板了。为什么要求“健康指数之计算”必须是个函数，而不能是某种“像函数的东西”（例如函数对象）呢？如果一定得是函数，为什么不能够是个成员函数？为什么一定得返回int而不是任何可被转换为int的类型呢？</p>
 <p>如果我们不再使用函数指针（如前例的 healtheunc），而是改用一个类型为tr1::function的对象，这些约束就全都挥发不见了。就像条款54所说，这样的对象可持有（保存）任何可调用物（ callable entity，也就是函数指针、函数对象、或成员函数指针），只要其签名式兼容于需求端。以下将刚才的设计改为使用:</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">tr1::function
-class GameCharacter //如前
-int defaulthealthcalc(const Gamecharacter&amp; gc);  //如前
-class Gamecharacter
-{
-  public:
-    //Hea1 thcalcfunc可以是任何“可调用物”（ callable entity），可被调用并接受
-    //任何兼容于 Gamecharacter之物，返回任何兼容于int的东西。详下。
-    typedef std::tr1::function&lt;int(const Gamecharacter&amp;)&gt; Healthcalcfunc;
-    explicit Gamecharacter(Healthcalcfunc hcf = defaulthealthcalc)
-        :healtheunc(hcf)
-    int healthvalue() const
-     {return healthfunc (*this);}
-     ..
-  private:
-    HealthCalcfunc healtheunc;
-};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">tr1::function</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">GameCharacter</span> <span class="comment">//如前</span></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">defaulthealthcalc</span><span class="params">(<span class="type">const</span> Gamecharacter&amp; gc)</span></span>;  <span class="comment">//如前</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Gamecharacter</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="comment">//Hea1 thcalcfunc可以是任何“可调用物”（ callable entity），可被调用并接受</span></span><br><span class="line">    <span class="comment">//任何兼容于 Gamecharacter之物，返回任何兼容于int的东西。详下。</span></span><br><span class="line">    <span class="keyword">typedef</span> std::tr1::function&lt;<span class="type">int</span>(<span class="type">const</span> Gamecharacter&amp;)&gt; Healthcalcfunc;</span><br><span class="line">    <span class="function"><span class="keyword">explicit</span> <span class="title">Gamecharacter</span><span class="params">(Healthcalcfunc hcf = defaulthealthcalc)</span></span></span><br><span class="line"><span class="function">        :healtheunc(hcf)</span></span><br><span class="line"><span class="function">    int healthvalue() const</span></span><br><span class="line"><span class="function">     {</span><span class="keyword">return</span> <span class="built_in">healthfunc</span> (*<span class="keyword">this</span>);}</span><br><span class="line">     ..</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    HealthCalcfunc healtheunc;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>现在我们靠近一点瞧瞧HealthCalceunc是个什么样的 typedef std::tr1::function&lt;int (const Gamecharacter&amp;)&gt; 这里我把tr1::function具现体（ instantiation）的目标签名式（ target signature），那个签名代表的函数是“接受一个 reference指向 const Gamecharacter，并返回int”。</p>
 <p>和前一个设计（其 GameCharacter持有的是函数指针）比较，这个设计几乎相同。唯一不同的是如今 Gamecharacter持有一个tr1::function对象，相当于个指向函数的泛化指针。这个改变如此细小，我总说它没有什么外显影响，除非客户在“指定健康计算函数”这件事上需要更惊人的弹性：</p>
 <p>本条款的根本忠告是，当你为解决问题而寻找某个设计方法时，不妨考虑 virtual函数的替代方案:</p>
@@ -607,33 +488,10 @@ class Gamecharacter
 <p>但另一方面， virtual函数却是动态绑定。如果mf是个 virtual函数，不论是通过pB（指向D）或pD（指向D）调用mf，都会导致调用D::mf，因为pB和pD真正指的都是一个类型为D的对象。</p>
 <h3 id="条款37绝不重新定义继承而来的缺省参数值缺省参数值都是静态绑定而">条款37：绝不重新定义继承而来的缺省参数值(缺省参数值都是静态绑定而)</h3>
 <p>这种情况下，本条款成立的理由就非常直接而明确了： virtual函数系动态绑定（ dynamically bound），而缺省参数值却是静态绑定（ statically bound）。静态绑定又叫前期绑定，earbinding：动态绑定又名后期绑定， late binding。</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">//ー个用以描述几何形状的cass
-class Shape
-{
-  public:
-    enum Shapecolor { Red, Green, Blue };//所有形状都必须提供一个函数，用来绘出自己
-    virtual void draw(Shapecolor color=Red)const =0;
-    ...
-};
-class Rectangle: public Shape
-{
-  public:   //注意，赋予不同的缺省参数值,这真糟糕，可能是Red
-    virtual void draw( Shapecolor color=Green ) const;
-    ...
-};
-class Circle: public Shape
-{
-  public:
-    virtual void draw( Shapecolor color) const; //译注：请注意，以上这么写则当客户以对象调用此函数，一定要指定参数值。
-                                                //因为静态绑定下这个函数并不从其base继承缺省参数值。
-                                                //但若以指针（或 reference）调用此函数，可以不指定参数值
-                                                //因为动态绑定下这个函数会从其base继承缺省参数值。
-    ...
-};<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//ー个用以描述几何形状的cass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Shape</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="keyword">enum</span> <span class="title class_">Shapecolor</span> { Red, Green, Blue };<span class="comment">//所有形状都必须提供一个函数，用来绘出自己</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">draw</span><span class="params">(Shapecolor color=Red)</span><span class="type">const</span> </span>=<span class="number">0</span>;</span><br><span class="line">    ...</span><br><span class="line">};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Rectangle</span>: <span class="keyword">public</span> Shape</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:   <span class="comment">//注意，赋予不同的缺省参数值,这真糟糕，可能是Red</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">draw</span><span class="params">( Shapecolor color=Green )</span> <span class="type">const</span></span>;</span><br><span class="line">    ...</span><br><span class="line">};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Circle</span>: <span class="keyword">public</span> Shape</span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">draw</span><span class="params">( Shapecolor color)</span> <span class="type">const</span></span>; <span class="comment">//译注：请注意，以上这么写则当客户以对象调用此函数，一定要指定参数值。</span></span><br><span class="line">                                                <span class="comment">//因为静态绑定下这个函数并不从其base继承缺省参数值。</span></span><br><span class="line">                                                <span class="comment">//但若以指针（或 reference）调用此函数，可以不指定参数值</span></span><br><span class="line">                                                <span class="comment">//因为动态绑定下这个函数会从其base继承缺省参数值。</span></span><br><span class="line">    ...</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>这个继承体系图示如下 <img src="/picture/program/c++/effectionc++4.png"></p>
 <p>现在考虑这些指针：</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">Shape* pr =new Rectangle;   //静态类型为 Shape*
-prー&gt;draw();                //调用 Rectangle：draw（ Shape：Red）！<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Shape* pr =<span class="keyword">new</span> Rectangle;   <span class="comment">//静态类型为 Shape*</span></span><br><span class="line">prー&gt;<span class="built_in">draw</span>();                <span class="comment">//调用 Rectangle：draw（ Shape：Red）！</span></span><br></pre></td></tr></tbody></table></figure>
 <p>此例之中，pr的动态类型是 Rectangle<em>，所以调用的是 Rectangle的 virtual函数，一如你所预期。 Rectangle::draw函数的缺省参数值应该是GREN，但由于pr的静态类型是 Shape</em>，所以此一调用的缺省参数值来自 shape class 而非Rectangle class！结局是这个函数调用有着奇怪并且几乎绝对没人预料得到的组合，由 Shape class 和 Rectangle class 的draw声明式各出一半力。</p>
 <p><strong>请记住</strong></p>
 <p>绝对不要重新定义一个继承而来的缺省参数值，因为缺省参数值都是静态绑定而 virtual函数一你唯一应该覆写的东西一却是动态绑定</p>
@@ -641,14 +499,7 @@ prー&gt;draw();                //调用 Rectangle：draw（ Shape：Red）！<s
 <p>复合（ composition）的意义和 public 继承完全不同。 在应用域（ application domain），复合意味has a（有一个）。在实现域（ implementation domain），复合意味 is-implemented-in-terms-of（根据某物实现出）。</p>
 <h3 id="条款39明智而审慎地使用private继承">条款39：明智而审慎地使用private继承</h3>
 <p>其中 class Student以 public形式继承 class Person，于是编译器在必要时刻（为了让函数调用成功）将 Students暗自转换为 Persons。现在我以 private继承替换 public继承:</p>
-<pre class="line-numbers language-c++" data-language="c++"><code class="language-c++">class Person {...};
-class Student: private Person;  //这次改用 pnvate继承
-void eat(const Person&amp; p);      //任何人都会吃
-void study(const Student&amp; s);   //只有学生才在校学习
-Person p;                       //p是人
-Student s;                      //s是学生
-eat (p);                        //没问题，p是人，会吃。
-eat(s);                         //错误！吓，难道学生不是人？！<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span> {...};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Student</span>: <span class="keyword">private</span> Person;  <span class="comment">//这次改用 pnvate继承</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">eat</span><span class="params">(<span class="type">const</span> Person&amp; p)</span></span>;      <span class="comment">//任何人都会吃</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">study</span><span class="params">(<span class="type">const</span> Student&amp; s)</span></span>;   <span class="comment">//只有学生才在校学习</span></span><br><span class="line">Person p;                       <span class="comment">//p是人</span></span><br><span class="line">Student s;                      <span class="comment">//s是学生</span></span><br><span class="line"><span class="built_in">eat</span> (p);                        <span class="comment">//没问题，p是人，会吃。</span></span><br><span class="line"><span class="built_in">eat</span>(s);                         <span class="comment">//错误！吓，难道学生不是人？！</span></span><br></pre></td></tr></tbody></table></figure>
 <p>如果classes之间的继承关系是 private，编译器不会自动将一个 derived class对象（例如Student）转换为一个 base class对象（例如 Person）。这和 public继承的情况不同。这也就是为什么通过s调用eat会失败的原因。第二条规则是，由 private base class 继承而来的所有成员，在 derived class 中都会变成 private属性，纵使它们在base class 中原本是 protected或 public属性。</p>
 <p>Private继承意味 implemented-in-terms-of（根据某物实现出）， private继承意味只有实现部分被继承，接口部分应略去。</p>
 <p><strong>请记住</strong></p>
