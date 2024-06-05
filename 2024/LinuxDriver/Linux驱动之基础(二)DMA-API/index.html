@@ -14,7 +14,7 @@
 
 <link rel="stylesheet" href="/css/main.css">
 
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Serif+Simplified+Chinese:300,300italic,400,400italic,700,700italic%7CReddit+Mono:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
@@ -23,19 +23,21 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="There are two types of DMA mappings:  Consistent DMA mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the">
+    <meta name="description" content="There are two types of DMA mappings:  Consistent DM(硬件保证cache一致性) mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the d">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux驱动之基础(二)DMA-API">
 <meta property="og:url" content="http://carlyleliu.github.io/2024/LinuxDriver/Linux%E9%A9%B1%E5%8A%A8%E4%B9%8B%E5%9F%BA%E7%A1%80(%E4%BA%8C)DMA-API/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="There are two types of DMA mappings:  Consistent DMA mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the">
+<meta property="og:description" content="There are two types of DMA mappings:  Consistent DM(硬件保证cache一致性) mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the d">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma1.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma2.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma3.png">
 <meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma4.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma5.png">
+<meta property="og:image" content="http://carlyleliu.github.io/picture/linux_driver/base/dma6.png">
 <meta property="article:published_time" content="2024-05-02T15:20:16.000Z">
-<meta property="article:modified_time" content="2024-06-04T14:59:19.221Z">
+<meta property="article:modified_time" content="2024-06-05T14:43:11.116Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux驱动">
 <meta name="twitter:card" content="summary">
@@ -151,7 +153,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#there-are-two-types-of-dma-mappings"><span class="nav-text">There are two types of DMA mappings:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#usage"><span class="nav-text">USAGE</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dma-direction"><span class="nav-text">DMA Direction</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-text">QA</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dma_sync_single_for_device%E5%92%8Cdma_sync_single_for_cpu%E4%BB%A5%E5%8F%8Adirection%E4%B9%8B%E9%97%B4%E7%9A%84%E5%B7%AE%E5%88%AB"><span class="nav-text">dma_sync_single_for_device和dma_sync_single_for_cpu以及direction之间的差别</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8Elinux-upstream%E7%A4%BE%E5%8C%BA"><span class="nav-text">对于Linux upstream社区</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cache%E7%9A%84%E4%B8%89%E7%A7%8D%E6%93%8D%E4%BD%9C"><span class="nav-text">Cache的三种操作：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#there-are-two-types-of-dma-mappings"><span class="nav-text">There are two types of DMA mappings:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dma-direction"><span class="nav-text">DMA Direction</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dma_sync_single_for_devicedma_sync_single_for_cpu-and-direction"><span class="nav-text">dma_sync_single_for_device、dma_sync_single_for_cpu and direction</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8Elinux-upstream%E7%A4%BE%E5%8C%BA"><span class="nav-text">对于Linux upstream社区</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-5.x"><span class="nav-text">kernel 5.x</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-6.x"><span class="nav-text">kernel 6.x</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8Egoogle-android%E7%A4%BE%E5%8C%BA"><span class="nav-text">对于Google Android社区</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-5.x-1"><span class="nav-text">kernel 5.x</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-6.6"><span class="nav-text">kernel 6.6</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-upstream"><span class="nav-text">Linux upstream</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#google%E7%A4%BE%E5%8C%BA"><span class="nav-text">Google社区</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-text">QA</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -308,7 +310,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2024-06-04 22:59:19" itemprop="dateModified" datetime="2024-06-04T22:59:19+08:00">2024-06-04</time>
+      <time title="修改时间：2024-06-05 22:43:11" itemprop="dateModified" datetime="2024-06-05T22:43:11+08:00">2024-06-05</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -352,14 +354,14 @@
         <i class="far fa-file-word"></i>
       </span>
       <span class="post-meta-item-text">本文字数：</span>
-      <span>1.2k</span>
+      <span>824</span>
     </span>
     <span class="post-meta-item" title="阅读时长">
       <span class="post-meta-item-icon">
         <i class="far fa-clock"></i>
       </span>
       <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>4 分钟</span>
+      <span>3 分钟</span>
     </span>
 </div>
 
@@ -371,18 +373,13 @@
     
     <div class="post-body" itemprop="articleBody"><h1 id="there-are-two-types-of-dma-mappings">There are two types of DMA mappings:</h1>
 <ul>
-<li><p>Consistent DMA mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the CPU can access the data in parallel and will see updates made by each other without any explicit software flushing.</p></li>
-<li><p>Streaming DMA mappings which are usually mapped for one DMA transfer, unmapped right after it (unless you use dma_sync_* below) and for which hardware can optimize for sequential accesses.</p></li>
+<li><p>Consistent DM(硬件保证cache一致性) mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the CPU can access the data in parallel and will see updates made by each other without any explicit software flushing.</p></li>
+<li><p>Streaming DMA(需要软件来维护cache一致性) mappings which are usually mapped for one DMA transfer, unmapped right after it (unless you use dma_sync_* below) and for which hardware can optimize for sequential accesses.</p></li>
 </ul>
-<p>总结一下就是有两种DMA映射，一种是Consistent DMA映射，由硬件保证cache一致性，不需要软件去显示操作来保证cache一致性；另一种是Streaming DMA映射，需要软件来维护cache一致性问题。</p>
 <span id="more"></span>
-<h1 id="usage">USAGE</h1>
+<h1 id="dma-direction">DMA Direction</h1>
 <p><img src="/picture/linux_driver/base/dma1.png"></p>
-<h2 id="dma-direction">DMA Direction</h2>
 <p>The interfaces described in subsequent portions of this document take a DMA direction argument, which is an integer and takes on one of the following values:</p>
-<aside>
-💡 译文： 本文档后续部分中描述的接口采用 DMA 方向参数，该参数是一个整数并采用以下值之一：
-</aside>
 <ul>
 <li>DMA_BIDIRECTIONAL</li>
 <li>DMA_TO_DEVICE</li>
@@ -393,59 +390,44 @@
 <p>DMA_TO_DEVICE means "from main memory to the device". DMA_FROM_DEVICE means "from the device to main memory". It is the direction in which the data moves during the DMA transfer.</p>
 <p>You are <em>strongly</em> encouraged to specify this as precisely as you possibly can.</p>
 <p>If you absolutely cannot know the direction of the DMA transfer, specify DMA_BIDIRECTIONAL. It means that the DMA can go in either direction. The platform guarantees that you may legally specify this, and that it will work, but this may be at the cost of performance for example.</p>
-<aside>
-💡 译文： 如果您absolutely 无法知道 DMA 传输的方向，请指定 DMA_BIDIRECTI NAL。这意味着 DMA 可以进入任一方向。平台保证您可以合法地指定这一点，并且它将起作用，但这可能会以性能为代价（应该是invalid +clean）。
-</aside>
-<p>The value DMA_NONE is to be used for debugging. One can hold this in a data structure before you come to know the precise direction, and this will help catch cases where your direction tracking logic has failed to set things up properly.</p>
-<aside>
-💡 译文： 值 DMA_NONE 用于调试。在您知道精确方向之前，可以将其保存在数据结构中，这将有助于捕获方向跟踪逻辑未能正确设置的情况。
-</aside>
+<p>The value DMA_NONE is to be used for debugging(DMA_NONE 用于调试). One can hold this in a data structure before you come to know the precise direction, and this will help catch cases where your direction tracking logic has failed to set things up properly.</p>
 <p>Another advantage of specifying this value precisely (outside of potential platform-specific optimizations of such) is for debugging. Some platforms actually have a write permission boolean which DMA mappings can be marked with, much like page protections in the user program address space. Such platforms can and do report errors in the kernel logs when the DMA controller hardware detects violation of the permission setting.</p>
-<aside>
-💡 译文： 精确指定该值的另一个优点（除了潜在的特定于平台的优化之外）是为了调试。有些平台实际上有一个写权限布尔值，可以用它来标记 DMA 映射，就像用户程序地址空间中的页面保护一样。当 DMA 控制器硬件检测到违反权限设置时，此类平台可以并且确实会在内核日志中报告错误。
-</aside>
 <p>Only streaming mappings specify a direction, consistent mappings implicitly have a direction attribute setting of DMA_BIDIRECTIONAL.</p>
-<aside>
-💡 译文： 仅流式映射指定方向，一致映射隐式具有方向属性设置DMA 双向。
-</aside>
 <p>For Networking drivers, it's a rather simple affair. For transmit packets, map/unmap them with the DMA_TO_DEVICE direction specifier. For receive packets, just the opposite, map/unmap them with the DMA_FROM_DEVICE direction specifier.</p>
-<aside>
-💡 译文： 对于网络驱动程序来说，这是一件相当简单的事情。对于传输数据包，使用 DMA_TO_DEVICE 映射/取消映射。对于接收数据包，正好相反，映射/取消映射，使用 DMA_FROM_DEVICE 方向说明符<strong>。</strong>
-</aside>
-<h1 id="qa">QA</h1>
-<h2 id="dma_sync_single_for_device和dma_sync_single_for_cpu以及direction之间的差别">dma_sync_single_for_device和dma_sync_single_for_cpu以及direction之间的差别</h2>
-<p><strong>调用栈:</strong></p>
-<figure class="highlight diff"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dma_sync_single_for_device/cpu</span><br><span class="line">	--&gt;dma_direct_sync_single_for_device/cpu</span><br><span class="line">		--&gt;arch_sync_dma_for_device/cpu</span><br><span class="line">			--&gt;_dma_map_area/__dma_unmap_area --&gt; dcache_clean_poc/dcache_inval_poc</span><br></pre></td></tr></tbody></table></figure>
-<h3 id="对于linux-upstream社区">对于Linux upstream社区</h3>
-<ul>
-<li><p><strong>kernel 5.x</strong></p>
+<h1 id="dma_sync_single_for_devicedma_sync_single_for_cpu-and-direction">dma_sync_single_for_device、dma_sync_single_for_cpu and direction</h1>
+<p>调用栈:</p>
+<figure class="highlight diff"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dma_sync_single_for_device/cpu</span><br><span class="line">    --&gt;dma_direct_sync_single_for_device/cpu</span><br><span class="line">        --&gt;arch_sync_dma_for_device/cpu</span><br><span class="line">            --&gt;_dma_map_area/__dma_unmap_area --&gt; dcache_clean_poc/dcache_inval_poc</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="对于linux-upstream社区">对于Linux upstream社区</h2>
+<h3 id="kernel-5.x">kernel 5.x</h3>
 <p>arch_sync_dma_for_device 全部执行clean cache arch_sync_dma_for_device 如果direction是DMA_TO_DEVICE则什么也不做否则执行invalid cache</p>
 <p><img src="/picture/linux_driver/base/dma2.png"><br>
-<img src="/picture/linux_driver/base/dma3.png"></p></li>
-<li><p><strong>kernel 6.x</strong></p>
+<img src="/picture/linux_driver/base/dma3.png"></p>
+<h3 id="kernel-6.x">kernel 6.x</h3>
 <p>在 arch_sync_dma_for_device 中 direction 被忽略掉，执行dcache_clean_poc(clean cache) 在arch_sync_dma_for_cpu 中 dir为DMA_TO_DEVICE什么也不做直接返回，否则执行dcache_inval_poc（invalid cache）</p>
-<p><img src="/picture/linux_driver/base/dma4.png"></p></li>
-</ul>
-<p>总结一下：</p>
-<ul>
-<li><strong>Linux upstream</strong>
-<ul>
-<li>kernel 5.x
-<ul>
-<li>dma_sync_single_for_device： 忽略direction全部执行clean cache</li>
-<li>dma_sync_single_for_cpu： 如果direction是DMA_TO_DEVICE则什么也不做，否则执行invalid cache</li>
-</ul></li>
-<li>kernel 6.x（同kernel 5.x逻辑一致，只是改了下api名称）</li>
-</ul></li>
-</ul>
-<h2 id="cache的三种操作">Cache的三种操作：</h2>
-<ul>
-<li>clean: 检查对应内存cache line 的dirty bit。如果dirty bit为1，将cache line的内容写回下一级存储，并将dirty bit置为0.</li>
-<li>invalid: 检查对应内存cache line 的valid bit.如果valid bit 为1，置为0.</li>
-<li>flush: 每条cache line 先clean，再invalid.</li>
-</ul>
-<p><strong>Q：</strong>在cache和ddr中的数据一致后，DMA将device数据搬运到ddr后（cache与ddr不一样）如果调用flush接口，flush先做clean操作会不会将cache中的数据写回DDR？？</p>
-<p><strong>A：</strong>不会。clean操作是检查dirty标志位，在硬件改写过程中dirty标志位一直是0（非dirty），所以此时flush操作中的clean操作只是检查一遍dirty bit,之后做invalid操作.</p>
+<p><img src="/picture/linux_driver/base/dma4.png"></p>
+<h2 id="对于google-android社区">对于Google Android社区</h2>
+<h3 id="kernel-5.x-1">kernel 5.x</h3>
+<p>__dma_map_area(): 如果direction是DMA_FROM_DEVICE则先执行一个fluah操作，然后执行clean cache，如果direction不是DMA_FROM_DEVICE则只执行clean cache __dma_unmap_area(): 如果direction等于DMA_TO_DEVICE什么也不做否则执行__dma_inv_area(invalid cache) <img src="/picture/linux_driver/base/dma5.png"></p>
+<h3 id="kernel-6.6">kernel 6.6</h3>
+<p>for_device 忽略direction、全部direction执行clean cache for_cpu忽略DMA_TO_DEVICE,其他direction 执行invalid cache <img src="/picture/linux_driver/base/dma6.png"></p>
+<h2 id="总结">总结</h2>
+<h3 id="linux-upstream">Linux upstream</h3>
+<p><strong>kernel 5.x</strong><br>
+&gt; dma_sync_single_for_device： 忽略direction全部执行clean cache<br>
+&gt; dma_sync_single_for_cpu： 如果direction是DMA_TO_DEVICE则什么也不做，否则执行invalid cache <strong>kernel 6.x</strong> （同kernel 5.x逻辑一致，只是改了下api名称）</p>
+<h3 id="google社区">Google社区</h3>
+<p><strong>kernel 5.x</strong><br>
+&gt; dma_sync_single_for_device： 如果direction是DMA_FROM_DEVICE则多执行一个flush cache，全部direction都会执行clean cache<br>
+&gt; dma_sync_single_for_cpu： 如果direction是DMA_TO_DEVICE则什么也不做，否则执行invalid cache（同linux upstream逻辑一致）</p>
+<p><strong>kernel 6.x</strong> （同linux upstream逻辑一致） &gt; dma_sync_single_for_device： 忽略direction全部执行clean cache<br>
+&gt; dma_sync_single_for_cpu： 如果direction是DMA_TO_DEVICE则什么也不做，否则执行invalid cache</p>
+<h1 id="qa">QA</h1>
+<blockquote>
+<p><strong>Q：</strong><br>
+在cache和ddr中的数据一致后，DMA将device数据搬运到ddr后（cache与ddr不一样）如果调用flush接口，flush先做clean操作会不会将cache中的数据写回DDR</p>
+<p><strong>A：</strong><br>
+不会。clean操作是检查dirty标志位，在硬件改写过程中dirty标志位一直是0（非dirty），所以此时flush操作中的clean操作只是检查一遍dirty bit,之后做invalid操作.</p>
+</blockquote>
 <h1 id="参考文献">参考文献</h1>
 <p>《Linux Document》</p>
 
@@ -505,14 +487,14 @@
       <i class="fa fa-chart-line"></i>
     </span>
       <span>站点总字数：</span>
-    <span title="站点总字数">401k</span>
+    <span title="站点总字数">400k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">24:17</span>
+    <span title="站点阅读时长">24:16</span>
   </span>
 </div>
 <div class="busuanzi-count">
