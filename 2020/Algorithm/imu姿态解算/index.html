@@ -35,7 +35,7 @@
 <meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHostingService/main/mahony.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHostingService/main/imu_cal.png">
 <meta property="article:published_time" content="2020-04-05T20:11:29.000Z">
-<meta property="article:modified_time" content="2024-06-23T03:06:52.428Z">
+<meta property="article:modified_time" content="2024-06-23T06:05:45.235Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Sensor">
 <meta name="twitter:card" content="summary">
@@ -308,7 +308,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2024-06-23 11:06:52" itemprop="dateModified" datetime="2024-06-23T11:06:52+08:00">2024-06-23</time>
+      <time title="修改时间：2024-06-23 14:05:45" itemprop="dateModified" datetime="2024-06-23T14:05:45+08:00">2024-06-23</time>
     </span>
     <span class="post-meta-item">
       <span class="post-meta-item-icon">
@@ -405,7 +405,7 @@ g = \sqrt{a_x^{2} + a_y^{2} + a_z^{2}}
 <p>其中 <span class="math inline">\(z_1\)</span> 和 <span class="math inline">\(z_2\)</span> 分别是加速度通过三角函数计算得到的欧拉角和陀螺仪积分得到的欧拉角，<span class="math inline">\(x\)</span> 是真实欧拉角，<span class="math inline">\(u\)</span> 和 <span class="math inline">\(v\)</span> 分别是测量噪声符合高斯噪声其中 <span class="math inline">\(u\)</span> 为高频噪声v是低频噪声. <span class="math inline">\(x\)</span> 的估计值为：</p>
 <p><span class="math display">\[
 \begin{aligned}
-&amp;\hat{x} = k_1 * z_1 + k_2 * z_2 \\\\
+&amp;\hat{x} = k_1 \times  z_1 + k_2 \times  z_2 \\\\
 &amp;k_1 + k_2 = 1
 \end{aligned}
 \]</span></p>
@@ -470,12 +470,12 @@ B=\begin{bmatrix}\bigtriangleup T \\ 0\end{bmatrix}
 <p>协方差矩阵的更新如下： 协方差矩阵为向量$ \begin{bmatrix}_k\ _b\end{bmatrix}$的协方差矩阵，该协方差矩阵会随着系统变换而变换，其原理是一个矩阵作用到向量后的矩阵协方差求法，如下：</p>
 <p><span class="math display">\[
 \begin{aligned}
-&amp;Cov(x) = \Sigma \\
-&amp;cov(Ax) = A\Sigma A^{T} \\
-cov(Ax)&amp; = E[(Ax - E[Ax])(Ax - E[Ax])^{T}] \\
-        &amp;= E[Ax -AE[x](Ax - AE[x])^{T}]  \\
-        &amp;= E(A(x-E[x])(x-E[x])^{T}A^{T}) \\
-        &amp;= AE[(X-E[x])(X-E[x])^{T}]A^{T} \\
+&amp;Cov(x) = \Sigma \\\\
+&amp;cov(Ax) = A\Sigma A^{T} \\\\
+cov(Ax)&amp; = E[(Ax - E[Ax])(Ax - E[Ax])^{T}] \\\\
+        &amp;= E[Ax -AE[x](Ax - AE[x])^{T}]  \\\\
+        &amp;= E(A(x-E[x])(x-E[x])^{T}A^{T}) \\\\
+        &amp;= AE[(X-E[x])(X-E[x])^{T}]A^{T} \\\\
         &amp;= A\Sigma A^{T}
 \end{aligned}
 \]</span></p>
@@ -495,7 +495,7 @@ P_{expect}(K|K-1) = FP(K-1|K-1)F^{T} + Q_k  \tag{2}
 \]</span></p>
 <p><span class="math inline">\(Q_k\)</span> 是过程噪声协方差矩阵，由于加速度计的误差与陀螺仪之间的误差是相互独立的，不存在相关性（实际使用的时候角度值每次都是使用上次的最优值因此两者实际是有一定的相关性的），因此该矩阵是一个对称矩阵。其中陀螺仪的误差为累积误差，与时间<span class="math inline">\(\bigtriangleup t\)</span>有关，其表达式如下：</p>
 <p><span class="math display">\[
-Q_k = \begin{bmatrix}Q_\theta &amp; 0\\ 0&amp; Q_{\acute{\theta }_b}\end{bmatrix}\bigtriangleup t \\
+Q_k = \begin{bmatrix}Q_\theta &amp; 0\\ 0&amp; Q_{\acute{\theta }_b}\end{bmatrix}\bigtriangleup t \\\\
 \]</span></p>
 <p>其中 <span class="math inline">\(Q_{\acute{\theta }_b}\)</span> 表征了陀螺仪的漂移误差， <span class="math inline">\(Q_\theta\)</span> 表征了姿态角的误差。 <strong>代码：</strong> </p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * kalman公式二、预测协方差矩阵 P(k|k-1) = F * P(k-1|k-1) * F<span class="string">' + Q(k)</span></span><br><span class="line"><span class="string"> */</span></span><br><span class="line"><span class="string"> P[0][0] += (Q_angle - P[0][1] - P[1][0] + P[1][1] * dt) * dt;</span></span><br><span class="line"><span class="string"> P[0][1] += (-P[1][1]) * dt;</span></span><br><span class="line"><span class="string"> P[1][0] += (-P[1][1]) * dt;</span></span><br><span class="line"><span class="string"> P[1][1] += Q_gyro * dt;</span></span><br></pre></td></tr></tbody></table></figure> <em>更新过程</em> 观测值 <span class="math inline">\(z_k\)</span> 为：<p></p>
 <p><span class="math display">\[
@@ -523,7 +523,7 @@ K = H_k*P_k*H^{T}_k (H_k*P_k*H^{T}_k + R)^{-1}
 <p>这张图是原作者的图但是有些不准确，蓝色的融合后的曲线应该是更高的曲线才对。将红色和绿色两个高斯方程相乘可以得到蓝色曲线代表的高斯方程，这就是估计的最优值。先看一维数据下的高斯方程相乘的结果如下:</p>
 <p><span class="math display">\[
 \begin{aligned}
-&amp;{\mu }' = \mu_0 + \frac{\sigma_0 ^{2} (\mu_1 - \mu_0)}{\sigma_0 ^{2} + \sigma_1 ^{2}} \\
+&amp;{\mu }' = \mu_0 + \frac{\sigma_0 ^{2} (\mu_1 - \mu_0)}{\sigma_0 ^{2} + \sigma_1 ^{2}} \\\\
 &amp;{\sigma}'^{2} = \sigma_0^{2} - \frac{\sigma_0^{4}}{\sigma_0 ^{2} + \sigma_1 ^{2}}
 \end{aligned}
 \]</span></p>
@@ -534,7 +534,7 @@ k = \frac{\sigma_0^{2}}{\sigma_0 ^{2} + \sigma_1 ^{2}}
 <p>得到:</p>
 <p><span class="math display">\[
 \begin{aligned}
-&amp;{\mu }' = \mu_0 + k(\mu_1 - \mu_0) \\
+&amp;{\mu }' = \mu_0 + k(\mu_1 - \mu_0) \\\\
 &amp;{\sigma}'^{2} = \sigma_0 ^{2} - k \sigma_0 ^{2}
 \end{aligned}
 \]</span></p>
@@ -542,7 +542,7 @@ k = \frac{\sigma_0^{2}}{\sigma_0 ^{2} + \sigma_1 ^{2}}
 <p><span class="math display">\[
 \begin{aligned}
 &amp;K = \Sigma_0 (\Sigma_0 + \Sigma_1)^{-1} \\
-&amp;\vec{\mu'} = \vec{\mu_0} + K (\vec{\mu_1} - \vec{\mu_0}) \\
+&amp;\vec{\mu'} = \vec{\mu_0} + K (\vec{\mu_1} - \vec{\mu_0}) \\\\
 &amp;{\Sigma}' = \Sigma_0 - K \Sigma_0
 \end{aligned}
 \]</span></p>
@@ -561,7 +561,7 @@ K_k = P_{k|k-1}  * H^T * P^{-1}_{measure}(k|k)  \tag{3}
 <p>将其写为矩阵展开形式并化简得到：</p>
 <p><span class="math display">\[
 \begin{aligned}
-\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k &amp;= \begin{bmatrix}P_{00} &amp;P_{01} \\ P_{10}&amp;P_{11} \end{bmatrix}_{k|k-1} * \begin{bmatrix}1\\ 0\end{bmatrix} * P^{-1}_{measure}(k|k) \\
+\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k &amp;= \begin{bmatrix}P_{00} &amp;P_{01} \\ P_{10}&amp;P_{11} \end{bmatrix}_{k|k-1} * \begin{bmatrix}1\\ 0\end{bmatrix} * P^{-1}_{measure}(k|k) \\\\
 &amp;=\begin{bmatrix}P_{00}\\ P_{10}\end{bmatrix}_{k|k-1} * P^{-1}_{measure}(k|k)
 \end{aligned}
 \]</span></p>
@@ -572,8 +572,8 @@ P_{k|k} = (I - K_k* H_k)P_{k|k-1} \tag{4}
 <p>将矩阵写为展开形式并化简得到如下：</p>
 <p><span class="math display">\[
 \begin{aligned}
-\begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_k &amp;= (\begin{bmatrix}1 &amp; 0\\ 0 &amp; 1\end{bmatrix} -\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k * \begin{bmatrix}1 &amp; 0 \end{bmatrix}) * \begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} \\
-&amp;=(\begin{bmatrix}1 &amp; 0\\ 0 &amp; 1\end{bmatrix} -\begin{bmatrix}K_0 &amp;0 \\ K_1 &amp;0 \end{bmatrix}_k) * \begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} \\
+\begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_k &amp;= (\begin{bmatrix}1 &amp; 0\\ 0 &amp; 1\end{bmatrix} -\begin{bmatrix}K_0\\ K_1\end{bmatrix}_k * \begin{bmatrix}1 &amp; 0 \end{bmatrix}) * \begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} \\\\
+&amp;=(\begin{bmatrix}1 &amp; 0\\ 0 &amp; 1\end{bmatrix} -\begin{bmatrix}K_0 &amp;0 \\ K_1 &amp;0 \end{bmatrix}_k) * \begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} \\\\
 &amp;=\begin{bmatrix}P_{00} &amp; P_{01} \\ P_{10} &amp; P_{11}\end{bmatrix}_{k-1} - \begin{bmatrix}K_0P_{00} &amp;K_0P_{01} \\ K_1P_{00} &amp;K_1P_{01} \end{bmatrix}
 \end{aligned}
 \]</span></p>
@@ -608,8 +608,8 @@ a = R^{T}(\hat{a} - g) + b_a + n_a
 <p><strong>步骤二：使用acc测量计算误差</strong> 根据先验估计值利用acc计算误差</p>
 <p><span class="math display">\[
 \begin{aligned}
-&amp;v(\hat{_{I}^{W}\textrm{}q_{est}},t) = \begin{bmatrix}2(q_2q_4-q_1q_3)\\ 2(q_1q_2+q_3q_4)\\ (q_1^{2} - q_2^{2} - q_3^{2} + q_4^{2})\end{bmatrix} \\
-&amp;e_{t+1} = I_{\hat{a_{t+1}}} \times v(\hat{_{I}^{W}\textrm{}q_{est}},t) \\
+&amp;v(\hat{_{I}^{W}\textrm{}q_{est}},t) = \begin{bmatrix}2(q_2q_4-q_1q_3)\\ 2(q_1q_2+q_3q_4)\\ (q_1^{2} - q_2^{2} - q_3^{2} + q_4^{2})\end{bmatrix} \\\\
+&amp;e_{t+1} = I_{\hat{a_{t+1}}} \times v(\hat{_{I}^{W}\textrm{}q_{est}},t) \\\\
 &amp;e_{i,t+1} = e_{i,t} + e_{t+1}\Delta t
 \end{aligned}
 \]</span></p>
@@ -645,7 +645,7 @@ v = \begin{bmatrix}q_1^2 + q_2^2 -q_3^2 -q_4^2 &amp;2(q_2q_3 - q_1q_4)  &amp;2(q
 <p>这里其实是省略了相关推导，其中的详细推导过程我会在下面给出链接，这里我们直接使用这些已知的结论，不然东西太多，看着太累（其实是写起来太累）。到这里其实只是列出了四元数的旋转公式，好回到前面第二步中我们那个公式是怎么来的呢，下面看机体坐标系下的重力表示，将机体坐标系的三轴分量通过旋转矩阵的旋转后就是地理坐标系下的重力分量表示.而我们这里的旋转矩阵是正交矩阵即 <span class="math inline">\(M*M^T = I\)</span>则有<span class="math inline">\(g = M*\hat{g}\)</span> 则 <span class="math inline">\(\hat{g} = M^T * g\)</span> 展开了写就是如下形式</p>
 <p><span class="math display">\[
 \begin{aligned}
-\hat{g} &amp;= \begin{bmatrix}q_1^2 + q_2^2 -q_3^2 -q_4^2 &amp;2(q_2q_3 - q_1q_4)  &amp;2(q_2q_4 + q_1q_3) \\ 2(q_2q_3 + q_1q_4) &amp; q_1^2 - q_2^2 + q_3^2 -q_4^2  &amp; 2(q_3q_4 - q_1q_2) \\ 2(q_2q_4 - q_1q_3)&amp;2(q_3q_4 + q_1q_2)  &amp; q_1^2 - q_2^2 -q_3^2 +q_4^2 \end{bmatrix}' * \begin{bmatrix}0\\ 0\\ 1\end{bmatrix} \\
+\hat{g} &amp;= \begin{bmatrix}q_1^2 + q_2^2 -q_3^2 -q_4^2 &amp;2(q_2q_3 - q_1q_4)  &amp;2(q_2q_4 + q_1q_3) \\ 2(q_2q_3 + q_1q_4) &amp; q_1^2 - q_2^2 + q_3^2 -q_4^2  &amp; 2(q_3q_4 - q_1q_2) \\ 2(q_2q_4 - q_1q_3)&amp;2(q_3q_4 + q_1q_2)  &amp; q_1^2 - q_2^2 -q_3^2 +q_4^2 \end{bmatrix}' * \begin{bmatrix}0\\ 0\\ 1\end{bmatrix} \\\\
 &amp;=\begin{bmatrix}2(q_2q_4 - q_1q_3)\\  2(q_3q_4 + q_1q_2)\\ q_1^2 - q_2^2 -q_3^2 +q_4^2\end{bmatrix}
 \end{aligned}
 \]</span></p>
@@ -656,7 +656,7 @@ e_{t+1} = I_{\hat{a_{t+1}}} \times v(\hat{_{I}^{W}\textrm{}q_{est}},t)
 <p>这一步将加速度计获取的数据与陀螺仪准确来讲是预测值进行叉乘，来表示陀螺仪与加速度计的误差，这里为什么可以通过叉乘得到误差呢，其实是存疑的，向量的叉乘结果跟两个向量的夹角和模长相关，这里acc与gyro的数据如果是相同的那么他们之间的夹角为0则 <span class="math inline">\(sin(\theta) = 0\)</span> 两个向量的叉积为0向量，而acc和gyro不同则两个向量不同但是笔者认为两者不能视为线性关系，叉乘的大小可以用来表示acc与gyro的误差大小，而这个计算恰好用于pi调节器来调节gyro的数据。到现在误差也出来了两个向量的叉乘，取 <span class="math inline">\(z_1 = a + bi z_2 = c + di\)</span> 则两个向量叉乘结果为：</p>
 <p><span class="math display">\[
 \begin{aligned}
-z_1\times z_2 &amp;= \begin{bmatrix}a &amp;-b \\ b &amp; a\end{bmatrix}  \times \begin{bmatrix}c &amp;-d \\ d &amp; c\end{bmatrix} \\
+z_1\times z_2 &amp;= \begin{bmatrix}a &amp;-b \\ b &amp; a\end{bmatrix}  \times \begin{bmatrix}c &amp;-d \\ d &amp; c\end{bmatrix} \\\\
 &amp;= \begin{bmatrix}ac-bd &amp;-(bc + ad) \\ bc + ad &amp; ac-bd\end{bmatrix}
 \end{aligned}
 \]</span></p>
@@ -670,7 +670,7 @@ Q = cos( \frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u^n
 \]</span></p>
 <p>其中<span class="math inline">\(u^n\)</span>为旋转轴，$$ 为旋转角。 将四元数 <span class="math inline">\(Q = cos(\frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u\)</span> 对时间进行微分则：</p>
 <p><span class="math display">\[
-Q  = cos(\frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u^n \\
+Q  = cos(\frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u^n \\\\
 \frac{dQ}{dt} = -\frac{1}{2}sin(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt} + \frac{du^n}{dt}\cdot sin(\frac{1}{2}\theta ) + u^n \cdot \frac{1}{2}cos(\frac{1}{2}\theta )\cdot \frac{d\theta }{dt}
 \]</span></p>
 <p>其中这是一个旋转四元数，其旋转轴是固定不变的，变化的是旋转角度，因此 <span class="math inline">\(\frac{du^n}{dt} = 0\)</span> 故有：</p>
@@ -680,7 +680,7 @@ Q  = cos(\frac{1}{2}\theta ) + sin(\frac{1}{2}\theta )u^n \\
 <p>两边都乘以 <span class="math inline">\(\frac{1}{2} u^n \frac{d\theta }{dt}\)</span> 得：</p>
 <p><span class="math display">\[
 \begin{aligned}
-\frac{1}{2} u^n \frac{d\theta }{dt} \otimes Q &amp;= \frac{1}{2} u^n \frac{d\theta }{dt} * (cos(\frac{\theta }{2}) + sin(\frac{\theta }{2}) u^n) \\
+\frac{1}{2} u^n \frac{d\theta }{dt} \otimes Q &amp;= \frac{1}{2} u^n \frac{d\theta }{dt} * (cos(\frac{\theta }{2}) + sin(\frac{\theta }{2}) u^n) \\\\
 &amp; = \frac{\dot{\theta }}{2}cos(\frac{\theta }{2})u^n + u^n \otimes  u^n \frac{\dot{\theta }}{2}sin(\frac{\theta }{2})r
 \end{aligned}
 \]</span></p>
@@ -714,18 +714,18 @@ w_{nb}^{b} = \begin{bmatrix}0\\ w_x\\ w_y\\ w_z\end{bmatrix}
 <p><span class="math display">\[
 \begin{bmatrix}
 \dot{q_0}\\ \dot{q_1}\\ \dot{q_2}\\ \dot{q_3}\end{bmatrix} = \frac{1}{2}\begin{bmatrix}
-q_0 &amp; -q_1 &amp; -q_2 &amp; -q_3 \\
-q_1 &amp; q_0 &amp; -q_3 &amp; q_2\\
-q_2 &amp; q_3 &amp; q_0 &amp; -q_1\\
+q_0 &amp; -q_1 &amp; -q_2 &amp; -q_3 \\\\
+q_1 &amp; q_0 &amp; -q_3 &amp; q_2 \\\\
+q_2 &amp; q_3 &amp; q_0 &amp; -q_1 \\\\
 q_3 &amp; -q_2 &amp; q_1 &amp; q_0
 \end{bmatrix} * \begin{bmatrix}{0}\\ w_x\\ {w_y}\\ {w_z}\end{bmatrix}
 \]</span></p>
 <p>或者：</p>
 <p><span class="math display">\[
 \begin{bmatrix}\dot{q_0}\\ \dot{q_1}\\ \dot{q_2}\\ \dot{q_3}\end{bmatrix} =  \frac{1}{2}\begin{bmatrix}
-0 &amp; -w_x &amp; -w_y&amp; -w_z\\
-w_x&amp; 0 &amp; w_z&amp; -w_y\\
-w_y&amp; -w_z&amp; 0 &amp; w_x\\
+0 &amp; -w_x &amp; -w_y&amp; -w_z \\\\
+w_x&amp; 0 &amp; w_z&amp; -w_y \\\\
+w_y&amp; -w_z&amp; 0 &amp; w_x \\\\
 w_z&amp; w_y&amp; -w_x&amp; 0
 \end{bmatrix} * \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}
 \]</span></p>
@@ -736,9 +736,9 @@ Q(t+\triangle t) = Q(t) + \triangle t \frac{dQ}{dt}
 <p>故可以得到:</p>
 <p><span class="math display">\[
 \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t+\triangle t } = \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t } + \frac{\triangle t }{2} * \begin{bmatrix}
-0 &amp; -w_x &amp; -w_y&amp; -w_z\\
-w_x&amp; 0 &amp; w_z&amp; -w_y\\
-w_y&amp; -w_z&amp; 0 &amp; w_x\\
+0 &amp; -w_x &amp; -w_y&amp; -w_z \\\\
+w_x&amp; 0 &amp; w_z&amp; -w_y \\\\
+w_y&amp; -w_z&amp; 0 &amp; w_x \\\\
 w_z&amp; w_y&amp; -w_x&amp; 0
 \end{bmatrix} * \begin{bmatrix}{q_0}\\ q_1\\ {q_2}\\ {q_3}\end{bmatrix}_{t}
 \]</span></p>
