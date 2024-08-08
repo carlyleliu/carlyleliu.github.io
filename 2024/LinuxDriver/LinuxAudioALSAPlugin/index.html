@@ -30,16 +30,16 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="PCM (digital audio) plugins PCM plugins extends functionality and features of PCM devices. The plugins take care about various sample conversions, sample copying among channels and so on.">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/snd_pcm_dsnoop_open.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/snd_pcm_readi.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/snd_pcm_dsnoop_open.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/snd_pcm_readi.png">
 <meta property="article:published_time" content="2024-02-26T14:42:52.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.395Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.626Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Audio">
 <meta property="article:tag" content="ALSA">
 <meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/snd_pcm_dsnoop_open.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/snd_pcm_dsnoop_open.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/LinuxAudioALSAPlugin/">
@@ -165,7 +165,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -410,14 +410,14 @@
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">pcm.name {</span><br><span class="line">    <span class="built_in">type</span> dsnoop     <span class="comment"># Direct snoop</span></span><br><span class="line">    ipc_key INT     <span class="comment"># unique IPC key</span></span><br><span class="line">    ipc_key_add_uid BOOL    <span class="comment"># add current uid to unique IPC key</span></span><br><span class="line">    ipc_perm INT        <span class="comment"># IPC permissions (octal, default 0600)</span></span><br><span class="line">    slave STR</span><br><span class="line">    <span class="comment"># or</span></span><br><span class="line">    slave {         <span class="comment"># Slave definition</span></span><br><span class="line">        pcm STR     <span class="comment"># slave PCM name</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        pcm { }     <span class="comment"># slave PCM definition</span></span><br><span class="line">        format STR  <span class="comment"># format definition</span></span><br><span class="line">        rate INT    <span class="comment"># rate definition</span></span><br><span class="line">        channels INT</span><br><span class="line">        period_time INT <span class="comment"># in usec</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        period_size INT <span class="comment"># in bytes</span></span><br><span class="line">        buffer_time INT <span class="comment"># in usec</span></span><br><span class="line">        <span class="comment"># or</span></span><br><span class="line">        buffer_size INT <span class="comment"># in bytes</span></span><br><span class="line">        periods INT <span class="comment"># when buffer_size or buffer_time is not specified</span></span><br><span class="line">    }</span><br><span class="line">    bindings {      <span class="comment"># note: this is client independent!!!</span></span><br><span class="line">        N INT       <span class="comment"># maps slave channel to client channel N</span></span><br><span class="line">    }</span><br><span class="line">    slowptr BOOL        <span class="comment"># slow but more precise pointer updates</span></span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <h1 id="open-流程">Open 流程</h1>
 <p>下面以 dsnoop 插件为例梳理下 alsa-lib 使用插件的流程，详细如下：</p>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjVkYjA5N2E1YTQ4YmMwMjc2ODg4MzNk">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/snd_pcm_dsnoop_open.png"></p>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjVkYjA5N2E1YTQ4YmMwMjc2ODg4MzNk">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/snd_pcm_dsnoop_open.png"></p>
 <ul>
 <li>解析配置文件并生成配置树</li>
 <li>打开实际设备，通过 mmap 映射驱动中的控制信息和 buffer</li>
 </ul>
 <h1 id="read-流程">Read 流程</h1>
 <p>以下是 read 流程，write 流程不再列出来了。</p>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjVkYjA5YWM5YTM0M2QzZTg5OWQ5MTgy">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/snd_pcm_readi.png"></p>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjVkYjA5YWM5YTM0M2QzZTg5OWQ5MTgy">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/snd_pcm_readi.png"></p>
 <ul>
 <li>memcopy 驱动 DMA buffer 中的数据</li>
 <li>hw_ptr 数据指针的 sync</li>
@@ -512,7 +512,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

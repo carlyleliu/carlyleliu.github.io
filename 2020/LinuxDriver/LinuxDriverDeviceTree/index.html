@@ -30,16 +30,16 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="dtb 数据解析 内核启动阶段获得 dtb 位置指针 以 arm64 为例，内核启动如下： 1234567891011__HEAD_head:#ifdef CONFIG_EFI	add	x13, x18, #0x16	b	stext#else	b	stext				&#x2F;&#x2F; branch to kernel start, magic	.long	0				&#x2F;&#x2F; reserved#endif... 在开">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/StartKernel.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/fdt.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/FDT_BindDevice.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/StartKernel.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/fdt.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/FDT_BindDevice.png">
 <meta property="article:published_time" content="2020-08-25T06:56:11.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.397Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.626Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Driver">
 <meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/StartKernel.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/StartKernel.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2020/LinuxDriver/LinuxDriverDeviceTree/">
@@ -165,7 +165,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -378,15 +378,15 @@ x3 = 0 (reserved for future use)</code></pre>
 <p>调用__primary_switched 函数：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">__primary_switched:</span><br><span class="line">	adrp	x4, init_thread_union</span><br><span class="line">	add	sp, x4, #THREAD_SIZE</span><br><span class="line">	msr	sp_el0, x4			// Save thread_info</span><br><span class="line"></span><br><span class="line">	adr_l	x8, vectors			// load VBAR_EL1 with virtual</span><br><span class="line">	msr	vbar_el1, x8			// vector table address</span><br><span class="line">	isb</span><br><span class="line"></span><br><span class="line">	stp	xzr, x30, [sp, #-16]!</span><br><span class="line">	mov	x29, sp</span><br><span class="line"></span><br><span class="line">	str_l	x21, __fdt_pointer, x5		// Save FDT pointer</span><br><span class="line">...</span><br><span class="line">	b	start_kernel</span><br><span class="line">ENDPROC(__primary_switched)</span><br></pre></td></tr></tbody></table></figure>
 <p>通过 str_l x21, __fdt_pointer, x5 这句将 dtb 的地址保存在__fdt_pointer 指针里，以便后续内核可以找到 dtb 并解析设备树文件。</p>
-<p>关于 linux 启动过程可以参考下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjEyOWYxZDhlMGIzNGQzNTUwZjBiNjFi">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/StartKernel.png"></p>
+<p>关于 linux 启动过程可以参考下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjEyOWYxZDhlMGIzNGQzNTUwZjBiNjFi">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/StartKernel.png"></p>
 <h2 id="dtb-解析过程">dtb 解析过程</h2>
-<p>start_kernel 阶段会处理 dtb 文件生成 device_node 结构体以及他们之间的组织关系。整体的调用逻辑如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQ4ZjA2Mzc2ODkyMWZhMjRmY2Vl">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/fdt.png"></p>
+<p>start_kernel 阶段会处理 dtb 文件生成 device_node 结构体以及他们之间的组织关系。整体的调用逻辑如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQ4ZjA2Mzc2ODkyMWZhMjRmY2Vl">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/fdt.png"></p>
 <p>下面以一个简单的设备树为例：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">/ {</span><br><span class="line">    leds {</span><br><span class="line">        act {</span><br><span class="line">            gpios = &lt;&amp;gpio <span class="number">42</span> GPIO_ACTIVE_HIGH&gt;;</span><br><span class="line">        };</span><br><span class="line"></span><br><span class="line">        pwr {</span><br><span class="line">            label = <span class="string">"PWR"</span>;</span><br><span class="line">            gpios = &lt;&amp;expgpio <span class="number">2</span> GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">            <span class="keyword">default</span>-state = <span class="string">"keep"</span>;</span><br><span class="line">            linux,<span class="keyword">default</span>-trigger = <span class="string">"default-on"</span>;</span><br><span class="line">        };</span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">    wifi_pwrseq: wifi-pwrseq {</span><br><span class="line">        compatible = <span class="string">"mmc-pwrseq-simple"</span>;</span><br><span class="line">        reset-gpios = &lt;&amp;expgpio <span class="number">1</span> GPIO_ACTIVE_LOW&gt;;</span><br><span class="line">    };</span><br><span class="line"></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>该设备树经过 populate_node() 解析处理后，结构体关系如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">- /节点：</span><br><span class="line">    - parent：NULL</span><br><span class="line">    - sibling：NULL</span><br><span class="line">    - child：wifi_pwrseq</span><br><span class="line">- led 节点：</span><br><span class="line">    - parent：/</span><br><span class="line">    - sibling：NULL</span><br><span class="line">    - child：pwr</span><br><span class="line">- act 节点：</span><br><span class="line">    - parent：led</span><br><span class="line">    - sibling：NULL</span><br><span class="line">    - child：NULL</span><br><span class="line">- pwr 节点：</span><br><span class="line">    - parent：led</span><br><span class="line">    - sibling：act</span><br><span class="line">    - child：NULL</span><br><span class="line">- wifi_pwrseq 节点：</span><br><span class="line">    - parent：/</span><br><span class="line">    - sibling：led</span><br><span class="line">    - child：NULL</span><br></pre></td></tr></tbody></table></figure>
 <h2 id="device_node-与-device-绑定">device_node 与 device 绑定</h2>
-<p>kernel 会为设备树 root 节点下所有带'compatible' 属性的节点都分配并注册一个 platform_device；另外，如果某节点的'compatible' 符合某些 matches 条件，则会为该节点下所有带'compatible' 属性的子节点（child）也分配并注册一个 platform_device。 整体调用流程如下图所示：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQ5MmI2Mzc2ODkyMWZhMjRmZDQx">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/FDT_BindDevice.png"></p>
+<p>kernel 会为设备树 root 节点下所有带'compatible' 属性的节点都分配并注册一个 platform_device；另外，如果某节点的'compatible' 符合某些 matches 条件，则会为该节点下所有带'compatible' 属性的子节点（child）也分配并注册一个 platform_device。 整体调用流程如下图所示：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTQ5MmI2Mzc2ODkyMWZhMjRmZDQx">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/FDT_BindDevice.png"></p>
 <p>至此，为所有设备树中所有符合条件的 node 都创建了 platform_device 结构体，node 下描述的资源也解析到了 platform_device 中，并通过 dev 成员将该 node 描述的设备加入了统一设备模型。</p>
 <blockquote>
 <p>&nbsp;补充：标签是标记节点的方法，可以用唯一的名称来标识节点，在 dt 编译器编译过程中，dt 编译器将该名称转换为唯一的 32 位值，之后可以使用标签引用节点，因为标签对于节点是唯一的。phandle 是与节点相关联的 32 位值，用于唯一标识该节点，以便可以从另一个节点属性引用该节点。为了在查找节点时不遍历整个树，引入别名的概念，在 dt 中，别名可以看作是节点的快速查找表，即一个节点的索引</p>
@@ -423,8 +423,8 @@ x3 = 0 (reserved for future use)</code></pre>
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
               <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
           </div>
 
         
@@ -482,7 +482,7 @@ x3 = 0 (reserved for future use)</code></pre>
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

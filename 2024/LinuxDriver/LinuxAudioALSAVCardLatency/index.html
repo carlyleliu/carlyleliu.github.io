@@ -30,18 +30,18 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="测试方法  两块板子之间通过 I2S 通信，其中一块板子配置为 Slave 另一块板子为 Master Master 板端执行 arecord | aplay 或者 gstream 命令 12arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE | aplay -Dhw:2,0 -c 8 -r 44100 -f S32_LEgst-launch-1.0 alsasrc">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_latency.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/vsoundCardUSBLatency.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_latency1.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_latency2.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_latency.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/vsoundCardUSBLatency.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_latency1.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_latency2.png">
 <meta property="article:published_time" content="2024-02-28T14:42:52.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.395Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.626Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Audio">
 <meta property="article:tag" content="ALSA">
 <meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_latency.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_latency.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/LinuxAudioALSAVCardLatency/">
@@ -167,7 +167,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -366,18 +366,18 @@
 </ul>
 <span id="more"></span>
 <h1 id="datastream">DataStream</h1>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_latency.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_latency.png"></p>
 <p>上图就是 arecord | aplay（没有使用插件） 整个虚拟声卡的数据流，其中延迟最大的部分就是红色框中的缓存。</p>
-<p>走 USB 通路的 latency： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/vsoundCardUSBLatency.png"></p>
+<p>走 USB 通路的 latency： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/vsoundCardUSBLatency.png"></p>
 <h1 id="增大-buffer-size-为什么会增大-latency">增大 Buffer Size 为什么会增大 latency？</h1>
 <p>aplay 通过调用 snd_pcm_write 写数据给驱动，alsa lib 中 snd_pcm_write 有如下调用栈：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">_snd_pcm_writei(pcm, buffer, size)</span><br><span class="line">	--&gt;pcm-&gt;fast_ops-&gt;writei(pcm-&gt;fast_op_arg, buffer, size)</span><br><span class="line">		--&gt;snd_pcm_hw_writei</span><br><span class="line">			--&gt;ioctl(fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &amp;xferi)</span><br></pre></td></tr></tbody></table></figure>
 <p>alsa lib 通过 ioctl 系统调用到内核，打印 snd_pcm_write 内核调用栈：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">   14.513126@2]  Call trace:</span><br><span class="line">[   14.513472@2]  [ffffffc0201cbb20+  96][&lt;ffffffe610095490&gt;] dump_backtrace+0x0/0x188</span><br><span class="line">[   14.514417@2]  [ffffffc0201cbb80+  32][&lt;ffffffe61009563c&gt;] show_stack+0x24/0x30</span><br><span class="line">[   14.515329@2]  [ffffffc0201cbba0+  64][&lt;ffffffe611010068&gt;] dump_stack+0xc8/0xf0</span><br><span class="line">[   14.516240@2]  [ffffffc0201cbbe0+ 208][&lt;ffffffe610cc4d14&gt;] __snd_pcm_lib_xfer+0x834/0x850</span><br><span class="line">[   14.517257@2]  [ffffffc0201cbcb0+  80][&lt;ffffffe610cb9a34&gt;] snd_pcm_ioctl_xferi_compat+0x14c/0x260</span><br><span class="line">[   14.518360@2]  [ffffffc0201cbd00+ 208][&lt;ffffffe610cbd66c&gt;] snd_pcm_ioctl_compat+0x10c/0xdb8</span><br><span class="line">[   14.519405@2]  [ffffffc0201cbdd0+ 144][&lt;ffffffe610323754&gt;] __arm64_compat_sys_ioctl+0x16c/0x1220</span><br><span class="line">[   14.520496@2]  [ffffffc0201cbe60+  64][&lt;ffffffe61009ee28&gt;] el0_svc_common.constprop.3+0x90/0x1b0</span><br><span class="line">[   14.521589@2]  [ffffffc0201cbea0+ 336][&lt;ffffffe61009f014&gt;] el0_svc_compat_handler+0x2c/0x38</span><br><span class="line">[   14.522630@2]  [ffffffc0201cbff0+   0][&lt;ffffffe610083d5c&gt;] el0_svc_compat+0x8/0x2c</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
 <p>整理一下：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_latency1.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_latency1.png"></p>
 <p>内核中通过 Ioctl 系统调用最终调用到__snd_pcm_lib_xfer 函数，然后发现该数有如下逻辑：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_latency2.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_latency2.png"></p>
 <p>如果是 playback 流，且状态为 parpare，当 runtime→dma_area 里的数据大于等于 runtime→start_threshold，状态才会切换到 running。通过打印 log 发现：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[   14.571395@0]  playback : buffer_size : 2048 dma size : 65536 start_threshold : 2048 stop_threshold : 2048</span><br><span class="line">[   14.572960@2]  capture : buffer_size : 2048 dma size : 65536 start_threshold : 1 stop_threshold : 2048</span><br></pre></td></tr></tbody></table></figure>
 <p>playback 的 runtime→start_threshold 跟 buffer_size 一样大，也就是 playback 会先缓存 buffer_size 个 frame 的数据然后再开始播放，这样会导致 latency 随着 buffer_size 的变大而变大了。</p>
@@ -470,7 +470,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

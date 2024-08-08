@@ -30,17 +30,17 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="源码 SVM 函数的 alpha 和 beta 的值是经过了标幺化，基准值为 （最大相电压），也就是说 alpha 和 beta 的范围是 [-1,1]。约束：alpha-beta 向量的大小不得大于 $  $。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Algorithm/svm1.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Algorithm/svm2.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Algorithm/svm1.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Algorithm/svm2.png">
 <meta property="article:published_time" content="2022-11-17T15:37:23.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.385Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.803Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Motor">
 <meta property="article:tag" content="Robot">
 <meta property="article:tag" content="Odriver">
 <meta property="article:tag" content="Actuator">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Algorithm/svm1.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Algorithm/svm1.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2022/Algorithm/odriverSVM/">
@@ -166,7 +166,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -376,14 +376,14 @@
 tan \angle POA = \frac{\beta}{ \alpha}
 \]</span></p>
 <p>这是一个显而易见的结论，当合向量恰好位于 110 轴时$ tan60° =  $ ，也就是$ =  $ ，如果和程序中的表述一致的话，就是<span class="math inline">\(\alpha = \frac{1}{ \sqrt{3}} \beta\)</span> 。当<span class="math inline">\(\beta\)</span>减小<span class="math inline">\(\alpha\)</span>不变或<span class="math inline">\(\alpha\)</span>增大<span class="math inline">\(\beta\)</span>不变时，合向量都将从 110 轴转向 1 扇区，反之则转入 2 扇区。</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Algorithm/svm1.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Algorithm/svm1.png"></p>
 <p>综上所述得到结论，当$&gt; 0, &gt; 0 $ 且 <span class="math inline">\(\beta &gt; \sqrt{3} \alpha\)</span> 合向量落在第 1 扇区； 当$&gt; 0, &gt; 0 $ 且 <span class="math inline">\(\beta &lt; \sqrt{3} \alpha\)</span>，合向量落在第 2 扇区。</p>
 <h1 id="pwm-值计算">PWM 值计算</h1>
 <p>接下来聊一聊 PWM 比较值是如何计算的，这次以第 2 扇区为例，如图 2 所示。</p>
 <p>在第 2 扇区的合向量是需要借助 010 和 110 这两个基本向量合成得到，传入 SVM 函数的参数 alpha 和 beta 的合向量是<span class="math inline">\(Vref\)</span>。然后考虑将 <span class="math inline">\(\alpha\)</span> 和<span class="math inline">\(\beta\)</span>的值都分解到 010 和 110 这两个基本向量上。将<span class="math inline">\(\alpha\)</span> 在 100 轴的端点称为 A 点，<span class="math inline">\(\beta\)</span>端点称为 B 点。</p>
 <p>先试着分解<span class="math inline">\(\alpha\)</span>向量，过 A 点作 110（001）轴的平行线交 101 轴于 C 点。过 A 点作 010（101）轴平行线交 110 轴于 D 点。分析易得$ OAC OAD$ 都是等边三角形。因此，<span class="math inline">\(\alpha\)</span>向量分解到 110 轴的长度也是<span class="math inline">\(\alpha\)</span>，分解到 010 轴的长度是<span class="math inline">\(- \alpha\)</span>。</p>
 <p>然后分解<span class="math inline">\(\beta\)</span>向量，过 B 点作 110 轴平行线交 010 轴于 E 点，过 B 点作 010 轴平行线交 110 轴于 F 点。易分析得 <span class="math inline">\(\bigtriangleup OBE 、 \bigtriangleup OBF\)</span> 为底角为 30°的等腰三角形，需求 OE 和 OF 长度，且 OE=OF=BF=BE。过 E 点作 OB 垂线交于 G，则 <span class="math inline">\(\bigtriangleup EGB\)</span>为直角三角形，且<span class="math inline">\(\angle EBG = 30°\)</span> 则<span class="math inline">\(BE = \frac{2}{\sqrt{3}} BG\)</span> 而<span class="math inline">\(BG = \frac{1}{2} \beta\)</span> 故<span class="math inline">\(BE = \frac{1}{\sqrt{3}} \beta\)</span> 为所求。 可以给结论了，110 轴上产生作用力的时间定义为 t2，010 轴上产生作用力的时间定义为 t3。则有：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Algorithm/svm2.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Algorithm/svm2.png"></p>
 <p><span class="math display">\[
 t3 = - \alpha + \frac{1}{\sqrt{3}} \beta
 \]</span></p>
@@ -479,7 +479,7 @@ t2 = \alpha + \frac{1}{\sqrt{3}} \beta
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

@@ -30,21 +30,21 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/TaskCreate.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/shell_exec.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/cow.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork100.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork101.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork102.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork103.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/TaskCreate.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/shell_exec.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/cow.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork100.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork101.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork102.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork103.png">
 <meta property="article:published_time" content="2021-10-31T00:08:25.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.416Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.624Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Task">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/TaskCreate.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/TaskCreate.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxTaskCreate/">
@@ -170,7 +170,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -364,11 +364,11 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/TaskCreate.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZmQxYmYzNDZmYjA3MjVmNjhhYjg=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/TaskCreate.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZmQxYmYzNDZmYjA3MjVmNjhhYjg=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <h1 id="概述">概述</h1>
 <p>最新版本的 POSIX 标准中定义了进程创建和终止的操作系统层面的原语。进程创建包括 fork() 和 execve() 函数族，进程终止包括 wait()、waitpid()、kill() 以及 exit() 函数族。Linux 在实现过程中为了提高效率，把 POSIX 标准的 fork 原语扩展成了 vfork 和 clone 两个原语。</p>
-<p>我们最常见的一种场景是在 shell 界面中输入命令，然后等待命令返回，如图所示： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/shell_exec.png"></p>
+<p>我们最常见的一种场景是在 shell 界面中输入命令，然后等待命令返回，如图所示： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/shell_exec.png"></p>
 <h1 id="用户空间如何创建进程">用户空间如何创建进程</h1>
 <p>应用程序在用户空间创建进程有两种场景：</p>
 <ul>
@@ -382,7 +382,7 @@
 </ul>
 <p>之所以 vfork 要阻塞父进程是因为 vfork 后父子进程使用的是完全相同的 memory descriptor, 也就是说使用的是完全相同的虚拟内存空间，包括栈也相同。所以两个进程不能同时运行，否则栈就乱掉了。除了 fork 和 vfork，Linux 内核还提供的 clone 的系统调用接口主要用于线程的创建。其实通过传递不同的参数，clone 接口可以实现 fork 和 vfork 的功能。</p>
 <h1 id="创建进程">创建进程</h1>
-<p>现代操作系统都采用写时复制（Copy On Write，cow）技术。写时复制技术就是父进程在创建子进程时不需要复制进程地址空间的内容给子进程，只需要复制父进程的进程地址空间的页表给子进程，这样父子进程就可以共享相同的物理内存。当父子进程中有一方需要修改某个物理页面的内容时，触发写保护的缺页异常，然后才把共享页面的内容复制出来，从而让父子进程拥有各自的副本，如图所示： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/cow.png"></p>
+<p>现代操作系统都采用写时复制（Copy On Write，cow）技术。写时复制技术就是父进程在创建子进程时不需要复制进程地址空间的内容给子进程，只需要复制父进程的进程地址空间的页表给子进程，这样父子进程就可以共享相同的物理内存。当父子进程中有一方需要修改某个物理页面的内容时，触发写保护的缺页异常，然后才把共享页面的内容复制出来，从而让父子进程拥有各自的副本，如图所示： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/cow.png"></p>
 <h2 id="fork-函数">fork() 函数</h2>
 <p>如果使用 fork() 函数来创建子进程，子进程和父进程将拥有各自独立的进程地址空间，但是共享物理内存资源，包括进程上下文、进程栈、内存信息、打开的文件描述符、进程优先级、资源限制等。在创建期间，子进程和父进程共享物理内存空间，当它们开始运行各自的程序时，它们的进程地址空间开始分道扬镳，这得益于写时复制技术的优势。子进程和父进程有如下一些区别。</p>
 <ul>
@@ -408,10 +408,10 @@
 <p>在内核中，fork()、vfork() 以及 clone() 这 3 个系统调用都通过调用同一个函数即 kernel_clone() 函数来实现，该函数定义在 fork.c 文件中，感兴趣的可以自行查看，这个函数最终调用调用 copy_process 函数。</p>
 <h2 id="forkvfork-和-pthread_create-区别">fork、vfork 和 pthread_create 区别</h2>
 <ul>
-<li><p>fork： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork100.png"></p></li>
-<li><p>vfork： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork101.png"></p></li>
-<li><p>pthread_create： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork102.png"></p></li>
-<li><p>do_fork 实现： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/fork103.png"></p></li>
+<li><p>fork： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork100.png"></p></li>
+<li><p>vfork： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork101.png"></p></li>
+<li><p>pthread_create： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork102.png"></p></li>
+<li><p>do_fork 实现： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/fork103.png"></p></li>
 </ul>
 <h1 id="终止进程">终止进程</h1>
 <p>进程的终止有两种方式：一种方式是主动终止，包括显式地执行 exit() 系统调用或者从某个程序的主函数返回；另一种方式是被动终止，在接收到终止的信号或异常时终止。</p>
@@ -522,7 +522,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

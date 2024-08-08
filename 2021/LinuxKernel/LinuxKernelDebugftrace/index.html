@@ -30,17 +30,17 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Debugftrace.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/relocation.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/kernspace.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Debugftrace.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/relocation.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/kernspace.png">
 <meta property="article:published_time" content="2021-12-12T01:07:40.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.408Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.624Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Debug">
+<meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Kernel">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Debugftrace.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Debugftrace.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxKernelDebugftrace/">
@@ -166,7 +166,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -360,7 +360,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Debugftrace.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YjAzNWU0MDFmZDA3MGJiYTBlYmE=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Debugftrace.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YjAzNWU0MDFmZDA3MGJiYTBlYmE=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <h1 id="位置无关码">位置无关码</h1>
 <ul>
@@ -375,8 +375,8 @@
 <li>位置有关代码：从字面意思看，该指令的执行是与内存地址有关的，和当前 PC 值无关。ARM 汇编里面通过绝对跳转修改 PC 值为当前链接地址的值</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ldr pc, = on_sdram ; 跳到 SDRAM 中继续执行</span><br></pre></td></tr></tbody></table></figure>
-<p>因此，当通过 LDR 指令跳转到链接地址处执行时，运行地址就等于链接地址了。这个过程叫作“重定位”。在重定位之前，程序只能执行和位置无关的一些汇编代码。为什么要刻意设置加载地址、运行地址以及链接地址不一样呢？ 如果所有代码都在 ROM（或 Nor Flash 存储器）中执行，那么链接地址可以与加载地址相同；而在实际项目应用中，往往想要把程序加载到 DDR 内存中，DDR 内存的访问速度比 ROM 要快很多，而且容量也大。但是碍于加载地址的影响，不可能直接达到这一步，所以思路就是让程序的加载地址等于 ROM 起始地址，而链接地址等于 DDR 内存中某一处的起始地址（暂且称为 ram start）。程序先从 ROM 中启动，最先启动的部分要实现代码复制功能（把整个 ROM 代码复制到 DDR 内存中），并通过 LDR 指令来跳转到 DDR 内存中，也就是在链接地址里运行 B 指令没法实现这个跳转）。上述重定位过程在 U-Boot 中实现，如图所示。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/relocation.png"></p>
-<p>当跳转到 Linux 内核中时，U-Boot 需要把 Linux 内核映像内容复制到 DDR 内存中，然后跳转到内核入口地址处（ stext 函数）。当跳转到内核入口地址（ stext 函数）时，程序运行在运行地址，即 DDR 内存的地址。但是我们从 vmlinux 看到的 stext 函数的链接地址是虚拟地址（内核启动汇编代码也需要一个重定位过程。这个重定位过程在__primary_switch() 汇编函数中完成。启动 MMU 之后，通过 ldr 指令把 __primary_switched() 函数的链接地址加载到 x8 寄存器，然后通过 br 指令跳转到 __primary_switched() 函数的链接地址处，从而实现了重定位，如图所示 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/kernspace.png"></p>
+<p>因此，当通过 LDR 指令跳转到链接地址处执行时，运行地址就等于链接地址了。这个过程叫作“重定位”。在重定位之前，程序只能执行和位置无关的一些汇编代码。为什么要刻意设置加载地址、运行地址以及链接地址不一样呢？ 如果所有代码都在 ROM（或 Nor Flash 存储器）中执行，那么链接地址可以与加载地址相同；而在实际项目应用中，往往想要把程序加载到 DDR 内存中，DDR 内存的访问速度比 ROM 要快很多，而且容量也大。但是碍于加载地址的影响，不可能直接达到这一步，所以思路就是让程序的加载地址等于 ROM 起始地址，而链接地址等于 DDR 内存中某一处的起始地址（暂且称为 ram start）。程序先从 ROM 中启动，最先启动的部分要实现代码复制功能（把整个 ROM 代码复制到 DDR 内存中），并通过 LDR 指令来跳转到 DDR 内存中，也就是在链接地址里运行 B 指令没法实现这个跳转）。上述重定位过程在 U-Boot 中实现，如图所示。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/relocation.png"></p>
+<p>当跳转到 Linux 内核中时，U-Boot 需要把 Linux 内核映像内容复制到 DDR 内存中，然后跳转到内核入口地址处（ stext 函数）。当跳转到内核入口地址（ stext 函数）时，程序运行在运行地址，即 DDR 内存的地址。但是我们从 vmlinux 看到的 stext 函数的链接地址是虚拟地址（内核启动汇编代码也需要一个重定位过程。这个重定位过程在__primary_switch() 汇编函数中完成。启动 MMU 之后，通过 ldr 指令把 __primary_switched() 函数的链接地址加载到 x8 寄存器，然后通过 br 指令跳转到 __primary_switched() 函数的链接地址处，从而实现了重定位，如图所示 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/kernspace.png"></p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/kernel/head.S&gt;</span><br><span class="line">/*</span><br><span class="line"> * The following fragment of code is executed with the MMU enabled.</span><br><span class="line"> *</span><br><span class="line"> *   x0 = __PHYS_OFFSET</span><br><span class="line"> */</span><br><span class="line">SYM_FUNC_START_LOCAL(__primary_switched)</span><br><span class="line">	adr_l	x4, init_task</span><br><span class="line">	init_cpu_task x4, x5, x6</span><br><span class="line"></span><br><span class="line">	adr_l	x8, vectors			// load VBAR_EL1 with virtual</span><br><span class="line">	msr	vbar_el1, x8			// vector table address</span><br><span class="line">	isb</span><br><span class="line"></span><br><span class="line">	stp	x29, x30, [sp, #-16]!</span><br><span class="line">	mov	x29, sp</span><br><span class="line"></span><br><span class="line">	str_l	x21, __fdt_pointer, x5		// Save FDT pointer</span><br><span class="line"></span><br><span class="line">	ldr_l	x4, kimage_vaddr		// Save the offset between</span><br><span class="line">	sub	x4, x4, x0			// the kernel virtual and</span><br><span class="line">	str_l	x4, kimage_voffset, x5		// physical mappings</span><br><span class="line"></span><br><span class="line">	// Clear BSS</span><br><span class="line">	adr_l	x0, __bss_start</span><br><span class="line">	mov	x1, xzr</span><br><span class="line">	adr_l	x2, __bss_stop</span><br><span class="line">	sub	x2, x2, x0</span><br><span class="line">	bl	__pi_memset</span><br><span class="line">	dsb	ishst				// Make zero page visible to PTW</span><br><span class="line"></span><br><span class="line">#if defined(CONFIG_KASAN_GENERIC) || defined(CONFIG_KASAN_SW_TAGS)</span><br><span class="line">	bl	kasan_early_init</span><br><span class="line">#endif</span><br><span class="line">	mov	x0, x21				// pass FDT address in x0</span><br><span class="line">	bl	early_fdt_map			// Try mapping the FDT early</span><br><span class="line">	bl	init_feature_override		// Parse cpu feature overrides</span><br><span class="line">#ifdef CONFIG_RANDOMIZE_BASE</span><br><span class="line">	tst	x23, ~(MIN_KIMG_ALIGN - 1)	// already running randomized?</span><br><span class="line">	b.ne	0f</span><br><span class="line">	bl	kaslr_early_init		// parse FDT for KASLR options</span><br><span class="line">	cbz	x0, 0f				// KASLR disabled? just proceed</span><br><span class="line">	orr	x23, x23, x0			// record KASLR offset</span><br><span class="line">	ldp	x29, x30, [sp], #16		// we must enable KASLR, return</span><br><span class="line">	ret					// to __primary_switch()</span><br><span class="line">0:</span><br><span class="line">#endif</span><br><span class="line">	bl	switch_to_vhe			// Prefer VHE if possible</span><br><span class="line">	ldp	x29, x30, [sp], #16</span><br><span class="line">	bl	start_kernel</span><br><span class="line">	ASM_BUG()</span><br><span class="line">SYM_FUNC_END(__primary_switched)</span><br></pre></td></tr></tbody></table></figure>
 <h1 id="ftrace">ftrace</h1>
 <p>frace 最早出现在 Linux2.6.27 内核中，其设计目标简单，基于静态代码插桩（stub）技术，不需要用户通过额外的编程来定义 trace 行为。静态代码插桩技术比较可靠，不会因为用户使用不当而导致内核崩溃。 ftrace 的名字源于 function trace 利用 GCC 的 profile 特性在所有函数入口处添加一段插桩代码， ftrace 重载这段代码来实现 trace 功能。GCC 的-pg 选项会在每个函数入口处加入 mcount 的调用代码，原本 mcount 有 libc 实现，而内核不会链接 libc 库，因此 frace 编写了自己的 mcount stub 函数。 在使用 ftrace 之前，需要确保内核编译配置选项。</p>
@@ -601,8 +601,8 @@ ftrace_filter=kfree,kmalloc,schedule,vmalloc_fault,spurious_fault</code></pre>
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
               <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
               <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
           </div>
 
@@ -661,7 +661,7 @@ ftrace_filter=kfree,kmalloc,schedule,vmalloc_fault,spurious_fault</code></pre>
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

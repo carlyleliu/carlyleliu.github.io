@@ -157,7 +157,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -264,6 +264,136 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Algorithm/imuCalibration/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2020/Algorithm/imuCalibration/" class="post-title-link" itemprop="url">IMU 误差模型及校准</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Image/" itemprop="url" rel="index"><span itemprop="name">Image</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Image/Stabilization/" itemprop="url" rel="index"><span itemprop="name">Stabilization</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+      <span class="post-meta-item-icon">
+        <i class="far fa-comment"></i>
+      </span>
+      <span class="post-meta-item-text">Disqus：</span>
+    
+    <a title="disqus" href="/2020/Algorithm/imuCalibration/#disqus_thread" itemprop="discussionUrl">
+      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2020/Algorithm/imuCalibration/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>4.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>17 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="传感器误差模型">传感器误差模型</h1>
+<p>对于理想的 IMU 三轴加速度计两两正交，构成一个正交的三轴直角坐标系，加速度计每一轴单独测量该轴的加速度，而陀螺仪则测量该轴的角速度。在实际的真实 IMU 中由于制造工艺的误差，三个坐标轴不可能完全两两正交，加速度计与陀螺仪的坐标系也不会完全重合，并且单个传感器也不是完全精确的。在实际器件中将数字输出量转化为实际物理量的 scale 参数在不同轴上是不同的，但是设备生产商都会提供一个默认的 scale 参数用于转换所有轴的数据，而且数字量的输出还会受到零偏（传感器在静止情况下也会有微小量的输出）的影响，这些就是造成 IMU 传感器的系统误差。</p>
+<p>我们取实际器件的加速度计坐标系为 AF, 陀螺仪坐标系为 GF，根据 AF 和 GF 分别建立对应的正交坐标系 AOF 和 GOF，其建立约束为</p>
+<ul>
+<li>AOF 的 x 轴与 AF 的 x 轴重合。</li>
+<li>AOF 的 y 轴位于 AF 的 x 与 y 轴的平面中。</li>
+</ul>
+<p>对于 GOF 的建立约束与 AOF 的约束类比建立。最后再建立一个正交机体坐标系 BF，BF 通常与 AF 和 GF 之间有一个小角度的偏差。在非正交坐标系（AF 或 GF）中测量得到的物理量<span class="math inline">\(s^S\)</span>可以转换到机体坐标系 BF 中得到<span class="math inline">\(s^B\)</span>于是得到下式：</p>
+<p><span class="math display">\[
+s^B = Ts^S, 
+T = \begin{bmatrix}
+1 &amp; -\beta_{yz}  &amp; \beta_{zy} \\ 
+\beta_{xz} &amp; 1 &amp; -\beta_{zx} \\ 
+-\beta_{xy} &amp; \beta_{yx} &amp; 1 
+\end{bmatrix}   \tag{1}
+\]</span></p>
+<p><span class="math inline">\(s^B 和 s^S\)</span> 表示加速度或角速度在机体坐标系 BF 和加速度坐标系 AF 或陀螺仪坐标系 GF 下测量表示量，<span class="math inline">\(\beta_{ij}\)</span> 表示加速度或陀螺仪的 i 轴绕机体坐标系 BF 的 j 轴的旋转角度。如图二所示： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/imuErr.png"></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2020/Algorithm/imuCalibration/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
     <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2020/Algorithm/imuAttitudeCalculation/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -345,7 +475,7 @@
     
     <div class="post-body" itemprop="articleBody">
           <h1 id="imu-通过加速度计解算姿态角">IMU 通过加速度计解算姿态角</h1>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/imuOrigin.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/imuOrigin.png"></p>
 <p>通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中 <span class="math inline">\(\alpha\)</span> , <span class="math inline">\(\beta\)</span> 和 <span class="math inline">\(\gamma\)</span>（ <span class="math inline">\(\gamma\)</span> 是 z 轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示：</p>
 <p><span class="math display">\[
 \begin{aligned}
@@ -1263,218 +1393,10 @@ g = \sqrt{a_x^{2} + a_y^{2} + a_z^{2}}
           <h1 id="uml-类图">UML 类图</h1>
 <h2 id="类示例">类示例</h2>
 <figure class="highlight cpp"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Circle</span></span><br><span class="line">{</span><br><span class="line"><span class="keyword">private</span>:</span><br><span class="line">    <span class="type">double</span> radius_;</span><br><span class="line">    Point center_;</span><br><span class="line"><span class="keyword">public</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">setRadius</span><span class="params">(<span class="type">double</span> _radius)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">setCenter</span><span class="params">(Point _center)</span></span>;</span><br><span class="line">    <span class="function"><span class="type">double</span> <span class="title">getArea</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">    <span class="function"><span class="type">double</span> <span class="title">getCircumfrence</span><span class="params">()</span> <span class="type">const</span></span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Note/uml1.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Note/uml1.png"></p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2019/Note/UML/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="http://carlyleliu.github.io/2019/Note/GtestGmock/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/2019/Note/GtestGmock/" class="post-title-link" itemprop="url">GTest & GMock</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Note/" itemprop="url" rel="index"><span itemprop="name">Note</span></a>
-        </span>
-    </span>
-
-  
-  
-  <span class="post-meta-item">
-    
-      <span class="post-meta-item-icon">
-        <i class="far fa-comment"></i>
-      </span>
-      <span class="post-meta-item-text">Disqus：</span>
-    
-    <a title="disqus" href="/2019/Note/GtestGmock/#disqus_thread" itemprop="discussionUrl">
-      <span class="post-comments-count disqus-comment-count" data-disqus-identifier="2019/Note/GtestGmock/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>771</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>3 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="assert_-expect_">ASSERT_ &amp; EXPECT_</h1>
-<h2 id="bool">Bool</h2>
-<table>
-<thead>
-<tr class="header">
-<th>Fatal assertion</th>
-<th>Nonfatal assertion</th>
-<th>Verifies</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>ASSERT_TRUE(condition);</td>
-<td>EXPECT_TRUE(condition);</td>
-<td>condition is true</td>
-</tr>
-<tr class="even">
-<td>ASSERT_FALSE(condition);</td>
-<td>EXPECT_FALSE(condition);</td>
-<td>condition is false</td>
-</tr>
-</tbody>
-</table>
-<h2 id="value">Value</h2>
-<table>
-<thead>
-<tr class="header">
-<th>Fatal assertion</th>
-<th>Nonfatal assertion</th>
-<th>Verifies</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>ASSERT_EQ(val1, val2);</td>
-<td>EXPECT_EQ(val1, val2);</td>
-<td>val1 == val2</td>
-</tr>
-<tr class="even">
-<td>ASSERT_NE(val1, val2);</td>
-<td>EXPECT_NE(val1, val2);</td>
-<td>val1 != val2</td>
-</tr>
-<tr class="odd">
-<td>ASSERT_LT(val1, val2);</td>
-<td>EXPECT_LT(val1, val2);</td>
-<td>val1 &lt; val2</td>
-</tr>
-<tr class="even">
-<td>ASSERT_LE(val1, val2);</td>
-<td>EXPECT_LE(val1, val2);</td>
-<td>val1 &lt;= val2</td>
-</tr>
-<tr class="odd">
-<td>ASSERT_GT(val1, val2);</td>
-<td>EXPECT_GT(val1, val2);</td>
-<td>val1 &gt; val2</td>
-</tr>
-<tr class="even">
-<td>ASSERT_GE(val1, val2);</td>
-<td>EXPECT_GE(val1, val2);</td>
-<td>val1 &gt;= val2</td>
-</tr>
-</tbody>
-</table>
-<h2 id="string">string</h2>
-<table>
-<colgroup>
-<col style="width: 33%">
-<col style="width: 33%">
-<col style="width: 33%">
-</colgroup>
-<thead>
-<tr class="header">
-<th>Fatal assertion</th>
-<th>Nonfatal assertion</th>
-<th>Verifies</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>ASSERT_STREQ(str1,str2);</td>
-<td>EXPECT_STREQ(str1,str2);</td>
-<td>the two C strings have the same content</td>
-</tr>
-<tr class="even">
-<td>ASSERT_STRNE(str1,str2);</td>
-<td>EXPECT_STRNE(str1,str2);</td>
-<td>the two C strings have different contents</td>
-</tr>
-<tr class="odd">
-<td>ASSERT_STRCASEEQ(str1,str2);</td>
-<td>EXPECT_STRCASEEQ(str1,str2);</td>
-<td>the two C strings have the same content, ignoring case</td>
-</tr>
-<tr class="even">
-<td>ASSERT_STRCASENE(str1,str2);</td>
-<td>EXPECT_STRCASENE(str1,str2);</td>
-<td>the two C strings have different contents, ignoring case</td>
-</tr>
-</tbody>
-</table>
-<p><strong>注意：“CASE”表明忽略大小写，一个 NULL 指针和空字符串不一样</strong></p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2019/Note/GtestGmock/#more" rel="contents">
                 阅读全文 &raquo;
               </a>
             </div>
@@ -1528,7 +1450,7 @@ g = \sqrt{a_x^{2} + a_y^{2} + a_z^{2}}
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

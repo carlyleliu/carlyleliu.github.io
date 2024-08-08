@@ -30,17 +30,17 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="音量基本概念 声学中的分贝 因为人耳的特性，我们对声音的大小感知呈对数关系。所以我们通常用分贝描述声音大小，分贝（decibel）是量度两个相同单位之数量比例的单位，主要用于度量声音强度，常用 dB 表示。声学中，声音的强度定义为声压。计算分贝值时采用 20 微帕斯卡为参考值（通常被认为是人类的最少听觉响应值，大约是 3 米以外飞行的蚊子声音）。这一参考值是人类对声音能够感知的 阈值 下限。声压是">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu1.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu2.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu3.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu4.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu1.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu2.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu3.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu4.png">
 <meta property="article:published_time" content="2024-04-17T13:13:11.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.404Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.626Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="USB">
 <meta property="article:tag" content="UAC">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu1.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu1.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/LinuxUSBUACFU/">
@@ -166,7 +166,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -378,17 +378,17 @@ dB = 20 * log(65536)
 \]</span></p>
 <p>这非常接近听力最低阈值和产生痛感之间的区别，这个范围被认为非常适合还原音乐。</p>
 <p><strong>音量滑块与声音增幅大小线性变化</strong></p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu1.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu1.png"></p>
 <span id="more"></span>
 <p>上述左图中，音量滑块位置与声音振幅为线性增长关系，右图是我们人耳感受的音量大小与滑块位置关系。可知，在左侧移动相同距离的滑块，感知到的声音变化范围很大，在右侧接近声音最大值移动相同距离滑块，感知到的声音大小变化就很小了。</p>
 <h2 id="windows-音量滑块与声音-db-转换关系">Windows 音量滑块与声音 DB 转换关系</h2>
 <p>可参考如下链接：</p>
 <p><span class="exturl" data-url="aHR0cHM6Ly9sZWFybi5taWNyb3NvZnQuY29tL3poLWNuL3dpbmRvd3MtaGFyZHdhcmUvZHJpdmVycy9hdWRpby9kZWZhdWx0LWF1ZGlvLXZvbHVtZS1zZXR0aW5ncw==">默认的音频音量设置 - Windows drivers<i class="fa fa-external-link-alt"></i></span></p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu2.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu2.png"></p>
 <p>Linux 中默认的配置是-100db 到 0db，而 windows 中的音量范围对应的是-96db-0db（Device 收到的 volume 将是-96db-0db 而不会收到-100db），而用户可调的滑块是从 0-100 的范围值。实测 UAC 中调节滑块发送给 Device 的音量值如下（单位是分贝）：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu3.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu3.png"></p>
 <h1 id="feature-功能实现"><strong>Feature 功能实现</strong></h1>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/USB/fu4.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/USB/fu4.png"></p>
 <p>红色框中就是我们要实现的内容，UAC Spec 里说明了通过描述符来表示一个 Function Tologry 关系，只要利用描述符将这个关系描述清楚，Host 端就知道 Device 支持 Feature Unit，那么 Host 在调节音量的时候就会通过 Request 接口请求获得设备的 volume 和 mute 以及通过 Setup 接口来设置 Volume 和 Mute。这个关系的描述如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_AMLOGIC_MODIFY</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_USB_CONFIGFS_UAC_FEATURE_UNIT</span></span><br><span class="line">	<span class="keyword">if</span> (FUIN_EN(opts)) {</span><br><span class="line">		usb_in_ot_desc.bSourceID = in_feature_unit_desc-&gt;bUnitID;</span><br><span class="line">		in_feature_unit_desc-&gt;bSourceID = io_in_it_desc.bTerminalID;</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		usb_in_ot_desc.bSourceID = io_in_it_desc.bTerminalID;</span><br><span class="line">	}</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	usb_in_ot_desc.bSourceID = io_in_it_desc.bTerminalID;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_AMLOGIC_MODIFY</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_USB_CONFIGFS_UAC_FEATURE_UNIT</span></span><br><span class="line">	<span class="keyword">if</span> (FUOUT_EN(opts)) {</span><br><span class="line">		io_out_ot_desc.bSourceID = out_feature_unit_desc-&gt;bUnitID;</span><br><span class="line">		out_feature_unit_desc-&gt;bSourceID = usb_out_it_desc.bTerminalID;</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		io_out_ot_desc.bSourceID = usb_out_it_desc.bTerminalID;</span><br><span class="line">	}</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	io_out_ot_desc.bSourceID = usb_out_it_desc.bTerminalID;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
 <p>简单描述一下就是将 feature unit 描述符插入 Input Terminal（IT）和 Output Terminal（OT）之间，如下：</p>
@@ -507,7 +507,7 @@ dB = 20 * log(65536)
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

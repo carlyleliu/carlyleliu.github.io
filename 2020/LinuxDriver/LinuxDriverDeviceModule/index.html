@@ -30,22 +30,22 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="kobject 概述  Kobjects 有一个 name 和一个引用计数，还具有父指针（允许将对象排列成层次结构） ktype 是嵌入在 kobject 结构体中的对象。 每个 kobject 结构都需要一个相应的 ktype。 ktype 控制 kobject 在创建和销毁时的行为 kset 是一组 kobjects(kset 本身包含一个 kobject), 这些 kobject 可以拥有相">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/Kobject_Struct.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/Kobject_List.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/BusStruct.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/BusList.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/DeviceRegister.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/DriverRegister.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/uevent.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/PlatformStruct.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/PlatformStruct.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/Kobject_Struct.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/Kobject_List.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/BusStruct.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/BusList.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/DeviceRegister.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/DriverRegister.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/uevent.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/PlatformStruct.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/PlatformStruct.png">
 <meta property="article:published_time" content="2020-08-07T06:52:33.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.396Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.625Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Driver">
 <meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/Kobject_Struct.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/Kobject_Struct.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2020/LinuxDriver/LinuxDriverDeviceModule/">
@@ -171,7 +171,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -374,7 +374,7 @@
 </ul>
 <span id="more"></span>
 <h2 id="kobject-的数据结构和实现">kobject 的数据结构和实现</h2>
-<p>下图展示了 kobject、ktype 和 kset 三者数据结构之间的关系：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWE2ZmU3ZDljMDg2NjUxM2U5ZDA4">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/Kobject_Struct.png"></p>
+<p>下图展示了 kobject、ktype 和 kset 三者数据结构之间的关系：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWE2ZmU3ZDljMDg2NjUxM2U5ZDA4">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/Kobject_Struct.png"></p>
 <ul>
 <li><p>sysfs_ops: show 是回调函数，在读取具有该 kobj_type 的所有属性时调用他。缓冲区长度始终是 PAGE_SIZE，在成功时返回写入缓冲区的数据大小，失败返回错误码。写入的时候调用 store 函数，其参数 buf 最大为 PAGE_SIZE，成功返回写入数据大小，失败返回错误码</p></li>
 <li><p>uevent_ops: 是此 kset 的 uevent 操作集</p></li>
@@ -386,7 +386,7 @@
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">attribute_group</span> {</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span>		*name;</span><br><span class="line">	<span class="type">umode_t</span>			(*is_visible)(<span class="keyword">struct</span> kobject *,</span><br><span class="line">					      <span class="keyword">struct</span> attribute *, <span class="type">int</span>);</span><br><span class="line">	<span class="type">umode_t</span>			(*is_bin_visible)(<span class="keyword">struct</span> kobject *,</span><br><span class="line">						  <span class="keyword">struct</span> bin_attribute *, <span class="type">int</span>);</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">attribute</span>	**<span class="title">attrs</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bin_attribute</span>	**<span class="title">bin_attrs</span>;</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>attrs 字段是一个指针，他指向以 NULL 结尾的属性列表，每个属性组必须赋予一个指向 struct attribute 元素列表/数组的指针，该 group 只是一个 helper 包装器，以便管理多个属性。 在实际使用中可以定义多个属性文件然后嵌入在 struct attribute_group 结构体中，之后调用如下函数可以一次将多个属性添加/删除到系统。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> __must_check <span class="title function_">sysfs_create_group</span><span class="params">(<span class="keyword">struct</span> kobject *kobj,</span></span><br><span class="line"><span class="params">				                    <span class="type">const</span> <span class="keyword">struct</span> attribute_group *grp)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">sysfs_remove_group</span><span class="params">(<span class="keyword">struct</span> kobject *kobj,</span></span><br><span class="line"><span class="params">			            <span class="type">const</span> <span class="keyword">struct</span> attribute_group *grp)</span>;</span><br></pre></td></tr></tbody></table></figure>
-<p>下图展示了 kset 和 kobject 通常的组织关系，形成层级关系，当其他结构需要构建层级关系或需要引用计数的时候都可以将这个数据结构嵌入进去：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWE3NTIxZWZhZDQxZDgyNWM3Zjc5">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/Kobject_List.png"></p>
+<p>下图展示了 kset 和 kobject 通常的组织关系，形成层级关系，当其他结构需要构建层级关系或需要引用计数的时候都可以将这个数据结构嵌入进去：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWE3NTIxZWZhZDQxZDgyNWM3Zjc5">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/Kobject_List.png"></p>
 <h2 id="用法api">用法（API）</h2>
 <ol type="1">
 <li>创建 kobjec 的代码必须初始化该对象：</li>
@@ -424,13 +424,13 @@
 <p>参考 samples/kobject/kobject-example.c</p>
 <h1 id="busdevice-和-driver">bus、device 和 driver</h1>
 <h2 id="数据结构">数据结构</h2>
-<p>要理解 linux 驱动的设计，首先要理清楚 linux 驱动最重要的几个数据结构，struct device, struct device_driver, struct bus 这些数据结构是理解 Linux 驱动的关键，下面先从整体上看一下这几个数据结构之间的关系，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWE3YTFlNDAxZmQzYzI0OWRjZmVj">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/BusStruct.png"></p>
+<p>要理解 linux 驱动的设计，首先要理清楚 linux 驱动最重要的几个数据结构，struct device, struct device_driver, struct bus 这些数据结构是理解 Linux 驱动的关键，下面先从整体上看一下这几个数据结构之间的关系，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWE3YTFlNDAxZmQzYzI0OWRjZmVj">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/BusStruct.png"></p>
 <ul>
 <li><p>bus: bus 结构体用于抽象系统中总线的数据结构，这个可以是实际的总线，例如 iic、spi 总线，也可以是虚拟总线 platform 总线。struct bus 结构体管理挂载在该 bus 下的 struct device 和 struct device_driver, 负责 device 和 device_driver 的匹配，调用 probe 等工作。其中管理 struct device 和 struct device_driver 的功能独立出来成为一个子系统叫 subsys_private，该数据结构除了管理该 bus 下的设备和驱动外还用于处理 bus，device 和 device_driver 的一些默认属性（公共属性），uevent 事件等。可以看到 subsys_private 数据结构下有两个链表一个用于挂载 device 另一个用于挂载 device_driver, 从而实现 bus 对 device 和 device_driver 管理</p></li>
 <li><p>device: device 结构体用于抽象驱动设备，系统下挂载的设备都是通过 struct device 结构体来描述，其中 dts 里定义的很多节点都会转换为 struct device 结构体，用于描述一个设备信息，管理设备用到的资源等。device 结构体下一个重要结构是 device_private，该结构体成员 knode_bus 就是用于挂载到上面提到的 bus 下的 subsys_private 结构体中的 klist_devices</p></li>
 <li><p>device_driver: device_driver 结构体用于描述对 struct device 结构体描述的设备的驱动方法，比如对于通信协议的实现，对控制器的操作等。这样设备和设备的驱动实现分离单独管理，而设备和驱动分离后两者的匹配工作就是 bus 完成的，device_driver 是用户需要编写的具体操作设备的方法和流程。同样 struct device_driver 结构体下的 driver_private 的 knode_bus 用于链接到 struct bus 下 subsys_private 结构体中的 klist_drivers</p></li>
 </ul>
-<p>三者数据结构实际使用中的连接关系可能如下：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzVlZjMxMWI3MWUwODUzMjYzNzQxNDc3Ny5wbmc=">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/BusList.png"></p>
+<p>三者数据结构实际使用中的连接关系可能如下：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzVlZjMxMWI3MWUwODUzMjYzNzQxNDc3Ny5wbmc=">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/BusList.png"></p>
 <p>bus 和 device 以及 device_driver 下都有一个 private 或 subsys 结构用来处理一些共性的工作，是一种很好的抽象结构。</p>
 <h2 id="实现">实现</h2>
 <p>好了到现在我们已经清楚最重要的三个数据结构之间的关系了，接下来是关于 device 和 device_driver 是如何匹配上的，device 和 device_driver 一个描述了设备一个是拥有驱动设备的方法，但是 linux 下设备非常多，每个设备都要有一个对应的驱动程序来驱动，下面详细看下 device 和 device_driver 的关联过程。</p>
@@ -448,10 +448,10 @@
  9. 创建 dev 目录
  10. 通知客户端有新设备添加
  11. 调用最重要的函数为 device_probe_driver</code></pre>
-<p>下面主要介绍 bus_probe_device 这个函数，由于函数调用层级较多，这里不打算将函数一一列出，而是梳理出调用关系，如下：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxMTY4ODc1N2Q5YzA4MDZlNGFlZmUzOS5wbmc=">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/DeviceRegister.png"></p>
+<p>下面主要介绍 bus_probe_device 这个函数，由于函数调用层级较多，这里不打算将函数一一列出，而是梳理出调用关系，如下：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxMTY4ODc1N2Q5YzA4MDZlNGFlZmUzOS5wbmc=">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/DeviceRegister.png"></p>
 <p>这里需要注意的是 match 函数的实现是具体的 bus 实现的函数，例如 platform bus 会实现自己的 match 函数，后续会有文章进行介绍，关于 probe 函数，一般 bus 也会实现自己的 probe 函数，然后 bus 下的 probe 函数会调用 driver 数据结构的 probe 函数。</p>
 <h3 id="driver-的注册过程">driver 的注册过程</h3>
-<p>driver 的注册是通过 driver_register 该函数完成的，感兴趣的读者可以去阅读源码。同样关于 driver 的注册这里也贴一张图：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxMTdjMmMzMGUzZTc0MDdkM2EwZjNhNy5wbmc=">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/DriverRegister.png"></p>
+<p>driver 的注册是通过 driver_register 该函数完成的，感兴趣的读者可以去阅读源码。同样关于 driver 的注册这里也贴一张图：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxMTdjMmMzMGUzZTc0MDdkM2EwZjNhNy5wbmc=">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/DriverRegister.png"></p>
 <p>driver 和 device 的注册类似，都会在自己挂载的 bus 上去遍历对方的所有设备或驱动然后进行遍历匹配，当匹配上了将两个数据结构关联然后调用 driver 的 probe 函数。而 driver 的 probe 函数也就是驱动程序的入口，用户需要实现的操作都在这个函数里实现。</p>
 <h3 id="bus-的注册过程">bus 的注册过程</h3>
 <p>上面已经将 device 和 driver 介绍完了，device 和 driver 都将注册到 bus，然后 bus 管理两个链表一个 device 链表一个 driver 链表，现在我们再看看 bus 数据本身的一注册过程。 bus_register 函数完成 bus 的注册，该函数主要完成以下工作：</p>
@@ -475,7 +475,7 @@
 <h1 id="uevent">Uevent</h1>
 <p>Uevent 是 Kobject 的一部分，用于在 Kobject 状态发生改变时，例如增加、移除等，通知用户空间程序。用户空间程序收到这样的事件后，会做相应的处理。该机制通常是用来支持热拔插设备的，从而动态的支持该设备。</p>
 <h2 id="实现-1">实现</h2>
-<p>uevent 相关数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWIwMjIwNzkxMjkwNmIyYTNmNDMx">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/uevent.png"></p>
+<p>uevent 相关数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWIwMjIwNzkxMjkwNmIyYTNmNDMx">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/uevent.png"></p>
 <p>主要的实现函数就是 kobject_uevent 函数，如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">kobject_uevent</span><span class="params">(<span class="keyword">struct</span> kobject *kobj, <span class="keyword">enum</span> kobject_action action)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> kobject_uevent_env(kobj, action, <span class="literal">NULL</span>);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>调用 kobject_uevent_env 函数：该函数主要完成以下工作：</p>
@@ -497,9 +497,9 @@
 <p>在系统启动后，大部分的设备已经 ready，可以根据需要，重新指定一个 uevent helper，以便检测系统运行过程中的热拔插事件。这可以通过把 helper 的路径写入到"/sys/kernel/uevent_helper”文件中实现。实际上，内核通过 sysfs 文件系统的形式，将 uevent_helper 数组开放到用户空间，供用户空间程序修改访问，具体可参考"./kernel/sysfs.c”中相应的代码，这里不再详细描述。</p>
 <h1 id="platfor-总线">platfor 总线</h1>
 <h2 id="platform-数据结构">platform 数据结构</h2>
-<p>platform 数据结构同样是对 device、device_driver、bus 数据结构的再封装，我将 platform 的数据结构列出来如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWIwOWE3ZDljMDg2NjUxM2VhMjgz">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/PlatformStruct.png"></p>
+<p>platform 数据结构同样是对 device、device_driver、bus 数据结构的再封装，我将 platform 的数据结构列出来如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWIwOWE3ZDljMDg2NjUxM2VhMjgz">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/PlatformStruct.png"></p>
 <h2 id="platform-总线实现">platform 总线实现</h2>
-<p>首先还是将数据结构之间的关系列出来，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWIwYzNmMzQ2ZmIwNmE5ZjEzMjI1">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/PlatformStruct.png"></p>
+<p>首先还是将数据结构之间的关系列出来，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2OWIwYzNmMzQ2ZmIwNmE5ZjEzMjI1">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/PlatformStruct.png"></p>
 <p>上图将 platform 总线的实现概要列举出来，下面详细看看 platform 总线的几个重要函数：</p>
 <ul>
 <li><p>platform_probe: 在上面介绍 device_driver 的时候介绍 register 的时候讲到 probe 函数的调用时机，在 device_driver 注册的时候会执行总线的 probe 函数，对于 platform 总线就是由 platform 总线再调用 device_driver 的 probe 函数</p></li>
@@ -545,8 +545,8 @@
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
               <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
           </div>
 
         
@@ -604,7 +604,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

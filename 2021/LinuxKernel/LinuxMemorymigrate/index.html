@@ -30,20 +30,20 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Memorymigrate.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate1.jpg">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate2.jpg">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate3.jpg">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate4.jpg">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate5.jpg">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Memorymigrate.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate1.jpg">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate2.jpg">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate3.jpg">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate4.jpg">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate5.jpg">
 <meta property="article:published_time" content="2021-12-01T05:57:14.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.413Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.627Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Memory">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Memorymigrate.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Memorymigrate.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxMemorymigrate/">
@@ -169,7 +169,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -363,7 +363,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Memorymigrate.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjE3MTYzNzY4OTA3MTA1ZTU2Mzk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Memorymigrate.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjE3MTYzNzY4OTA3MTA1ZTU2Mzk=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <blockquote>
 <p>声明本文转载自知乎 <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8yNzAzNjY4Mjc=">Linux 内存管理：页面迁移<i class="fa fa-external-link-alt"></i></span> 和 <span class="exturl" data-url="aHR0cHM6Ly93d3cuYmJzbWF4LmNvbS9BL1pPSlByUWdvZHYv">Linux 内存管理 (16) 内存规整<i class="fa fa-external-link-alt"></i></span> 内存相关文章</p>
@@ -385,7 +385,7 @@
 <p>延伸：对上面 MR_SYSCALL 迁移原因中提到的两个 API（位于 libnuma 库）的简单介绍。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 含义：把某 pid 进程的所有页面从源 numa node 迁移到目标 numa nodes 组中，对应系统调用 sys_migrate_pages()</span></span><br><span class="line">migrate_pages()  <span class="comment">//和 kernel 中接口同名，别搞混了</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 含义：把进程到部分页面迁移目标 numa node 中，对应系统调用 sys_move_pages()</span></span><br><span class="line">move_pages()</span><br></pre></td></tr></tbody></table></figure>
 <h2 id="migrate_pages-介绍">migrate_pages() 介绍</h2>
-<p>通过上面对迁移原因的介绍，我们知道了页面迁移的原因各种各样，这里我们通过内存规整 (memory compact) 这样一个实际的例子展开介绍，下图主要体现了内存规整和页面迁移的关系： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate1.jpg"></p>
+<p>通过上面对迁移原因的介绍，我们知道了页面迁移的原因各种各样，这里我们通过内存规整 (memory compact) 这样一个实际的例子展开介绍，下图主要体现了内存规整和页面迁移的关系： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate1.jpg"></p>
 <p>通过上图，我们看出页面迁移在内存规整中举足轻重的地位。下面则是内存规整调用 migrate_pages() 的函数关系：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">compact_zone           <span class="comment">//内存规整</span></span><br><span class="line">  -&gt;migrate_pages      <span class="comment">//页面迁移的入口函数</span></span><br><span class="line">    -&gt;unmap_and_move   <span class="comment">//页面迁移的核心实现</span></span><br></pre></td></tr></tbody></table></figure>
 <p>现在切入重点，页面迁移 (migrate) 过程做了那些事情：</p>
@@ -395,18 +395,18 @@
 <li>若是正在 writeback 的页面，则根据迁移模式判断是否等待页面 wirteback（MIGRATE_SYNC_LIGHT 和 MIGRATE_ASYNC 不等待）</li>
 <li>获取 new page 的页面锁 PG_locked (new page 正常情况下不会获取失败）</li>
 </ul>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate2.jpg"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate2.jpg"></p>
 <h2 id="解除-old-page-的页表映射">解除 old page 的页表映射</h2>
-<p>调用 try_to_unmap()，通过反向映射机制解除 old page 所有相关的 PTEs <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate3.jpg"></p>
+<p>调用 try_to_unmap()，通过反向映射机制解除 old page 所有相关的 PTEs <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate3.jpg"></p>
 <h2 id="设置-new-page-的页面内容元数据及映射关系">设置 new page 的页面内容、元数据及映射关系</h2>
-<p>调用 move_to_new_page 拷贝 old page 的内容和 struct page 元数据到 new page，并通过反向映射机制建立 new page 的映射关系。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate4.jpg"></p>
+<p>调用 move_to_new_page 拷贝 old page 的内容和 struct page 元数据到 new page，并通过反向映射机制建立 new page 的映射关系。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate4.jpg"></p>
 <h2 id="页面迁移的收尾工作">页面迁移的收尾工作</h2>
 <ul>
 <li>迁移完成释放新旧页面的 PG_locked</li>
 <li>设置迁移原因</li>
 <li>调用 put_page 释放 old page 引用计数 (_refcount 减 1)</li>
 </ul>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/migrate5.jpg"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/migrate5.jpg"></p>
 <p>补充：什么样的页面才支持迁移呢？</p>
 <ul>
 <li>lru 上的 page，因为上面挂的是 user spcace 用的 pages，都是从 buddy 分配器 migrate type 为 movable 或 reclaim 的 pageblock 上分来的</li>
@@ -524,7 +524,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

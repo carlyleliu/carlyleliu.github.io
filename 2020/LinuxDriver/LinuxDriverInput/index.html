@@ -30,17 +30,17 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。 核心层：承上启">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/input.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/Input_Struct.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Note/LinuxTS1.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Note/LinuxTS2.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/input.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/Input_Struct.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Note/LinuxTS1.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Note/LinuxTS2.png">
 <meta property="article:published_time" content="2020-09-30T04:00:55.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.399Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.626Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Driver">
 <meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/input.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/input.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2020/LinuxDriver/LinuxDriverInput/">
@@ -166,7 +166,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -361,7 +361,7 @@
     
     
     <div class="post-body" itemprop="articleBody"><h1 id="概述">概述</h1>
-<p>按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/input.png"></p>
+<p>按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/input.png"></p>
 <ul>
 <li>驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。</li>
 <li>核心层：承上启下，为驱动层提供输入设备注册和操作接口。通知事件层对输入事件进行处理。</li>
@@ -369,7 +369,7 @@
 </ul>
 <span id="more"></span>
 <h1 id="数据结构">数据结构</h1>
-<p>Input 子系统实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1NWY2ZTVlMGIzNGQwOTEyMzViN2U1">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/Input_Struct.png"></p>
+<p>Input 子系统实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1NWY2ZTVlMGIzNGQwOTEyMzViN2U1">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/Input_Struct.png"></p>
 <ul>
 <li><p>input_dev:<br>
 input_dev 结构体用于描述一个 input 设备，例如按键、鼠标、键盘等，我们编写设备驱动主要就是构造这个结构体。该结构体包含设备类型，消息类型，事件 code 等信息。该数据结构在内核里会挂载到一个全局链表 input_dev_list，所有注册的 input 设备都会挂载到该链表中</p></li>
@@ -466,9 +466,9 @@ evdev_client 结构体表示一个 input 客户，也就是 app 用户会使用 
 <p>raw device --&gt; variance --&gt; dejitter --&gt; linear --&gt; application</p>
 <h3 id="ts_calibrate-触摸屏校准工具">ts_calibrate 触摸屏校准工具</h3>
 <p>校准由 linear 插件完成，它使用自己的配置文件 /etc/pointercal。不要手动编辑此文件。它是由 ts_calibrate 程序创建的 ：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Note/LinuxTS1.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Note/LinuxTS1.png"></p>
 <p>测试过滤后的输入行为。</p>
-<p>您可以使用以下命令快速测试由配置的过滤器产生的触摸行为 ts_test_mt： ts_test_mt： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Note/LinuxTS2.png"></p>
+<p>您可以使用以下命令快速测试由配置的过滤器产生的触摸行为 ts_test_mt： ts_test_mt： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Note/LinuxTS2.png"></p>
 <h1 id="总结">总结</h1>
 <ul>
 <li>应用 open 一个 input 设备，通过 vfs 调用到驱动字符设备的 open 函数，该函数创建构造一个 evdev_client 结构体并将该结构体放入打开的 input 设备的 evdev 结构体链表中<br>
@@ -508,8 +508,8 @@ evdev_client 结构体表示一个 input 客户，也就是 app 用户会使用 
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
               <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
           </div>
 
         
@@ -567,7 +567,7 @@ evdev_client 结构体表示一个 input 客户，也就是 app 用户会使用 
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

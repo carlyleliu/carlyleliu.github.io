@@ -30,18 +30,18 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="ucos 优先级调度算法 保证调度延迟的确定性 普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/RTOS_Sche_issue.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/prio_table.jpg">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/os_map_tbl.jpg">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/RTOS_ECB.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/rtos_event_list.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/RTOS_Sche_issue.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/prio_table.jpg">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/os_map_tbl.jpg">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/RTOS_ECB.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/rtos_event_list.png">
 <meta property="article:published_time" content="2019-04-18T13:16:31.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.428Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.628Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="ucos">
 <meta property="article:tag" content="RTOS">
+<meta property="article:tag" content="ucos">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/RTOS_Sche_issue.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/RTOS_Sche_issue.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2019/Program/ucosDesign/">
@@ -167,7 +167,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -359,10 +359,10 @@
     
     <div class="post-body" itemprop="articleBody"><h1 id="ucos-优先级调度算法">ucos 优先级调度算法</h1>
 <h2 id="保证调度延迟的确定性">保证调度延迟的确定性</h2>
-<p>普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/RTOS_Sche_issue.png"></p>
+<p>普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/RTOS_Sche_issue.png"></p>
 <span id="more"></span>
 <h2 id="ucos-调度原理">ucos 调度原理</h2>
-<p>为了确保调度延迟一致性，ucos 采用了空间换取时间的算法在相同时间里查找到不同优先级 task，具体算法如下。 整个算法由两个变量、两个表格和三个程序组成：两个变量是 OSRdyGrp 和 OSRdyTbl[]; 两个表格是位掩码表 OSMapTbl[] 和优先级判定表 OSUnMap[]，三个程序分别是使 task 进入就绪、脱离就绪、寻找就绪态最高优先级 task。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/prio_table.jpg"> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/os_map_tbl.jpg"></p>
+<p>为了确保调度延迟一致性，ucos 采用了空间换取时间的算法在相同时间里查找到不同优先级 task，具体算法如下。 整个算法由两个变量、两个表格和三个程序组成：两个变量是 OSRdyGrp 和 OSRdyTbl[]; 两个表格是位掩码表 OSMapTbl[] 和优先级判定表 OSUnMap[]，三个程序分别是使 task 进入就绪、脱离就绪、寻找就绪态最高优先级 task。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/prio_table.jpg"> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/os_map_tbl.jpg"></p>
 <p>使 task 进入就绪态的程序如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 将 prio 优先级放入就绪态优先级表中 */</span></span><br><span class="line">OSRdyGrp = OSMapTbl[prio&gt;&gt;<span class="number">3</span>];               <span class="comment">//设置就绪态优先级组标志</span></span><br><span class="line">OSRdyTbl[prio&gt;&gt;<span class="number">3</span>] |= OSMapTbl[prio&amp;<span class="number">0x07</span>];   <span class="comment">//设置就绪态优先级组内的位标志</span></span><br></pre></td></tr></tbody></table></figure>
 <p>就是将 OSRdyTbl 相应元素的相应位置位，使 task 脱离就绪状态就是将相应位置零，程序如下：</p>
@@ -428,10 +428,10 @@
 </ul>
 <p>对于等待事件任务的记录，uC/OS-II 又使用了与任务就绪表类似的位图，即定义了一个 UINT8 类型的数组 OSEventTbl[] 来作为等待事件任务的记录表，即等待任务表。</p>
 <p>等待任务表仍然以任务的优先级别为顺序为每个任务分配一个二进制位，并用该位为 1 来表示这一位对应的任务为事件的等待任务，否则不是等待任务。同样，为了加快对该表的访问速度，也定义了一个 UINT8 类型的变量 OSEventGrp 来表示等待任务表中的任务组。等待任务表 OSEventTbl[] 与变量 OSEventGrp 的示意图如图所示：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/RTOS_ECB.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/RTOS_ECB.png"></p>
 <p>至于等待任务的等待时限，则记录在等待任务的任务控制块 TCB 的成员 OSTCBDIy 中并在每个时钟节拍中断服务程序中对该数据进行维护。每当有任务的等待时限到时，将该务从等待任务表中删除，并使它进入就绪状态。</p>
 <h2 id="空事件控制块链表">空事件控制块链表</h2>
-<p>在μC/OS-II 初始化时，系统在初始化函数 OSnit() 中创建 OS_MAX_EVEINTS 个空事件控制块并借用成员 OSEventPtr 作为链接指针，把这些空事件控制块链接成一个如图 5-11 所示的单向链表。由于链表中的所有控制叫做空事件控制块且尚未与具体事件相关联，因此该链表叫空事件控制块链表。以后，每当应用程序创建一个事件时，系统就会从链表中取出一个事件控制块，并对事件控制块进行初始化以描述该事件。而当用程序删除一个事件时，就会将该事件控制块归还给空事件控制块链表。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/RTOS/rtos_event_list.png"></p>
+<p>在μC/OS-II 初始化时，系统在初始化函数 OSnit() 中创建 OS_MAX_EVEINTS 个空事件控制块并借用成员 OSEventPtr 作为链接指针，把这些空事件控制块链接成一个如图 5-11 所示的单向链表。由于链表中的所有控制叫做空事件控制块且尚未与具体事件相关联，因此该链表叫空事件控制块链表。以后，每当应用程序创建一个事件时，系统就会从链表中取出一个事件控制块，并对事件控制块进行初始化以描述该事件。而当用程序删除一个事件时，就会将该事件控制块归还给空事件控制块链表。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/RTOS/rtos_event_list.png"></p>
 <h2 id="操作函数">操作函数</h2>
 <p>当 task 请求一个事件的时候（OS_EventTaskWait()），而该事件正好被另一个 task 持有，那么当前 task 就会挂起放到 OSEventTbl 和 OSEventGrp 里。在持有事件的 task 释放事件的时候会再将请求该事件的 task 唤醒 (OS_EventTaskRdy())。从而实现两个 task 之间的同步（事件或资源）。</p>
 <p>其他信号量、互斥信号量、消息队列、消息邮箱等实现原理是相同的，这里不再一一列出了。</p>
@@ -474,8 +474,8 @@
 </div>
 
           <div class="post-tags">
-              <a href="/tags/ucos/" rel="tag"><i class="fa fa-tag"></i> ucos</a>
               <a href="/tags/RTOS/" rel="tag"><i class="fa fa-tag"></i> RTOS</a>
+              <a href="/tags/ucos/" rel="tag"><i class="fa fa-tag"></i> ucos</a>
           </div>
 
         
@@ -533,7 +533,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

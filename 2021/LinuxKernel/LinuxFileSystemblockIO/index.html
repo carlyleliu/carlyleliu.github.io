@@ -30,19 +30,19 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图 系统中能够随机访问固定大小数据片的硬件设备称作块设备，这些固定大小的数据片就称作块。另一种基本的设备类型是字符设备，字符设备按照子节流的方式被有序访问，像串口和键盘就属于字符设备。对于这两种类型的设备，它们的区别在于是否可以随机访问数据。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/LinuxFSBlockI_O.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/io1.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/io2.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Bio.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/io3.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/LinuxFSBlockI_O.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/io1.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/io2.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Bio.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/io3.png">
 <meta property="article:published_time" content="2021-12-17T04:35:17.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.407Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.624Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
-<meta property="article:tag" content="FileSystem">
 <meta property="article:tag" content="Kernel">
+<meta property="article:tag" content="FileSystem">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/LinuxFSBlockI_O.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/LinuxFSBlockI_O.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxFileSystemblockIO/">
@@ -168,7 +168,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -362,7 +362,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/LinuxFSBlockI_O.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhZTkxMTA3OTEyOTA2ZjUxNDZjODg=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/LinuxFSBlockI_O.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjNhZTkxMTA3OTEyOTA2ZjUxNDZjODg=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <p>系统中能够随机访问固定大小数据片的硬件设备称作块设备，这些固定大小的数据片就称作块。另一种基本的设备类型是字符设备，字符设备按照子节流的方式被有序访问，像串口和键盘就属于字符设备。对于这两种类型的设备，它们的区别在于是否可以随机访问数据。</p>
 <span id="more"></span>
 <h1 id="剖析一个块设备">剖析一个块设备</h1>
@@ -371,7 +371,7 @@
 <blockquote>
 <p>扇区——设备的最小寻址单元；同样的，块——文件系统的最小寻址单元。</p>
 </blockquote>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/io1.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/io1.png"></p>
 <h1 id="缓冲区和缓冲区头">缓冲区和缓冲区头</h1>
 <blockquote>
 <p>缓冲区头的目的在于描述磁盘块和物理内存缓冲区之间的映射关系。这个结构体在内核中只扮演一个描述符的角色，说明从缓冲区到块的映射关系。</p>
@@ -386,9 +386,9 @@
 <h1 id="bio-结构体">bio 结构体</h1>
 <p>目前内核中块 I/O 操作的基本容器由 bio 结构体表示，该结构体代表了正在现场的（活动的）以片断（segment）链表形式组织的块 I/O 操作。一个片段是一小块连续的内存缓冲区。这样的话，就不需要保证单个缓冲区一定要连续。所以通过用片段来描述缓冲区，即使一个缓冲区分散在内存的多个位置上，bio 结构体也能对内核保证 I/O 操作的执行。像这样的向量 I/O 就是所谓的聚散 I/O。bio 结构体定义于《linux/bio.h》中，下面给出 bio 结构体和各个域的描述。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bio</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bio</span>		*<span class="title">bi_next</span>;</span>	<span class="comment">/* request queue link */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">block_device</span>	*<span class="title">bi_bdev</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>		bi_opf;		<span class="comment">/* bottom bits req flags,</span></span><br><span class="line"><span class="comment">						 * top bits REQ_OP. Use</span></span><br><span class="line"><span class="comment">						 * accessors.</span></span><br><span class="line"><span class="comment">						 */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">short</span>		bi_flags;	<span class="comment">/* BIO_* below */</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">short</span>		bi_ioprio;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">short</span>		bi_write_hint;</span><br><span class="line">	<span class="type">blk_status_t</span>		bi_status;</span><br><span class="line">	<span class="type">atomic_t</span>		__bi_remaining;</span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bvec_iter</span>	<span class="title">bi_iter</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="type">bio_end_io_t</span>		*bi_end_io;</span><br><span class="line"></span><br><span class="line">	<span class="type">void</span>			*bi_private;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_BLK_CGROUP</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Represents the association of the css and request_queue for the bio.</span></span><br><span class="line"><span class="comment">	 * If a bio goes direct to device, it will not have a blkg as it will</span></span><br><span class="line"><span class="comment">	 * not have a request_queue associated with it.  The reference is put</span></span><br><span class="line"><span class="comment">	 * on release of the bio.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">blkcg_gq</span>		*<span class="title">bi_blkg</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bio_issue</span>	<span class="title">bi_issue</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_BLK_CGROUP_IOCOST</span></span><br><span class="line">	u64			bi_iocost_cost;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_BLK_INLINE_ENCRYPTION</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bio_crypt_ctx</span>	*<span class="title">bi_crypt_context</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">union</span> {</span></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> defined(CONFIG_BLK_DEV_INTEGRITY)</span></span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">bio_integrity_payload</span> *<span class="title">bi_integrity</span>;</span> <span class="comment">/* data integrity */</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	};</span><br><span class="line"></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">short</span>		bi_vcnt;	<span class="comment">/* how many bio_vec's */</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Everything starting with bi_max_vecs will be preserved by bio_reset()</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line"></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">short</span>		bi_max_vecs;	<span class="comment">/* max bvl_vecs we can hold */</span></span><br><span class="line"></span><br><span class="line">	<span class="type">atomic_t</span>		__bi_cnt;	<span class="comment">/* pin count */</span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bio_vec</span>		*<span class="title">bi_io_vec</span>;</span>	<span class="comment">/* the actual vec list */</span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bio_set</span>		*<span class="title">bi_pool</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * We can inline a number of vecs at the end of the bio, to avoid</span></span><br><span class="line"><span class="comment">	 * double allocations for a small number of bio_vecs. This member</span></span><br><span class="line"><span class="comment">	 * MUST obviously be kept at the very end of the bio.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">bio_vec</span>		<span class="title">bi_inline_vecs</span>[];</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
-<p>使用 bio 结构体的目的主要是代表正在现场执行的 I/O 操作，所以该结构体中的主要域都是用来管理相关信息的，其中最重要的几个域是 bi_io_vecs、bi_vcnt 和 bi_idx。下图显示了 bio 结构体及其他结构体之间的关系。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/io2.png"></p>
+<p>使用 bio 结构体的目的主要是代表正在现场执行的 I/O 操作，所以该结构体中的主要域都是用来管理相关信息的，其中最重要的几个域是 bi_io_vecs、bi_vcnt 和 bi_idx。下图显示了 bio 结构体及其他结构体之间的关系。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/io2.png"></p>
 <p>Sector、Block、Segment 之间的关系：<br>
-<img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/Bio.png"></p>
+<img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/Bio.png"></p>
 <h2 id="io-向量">I/O 向量</h2>
 <p>bi_io_vec 域指向一个 bio_vec 结构体数组，该结构体链表包含了一个特定 I/O 操作所需要使用到的所有片段。每个 bio_vec 结构都是一个形式为&lt;page，offset，len&gt;的向量，它描述的是一个特定的片段：片段所在的物理页、块在物理页中的偏移位置、从给定偏移量开始的块长度。整个 bio_io_vec 结构体数组表示了一个完整的缓冲区。bio_vec 结构定义在《linux/bio.h》文件中：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">bio_vec</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">page</span>	*<span class="title">bv_page</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>	bv_len;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">int</span>	bv_offset;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
@@ -437,7 +437,7 @@
 <li>写请求被插入到特定的写 FIFO 队列中</li>
 </ul>
 <p>虽然普通队列以磁盘扇区为序进行排列，但是这些队列是以 FIFO（很有效，以时间为基准排序）形式组织的，结果新队列总是被加人到队列尾部。对于普通操作来说，最后期限 I/O 调度程序将请求从排序队列的头部取下，再推入到派发队列中，派发队列然后将请求提交给磁盘驱动，从而保证了最小化的请求寻址。</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/io3.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/io3.png"></p>
 <p>注意，最后期限 I/O 调度算法并不能严格保证请求的响应时间，但是通常情况下，可以在请求超时或超时前提交和执行，以防止请求饥饿现象的发生。最后期限 I/O 调度程序的实现在文件 block/deadline-iosched.c 中。</p>
 <h2 id="预测-io-调度程序">预测 I/O 调度程序</h2>
 <p>虽然最后期限 I/O 调度程序为降低读操作响应时间做了许多工作，但是它同时也降低了系统吞吐量。预测（Anticipatory）I/O 调度程序的目标就是在保持良好的读响应的同时也能提供良好的全局吞吐量。 预测 I/O 调度程序最主要的改进是它增加了预测启发（anticipation-heuristic）能力。请求提交后并不直接返回处理其他请求，而是会有意空闲片刻（实际空闲时间可以设置，默认为 6ms）。这几 ms，对应用程序来说是个提交其他读请求的好机会——任何对相邻磁盘位置操作的请求都会立刻得到处理。在等待时间结束后，预测 I/O 调度程序重新返回原来的位置，继续执行以前剩下的请求。</p>
@@ -477,8 +477,8 @@
 
           <div class="post-tags">
               <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
-              <a href="/tags/FileSystem/" rel="tag"><i class="fa fa-tag"></i> FileSystem</a>
               <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
+              <a href="/tags/FileSystem/" rel="tag"><i class="fa fa-tag"></i> FileSystem</a>
           </div>
 
         
@@ -536,7 +536,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">

@@ -30,18 +30,18 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="XRUN 是缓冲区不足或溢出，X 代表不足或溢出。在这两种情况下，都表明系统速度不够快，未能及时处理来自 ALSA 音频缓冲区的数据，因此丢失了一些数据。当我们以非常小的缓冲区大小运行时，声卡应该非常快地处理传入缓冲区的数据，否则就溢出 overrun 了。有些芯片无法适应较小的缓冲区大小，因此我们必须增加缓冲区长度以减轻声音芯片的工作量。通常，xruns 可以听到爆裂声或爆裂声。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_debug_config.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/xrun_trace.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/hw_buffer.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/vm.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_debug_config.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/xrun_trace.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/hw_buffer.png">
+<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/vm.png">
 <meta property="article:published_time" content="2024-02-17T04:42:52.000Z">
-<meta property="article:modified_time" content="2024-07-27T13:59:19.395Z">
+<meta property="article:modified_time" content="2024-08-08T14:45:47.625Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Audio">
 <meta property="article:tag" content="ALSA">
 <meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_debug_config.png">
+<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_debug_config.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/LinuxAudioALSAXRUN/">
@@ -167,7 +167,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">171</span>
+          <span class="site-state-item-count">172</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -365,7 +365,7 @@
 <h1 id="proc">/Proc</h1>
 <p>ALSA 提供了一种通过 proc 记录和调试 xrun 的方法：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Device Drivers  ---&gt;  &lt;*&gt; Sound card support  ---&gt;  &lt;*&gt;   Advanced Linux Sound Architecture  ---&gt; [*]   Sound Proc FS Support</span><br><span class="line"></span><br><span class="line">Device Drivers  ---&gt;  &lt;*&gt; Sound card support  ---&gt;  &lt;*&gt;   Advanced Linux Sound Architecture  ---&gt; [*]   Debug  ---&gt;  [*]     Enable PCM ring buffer overrun/underrun debugging</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/alsa_debug_config.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/alsa_debug_config.png"></p>
 <h1 id="procasoundcardpcm0pxrun_debug">/proc/asound/card#/pcm0p/xrun_debug</h1>
 <p>将“#”替换为 card number。该 proc 文件可以启用各种调试工具。必须在内核中启用 CONFIG_SND_PCM_XRUN_DEBUG、CONFIG_SND_VERBOSE_PROCFS、CONFIG_SND_DEBUG 选项（如果 xrun_debug proc 文件存在 - 该功能已启用）</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">1   Basic debugging - show xruns <span class="keyword">in</span> ksyslog interface</span><br><span class="line">2   Dump stack - dump stack <span class="keyword">for</span> basic debugging</span><br><span class="line">4   Jiffies check - compare the position with kernel jiffies (a <span class="built_in">sort</span> of in-kernel monotonic clock),</span><br><span class="line">    show what<span class="string">'s changed when basic debugging is enabled</span></span><br><span class="line"><span class="string">8   Dump positions on each period update call</span></span><br><span class="line"><span class="string">16  Dump positions on each hardware pointer update call</span></span><br><span class="line"><span class="string">32  Enable logging of last 10 ring buffer positions</span></span><br><span class="line"><span class="string">64  Show the last 10 ring buffer position only once (when first error situation occured)</span></span><br></pre></td></tr></tbody></table></figure>
@@ -392,7 +392,7 @@
 </ol>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE  /data/record.wav</span><br></pre></td></tr></tbody></table></figure>
 <p>复现到的一次 xrun 问题：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/xrun_trace.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/xrun_trace.png"></p>
 <p>这里 hwptr 的 old 就是 hwptr 指针，applptr 的 current 就是 applptr 指针位置，可以看到发生 xrun 前面 hwptr=2781184，applyptr=2779136。系统中 buffer_size = 2048（frames）, 而这里 hwptr 指针领先 applptr 指针 2048 个 frame，说明 runtime 里的 dma buffer 已经满了（overrun），应用没有及时取走数据。下一步就可以分析应用为什么没有及时取走数据了。</p>
 <h1 id="关于-hw-buffer">关于 HW Buffer</h1>
 <p>当 app 在调用 snd_pcm_writei 时，alsa core 将 app 传来的数据搬到 HW buffer（即 DMA buffer）中，alsa driver 从 HW buffer 中读取数据传输到硬件播放。</p>
@@ -401,7 +401,7 @@
 <p>之所以采用多个 HW buffer 来组成 ring buffer, 是防止读写指针的前后位置频繁的互换（即写指针到达 HW buffer 边界时，就要回到 HW buffer 起始点）。</p>
 <p>ring buffer = n * HW buffer. 通常这个 n 比较大，在数据读写的过程中，很少会出现读写指针互换的情况。</p>
 <p>下图是 ALSA buffer 的实现以及读写指针更新的方法：</p>
-<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/hw_buffer.png"></p>
+<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/hw_buffer.png"></p>
 <ul>
 <li>hw_ptr_base 是当前 HW buffer 在 Ring buffer 中的起始位置。当读指针到达 HW buffer 尾部时，hw_ptr_base 按 buffer size 移动</li>
 <li>hw_ptr 即 HW buffer 的 driver 操作指针</li>
@@ -413,7 +413,7 @@
 </ul>
 <h1 id="实验">实验</h1>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">arecord -Dhw:2,0 -c 8 -r 44100 -f S32_LE /dev/null</span><br><span class="line">arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE | aplay -Dhw:2,0 -c 8 -r 44100 -f S32_LE</span><br></pre></td></tr></tbody></table></figure>
-<p>以上两种方式都不会出现 overrun，这种一般都是 IO 性能问题。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/vm.png"></p>
+<p>以上两种方式都不会出现 overrun，这种一般都是 IO 性能问题。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/vm.png"></p>
 <p>cat meminfo 节点，发现系统会在缓存 41M 左右的时候进行刷 dirty page。</p>
 <p>对于 44100 采样率、8channel、32bit 位深，每秒钟产生的数据量为 44100<em>8</em>4Byte = 1411200Byte = 1.345MByte</p>
 <p>可以通过修改刷 dirty page 的频率来降低出现 overrun 的概率：</p>
@@ -519,7 +519,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:57</span>
+    <span title="站点阅读时长">26:58</span>
   </span>
 </div>
 <div class="busuanzi-count">
