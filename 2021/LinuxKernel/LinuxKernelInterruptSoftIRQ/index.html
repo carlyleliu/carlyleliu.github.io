@@ -30,16 +30,16 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQSoftIRQ.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/preempt_count.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQSoftIRQ.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/preempt_count.png">
 <meta property="article:published_time" content="2021-09-21T00:00:18.000Z">
-<meta property="article:modified_time" content="2024-08-08T14:45:47.624Z">
+<meta property="article:modified_time" content="2024-08-08T14:52:23.488Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Interrupt">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQSoftIRQ.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQSoftIRQ.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxKernelInterruptSoftIRQ/">
@@ -359,7 +359,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQSoftIRQ.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OGNkN2U0MDFmZDA3MGJiMGNkYmI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQSoftIRQ.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1OGNkN2U0MDFmZDA3MGJiMGNkYmI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <h1 id="软中断的定义">软中断的定义</h1>
 <p>软中断（softirq）是中断处理程序在开启中断的情况下执行的部分，可以被硬中断抢占内核定义了一张软中断向量表，每种软中断有一个唯一的编号，对应一个 softirq_actior 实例，softirq_action 实例的成员 action 是处理函数。</p>
@@ -426,7 +426,7 @@
 <p>每个进程的 thread_info 结构体有一个抢占计数器：int preempt_count，它用来表示当前进程能不能被抢占。</p>
 <p>抢占是指当进程在内核模式下运行的时候可以被其他进程抢占，如果优先级更高的进程处于就绪状态，强行剥夺当前进程的处理器使用权。</p>
 <p>但是有时候进程可能在执行一些关键操作，不能被抢占，所以内核设计了抢占计数器。如果抢占计数器为 0，表示可以被抢占；如果抢占计数器不为 0，表示不能被抢占。</p>
-<p>当中断处理程序返回的时候，如果进程在被打断的时候正在内核模式下执行，就会检查抢占计数器是否为 0。如果抢占计数器是 0，可以让优先级更高的进程抢占当前进程虽然抢占计数器不为 0 意味着禁止抢占，但是内核进一步按照各种场景对抢占计数器的位进行了划分， <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/preempt_count.png"></p>
+<p>当中断处理程序返回的时候，如果进程在被打断的时候正在内核模式下执行，就会检查抢占计数器是否为 0。如果抢占计数器是 0，可以让优先级更高的进程抢占当前进程虽然抢占计数器不为 0 意味着禁止抢占，但是内核进一步按照各种场景对抢占计数器的位进行了划分， <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/preempt_count.png"></p>
 <p>其中第 0 ~ 7 位是抢占计数，第 8 ~ 15 位是软中断计数，第 16 ~ 19 位是硬中断计数第 20 位是不可屏蔽中断（Non Maskable Interrupt，NMI）计数。 </p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> PREEMPT_MASK	(__IRQ_MASK(PREEMPT_BITS) &lt;&lt; PREEMPT_SHIFT)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SOFTIRQ_MASK	(__IRQ_MASK(SOFTIRQ_BITS) &lt;&lt; SOFTIRQ_SHIFT)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> HARDIRQ_MASK	(__IRQ_MASK(HARDIRQ_BITS) &lt;&lt; HARDIRQ_SHIFT)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NMI_MASK	(__IRQ_MASK(NMI_BITS)     &lt;&lt; NMI_SHIFT)</span></span><br><span class="line">...</span><br><span class="line"><span class="meta">#<span class="keyword">define</span> PREEMPT_BITS	8</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SOFTIRQ_BITS	8</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> HARDIRQ_BITS	4</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NMI_BITS	    4</span></span><br></pre></td></tr></tbody></table></figure><p></p>
 <p>各种场景分别利用各自的位禁止或开启抢占。</p>
 <ul>
@@ -541,7 +541,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:58</span>
+    <span title="站点阅读时长">26:57</span>
   </span>
 </div>
 <div class="busuanzi-count">

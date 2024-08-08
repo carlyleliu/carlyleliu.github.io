@@ -30,17 +30,17 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图 异常级别  通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/armv8_vector.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQExceptProcess.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/ARM64_ELEVEL.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/armv8_vector.png">
 <meta property="article:published_time" content="2021-09-14T08:03:15.000Z">
-<meta property="article:modified_time" content="2024-08-08T14:45:47.563Z">
+<meta property="article:modified_time" content="2024-08-08T14:52:23.487Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Interrupt">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQExceptProcess.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxKernelInterruptARMExcept/">
@@ -360,9 +360,9 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1Nzk2NjA3OTEyOTA2ZjUwN2QxMDg=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQExceptProcess.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1Nzk2NjA3OTEyOTA2ZjUwN2QxMDg=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <h1 id="异常级别">异常级别</h1>
-<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png"></p>
+<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/ARM64_ELEVEL.png"></p>
 <p>通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。</p>
 <p>虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。</p>
 <p>ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世界，两个世界只能通过异常级别 3 的安全监视器切换。</p>
@@ -413,7 +413,7 @@
 </ul>
 <h1 id="异常向量表">异常向量表</h1>
 <p>ARMv7 架构的异常向量表比较简单，每个表项占用 4 字节，并且每个表项里存放了一条跳转指令。但是 ARMv8 架构的异常向量表发生了变化。每一个表项需要 128 字节，这样可以存放 32 条指令。注意，ARMv8 指令集支持 64 位指令集，但是每一条指令的位宽是 32 位宽而不是 64 位宽。</p>
-<p>在下表中，异常向量表存放的基地址可以通过 VBAR （Vector Base Address Register）来设置。VBAR 是异常向量表的基地址寄存器。见《ARM Architecture Reference Manual，ARMv8，for ARMv8-A architecture profile v8.4》的 D.1.10 节。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/armv8_vector.png"></p>
+<p>在下表中，异常向量表存放的基地址可以通过 VBAR （Vector Base Address Register）来设置。VBAR 是异常向量表的基地址寄存器。见《ARM Architecture Reference Manual，ARMv8，for ARMv8-A architecture profile v8.4》的 D.1.10 节。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/armv8_vector.png"></p>
 <hr>
 <h1 id="异常向量表在-linux-中的实现扩展">异常向量表在 Linux 中的实现（扩展）</h1>
 <h2 id="汇编宏定义">汇编宏定义</h2>
@@ -573,7 +573,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:58</span>
+    <span title="站点阅读时长">26:57</span>
   </span>
 </div>
 <div class="busuanzi-count">

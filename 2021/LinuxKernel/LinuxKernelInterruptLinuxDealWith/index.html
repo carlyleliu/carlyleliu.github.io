@@ -30,18 +30,18 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQLinuxDealWith.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/HW_IRQ.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQ_RUN.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/irq_init1.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQLinuxDealWith.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/HW_IRQ.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQ_RUN.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/irq_init1.png">
 <meta property="article:published_time" content="2021-09-19T03:46:13.000Z">
-<meta property="article:modified_time" content="2024-08-08T14:45:47.624Z">
+<meta property="article:modified_time" content="2024-08-08T14:52:23.488Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Interrupt">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQLinuxDealWith.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQLinuxDealWith.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxKernelInterruptLinuxDealWith/">
@@ -361,7 +361,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQLinuxDealWith.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ODFjZDU2NTNiYjA3MWU2ZTZkYmU=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQLinuxDealWith.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ODFjZDU2NTNiYjA3MWU2ZTZkYmU=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <h1 id="中断控制器">中断控制器</h1>
 <p>ARM 公司提供了一种标准的中断控制器，称为通用中断控制器（Generic IntermurController，GIC）。目前 GIC 架构规范有 4 个版本：v1~v4。GICv2 最多支持 8 个处理器。GIC v3 最多支持 128 个处理器，GICv3 和 GICv4 只支持 ARM64 处理器。</p>
@@ -385,7 +385,7 @@
 <li>Active and pending：处理器正在处理中断，相同的中断源又发送了一个中断</li>
 </ul>
 <h1 id="中断域">中断域</h1>
-<p>一个大型系统可能有多个中断控制器，这些中断控制器可以级联，一个中断控制器作为中断源连接到另一个中断控制器，但只有一个中断控制器作为根控制器直接连接到处理器。如下图： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/HW_IRQ.png"></p>
+<p>一个大型系统可能有多个中断控制器，这些中断控制器可以级联，一个中断控制器作为中断源连接到另一个中断控制器，但只有一个中断控制器作为根控制器直接连接到处理器。如下图： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/HW_IRQ.png"></p>
 <p>为了把每个中断控制器本地的硬件中断号映射到全局唯一的 Linux 中断号（虚拟中断号），内核定义了中断域 irq_domain，每个中断控制器有自己的中断域。</p>
 <h2 id="创建中断域">创建中断域</h2>
 <p>中断控制器的驱动程序使用分配函数 irq_domain_add_*() 创建和注册中断域。每种映射方法提供不同的分配函数，调用者必须给分配函数提供 irq_domain_ops 结构体，分配函在执行成功的时候返回 irq_domain 的指针。</p>
@@ -436,10 +436,10 @@
 <li><p>参数 dev 是传给处理函数（由参数 handler 指定）的参数。</p></li>
 </ul>
 <p>在上一节我们分析了 ARM64 架构下的异常处理流程，当异常发生时会跳转到异常向量表中执行异常处理函数，中断是异常的一种，因此当中断发生时也会跳转到异常向量表中执行中断处理函数，ARM64 对应有不同的异常级别，其中内核运行在 EL1 级别，对于这种情况，根据我们上一节的分析中断会跳转到 el1h_64_irq 标号处运行程序，该标号处的处理在不同的异常下都是类似的，不同的是跳转的处理函数不同，对于 el1h_64_irq 标号会跳转到 el1h_64_irq_handle 函数处处理，下面我们详细看下该函数的具体处理工作是怎样的吧：</p>
-<p>同样由于函数调用层次较多，这里采用流程图的方式展现，当然这必然会忽略掉很多细节，详细的读者可以自己追踪源码查看。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/IRQ_RUN.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9kaWFncmFtaW5nLzYxNDc1NjExZTQwMWZkNzg2MWE3MWFkYw==">原图<i class="fa fa-external-link-alt"></i></span></p>
+<p>同样由于函数调用层次较多，这里采用流程图的方式展现，当然这必然会忽略掉很多细节，详细的读者可以自己追踪源码查看。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/IRQ_RUN.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9kaWFncmFtaW5nLzYxNDc1NjExZTQwMWZkNzg2MWE3MWFkYw==">原图<i class="fa fa-external-link-alt"></i></span></p>
 <p>通过上图我们大概就了解了中断处理的整体流程。当中断发生时跳转到异常向量表，然后跳转到对应的标号处执行，然后执行中断控制器的处理函数，再调用外部中断注册的中断处理函数。</p>
 <h1 id="中断控制器驱动初始化">中断控制器驱动初始化</h1>
-<p>以一张图来整理这些函数之间的调用关系，如下： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/irq_init1.png"> <span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxNDkzNzU0MWUwODUzMTVkYzRkZTZjOC5wbmc=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<p>以一张图来整理这些函数之间的调用关系，如下： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/irq_init1.png"> <span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxNDkzNzU0MWUwODUzMTVkYzRkZTZjOC5wbmc=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <h1 id="参考文献">参考文献</h1>
 <p>《Linux 内核深度解析》</p>
 
@@ -528,7 +528,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:58</span>
+    <span title="站点阅读时长">26:57</span>
   </span>
 </div>
 <div class="busuanzi-count">

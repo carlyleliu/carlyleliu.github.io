@@ -30,17 +30,17 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="数据结构 原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/ALSA_Struct1.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/hw_buffer.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/snd_card_register1.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/ALSA_Struct1.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/hw_buffer.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/snd_card_register1.png">
 <meta property="article:published_time" content="2024-02-17T04:42:52.000Z">
-<meta property="article:modified_time" content="2024-08-08T14:45:47.625Z">
+<meta property="article:modified_time" content="2024-08-08T14:52:23.469Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Audio">
 <meta property="article:tag" content="ALSA">
 <meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/ALSA_Struct1.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/ALSA_Struct1.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2024/LinuxDriver/LinuxAudioALSACreateSoundCard/">
@@ -357,7 +357,7 @@
     
     
     <div class="post-body" itemprop="articleBody"><h1 id="数据结构">数据结构</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YzA2ZjYwZTNlNzQwNmUyMDNmMzkz">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/ALSA_Struct1.png"></p>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YzA2ZjYwZTNlNzQwNmUyMDNmMzkz">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/ALSA_Struct1.png"></p>
 <span id="more"></span>
 <ul>
 <li>snd_card: 是最顶层数据结构，通过链表挂载该 sound card 的所有设备 snd_device。</li>
@@ -372,7 +372,7 @@
 <p>当 app 在调用 snd_pcm_writei 时，alsa core 将 app 传来的数据搬到 HW buffer（即 DMA buffer）中，alsa driver 从 HW buffer 中读取数据传输到硬件播放。</p>
 <p>ALSA buffer 是采用 ring buffer 来实现的。ring buffer 有多个 HW buffer 组成。HW buffer 一般是在 alsa driver 的 hw_params 函数中分配的一块大小为 buffer size 的 DMA buffer. 之所以采用多个 HW buffer 来组成 ring buffer, 是防止读写指针的前后位置频繁的互换（即写指针到达 HW buffer 边界时，就要回到 HW buffer 起始点）。</p>
 <p>ring buffer = n * HW buffer. 通常这个 n 比较大，在数据读写的过程中，很少会出现读写指针互换的情况。下图是 ALSA buffer 的实现以及读写指针更新的方法：</p>
-<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/hw_buffer.png"></p>
+<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/hw_buffer.png"></p>
 <ul>
 <li>hw_ptr_base: 是当前 HW buffer 在 Ring buffer 中的起始位置。当读指针到达 HW buffer 尾部时，hw_ptr_base 按 buffer size 移动。</li>
 <li>hw_ptr: 即 HW buffer 的读指针。alsa driver 将数据从 HW buffer 中读走并送到声卡硬件时，hw_ptr 就会移动到新位置。</li>
@@ -383,7 +383,7 @@
 </ul>
 <p>hw_ptr 的更新是通过调用 snd_pcm_update_hw_ptr() 完成。此函数在 app 写数据时会调用，也会在硬件中断时通过 snd_pcm_peroid_elapsed 调用</p>
 <h1 id="流程">流程</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YmMwYzUxZTA4NTMwNmQ3NDJlYzkz">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Audio/snd_card_register1.png"></p>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YmMwYzUxZTA4NTMwNmQ3NDJlYzkz">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Audio/snd_card_register1.png"></p>
 <ul>
 <li>分配并设置 snd_card 数据结构</li>
 <li>创建 snd_pcm instance</li>
@@ -479,7 +479,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:58</span>
+    <span title="站点阅读时长">26:57</span>
   </span>
 </div>
 <div class="busuanzi-count">

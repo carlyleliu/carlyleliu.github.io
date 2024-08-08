@@ -30,18 +30,18 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="概述 CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：  如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对 c">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/CLK_Core_List.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/clk_register.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/clk_init.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/clk_type.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/CCF_Struct.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/CLK_Core_List.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/clk_register.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/clk_init.png">
 <meta property="article:published_time" content="2020-10-05T08:39:19.000Z">
-<meta property="article:modified_time" content="2024-08-08T14:45:47.625Z">
+<meta property="article:modified_time" content="2024-08-08T14:52:23.473Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/clk_type.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2020/LinuxDriver/LinuxDriverCCF/">
@@ -362,7 +362,7 @@
     
     
     <div class="post-body" itemprop="articleBody"><h1 id="概述">概述</h1>
-<p>CCF 主要用于系统 clock 的管理等操作。clk 的种类说明： <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png"></p>
+<p>CCF 主要用于系统 clock 的管理等操作。clk 的种类说明： <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/clk_type.png"></p>
 <p>如上图所示，时钟源大概可分为如下几种：</p>
 <ul>
 <li>提供基础时钟源的晶振（可分为有源晶振、无源晶振两种）</li>
@@ -439,7 +439,7 @@
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* driver */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">xxx_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">clk</span> *<span class="title">baud_clk</span>;</span></span><br><span class="line">    <span class="type">int</span> ret; </span><br><span class="line"></span><br><span class="line">    baud_clk = devm_clk_get(&amp;pdev-&gt;dev, “baud”);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(clk)) {</span><br><span class="line">            …</span><br><span class="line">    } </span><br><span class="line"></span><br><span class="line">    ret = clk_prepare_enable(baud_clk);</span><br><span class="line">    <span class="keyword">if</span> (ret) {</span><br><span class="line">            …</span><br><span class="line">    } </span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <h1 id="数据结构provider">数据结构（provider）</h1>
-<p>CCF 实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDEyYzgwNzkxMjk1NzEwYjY2NzQ4">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png"></p>
+<p>CCF 实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDEyYzgwNzkxMjk1NzEwYjY2NzQ4">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/CCF_Struct.png"></p>
 <ul>
 <li><p>clk_hw： 为硬件时钟源的逻辑抽象可以理解为 clk provider</p></li>
 <li><p>clk_core： 可以理解为 clk provider 的 driver，包含了 clk provider 的访问方法、时钟频率设定、支持的时钟频率、父时钟源的个数以及父时钟源的名称等内容</p></li>
@@ -447,7 +447,7 @@
 <li><p>clk_ops： 主要是 clk provider 的操作接口，包含 prepare 与 unprepare 操作接口（这两个接口执行时允许 sleep，主要是用的互斥锁）、enable 与 disable 接口（这两个接口执行时不允许 sleep，里面使用了自旋锁），也包含了速率设置接口、重新计算速率接口、parent 设置与获取接口等等，通过这些接口可实现时钟频率的修改、父时钟源的选择、时钟的使能与否等功能</p></li>
 <li><p>clk_init_data： 描述该 clock 的静态数据，clock provider 负责把系统中每个 clock 的静态数据准备好，然后交给 clock framework 的核心逻辑，剩下的事情，clock provider 就不用操心了。这个过程，就是 clock driver 的编写过程</p></li>
 </ul>
-<p>ccf 的驱动框架也是与设备驱动模型类似的结构，clk_core 用于抽象设备树驱动的方法类似于 device_driver 而 clk 则更像是一个 device，在 soc 内部有很多控制器，这些控制器都挂载在时钟树下面，这些控制器就是 consumer，他们会用到 clk 数据结构用于使能失能时钟，以及设置时钟频率等操作。而 clk_core 结构体则抽象了时钟树中的每一个节点组织成树状结构来描述整个时钟树。下面看下 clk_core 在内核中的组织关系结构图，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDI0NjYxZTA4NTMzYTAzMDJmZWRh">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/CLK_Core_List.png"></p>
+<p>ccf 的驱动框架也是与设备驱动模型类似的结构，clk_core 用于抽象设备树驱动的方法类似于 device_driver 而 clk 则更像是一个 device，在 soc 内部有很多控制器，这些控制器都挂载在时钟树下面，这些控制器就是 consumer，他们会用到 clk 数据结构用于使能失能时钟，以及设置时钟频率等操作。而 clk_core 结构体则抽象了时钟树中的每一个节点组织成树状结构来描述整个时钟树。下面看下 clk_core 在内核中的组织关系结构图，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDI0NjYxZTA4NTMzYTAzMDJmZWRh">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/CLK_Core_List.png"></p>
 <h1 id="实现">实现</h1>
 <h2 id="clock-分类及-register">clock 分类及 register</h2>
 <p>根据 clock 的特点，clock framework 将 clock 分为 fixed rate、gate、devider、mux、fixed factor、composite 六类，每一类 clock 都有相似的功能、相似的控制方式，因而可以使用相同的逻辑 s，统一处理，这充分体现了面向对象的思想。</p>
@@ -481,11 +481,11 @@
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_composite</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> * <span class="type">const</span> *parent_names, <span class="type">int</span> num_parents,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *mux_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *mux_ops,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *rate_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *rate_ops,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *gate_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *gate_ops,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> flags)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <h2 id="上面这些注册接口的实现逻辑">上面这些注册接口的实现逻辑</h2>
-<p>clk 注册流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDNiNWE1NjUzYmI2NzkxZTRhZWZh">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/clk_register.png"></p>
+<p>clk 注册流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDNiNWE1NjUzYmI2NzkxZTRhZWZh">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/clk_register.png"></p>
 <p>驱动针对不同类型的 clock 节点提供了几种不同的注册函数，驱动开发人员一般不需要自己编写对应的驱动而是尽可能调用系统提供的接口，而对于系统而言也是尽可能的复用函数，这些注册函数都是通过调用 clk_hw_register 函数来实现自己的功能。</p>
 <p>这里有一个 map 映射没有涉及，ccf 子系统提供了 clk provider 的 map，这种 map 机制可以理解为定义了 clk consumer 与 clk_provider 的映射关系，即该 clk provider 可以给哪些 clk consumer 提供时钟（如针对非设备树模式，则定义了 clk consumer 的设备名称、clk consumer 的时钟使用名称）。</p>
 <h2 id="系统启动阶段对设备树的处理">系统启动阶段对设备树的处理</h2>
-<p>clk 初始化流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDQwYmZlNDAxZmQ2YmUwN2YyZGRl">原图<i class="fa fa-external-link-alt"></i></span> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Linux/Driver/clk_init.png"></p>
+<p>clk 初始化流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDQwYmZlNDAxZmQ2YmUwN2YyZGRl">原图<i class="fa fa-external-link-alt"></i></span> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Linux/Driver/clk_init.png"></p>
 <p>上面介绍了 clk 的注册流程，在上图中展示了系统启动过程中，解析设备树按照默认配置来设置系统时钟树的流程，下面给出详细说明：</p>
 <ul>
 <li>通常在 Clock 驱动中会有一个 CLK_OF_DECLARE 宏，该宏用于声明一个 struct of_device_id 数据结构，并且最终在链接的时候会将数据结构链接在一个叫做__of_clk_table 的段中，这个段的定义位于 vmlinux.lds.h 文件中。</li>
@@ -584,7 +584,7 @@
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:58</span>
+    <span title="站点阅读时长">26:57</span>
   </span>
 </div>
 <div class="busuanzi-count">

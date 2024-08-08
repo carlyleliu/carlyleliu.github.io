@@ -30,19 +30,19 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/TaskSMP.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/smp.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/sched_domain.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/queue_cpu.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/task_load.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/TaskSMP.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/smp.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/sched_domain.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/queue_cpu.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/task_load.png">
 <meta property="article:published_time" content="2021-10-31T07:53:38.000Z">
-<meta property="article:modified_time" content="2024-08-08T14:45:47.563Z">
+<meta property="article:modified_time" content="2024-08-08T14:52:23.499Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Task">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/TaskSMP.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/TaskSMP.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/LinuxKernel/LinuxTaskSMP/">
@@ -362,11 +362,11 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/TaskSMP.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2YjhlYzFlZmFkNDA3NTI1MTE2NDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+    <div class="post-body" itemprop="articleBody"><p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/TaskSMP.png"> <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2YjhlYzFlZmFkNDA3NTI1MTE2NDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <h1 id="概述">概述</h1>
 <p>SMP（Symmetrical MultiProcessing）的全称是“对称多处理”技术，是指在一台计算机上汇集了一组处理器，这些处理器都是对等的，它们之间共享内存子系统和系统总线。</p>
-<p>下图所示为 4 核的 SMP 处理器架构，在 4 核处理器中，每个物理 CPU 核心拥有独立的 L1 缓存且不支持超线程技术，分成两个簇（cluster）簇 0 和簇 1，每个簇包含两个物理 CPU 核，簇中的 CPU 核共享 L2 缓存。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/smp.png"></p>
+<p>下图所示为 4 核的 SMP 处理器架构，在 4 核处理器中，每个物理 CPU 核心拥有独立的 L1 缓存且不支持超线程技术，分成两个簇（cluster）簇 0 和簇 1，每个簇包含两个物理 CPU 核，簇中的 CPU 核共享 L2 缓存。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/smp.png"></p>
 <h1 id="调度域和调度组">调度域和调度组</h1>
 <p>根据处理器的实际物理属性，CPU 和 Linux 内核的分类如下所示。</p>
 <ul>
@@ -378,16 +378,16 @@
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/sched/topology.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_domain_topology_level</span> {</span></span><br><span class="line">	sched_domain_mask_f mask; <span class="comment">//函数指针，用于指定某个 SDTL 的 cpumask 位图</span></span><br><span class="line">	sched_domain_flags_f sd_flags;<span class="comment">//函数指针，用于指定某个 SDTL 的标志位</span></span><br><span class="line">	<span class="type">int</span>		    flags;</span><br><span class="line">	<span class="type">int</span>		    numa_level;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">sd_data</span>      <span class="title">data</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SCHED_DEBUG</span></span><br><span class="line">	<span class="type">char</span>                *name;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>另外，Linux 内核默认定义了数组 default_topology[] 来概括 CPU 物理域的层次结构。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/sched/topology.c&gt;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Topology list, bottom-up.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_domain_topology_level</span> <span class="title">default_topology</span>[] =</span> {</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SCHED_SMT</span></span><br><span class="line">	{ cpu_smt_mask, cpu_smt_flags, SD_INIT_NAME(SMT) },</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SCHED_MC</span></span><br><span class="line">	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },</span><br><span class="line">	{ <span class="literal">NULL</span>, },</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
-<p>Linux 内核使用 sched_domain 数据结构来描述调度层级，从 defaul_topology[] 数组可知，系统默认支持 DIE 类型层级、SMT 类型层级以及 MC 类型层级。另外，可在调度域里划分调度组，然后使用 sched_group 数据结构来描述调度组，调度组是负载均衡调度的最小单位。在最低层级的调度域中，通常用调度组描述 CPU 核心。 在支持 NUMA 架构的处理器中，假设支持 SMT 技术，那么整个系统的调度域和调度组的关系如图所示，可在默认的调度层级中新增 NUMA 层级的调度域。在超大系统中，系统会频繁访问调度域数据结构。为了提升系统的性能和可扩展性，调度域数据结构 sched_domain 采用 Per-CPU 变量来构建 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/sched_domain.png"></p>
+<p>Linux 内核使用 sched_domain 数据结构来描述调度层级，从 defaul_topology[] 数组可知，系统默认支持 DIE 类型层级、SMT 类型层级以及 MC 类型层级。另外，可在调度域里划分调度组，然后使用 sched_group 数据结构来描述调度组，调度组是负载均衡调度的最小单位。在最低层级的调度域中，通常用调度组描述 CPU 核心。 在支持 NUMA 架构的处理器中，假设支持 SMT 技术，那么整个系统的调度域和调度组的关系如图所示，可在默认的调度层级中新增 NUMA 层级的调度域。在超大系统中，系统会频繁访问调度域数据结构。为了提升系统的性能和可扩展性，调度域数据结构 sched_domain 采用 Per-CPU 变量来构建 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/sched_domain.png"></p>
 <h1 id="负载的计算">负载的计算</h1>
 <h3 id="例-1">例 1</h3>
-<p>假设在如图所示的双核处理器里，CPU0 的就绪队列里有 4 个进程，CPU1 的就绪队列里有两个进程，那么究竟哪个 CPU 上的负载重呢？ <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/queue_cpu.png"></p>
+<p>假设在如图所示的双核处理器里，CPU0 的就绪队列里有 4 个进程，CPU1 的就绪队列里有两个进程，那么究竟哪个 CPU 上的负载重呢？ <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/queue_cpu.png"></p>
 <p>假设上述 6 个进程的 nice 值是相同的，也就是优先级和权重都相同，那么明显可以看出 CPU0 的就绪队列里有 4 个进程，相比 CPU1 的就绪队列里的进程数目要多，从而得出 CPU0 上的负载相比 CPU1 更重的结论。</p>
 <pre><code>CPU 上的负载=就绪队列的总权重</code></pre>
 <p>为了计算 CPU 上的负载，最简单的方法是计算 CPU 的就绪队列中所有进程的权重。</p>
 <p>但是，仅考虑优先级和权重是有问题的，有的是 CPU 密集型的，也有的是 I/O 密集型的。如果延伸到多 CPU 之间的负载均衡，结果就显得不准确了。</p>
 <h3 id="例-2">例 2</h3>
-<p>在如图所示的双核处理器里，CPU0 和 CPU1 的就绪队列里都只有一个进程在运行，而且进程的优先级和权重相同。但是，CPUO 上的进程一直在占用 CPU，而 CPU1 上的进程走走停停，那么究竟 CPU0 和 CPU1 上的负载是不是相同呢？ <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Kernel/task_load.png"></p>
+<p>在如图所示的双核处理器里，CPU0 和 CPU1 的就绪队列里都只有一个进程在运行，而且进程的优先级和权重相同。但是，CPUO 上的进程一直在占用 CPU，而 CPU1 上的进程走走停停，那么究竟 CPU0 和 CPU1 上的负载是不是相同呢？ <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Kernel/task_load.png"></p>
 <p>从例 1 中的判断条件看，两个 CPU 上的负载是一样的。但是，从我们的直观感受看，CPU0 上的进程一直占用 CPU，CPU0 是一直满负荷运行的，而 CPU1 上的进程走走停停，CPU 使用率不高。为什么会得出不一样的结论呢？ 这是因为例 1 使用的计算方法没有考虑进程在时间因素下的作用，也就是没有考虑历史负载对当前负载的影响。那么该如何计算历史负载对 CPU 上的负载的影响呢？</p>
 <p>CPU 上的负载的计算公式如下。 <span class="math display">\[
 CPU 上的负载 = \frac{运行时间}{总时间} \times  就绪队列总权重 \tag{2}
@@ -528,7 +528,7 @@ decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:58</span>
+    <span title="站点阅读时长">26:57</span>
   </span>
 </div>
 <div class="busuanzi-count">

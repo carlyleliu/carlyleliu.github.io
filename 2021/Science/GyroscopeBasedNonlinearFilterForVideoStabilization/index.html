@@ -30,18 +30,18 @@
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="Abstract 我们提出了一种对移动设备上捕获的视频进行视频稳定和滚动快门校正的方法。该方法使用来自机载陀螺仪的数据来跟踪相机的角速度，并且可以在相机捕获期间内实时运行。我们消除了由于手抖动引起的小抖动和滚动快门失真，营造出在三脚架上拍摄的视频的效果。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl1.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl2.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl3.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl4.png">
-<meta property="og:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl5.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl1.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl2.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl3.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl4.png">
+<meta property="og:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl5.png">
 <meta property="article:published_time" content="2021-08-21T01:35:15.000Z">
-<meta property="article:modified_time" content="2024-08-08T14:45:47.628Z">
+<meta property="article:modified_time" content="2024-08-08T14:52:23.512Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Image">
 <meta property="article:tag" content="Stabilization">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl1.png">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl1.png">
 
 
 <link rel="canonical" href="http://carlyleliu.github.io/2021/Science/GyroscopeBasedNonlinearFilterForVideoStabilization/">
@@ -371,7 +371,7 @@
 <p>当深度变化引起像素运动时，基于图像的跟踪方法会受到影响，视差，单应性不容易建模。此外，滚动快门成像传感器可以引入非刚性的帧到帧对应关系，不能简单地通过全局帧到帧运动模型进行建模。为了解决滚动快门问题，Baker 等人 [8] 使用低频光流的时间超分辨率估计和去除相机的高频抖动。Grundmann 等人 [3] 开发了一个基于混合单应性的模型，该模型跟踪帧内运动并生成具有校正滚动快门失真的稳定视频。 Liu 等人 [6] 采用基于网格的空间变化运动表示，结合自适应时空路径优化，可以处理视差并校正滚动快门效应。</p>
 <p>Karpenko [1] 和 Hanning 等人 [11] 描述了使用内置陀螺仪跟踪相机方向的移动设备的视频稳定技术，将线性低通滤波器应用于陀螺仪输出。Karpenko 等人 [1] 使用高斯核，而 Hanning 等人 [11] 应用可变长度的 Hann 窗口来自适应地平滑相机路径。相比之下，我们引入了一种非线性滤波方法，该方法可以完全平坦化小运动，而不管频率如何，并在虚拟摄像机必须移动以将裁剪窗口保持在输入帧内时执行低通平滑。当相机几乎静止时，我们的虚拟相机被固定，消除所有抖动。移动时，我们的方法就像一个可变 IIR 滤波器，以平滑输出的方式将输入速度与虚拟相机速度混合，同时保证它跟踪输入，以便裁剪窗口永远不会离开输入帧。</p>
 <h1 id="algorithm-description">Algorithm Description</h1>
-<p>从概念上讲，可以通过创建一个裁剪矩形来实现视频稳定，该矩形在相机四处晃动时随场景内容逐帧移动。如图 1 所示 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl1.png"></p>
+<p>从概念上讲，可以通过创建一个裁剪矩形来实现视频稳定，该矩形在相机四处晃动时随场景内容逐帧移动。如图 1 所示 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl1.png"></p>
 <h2 id="camera-tracking-using-the-gyroscope">Camera Tracking Using the Gyroscope</h2>
 <p>我们将相机运动建模为全局坐标系中的旋转。陀螺仪提供了一系列带有时间戳的离散角速度测量值，我们将其积分以生成描述相机方向的时间函数。 理论上，我们还可以通过使用设备的加速度计测量平移来更精确，但实际上这很困难且价值有限。如果相机距离平面场景 3 米，那么 1 厘米平移引起的图像运动相当于旋转 0.19 度。 此外，平移的使用需要了解场景中物体的深度。</p>
 <p>为了修复卷帘快门失真，我们需要知道特定行曝光时相机的方向。 给定帧 <span class="math inline">\(t_0\)</span> 第一行的时间戳，第 r 行的时间戳为</p>
@@ -401,7 +401,7 @@ v_∆(k) = slerp(q_I; v_∆(k − 1); d) \tag5
 <p><span class="math display">\[
 v(k) = v(k − 1) · v_∆(k − 1) \tag6
 \]</span></p>
-<p>这里<span class="math inline">\(q_I\)</span>代表恒等四元数，slerp 函数是两个四元数之间的球面线性插值 [17]。在我们的实现中，我们将混合权重设置为 d ≈ 0.95，这样每一帧的角度变化只会略微减少。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl2.png"></p>
+<p>这里<span class="math inline">\(q_I\)</span>代表恒等四元数，slerp 函数是两个四元数之间的球面线性插值 [17]。在我们的实现中，我们将混合权重设置为 d ≈ 0.95，这样每一帧的角度变化只会略微减少。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl2.png"></p>
 <p>如果假设裁剪多边形的任何部分位于内部区域之外，我们将更新虚拟摄像机的角速度以使其更接近物理摄像机的变化率：</p>
 <p><span class="math display">\[
 v_∆(k) = slerp(p'_∆(k), v(k − 1), α) \tag7
@@ -414,7 +414,7 @@ p'_∆(k) = p(k) · p^∗(k − 1) · v(k − 1) \tag8
 <p><span class="math display">\[
 α = 1 − w^β \tag9
 \]</span> 其中 <span class="math inline">\(w \subseteq (0, 1]\)</span> 是裁剪多边形超出内部区域的最大突出量，而 β 是决定响应锐度的指数。在裁剪多边形的任何角落在输入之外的极端情况下 帧，w 取值为 1，强制 α 为 0，并使虚拟摄像机跟上物理摄像机。</p>
-<p>该算法运行良好，但当裁剪矩形突然碰到边缘时，它有时必须快速改变速度。 如果帧在处理之前可以在相机流水线中缓存一小段时间，那么可以检查更大的陀螺仪数据时间窗口，并且可以抢先避免急剧变化。 在本节的其余部分，我们扩展了我们的算法以使用来自前瞻缓冲区的数据来计算更平滑的路径。 <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl3.png"></p>
+<p>该算法运行良好，但当裁剪矩形突然碰到边缘时，它有时必须快速改变速度。 如果帧在处理之前可以在相机流水线中缓存一小段时间，那么可以检查更大的陀螺仪数据时间窗口，并且可以抢先避免急剧变化。 在本节的其余部分，我们扩展了我们的算法以使用来自前瞻缓冲区的数据来计算更平滑的路径。 <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl3.png"></p>
 <p>我们可以通过将虚拟相机的方向及时向前投射并将其与“未来”时间的实际方向进行比较来跨越更大的帧窗口。让 a 是向前看的帧数，并假设：</p>
 <p><span class="math display">\[
 v(k + a) = v(k − 1) · v_∆(k)^{a+1} \tag{10}
@@ -426,7 +426,7 @@ v_∆(k) = slerp(v_∆(k + a); v_∆(k); γ) \tag{11}
 <p>其中 γ 是一个混合因子，它定义了我们应该将多少前瞻角度变化与当前角度变化混合。 使用接近 1 的 γ 值提供了在正确方向上的先发制人的推动，而不是硬约束。 请注意，我们不会在没有前瞻的情况下更新我们计算的虚拟摄像机位置，我们只会更新我们将用于下一帧的虚拟摄像机速度</p>
 <p>图 3 显示了一系列前瞻距离（以帧为单位）的路径比较。 较大的前瞻值会产生更平滑的路径，因为它们可以有效地“预测”较大的运动并轻轻地导致输出开始移动。但需要注意的是，我们的算法可以在没有前瞻的情况下工作并且仍然产生良好的结果。</p>
 <h2 id="output-synthesis-and-rolling-shutter-correction">Output Synthesis and Rolling-Shutter Correction</h2>
-<p><img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl4.png"> <img src="http://carlyleliu.com:11313/github/ImageHosting/TechnologyBlog/Image/EIS/anl5.png"></p>
+<p><img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl4.png"> <img src="https://raw.githubusercontent.com/carlyleliu/ImageHosting/main/TechnologyBlog/Image/EIS/anl5.png"></p>
 <p>一旦我们计算了虚拟摄像机的新方向，我们就可以通过将裁剪多边形从视频输入投影到虚拟摄像机来合成输出。我们的裁剪多边形本质上是一个裁剪矩形，在垂直边缘上有多个拐点，如图 4 所示。拐点允许我们对多边形的每个切片使用不同的变换并修复滚动快门失真。对于每个切片，我们根据等式 2 计算单应矩阵。 我们将旋转矩阵 <span class="math inline">\(R_c(t2)\)</span> 固定到虚拟输出相机的方向，并通过来自陀螺仪的数据计算 <span class="math inline">\(R_c(tk)\)</span>，输入相机在每个拐点处的方向。我们将裁剪多边形的坐标设置为 OpenGL 着色器程序的纹理坐标，该程序将裁剪多边形从输入帧投影映射到虚拟相机。请注意，为了有效校正滚动快门效应，陀螺仪采样率应高于帧读出时间。在我们的实现中，我们以 200 Hz 的频率对陀螺仪进行采样，总共使用 10 个切片，或每个垂直边缘 9 个拐点。</p>
 <h2 id="parameter-selection">Parameter Selection</h2>
 <p>最重要的参数是输出裁剪多边形的大小以及分配给内部和外部区域的填充量。裁剪大小是平滑和图像质量之间的权衡：较大的裁剪多边形保留更多的输入图像，但留下较少的填充来平滑运动。填充分配是完全去除运动和剩余运动的平滑度之间的权衡。 如图 5 所示，较大的内部区域（绿色）能够使较大的运动（例如步行）变平，但当裁剪窗口接近框架边缘时必须更突然地移动。</p>
@@ -522,7 +522,7 @@ v_∆(k) = slerp(v_∆(k + a); v_∆(k); γ) \tag{11}
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">26:58</span>
+    <span title="站点阅读时长">26:57</span>
   </span>
 </div>
 <div class="busuanzi-count">
