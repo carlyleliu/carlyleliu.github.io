@@ -4,6 +4,12 @@ function whenDOMReady() {
 whenDOMReady()
 document.addEventListener("pjax:complete", whenDOMReady)
 
+// 适配pjax
+
+// window.onresize = () => {
+//   waterfall('#waterfall');
+// };
+
 // 自适应
 
 function timeDiff(timeObj, today) => {
