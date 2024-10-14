@@ -1,4 +1,25 @@
 function whenDOMReady() {
+	initEssay();
+};
+
+whenDOMReady()
+document.addEventListener("pjax:complete", whenDOMReady)
+
+function initEssay() {
+  if (document.querySelector('#essay-mini')) {
+    let swiper = new Swiper('.swiper-container', {
+        direction: 'vertical',
+        loop: true,
+        autoplay: {
+            delay: 3000,
+            pauseOnMouseEnter: true
+        },
+    });
+  }
+} // Swiper轮播 - 即刻mini
+
+
+function whenDOMReady() {
   if (location.pathname == '/essay/') document.addEventListener('DOMContentLoaded', function () {setTimeout(() => { changeTime(), btf.loadLightbox(document.querySelectorAll('#icat-bber img')), window.lazyLoadInstance && window.lazyLoadInstance.update(), reflashWaterFall();}, 300)})
 }
 whenDOMReady()
