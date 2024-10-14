@@ -12,7 +12,7 @@ document.addEventListener("pjax:complete", whenDOMReady)
 
 // 自适应
 
-function timeDiff(timeObj, today) => {
+function timeDiff(timeObj, today) {
   const timeObjUTC = Date.UTC(timeObj.getFullYear(), timeObj.getMonth(), timeObj.getDate());
   const todayUTC = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
 
