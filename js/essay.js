@@ -5,10 +5,9 @@ whenDOMReady()
 document.addEventListener("pjax:complete", whenDOMReady)
 
 // 适配pjax
-
-window.onresize = () {
-  waterfall('#waterfall');
-};
+// window.onresize = () => {
+//   waterfall('#waterfall');
+// };
 
 // 自适应
 
