@@ -187,7 +187,7 @@ let bbMemo = {
   
   function getFirstList(apiV1){
     bbDom.insertAdjacentHTML('afterend', load);
-    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit;
+    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&tag=说说";
     fetch(bbUrl).then(res => res.json()).then( resdata =>{
       if(bbMemo.twiEnv){
         updateTiwkoo(resdata)
