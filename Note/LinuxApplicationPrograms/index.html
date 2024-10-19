@@ -1,0 +1,685 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Linux 应用编程 | Matrix</title><meta name="author" content="CarlyleLiu"><meta name="copyright" content="CarlyleLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="文件 IO 系统调用进入内核  内核的 sys_open、sys_read 做了什么：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 应用编程">
+<meta property="og:url" content="http://carlyleliu.github.io/Note/LinuxApplicationPrograms/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="文件 IO 系统调用进入内核  内核的 sys_open、sys_read 做了什么：">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://unsplash.it/1600/900?random&2521">
+<meta property="article:published_time" content="2019-02-24T04:22:04.000Z">
+<meta property="article:modified_time" content="2024-10-06T05:50:51.314Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Note">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://unsplash.it/1600/900?random&2521"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://carlyleliu.github.io/Note/LinuxApplicationPrograms/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":false,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Linux 应用编程',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-10-06 13:50:51'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/custom.css"><!-- hexo injector head_end start --><link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-footer-beautify@1.0.0/lib/runtime.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/assets/font-awesome-animation.min.css" media="defer" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/tag_plugins.css" media="defer" onload="this.media='all'"><script src="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/assets/carousel-touch.js"></script><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.2.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://lsky.carlyleliu.vip/i/2024/08/31/66d33847bf991.jpg" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">206</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/gallery/"><i class="fa-fw fa-solid fa-image"></i><span> 光影</span></a></div><div class="menus_item"><a class="site-page" href="/essay/"><i class="fa-fw fas fa-comments"></i><span> 瞬间</span></a></div><div class="menus_item"><a class="site-page" href="/equipment/"><i class="fa-fw fa-solid fa-laptop"></i><span> 好物</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa-solid fa-mug-saucer"></i><span> 生活</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" target="_blank" rel="noopener" href="https://alist.carlyleliu.vip/"><i class="fa-fw fa-solid fa-cloud"></i><span> 网盘</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://talebook.carlyleliu.vip/"><i class="fa-fw fa-solid fa-book"></i><span> 书城</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://unsplash.it/1600/900?random&amp;2521')"><nav id="nav"><span id="blog-info"><a href="/" title="Matrix"><span class="site-name">Matrix</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/gallery/"><i class="fa-fw fa-solid fa-image"></i><span> 光影</span></a></div><div class="menus_item"><a class="site-page" href="/essay/"><i class="fa-fw fas fa-comments"></i><span> 瞬间</span></a></div><div class="menus_item"><a class="site-page" href="/equipment/"><i class="fa-fw fa-solid fa-laptop"></i><span> 好物</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa-solid fa-mug-saucer"></i><span> 生活</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" target="_blank" rel="noopener" href="https://alist.carlyleliu.vip/"><i class="fa-fw fa-solid fa-cloud"></i><span> 网盘</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://talebook.carlyleliu.vip/"><i class="fa-fw fa-solid fa-book"></i><span> 书城</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Linux 应用编程</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2019-02-24T04:22:04.000Z" title="发表于 2019-02-24 12:22:04">2019-02-24</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-10-06T05:50:51.314Z" title="更新于 2024-10-06 13:50:51">2024-10-06</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Note/">Note</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span id="" data-flag-title="Linux 应用编程"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span class="waline-pageview-count" data-path="/Note/LinuxApplicationPrograms/"><i class="fa-solid fa-spinner fa-spin"></i></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/Note/LinuxApplicationPrograms/#post-comment"><span class="waline-comment-count" data-path="/Note/LinuxApplicationPrograms/"><i class="fa-solid fa-spinner fa-spin"></i></span></a></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="文件-io">文件 IO</h1>
+<p>系统调用进入内核</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO1.png"></p>
+<p>内核的 sys_open、sys_read 做了什么：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO2.png"></p>
+<span id="more"></span>
+<h1 id="framebuffer-应用编程">Framebuffer 应用编程</h1>
+<h2 id="lcd-操作原理">LCD 操作原理</h2>
+<p>在 Linux 系统中通过 Framebuffer 驱动程序来控制 LCD。Frame 是帧的意思，buffer 是缓冲的意思，这意味着 Framebuffer 就是一块内存，里面保存着一帧图像。Framebuffer 中保存着一帧图像的每一个像素颜色值，假设 LCD 的分辨率是 1024x768，每一个像素的颜色用 32 位来表示，那么 Framebuffer 的大小就是：1024x768x32/8=3145728 字节。</p>
+<p>简单介绍 LCD 的操作原理：</p>
+<ul>
+<li>驱动程序设置好 LCD 控制器：根据 LCD 的参数设置 LCD 控制器的时序、信号极性；根据 LCD 分辨率、BPP 分配 Framebuffer</li>
+<li>APP 使用 ioctl 获得 LCD 分辨率、BPP</li>
+<li>APP 通过 mmap 映射 Framebuffer，在 Framebuffer 中写入数据</li>
+</ul>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO3.png"></p>
+<p>假设需要设置 LCD 中坐标 (x,y) 处像素的颜色，首要要找到这个像素对应的内存，然后根据它的 BPP 值设置颜色。假设 fb_base 是 APP 执行 mmap 后得到的 Framebuffer 地址，如下图所示：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO4.png"></p>
+<p>可以用以下公式算出 (x,y) 坐标处像素对应的 Framebuffer 地址：(x，y) 像素起始地址=fb_base+(xres*bpp/8)_y + x_bpp/8</p>
+<p>最后一个要解决的问题就是像素的颜色怎么表示？它是用 RGB 三原色（红、绿、蓝）来表示的，在不同的 BPP 格式中，用不同的位来分别表示 R、G、B，如下图所示：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO5.png"></p>
+<p>对于 32BPP，一般只设置其中的低 24 位，高 8 位表示透明度，一般的 LCD 都不支持。</p>
+<p>对于 24BPP，硬件上为了方便处理，在 Framebuffer 中也是用 32 位来表示，效果跟 32BPP 是一样的。</p>
+<p>对于 16BPP，常用的是 RGB565；很少的场合会用到 RGB555，这可以通过 ioctl 读取驱动程序中的 RGB 位偏移来确定使用哪一种格式。</p>
+<h1 id="文字显示">文字显示</h1>
+<h2 id="字符的编码方式区分编码和字体">字符的编码方式（区分编码和字体）</h2>
+<p>在计算机上，我们看到的字符“A”可能长这样： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO6.png"></p>
+<p>也可能长这样： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO7.png"></p>
+<p>对于同一个 TXT 文件中的内容，你在 Notepad 上选择不同字体时，字符显示的形状不一样。</p>
+<p>所以 TXT 文件中保存的是字符的核心：它的编码值。而 Notepad 上显示时，这些字符对应什么样的形状态，这是由字符文件决定的。编码值，字体是两个不一样的东西，比如 A 的编码值是 0x41，但是在屏幕上显示出来时可以使用不同的形状。</p>
+<h3 id="ascii">ASCII</h3>
+<p>是“American Standard Code for Information Interchange”的缩写，美国信息交换标准代码。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO8.png"></p>
+<h3 id="ansi">ANSI</h3>
+<p>使用记事本保存文件时，可以选择“ANSI”编码，却没有“ASCII”，各下图所示。怎么回事？</p>
+<p>ASNI 是 ASCII 的扩展，向下包含 ASCII。对于 ASCII 字符仍以一个字节来表示，对于非 ASCII 字符则使用 2 字节来表示。并没有固定的 ASNI 编码，它跟“本地化”(locale) 密切相关。比如在中国大陆地区，ANSI 的默认编码是 GB2312；在港澳台地区默认编码是 BIG5。以数值“0xd0d6”为例，对于 GB2312 编码它表示“中”；对于 BIG5 编码它表示“笢”。所以对于 ANSI 编码的 TXT 文件，如果你打开它发现乱码，那么还得再次细分它的具体编码。</p>
+<p>这仅仅是在中国地区就出现这些不兼容的问题。对于不同国家，它们默认的 ANSI 编码各不相同，所以同一个 TXT 文件在不同国家就很有可能出现乱码。</p>
+<p>根本的原理在于没有“统一的编码”，那解决方法自然就是使用“统一的编码”：UNICODE。</p>
+<h3 id="unicode">UNICODE</h3>
+<p>在 ANSI 标准中，很多种文字都有自己的编码标准，汉字简体字有 GB2312、繁体字有 BIG5，这难免同一个数值对应不同字符。比如数值“0xd0d6”，对于 GB2312 编码它表示“中”；对于 BIG5 编码它表示“笢”。这造成了使用 ANSI 编码保存的文件，不适合跨地区交流。</p>
+<p>UNICODE 编码就是解决这类问题：对于地球上任意一个字符，都给它一个唯一的数值。</p>
+<p>UNICODE 仍然向下兼容 ASCII，但是对于其他字符会有对应的数值，比如对于“中”、“笢”，它们的数值分别是：0x4e2d、0x7b22</p>
+<p>UNICODE 中的数值范围是 0x0000 至 0x10FFFF，有 1,114,111 即 100 多万个数值，可以表示 100 多万个字符，足够地球人使用了。</p>
+<ul>
+<li>UNICODE 编码实现</li>
+</ul>
+<p>所谓编码实现，就是对于一个数值，怎么表示它。这很奇怪，数值还能怎么表示？比如“中”的 UNICODE 值是 0x4e2d，在 TXT 文件中怎么表示 0x4e2d？直接写入 0x4e2d？不行！</p>
+<p>比如在 TXT 文件中写入 2 字节数据“0x2d 0x4e”，它可以用来表示“中”字吗？不能！它们对应 ASCII 字符“-N”。</p>
+<p>问题的关键在于：怎么断字。在 TXT 文件中，2 字节数据“0x2d 0x4e”是作为一个整体看待，还是拆成 2 部分看待？</p>
+<p>所以，需要用一定的技巧来表示数值，这就对应不同的编码实现。</p>
+<p>现在我们知道：</p>
+<ul>
+<li>ASCII 编码中使用一个字节来表示一个字符，只用到其中的 7 位，最高位恒为 0</li>
+<li>ANSI 编码中，对于 ASCII 字符仍使用一个字节来表示 (BIT7 是 0)，对于非 ASCII 字符一般使用 2 个字节来表示，非 ASCII 字符的数值 BIT7 都是 1</li>
+<li>UNICODE：这就有点复杂了，下面一一讲解</li>
+</ul>
+<p>先用记事本新建 3 个文件：utf-16_le.txt、utf-16_be.txt、utf-8.txt、bom_utf-8.txt，里面的内容都是“ab 中”，保存时编码分别选择“UTF-16 LE”、“UTF-16 BE”、“UTF-8”、“带有 BOM 的 UTF-8”，下图是其中一个例子： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO9.png"> 怎么表示一个 UNICODE 数值？</p>
+<ul>
+<li>使用 3 个字节表示一个 UNICODE</li>
+</ul>
+<p>不，太浪费。</p>
+<p>UNICODE 的最大值是 0x10FFFF，那使用 3 个字节来表示一个 UNICODE 数值？这当然是很省事的方法，但是会造成浪费，比如字符 A 的 UNICOCDE 值是 0x41，难道也用“0x41 0x00 0x00”这 3 个字节来表示</p>
+<ul>
+<li>UCS-2 Little endian/UTF-16 LE</li>
+</ul>
+<p>每个 UNICODE 值用 3 字节来表示有点浪费，那只用 2 字节呢？它可以表示 2^16=65536 个字符，全世界常用的字符都可以表示了。</p>
+<p>Little endian 表示小字节序，数值中权重低的字节放在前面，比如字符“A 中”在 TXT 文件中的数值如下，其中的“A”使用“0x41 0x00”两字节表示；“中”使用“0x2d 0x4e”两字节表示。文件开头的“0xff 0xfe”表示“UTF-16 LE”。</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO10.png"></p>
+<ul>
+<li>UCS-2 Big endian/UTF-16 BE</li>
+</ul>
+<p>Big endian 表示大字节序，数值中权重低的字节放在后面，比如字符“ab 中”在 TXT 文件中的数值如下，其中的“A”使用“0x00 0x41”两字节表示；“中”使用“0x4e 0x2d”两字节表示。文件开头的“0xfe 0xff”表示“UTF-16 BE”。</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO11.png"></p>
+<ul>
+<li>UTF8</li>
+</ul>
+<p>在上面 2 种方法中，每一个 UNICODE 使用 2 字节来表示，这有 3 个缺点：表示的字符数量有限、对于 ASCII 字符有空间浪费、如果文件中有某个字节丢失，这会使得后面所有字符都因为错位而无法显示。</p>
+<p>使用 UTF8 可以解决上述所有问题。UTF8 是变长的编码方法，有 2 种 UTF8 格式的文件：带有头部、不带头部。先举例，看下图： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO12.png"></p>
+<p>对于其中的 ASCII 字符，在 UTF8 文件中直接用其 ASCII 码来表示，比如上图中的 0x61 表示字符 a、0x62 表示字符 b。上图中的 3 个字节“0xe4 0xb8 0xad”表示的数值是 0x4e2d，对应“中”的 UNICODE 码。</p>
+<p>对于非 ASCII 字符，使用变长的编码：每一个字节的高位都自带长度信息。请看下图</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO13.png"></p>
+<p>上图中，0xe4 的二进制是“11100100”，高位有 3 个 1，表示从当前字节起有 3 字节参与表示 UNICODE；</p>
+<p>0xb8 的二进制是“10111000”，高位有 1 个 1，表示从当前字节起有 1 字节参与表示 UNICODE；</p>
+<p>0xad 的二进制是“10101101”，高位有 1 个 1，表示从当前字节起有 1 字节参与表示 UNICODE；</p>
+<p>除去高位的“1110”、“10”、“10”后，剩下的二进制数组合起来得到“01001110001101”，它就是 0x4e2d，即“中”的 UNICODE 值。</p>
+<p>使用 UTF8 编码时，即使 TXT 文件中丢失了某些数据，也只会影响到当前字符的显示，后面的字符不受影响</p>
+<h2 id="ascii-字符的点阵显示">ASCII 字符的点阵显示</h2>
+<p>要在 LCD 中显示一个 ASCII 字符，即英文字母这些字符，首先是要找到字符对应的点阵。在 Linux 内核源码中有这个文件：lib_8x16.c，里面以数组形式保存各个字符的点阵，比如：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO14.png"></p>
+<p>数组里的数字是如何表示点阵的？以字符 A 为例，如下图所示：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO15.png"></p>
+<p>上图左侧有 16 行数值，每行 1 个字节。每一个节对应右侧一行中 8 个像素：像素从右边数起，bit0 对应第 0 个像素，bit1 对应第 1 个像素，……，bit7 对应第 7 个像素。某位的值为 1 时，表示对应的像素要被点亮；值为 0 时表示对应的像素要熄灭。</p>
+<p>所以要显示某个字符时，根据它的 ASCII 码在 fontdata_8x16 数组中找到它的点阵，然后取出这 16 个字节去描画 16 行像素。</p>
+<p>比如字符 A 的 ASCII 值是 0x41，那么从 fontdata_8x16[0x41*16] 开始取其点阵数据。</p>
+<h3 id="矢量字体引入">矢量字体引入</h3>
+<p>使用点阵字库显示英文字母、汉字时，大小固定，如果放大缩小则会模糊甚至有锯齿出现，为了解决这个问题，引用矢量字体。</p>
+<p>矢量字体形成分三步：</p>
+<ul>
+<li>确定关键点</li>
+<li>使用数学曲线（贝塞尔曲线）连接头键点</li>
+<li>填充闭合区线内部空间</li>
+</ul>
+<p>什么是关键点？以字母“A”为例，它的的关键点如下图中的黄色所示。</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO16.png"></p>
+<p>如果需要放大或者缩小字体，关键点的相对位置是不变的，只要数学曲线平滑，字体就不会变形。</p>
+<h3 id="freetype-介绍">Freetype 介绍</h3>
+<p>Freetype 是开源的字体引擎库，它提供统一的接口来访问多种字体格式文件，从而实现矢量字体显示。我们只需要移植这个字体引擎，调用对应的 API 接口，提供字体文件，就可以让 freetype 库帮我们取出关键点、实现闭合曲线，填充颜色，达到显示矢量字体的目的。</p>
+<p>关键点 (glyph) 存在字体文件中，Windows 使用的字体文件在 c:目录下，扩展名为 TTF 的都是矢量字库，本次使用实验使用的是新宋字体 simsun.ttc。</p>
+<p>给定一个字符，怎么在字体文件中找到它的关键点？</p>
+<p>首先要确定该字符的编码值：比如 ASCII 码、GB2312 码、UNICODE 码。如果字体文件支持某种编码格式 (charset)，就可以使用这类编码值去找到该字符的关键点 (glyph)。有些字体文件支持多种编码格式 (charset)，这在文件中被称为 charmaps（注意：这个单词是复数，意味着可能支持多种 charset)。</p>
+<p>以 simsun.ttc 为值，该字体文件的格如下：头部含有 charmaps，可以使用某种编码值去 charmaps 中找到它对应的关键点。下图中的“A、B、中、国、韦”等只是 glyph 的示意图，表示关键点。</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO17.png"></p>
+<p>Charmaps 表示字符映射表，字体文件可能支持哪一些编码，GB2312、UNICODE、BIG5 或其他。如果字体文件支持该编码，使用编码值通过 charmap 就可以找到对应的 glyph，一般而言都支持 UNICODE 码。</p>
+<p>有了以上基础，一个文字的显示过程可以概括如下：</p>
+<ul>
+<li>给定一个字符可以确定它的编码值 (ASCII、UNICODE、GB2312)</li>
+<li>设置字体大小</li>
+<li>根据编码值，从文件头部中通过 charmap 找到对应的关键点 (glyph)，它会根据字体大小调整关键点</li>
+<li>把关键点转换为位图点阵</li>
+<li>在 LCD 上显示出来</li>
+</ul>
+<p>使用：</p>
+<ul>
+<li>初始化：FT_InitFreetype</li>
+<li>加载（打开）字体 Face：FT_New_Face</li>
+<li>设置字体大小：FT_Set_Char_Sizes 或 FT_Set_Pixel_Sizes</li>
+<li>选择 charmap：FT_Select_Charmap</li>
+<li>根据编码值 charcode 找到 glyph_index：glyph_index = FT_Get_Char_Index（face，charcode）</li>
+<li>根据 glyph_index 取出 glyph：FT_Load_Glyph（face，glyph_index）</li>
+<li>转为位图：FT_Render_Glyph</li>
+<li>移动或旋转：FT_Set_Transform</li>
+<li>最后显示出来</li>
+</ul>
+<p>上面的⑤⑥⑦可以使用一个函数代替：FT_Load_Char(face, charcode, FT_LOAD_RENDER)，它就可以得到位图。</p>
+<h1 id="输入系统应用编程">输入系统应用编程</h1>
+<h2 id="输入系统框架及调试">输入系统框架及调试</h2>
+<h3 id="框架概述">框架概述</h3>
+<p>输入系统框架如下图所示：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO18.png"></p>
+<p>假设用户程序直接访问/dev/input/event0 设备节点，或者使用 tslib 访问设备节点，数据的流程如下：</p>
+<ul>
+<li>APP 发起读操作，若无数据则休眠；</li>
+<li>用户操作设备，硬件上产生中断；</li>
+<li><p>输入系统驱动层对应的驱动程序处理中断：<br>
+读取到数据，转换为标准的输入事件，向核心层汇报。 所谓输入事件就是一个“struct input_event”结构体。</p></li>
+<li><p>核心层可以决定把输入事件转发给上面哪个 handler 来处理：<br>
+从 handler 的名字来看，它就是用来处输入操作的。有多种 handler，比如：evdev_handler、kbd_handler、 joydev_handler 等等。</p>
+<p>最常用的是 evdev_handler：它只是把 input_event 结构体保存在内核 buffer 等，APP 来读取时就原原本本地返回。它 支持多个 APP 同时访问输入设备，每个 APP 都可以获得同一份输入事件。</p>
+<p>当 APP 正在等待数据时，evdev_handler 会把它唤醒，这样 APP 就可以返回数据。</p></li>
+<li><p>APP 对输入事件的处理：<br>
+APP 获得数据的方法有 2 种：直接访问设备节点（比如/dev/input/event0,1,2,...)，或者通过 tslib、libinput 这类库来间接访问设备节点。这些库简化了对数据的处理。</p></li>
+</ul>
+<h3 id="编写-app-需要掌握的知识">编写 APP 需要掌握的知识</h3>
+<h4 id="内核中怎么表示一个输入设备">内核中怎么表示一个输入设备？</h4>
+<p>使用 input_dev 结构体来表示输入设备，它的内容如下：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO19.png"></p>
+<h4 id="app-可以得到什么数据">APP 可以得到什么数据？</h4>
+<p>可以得到一系列的输入事件，就是一个一个“struct input_event”，它定义如下：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO20.png"></p>
+<p>每个输入事件 input_event 中都含有发生时间：timeval 表示的是“自系统启动以来过了多少时间”，它是一个结构体，含有“tv_sec、tv_usec”两项（即秒、微秒）。</p>
+<p>输入事件 input_event 中更重要的是：type（哪类事件）、code（哪个事件）、value（事件值），细讲如下：</p>
+<ul>
+<li><p>type：表示哪类事件<br>
+比如 EV_KEY 表示按键类、EV_REL 表示相对位移（比如鼠标），EV_ABS 表示绝对位置（比如触摸屏）。有这几类事件（参考 Linux 内核头文件）：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO21.png"></p></li>
+<li><p>code：表示该类事件下的哪一个事件<br>
+比如对于 EV_KEY（按键）类事件，它表示键盘。键盘上有很多按键，比如数字键 1、2、3，字母键 A、B、C 里等。所以可以 有这些事件：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/%20LinuxIO22.png"></p>
+<p>对于触摸屏，它提供的是绝对位置信息，有 X 方向、Y 方向，还有压力值。所以 code 值有这些：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO23.png"></p></li>
+<li><p>value：表示事件值<br>
+对于按键，它的 value 可以是 0（表示按键被按下）、1（表示按键被松开）、2（表示长按）； 对于触摸屏，它的 value 就是坐标值、压力值。</p></li>
+<li><p>事件之间的界线<br>
+APP 读取数据时，可以得到一个或多个数据，比如一个触摸屏的一个触点会上报 X、Y 位置信息，也可能会上报压力值。</p>
+<p>APP 怎么知道它已经读到了完整的数据？</p>
+<p>驱动程序上报完一系列的数据后，会上报一个“同步事件”，表示数据上报完毕。APP 读到“同步事件”时，就知道已经读 完了当前的数据。</p>
+<p>同步事件也是一个 input_event 结构体，它的 type、code、value 三项都是 0。</p></li>
+</ul>
+<h4 id="输入子系统支持完整的-api-操作">输入子系统支持完整的 API 操作</h4>
+<p>支持这些机制：阻塞、非阻塞、POLL/SELECT、异步通知。</p>
+<h3 id="调试技巧">调试技巧</h3>
+<h4 id="确定设备信息">确定设备信息</h4>
+<p>输入设备的设备节点名为/dev/input/eventX（也可能是/dev/eventX，X 表示 0、1、2 等数字）。</p>
+<p>怎么知道这些设备节点对应什么硬件呢？可以在板子上执行以下命令：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/bus/input/devices</span><br></pre></td></tr></tbody></table></figure>
+<p>这条指令的含义就是获取与 event 对应的相关设备信息，可以看到类似以下的结果：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO24.png"></p>
+<p>那么这里的 I、N、P、S、U、H、B 对应的每一行是什么含义呢？</p>
+<ul>
+<li><p>I:id of the device（设备 ID)<br>
+该参数由结构体 struct input_id 来进行描述，驱动程序中会定义这样的结构体：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO25.png"></p></li>
+<li>N:name of the device 设备名称</li>
+<li>P:physical path to the device in the system hierarchy 系统层次结构中设备的物理路径</li>
+<li>S:sysfs path 位于 sys 文件系统的路径</li>
+<li>U:unique identification code for the device(if device has it) 设备的唯一标识码</li>
+<li>H:list of input handles associated with the device 与设备关联的输入句柄列表</li>
+<li><p>B:bitmaps（位图）</p></li>
+</ul>
+<p>PROP:device properties and quirks（设备属性） EV:types of events supported by the device（设备支持的事件类型） KEY:keys/buttons this device has（此设备具有的键/按钮） MSC:miscellaneous events supported by the device（设备支持的其他事件） LED:leds present on the device（设备上的指示灯）</p>
+<p>值得注意的是 B 位图，比如上图中“B: EV=b”用来表示该设备支持哪类输入事件。b 的二进制是 1011，bit0、1、3 为 1，表示该设备支持 0、1、3 这三类事件，即 EV_SYN、EV_KEY、EV_ABS。</p>
+<p>再举一个例子，“B: ABS=2658000 3”如何理解？</p>
+<p>它表示该设备支持 EV_ABS 这一类事件中的哪一些事件。这是 2 个 32 位的数字：0x2658000、0x3，高位在前低位在后，组成一个 64 位的数字：“0x2658000,00000003”，数值为 1 的位有：0、1、47、48、50、53、54，即：0、1、0x2f、0x30、0x32、0x35、0x36，对应以下这些宏：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO26.png"></p>
+<p>即这款输入设备支持上述的 ABS_X、ABS_Y、ABS_MT_SLOT、ABS_MT_TOUCH_MAJOR、ABS_MT_WIDTH_MAJOR、ABS_MT_POSITION_X、ABS_MT_POSITION_Y 这些绝对位置事件</p>
+<h4 id="使用命令读取数据">使用命令读取数据</h4>
+<p>调试输入系统时，直接执行类似下面的命令，然后操作对应的输入设备即可读出数据：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexdump /dev/input/event0</span><br></pre></td></tr></tbody></table></figure>
+<p>在开发板上执行上述命令之后，点击按键或是点击触摸屏，就会打印以下信息：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO27.png"></p>
+<p>上图中的 type 为 3，对应 EV_ABS；code 为 0x35 对应 ABS_MT_POSITION_X；code 为 0x36 对应 ABS_MT_POSITION_Y。上图中还发现有 2 个同步事件：它的 type、code、value 都为 0。表示电容屏上报了 2 次完整的数据。</p>
+<h2 id="不使用库的应用程序示例">不使用库的应用程序示例</h2>
+<h3 id="输入系统支持完整的-api-操作">输入系统支持完整的 API 操作</h3>
+<p>支持这些机制：阻塞、非阻塞、POLL/SELECT、异步通知。</p>
+<h3 id="app-访问硬件的-4-种方式妈妈怎么知道孩子醒了">APP 访问硬件的 4 种方式：妈妈怎么知道孩子醒了</h3>
+<ul>
+<li><p>查询方式<br>
+APP 调用 open 函数时，传入“O_NONBLOCK”表示“非阻塞”。</p>
+<p>APP 调用 read 函数读取数据时，如果驱动程序中有数据，那么 APP 的 read 函数会返回数据，否则也会立刻返回错误。</p></li>
+<li><p>休眠-唤醒方式<br>
+APP 调用 open 函数时，不要传入“O_NONBLOCK”。</p>
+<p>APP 调用 read 函数读取数据时，如果驱动程序中有数据，那么 APP 的 read 函数会返回数据；否则 APP 就会在内核态休眠，当有数据时驱动程序会把 APP 唤醒，read 函数恢复执行并返回数据给 APP。</p></li>
+<li><p>POLL/SELECT 方式<br>
+POLL 机制、SELECT 机制是完全一样的，只是 APP 接口函数不一样。</p>
+<p>简单地说，它们就是“定个闹钟”：在调用 poll、select 函数时可以传入“超时时间”。在这段时间内，条件合适时（比如有数据可读、有空间可写）就会立刻返回，否则等到“超时时间”结束时返回错误。</p>
+<p>用法如下。</p>
+<p>APP 先调用 open 函数时。</p>
+<p>APP 不是直接调用 read 函数，而是先调用 poll 或 select 函数，这 2 个函数中可以传入“超时时间”。它们的作用是：如果 驱动程序中有数据，则立刻返回；否则就休眠。在休眠期间，如果有人操作了硬件，驱动程序获得数据后就会把 APP 唤 醒，导致 poll 或 select 立刻返回；如果在“超时时间”内无人操作硬件，则时间到后 poll 或 select 函数也会返回。APP 可 以根据函数的返回值判断返回原因：有数据？无数据超时返回？</p>
+<p>APP 根据 poll 或 select 的返回值判断有数据之后，就调用 read 函数读取数据时，这时就会立刻获得数据。</p>
+<p>poll/select 函数可以监测多个文件，可以监测多种事件：在调用 poll 函数时，要指明：</p>
+<ul>
+<li><p>你要监测哪一个文件：哪一个 fd</p></li>
+<li><p>你想监测这个文件的哪种事件：是 POLLIN、还是 POLLOUT</p></li>
+</ul>
+<p>最后，在 poll 函数返回时，要判断状态。</p></li>
+<li><p>异步通知方式<br>
+所谓异步通知，就是 APP 可以忙自己的事，当驱动程序用数据时它会主动给 APP 发信号，这会导致 APP 执行信号处理函数。</p></li>
+</ul>
+<h2 id="tslib">tslib</h2>
+<h3 id="tslib-框架分析">tslib 框架分析</h3>
+<p>tslib 的主要代码如下：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO30.png"></p>
+<p>核心在于“plugins”目录里的“插件”，或称为“module”。这个目录下的每个文件都是一个 module，每个 module 都提供 2 个函数：read、read_mt，前者用于读取单点触摸屏的数据，后者用于读取多点触摸屏的数据</p>
+<p>要分析 tslib 的框架，先看看示例程序怎么使用，我们参考 ts_test.c 和 ts_test_mt.c，前者用于一般触摸屏（比如电阻屏、单点电容屏），后者用于多点触摸屏。</p>
+<p>一个图就可以弄清楚 tslib 的框架：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxIO31.png"></p>
+<h1 id="参考文献">参考文献</h1>
+<p>《韦东山老师课程》</p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Note/">Note</a></div><div class="post_share"><div class="social-share" data-image="https://unsplash.it/1600/900?random&amp;2521" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/Note/LeakTracer/" title="Leaktrace 使用方法"><img class="cover" src="https://unsplash.it/1600/900?random&amp;9542" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Leaktrace 使用方法</div></div></a></div><div class="next-post pull-right"><a href="/Note/kalibr/" title="kalibr"><img class="cover" src="https://unsplash.it/1600/900?random&amp;5826" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">kalibr</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/Note/ArchLinuxConfig/" title="archlinux(Manjaro) 配置"><img class="cover" src="https://unsplash.it/1600/900?random&6798" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-14</div><div class="title">archlinux(Manjaro) 配置</div></div></a></div><div><a href="/Note/Buildroot/" title="Buildroot"><img class="cover" src="https://unsplash.it/1600/900?random&784" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-10-22</div><div class="title">Buildroot</div></div></a></div><div><a href="/Note/BuildrootCommonIssue/" title="Buildroot 常见编译错误记录"><img class="cover" src="https://unsplash.it/1600/900?random&5791" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-12-22</div><div class="title">Buildroot 常见编译错误记录</div></div></a></div><div><a href="/Note/CompilePipe/" title="编译流程"><img class="cover" src="https://unsplash.it/1600/900?random&4360" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-01-25</div><div class="title">编译流程</div></div></a></div><div><a href="/Note/DockerUsage/" title="Docker 常用命令"><img class="cover" src="https://unsplash.it/1600/900?random&5187" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-09-14</div><div class="title">Docker 常用命令</div></div></a></div><div><a href="/Note/GtestGmock/" title="GTest &amp; GMock"><img class="cover" src="https://unsplash.it/1600/900?random&8734" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-23</div><div class="title">GTest &amp; GMock</div></div></a></div></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div class="comment-switch"><span class="first-comment">Waline</span><span id="switch-btn"></span><span class="second-comment">Twikoo</span></div></div><div class="comment-wrap"><div><div id="waline-wrap"></div></div><div><div id="twikoo-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://lsky.carlyleliu.vip/i/2024/08/31/66d33847bf991.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CarlyleLiu</div><div class="author-info__description">CarlyleLiu’s Blog</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">206</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/carlyleliu"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/carlyleliu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:yyliushuai@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-envelope" style="color: #24292e;"></i></a><a class="social-icon" href="https://twitter.com/yyliushuai" target="_blank" title="Twitter"><i class="fab fa-twitter" style="color: #24292e;"></i></a><a class="social-icon" href="https://youtube.com/carlyleliu" target="_blank" title="YouTube"><i class="fab fa-youtube" style="color: #24292e;"></i></a><a class="social-icon" href="https://instagram.com/blurredliu" target="_blank" title="Instagram"><i class="fab fa-instagram" style="color: #24292e;"></i></a><a class="social-icon" href="https://blog.carlyleliu.vip/atom.xml" target="_blank" title="Rss"><i class="fas fa-rss" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">next主题站 https://carlyleliu.github.io/next</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%96%87%E4%BB%B6-io"><span class="toc-number">1.</span> <span class="toc-text">文件 IO</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#framebuffer-%E5%BA%94%E7%94%A8%E7%BC%96%E7%A8%8B"><span class="toc-number">2.</span> <span class="toc-text">Framebuffer 应用编程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#lcd-%E6%93%8D%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="toc-number">2.1.</span> <span class="toc-text">LCD 操作原理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%96%87%E5%AD%97%E6%98%BE%E7%A4%BA"><span class="toc-number">3.</span> <span class="toc-text">文字显示</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AD%97%E7%AC%A6%E7%9A%84%E7%BC%96%E7%A0%81%E6%96%B9%E5%BC%8F%E5%8C%BA%E5%88%86%E7%BC%96%E7%A0%81%E5%92%8C%E5%AD%97%E4%BD%93"><span class="toc-number">3.1.</span> <span class="toc-text">字符的编码方式（区分编码和字体）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ascii"><span class="toc-number">3.1.1.</span> <span class="toc-text">ASCII</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ansi"><span class="toc-number">3.1.2.</span> <span class="toc-text">ANSI</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#unicode"><span class="toc-number">3.1.3.</span> <span class="toc-text">UNICODE</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ascii-%E5%AD%97%E7%AC%A6%E7%9A%84%E7%82%B9%E9%98%B5%E6%98%BE%E7%A4%BA"><span class="toc-number">3.2.</span> <span class="toc-text">ASCII 字符的点阵显示</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%9F%A2%E9%87%8F%E5%AD%97%E4%BD%93%E5%BC%95%E5%85%A5"><span class="toc-number">3.2.1.</span> <span class="toc-text">矢量字体引入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#freetype-%E4%BB%8B%E7%BB%8D"><span class="toc-number">3.2.2.</span> <span class="toc-text">Freetype 介绍</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E7%B3%BB%E7%BB%9F%E5%BA%94%E7%94%A8%E7%BC%96%E7%A8%8B"><span class="toc-number">4.</span> <span class="toc-text">输入系统应用编程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E7%B3%BB%E7%BB%9F%E6%A1%86%E6%9E%B6%E5%8F%8A%E8%B0%83%E8%AF%95"><span class="toc-number">4.1.</span> <span class="toc-text">输入系统框架及调试</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A1%86%E6%9E%B6%E6%A6%82%E8%BF%B0"><span class="toc-number">4.1.1.</span> <span class="toc-text">框架概述</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%96%E5%86%99-app-%E9%9C%80%E8%A6%81%E6%8E%8C%E6%8F%A1%E7%9A%84%E7%9F%A5%E8%AF%86"><span class="toc-number">4.1.2.</span> <span class="toc-text">编写 APP 需要掌握的知识</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%86%85%E6%A0%B8%E4%B8%AD%E6%80%8E%E4%B9%88%E8%A1%A8%E7%A4%BA%E4%B8%80%E4%B8%AA%E8%BE%93%E5%85%A5%E8%AE%BE%E5%A4%87"><span class="toc-number">4.1.2.1.</span> <span class="toc-text">内核中怎么表示一个输入设备？</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#app-%E5%8F%AF%E4%BB%A5%E5%BE%97%E5%88%B0%E4%BB%80%E4%B9%88%E6%95%B0%E6%8D%AE"><span class="toc-number">4.1.2.2.</span> <span class="toc-text">APP 可以得到什么数据？</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E5%AD%90%E7%B3%BB%E7%BB%9F%E6%94%AF%E6%8C%81%E5%AE%8C%E6%95%B4%E7%9A%84-api-%E6%93%8D%E4%BD%9C"><span class="toc-number">4.1.2.3.</span> <span class="toc-text">输入子系统支持完整的 API 操作</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B0%83%E8%AF%95%E6%8A%80%E5%B7%A7"><span class="toc-number">4.1.3.</span> <span class="toc-text">调试技巧</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%A1%AE%E5%AE%9A%E8%AE%BE%E5%A4%87%E4%BF%A1%E6%81%AF"><span class="toc-number">4.1.3.1.</span> <span class="toc-text">确定设备信息</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E5%91%BD%E4%BB%A4%E8%AF%BB%E5%8F%96%E6%95%B0%E6%8D%AE"><span class="toc-number">4.1.3.2.</span> <span class="toc-text">使用命令读取数据</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8D%E4%BD%BF%E7%94%A8%E5%BA%93%E7%9A%84%E5%BA%94%E7%94%A8%E7%A8%8B%E5%BA%8F%E7%A4%BA%E4%BE%8B"><span class="toc-number">4.2.</span> <span class="toc-text">不使用库的应用程序示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BE%93%E5%85%A5%E7%B3%BB%E7%BB%9F%E6%94%AF%E6%8C%81%E5%AE%8C%E6%95%B4%E7%9A%84-api-%E6%93%8D%E4%BD%9C"><span class="toc-number">4.2.1.</span> <span class="toc-text">输入系统支持完整的 API 操作</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#app-%E8%AE%BF%E9%97%AE%E7%A1%AC%E4%BB%B6%E7%9A%84-4-%E7%A7%8D%E6%96%B9%E5%BC%8F%E5%A6%88%E5%A6%88%E6%80%8E%E4%B9%88%E7%9F%A5%E9%81%93%E5%AD%A9%E5%AD%90%E9%86%92%E4%BA%86"><span class="toc-number">4.2.2.</span> <span class="toc-text">APP 访问硬件的 4 种方式：妈妈怎么知道孩子醒了</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#tslib"><span class="toc-number">4.3.</span> <span class="toc-text">tslib</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#tslib-%E6%A1%86%E6%9E%B6%E5%88%86%E6%9E%90"><span class="toc-number">4.3.1.</span> <span class="toc-text">tslib 框架分析</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="toc-number">5.</span> <span class="toc-text">参考文献</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2024 By CarlyleLiu</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, '']
+      }
+    }
+  }
+  
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script><script>(() => {
+  let initFn = window.walineFn || null
+
+  const initWaline = (Fn) => {
+    const waline = Fn(Object.assign({
+      el: '#waline-wrap',
+      serverURL: 'https://waline.carlyleliu.vip/',
+      pageview: true,
+      dark: 'html[data-theme="dark"]',
+      path: window.location.pathname,
+      comment: true,
+    }, {"locale":{"nick":"昵称","mail":"邮箱","link":"你的网站","placeholder":"填写数字QQ邮箱可以自动获取QQ头像","requiredMeta":[],"sofa":"评论区空空如也~~~","anonymous":"匿名的野猫","login":"登录(可选)"}}))
+
+    const destroyWaline = () => {
+      waline.destroy()
+    }
+
+    btf.addGlobalFn('pjax', destroyWaline, 'destroyWaline')
+  }
+
+  const loadWaline = async () => {
+    if (initFn) initWaline(initFn)
+    else {
+      await getCSS('https://cdn.jsdelivr.net/npm/@waline/client@3.1.2/dist/waline.min.css')
+      const { init } = await import('https://cdn.jsdelivr.net/npm/@waline/client@3.1.2/dist/waline.min.js')
+      initFn = init || Waline.init
+      initWaline(initFn)
+      window.walineFn = initFn
+    }
+  }
+
+  if ('Waline' === 'Waline' || !false) {
+    if (false) btf.loadComment(document.getElementById('waline-wrap'),loadWaline)
+    else setTimeout(loadWaline, 0)
+  } else {
+    window.loadOtherComment = loadWaline
+  }
+})()</script><script>(() => {
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://twikoo.carlyleliu.vip/',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://twikoo.carlyleliu.vip/',
+      region: '',
+      onCommentLoaded: () => {
+        btf.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(init,0)
+    else getScript('https://cdn.jsdelivr.net/npm/twikoo@1.6.31/dist/twikoo.all.min.js').then(init)
+  }
+
+  if ('Waline' === 'Twikoo' || !false) {
+    if (false) btf.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else loadTwikoo()
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script></div><script>window.addEventListener('load', () => {
+  const changeContent = content => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'></a>`
+        }
+
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <div class='name'><span>${array[i].nick} / </span><time datetime="${array[i].date}">${btf.diffDate(array[i].date, true)}</time></div>
+        </div></div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const getComment = async () => {
+    try {
+      const res = await fetch('https://waline.carlyleliu.vip/api/comment?type=recent&count=6', { method: 'GET' })
+      const result = await res.json()
+      const walineArray = result.data.map(e => {
+        return {
+          'content': changeContent(e.comment),
+          'avatar': e.avatar,
+          'nick': e.nick,
+          'url': e.url + '#' + e.objectId,
+          'date': e.time || e.insertedAt
+        }
+      })
+      saveToLocal.set('waline-newest-comments', JSON.stringify(walineArray), 10/(60*24))
+      generateHtml(walineArray)
+    } catch (err) {
+      console.error(err)
+      const $dom = document.querySelector('#card-newest-comments .aside-list')
+      $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+    }
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('waline-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="true"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/metingjs/dist/Meting.min.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+
+  // removeEventListener
+  btf.removeGlobalFnEvent('pjax')
+  btf.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+
+  typeof disqusjs === 'object' && disqusjs.destroy()
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.13.0"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a><a class="github-badge" target="_blank" href="https://blog.carlyleliu.vip/atom.xml" style="margin-inline:5px" data-title="RSS订阅本站" title=""><img src="https://img.shields.io/badge/Subscrip-RSS-yellow" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
+
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
+
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><script async src="//at.alicdn.com/t/font_2032782_8d5kxvn09md.js"></script><!-- hexo injector body_end end --></body></html>
