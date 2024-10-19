@@ -230,7 +230,7 @@ let bbMemo = {
   }
   //棰勫姞杞戒笅涓€椤垫暟鎹�
   function getNextList(apiV1){
-    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&offset="+offset;
+    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&offset="+offset+"&tag=说说";
     fetch(bbUrl).then(res => res.json()).then( resdata =>{
       nextDom = resdata
       nextLength = resdata.length
@@ -245,7 +245,7 @@ let bbMemo = {
   //鍔犺浇鎬� Memos 鏁�
   function meNums(apiV1){
     let bbLoad = document.querySelector('.bb-load')
-    let bbUrl = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId
+    let bbUrl = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId+"&tag=说说"
     fetch(bbUrl).then(res => res.json()).then( resdata =>{
       if(resdata){
         let allnums = `<div id="bb-footer"><p class="bb-allnums">鍏� ${resdata.length} 鏉� </p><p class="bb-allpub"><a href="https://immmmm.com/bbs/" target="_blank">Memos Public</a></p></div>`
@@ -429,16 +429,16 @@ let bbMemo = {
     });
     let tagHtmlNow = `<span class='tag-span' onclick='reLoad()'>${e.innerHTML}</span>`
     document.querySelector('#tag-list').innerHTML = tagHtmlNow
-    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&tag="+tagName+"&limit=20";
+    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&tag="+tagName+"&limit=20"+"&tag=说说";
     fetchMemoDOM(bbUrl)
   }
   
   //闅忔満涓€鏉� Memos 闇€鎵嬪姩娣诲姞 html 濡傦細<span onclick="randomMemo()">鍥炲繂</span>
   function randomMemo(){
-    let randomUrl1 = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId;
+    let randomUrl1 = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId+"&tag=说说";
     fetch(randomUrl1).then(res => res.json()).then( resdata =>{
       let randomNum = Math.floor(Math.random() * (resdata.length)) + 1;
-      let randomUrl2 = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit=1&offset="+randomNum
+      let randomUrl2 = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit=1&offset="+randomNum+"&tag=说说"
       fetchMemoDOM(randomUrl2)
     })
   }
@@ -449,7 +449,7 @@ let bbMemo = {
     let tagHtmlNow = `<span class='tag-span' onclick='reLoad()'>#${serchText}</span>`
     let tagHtml = `<div id="tag-list">${tagHtmlNow}</div>`
     bbDom.insertAdjacentHTML('beforebegin', tagHtml);
-    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&content="+serchText+"&limit=20";
+    let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&content="+serchText+"&limit=20"+"&tag=说说";
     fetchMemoDOM(bbUrl)
   }
   
