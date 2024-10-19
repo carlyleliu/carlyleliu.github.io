@@ -230,7 +230,7 @@ function updateTiwkoo(data) {
 }
 //预加载下一页数据
 function getNextList(apiV1){
-  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&offset="+offset"+&tag=说说";
+  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&offset="+offset+"&tag=说说";
   fetch(bbUrl).then(res => res.json()).then( resdata =>{
     nextDom = resdata
     nextLength = resdata.length
