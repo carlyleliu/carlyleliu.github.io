@@ -24,8 +24,8 @@ var t;const i=window,s$1=i.trustedTypes,e=s$1?s$1.createPolicy("lit-html",{creat
  * SPDX-License-Identifier: BSD-3-Clause
  */var l,o;class s extends u$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){var t,e;const i=super.createRenderRoot();return null!==(t=(e=this.renderOptions).renderBefore)&&void 0!==t||(e.renderBefore=i.firstChild),i}update(t){const i=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=D(i,this.renderRoot,this.renderOptions);}connectedCallback(){var t;super.connectedCallback(),null===(t=this._$Do)||void 0===t||t.setConnected(!0);}disconnectedCallback(){var t;super.disconnectedCallback(),null===(t=this._$Do)||void 0===t||t.setConnected(!1);}render(){return T}}s.finalized=!0,s._$litElement$=!0,null===(l=globalThis.litElementHydrateSupport)||void 0===l||l.call(globalThis,{LitElement:s});const n=globalThis.litElementPolyfillSupport;null==n||n({LitElement:s});(null!==(o=globalThis.litElementVersions)&&void 0!==o?o:globalThis.litElementVersions=[]).push("3.3.2");
 
-//const DEFAULT_EMOJIS = '馃憤,thumbs-up;馃槃,smile-face;馃帀,party-popper;馃槑,cool;馃槙,confused-face;鉂わ笍,red-heart;馃殌,rocket;馃憖,eyes;馃憥,thumbs-down;';
-const DEFAULT_EMOJIS = '馃憤,thumbs-up;馃帀,party-popper;鉂わ笍,red-heart;馃槑,cool;馃槃,smile-face;馃殌,rocket;';
+//const DEFAULT_EMOJIS = '👍,thumbs-up;😄,smile-face;🎉,party-popper;😎,cool;😕,confused-face;❤️,red-heart;🚀,rocket;👀,eyes;👎,thumbs-down;';
+const DEFAULT_EMOJIS = '👍,thumbs-up;🎉,party-popper;❤️,red-heart;😎,cool;😄,smile-face;🚀,rocket;';
 
 class EmojiReaction extends s {
   static properties = {
@@ -171,7 +171,7 @@ class EmojiReaction extends s {
     </style>
     <!-- container -->
     <div style="flex-wrap: nowrap; max-width: 100%; display: flex; gap: 0.375rem;height: 1.5rem;" class="${this?.theme === 'dark' || (this?.theme === 'system' && system_theme === 'dark') ? 'container-dark' : 'container'}">
-      <!-- 鐏拌壊绗戣劯 -->
+      <!-- 灰色笑脸 -->
       <div style="position: relative; user-select: none;">
         <div id="start-smile" @click="${this._showAvailable}"
           style="border-radius: 800px; width: 1rem; height: 1rem; line-height: 1rem; padding: 0.25rem;">
@@ -224,11 +224,11 @@ class EmojiReaction extends s {
       }
       return { emoji, reaction_name }
     }).filter(val => val);
-    // 鍒濆鍖� endpoint
+    // 初始化 endpoint
     if (!this?.endpoint) {
       this.endpoint = 'https://api.emaction.cool';
     }
-    // 璇锋眰鎺ュ彛锛岃幏鍙栧摢浜� emoji 鏈� reaction 鏁伴噺
+    // 请求接口，获取哪些 emoji 有 reaction 数量
     let url_2_generate_id = '';
     const canonical = document.head.querySelector("link[rel='canonical']");
     url_2_generate_id = canonical && canonical.href ? canonical.href : window.location.href;
@@ -245,11 +245,11 @@ class EmojiReaction extends s {
     .then(resp => resp.json())
     .then(resp => {
       if (!resp?.data || !Array.isArray(resp?.data?.reactionsGot)) {
-        throw new Error("鑾峰彇 reactions 鍑洪敊锛�")
+        throw new Error("获取 reactions 出错！")
       }
       return resp;
     });
-    // 鑾峰緱鐨� reactions 鏁伴噺鏀惧埌 arr 閲�
+    // 获得的 reactions 数量放到 arr 里
     reactionsGot.forEach(reaction => {
       arr.forEach(availableReaction => {
         if (reaction.reaction_name === availableReaction.reaction_name) {
@@ -257,10 +257,10 @@ class EmojiReaction extends s {
         }
       });
     });
-    // 璇诲彇 localStorage锛岃幏鍙栧綋鍓嶇敤鎴风偣鍑昏繃鐨� emoji
+    // 读取 localStorage，获取当前用户点击过的 emoji
     const storageKey = `meReactedReactions_${this.reactTargetId}`;
     const meReactedReactions = JSON.parse(window.localStorage.getItem(storageKey) || "[]");
-    // 褰撳墠鐢ㄦ埛鐐瑰嚮鐘舵€佹斁鍒� arr
+    // 当前用户点击状态放到 arr
     meReactedReactions.forEach(reaction_name => {
       arr.forEach(availableReaction => {
         if (reaction_name === availableReaction.reaction_name) {
@@ -268,7 +268,7 @@ class EmojiReaction extends s {
         }
       });
     });
-    // 鍒濆鍖� avaiableArray
+    // 初始化 avaiableArray
     this.availableReactions = arr;
   }
 
@@ -281,7 +281,7 @@ class EmojiReaction extends s {
     const { name: reaction_name } = e.target.dataset;
     const reaction = this.availableReactions.find(ele => ele.reaction_name === reaction_name);
     if (!reaction) {
-      console.error("鏈煡鐨� reaction!");
+      console.error("未知的 reaction!");
       return
     }
     const cancel = reaction?.meReacted ? true : false;
@@ -295,13 +295,13 @@ class EmojiReaction extends s {
       return val
     });
     this.showAvailable = false;
-    // 璇锋眰鎺ュ彛锛屾洿鏂� react 鏁伴噺
+    // 请求接口，更新 react 数量
     await fetch(this.endpoint + '/reaction?' + new URLSearchParams({
       targetId: this.reactTargetId,
       reaction_name,
       diff: cancel ? -1 : 1
     }), { method: "PATCH"});
-    // 鏇存柊 localStorage
+    // 更新 localStorage
     const storageKey = `meReactedReactions_${this.reactTargetId}`;
     const meReactedReactionsSet = new Set(JSON.parse(window.localStorage.getItem(storageKey) || "[]"));
     if (cancel) {
