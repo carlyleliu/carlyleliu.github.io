@@ -7,6 +7,7 @@ let bbMemo = {
   creatorId: '1',
   domId: '#bber',
   twiEnv:'',
+  tag:'说说'
 }
 if(typeof(bbMemos) !=="undefined"){
   for(let key in bbMemos) {
@@ -187,7 +188,7 @@ function newApiV1(apiV1){
 
 function getFirstList(apiV1){
   bbDom.insertAdjacentHTML('afterend', load);
-  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&tag=说说";
+  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&tag="+bbMemo.tag;
   fetch(bbUrl).then(res => res.json()).then( resdata =>{
     if(bbMemo.twiEnv){
       updateTiwkoo(resdata)
@@ -230,7 +231,7 @@ function updateTiwkoo(data) {
 }
 //预加载下一页数据
 function getNextList(apiV1){
-  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&offset="+offset+"&tag=说说";
+  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit="+limit+"&offset="+offset+"&tag="+bbMemo.tag;
   fetch(bbUrl).then(res => res.json()).then( resdata =>{
     nextDom = resdata
     nextLength = resdata.length
@@ -245,7 +246,7 @@ function getNextList(apiV1){
 //加载总 Memos 数
 function meNums(apiV1){
   let bbLoad = document.querySelector('.bb-load')
-  let bbUrl = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId+"&tag=说说"
+  let bbUrl = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId+"&tag="+bbMemo.tag
   fetch(bbUrl).then(res => res.json()).then( resdata =>{
     if(resdata){
       let allnums = `<div id="bb-footer"><p class="bb-allnums">共 ${resdata.length} 条 </p><p class="bb-allpub"><a href="https://immmmm.com/bbs/" target="_blank">Memos Public</a></p></div>`
@@ -429,16 +430,16 @@ function getTagNow(e){
   });
   let tagHtmlNow = `<span class='tag-span' onclick='reLoad()'>${e.innerHTML}</span>`
   document.querySelector('#tag-list').innerHTML = tagHtmlNow
-  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&tag="+tagName+"&limit=20"+"&tag=说说";
+  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&tag="+tagName+"&limit=20"+"&tag="+bbMemo.tag;
   fetchMemoDOM(bbUrl)
 }
 
 //随机一条 Memos 需手动添加 html 如：<span onclick="randomMemo()">回忆</span>
 function randomMemo(){
-  let randomUrl1 = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId+"&tag=说说";
+  let randomUrl1 = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId+"&tag="+bbMemo.tag;
   fetch(randomUrl1).then(res => res.json()).then( resdata =>{
     let randomNum = Math.floor(Math.random() * (resdata.length)) + 1;
-    let randomUrl2 = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit=1&offset="+randomNum+"&tag=说说"
+    let randomUrl2 = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&rowStatus=NORMAL&limit=1&offset="+randomNum+"&tag="+bbMemo.tag
     fetchMemoDOM(randomUrl2)
   })
 }
@@ -449,7 +450,7 @@ function serchMemo(){
   let tagHtmlNow = `<span class='tag-span' onclick='reLoad()'>#${serchText}</span>`
   let tagHtml = `<div id="tag-list">${tagHtmlNow}</div>`
   bbDom.insertAdjacentHTML('beforebegin', tagHtml);
-  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&content="+serchText+"&limit=20"+"&tag=说说";
+  let bbUrl = memos+"api/"+apiV1+"memo?creatorId="+bbMemo.creatorId+"&content="+serchText+"&limit=20"+"&tag="+bbMemo.tag;
   fetchMemoDOM(bbUrl)
 }
 
