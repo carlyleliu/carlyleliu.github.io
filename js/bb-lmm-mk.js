@@ -249,7 +249,7 @@ function meNums(apiV1){
   let bbUrl = memos+"api/"+apiV1+"memo/stats?creatorId="+bbMemo.creatorId+"&tag="+bbMemo.tag
   fetch(bbUrl).then(res => res.json()).then( resdata =>{
     if(resdata){
-      let allnums = `<div id="bb-footer"><p class="bb-allnums">共 ${resdata.length} 条 </p><p class="bb-allpub"><a href="https://immmmm.com/bbs/" target="_blank">Memos Public</a></p></div>`
+      let allnums = `<div id="bb-footer"><p class="bb-allnums">共 ${resdata.length} 条 </p><p class="bb-allpub"><a href="https://memos.carlyleliu.vip/explore" target="_blank">Memos Public</a></p></div>`
       bbLoad.insertAdjacentHTML('afterend', allnums);
     }
   })
