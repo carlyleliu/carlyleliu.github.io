@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/next/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/next/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/next/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/next/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/next/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/next/","images":"/next/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/next/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/next/js/config.js"></script>
+
+    <meta name="description" content="传感器误差模型 对于理想的 IMU 三轴加速度计两两正交，构成一个正交的三轴直角坐标系，加速度计每一轴单独测量该轴的加速度，而陀螺仪则测量该轴的角速度。在实际的真实 IMU 中由于制造工艺的误差，三个坐标轴不可能完全两两正交，加速度计与陀螺仪的坐标系也不会完全重合，并且单个传感器也不是完全精确的。在实际器件中将数字输出量转化为实际物理量的 scale 参数在不同轴上是不同的，但是设备生产商都会提供">
+<meta property="og:type" content="article">
+<meta property="og:title" content="IMU 误差模型及校准">
+<meta property="og:url" content="https://carlyleliu.github.io/next/2020/Algorithm/imuCalibration/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="传感器误差模型 对于理想的 IMU 三轴加速度计两两正交，构成一个正交的三轴直角坐标系，加速度计每一轴单独测量该轴的加速度，而陀螺仪则测量该轴的角速度。在实际的真实 IMU 中由于制造工艺的误差，三个坐标轴不可能完全两两正交，加速度计与陀螺仪的坐标系也不会完全重合，并且单个传感器也不是完全精确的。在实际器件中将数字输出量转化为实际物理量的 scale 参数在不同轴上是不同的，但是设备生产商都会提供">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/imuErr.png">
+<meta property="article:published_time" content="2020-05-07T05:06:10.000Z">
+<meta property="article:modified_time" content="2024-12-15T06:43:07.387Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Robot">
+<meta property="article:tag" content="IMU">
+<meta property="article:tag" content="EIS">
+<meta property="article:tag" content="Image">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/imuErr.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/next/2020/Algorithm/imuCalibration/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/next/2020/Algorithm/imuCalibration/","path":"2020/Algorithm/imuCalibration/","title":"IMU 误差模型及校准"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>IMU 误差模型及校准 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/next/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/next/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/next/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/next/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/next/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/next/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/next/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/next/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%A0%E6%84%9F%E5%99%A8%E8%AF%AF%E5%B7%AE%E6%A8%A1%E5%9E%8B"><span class="nav-text">传感器误差模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%A1%E5%87%86%E6%A1%86%E6%9E%B6"><span class="nav-text">校准框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%A1%E5%87%86%E8%BF%87%E7%A8%8B"><span class="nav-text">校准过程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E6%A3%80%E6%B5%8B"><span class="nav-text">静态检测</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%BE%99%E6%A0%BC%E5%BA%93%E5%A1%94%E6%B3%95%E7%A7%AF%E5%88%86"><span class="nav-text">龙格库塔法积分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%BF%E4%BC%A6%E6%96%B9%E5%B7%AE"><span class="nav-text">阿伦方差</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%8C%E6%88%90%E6%A0%A1%E5%87%86"><span class="nav-text">完成校准</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%99%84%E5%BD%95"><span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#levenberg-marquardt-%E7%AE%97%E6%B3%95"><span class="nav-text">Levenberg-Marquardt 算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%89%9B%E9%A1%BF%E6%B3%95"><span class="nav-text">牛顿法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%AB%98%E6%96%AF-%E7%89%9B%E9%A1%BF%E6%B3%95"><span class="nav-text">高斯-牛顿法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#levenberg-marquardt-%E7%AE%97%E6%B3%95-1"><span class="nav-text">Levenberg-Marquardt 算法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/next/archives/">
+          <span class="site-state-item-count">204</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/next/categories/">
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/next/tags/">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/next/2020/Algorithm/imuCalibration/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/next/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="IMU 误差模型及校准 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          IMU 误差模型及校准
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/next/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/next/categories/Technology-Blog/Image/" itemprop="url" rel="index"><span itemprop="name">Image</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/next/categories/Technology-Blog/Image/Stabilization/" itemprop="url" rel="index"><span itemprop="name">Stabilization</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/next/2020/Algorithm/imuCalibration/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/next/2020/Algorithm/imuCalibration/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>4.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>17 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="传感器误差模型">传感器误差模型</h1>
+<p>对于理想的 IMU
+三轴加速度计两两正交，构成一个正交的三轴直角坐标系，加速度计每一轴单独测量该轴的加速度，而陀螺仪则测量该轴的角速度。在实际的真实
+IMU
+中由于制造工艺的误差，三个坐标轴不可能完全两两正交，加速度计与陀螺仪的坐标系也不会完全重合，并且单个传感器也不是完全精确的。在实际器件中将数字输出量转化为实际物理量的
+scale 参数在不同轴上是不同的，但是设备生产商都会提供一个默认的 scale
+参数用于转换所有轴的数据，而且数字量的输出还会受到零偏（传感器在静止情况下也会有微小量的输出）的影响，这些就是造成
+IMU 传感器的系统误差。</p>
+<p>我们取实际器件的加速度计坐标系为 AF, 陀螺仪坐标系为 GF，根据 AF 和 GF
+分别建立对应的正交坐标系 AOF 和 GOF，其建立约束为</p>
+<ul>
+<li>AOF 的 x 轴与 AF 的 x 轴重合。</li>
+<li>AOF 的 y 轴位于 AF 的 x 与 y 轴的平面中。</li>
+</ul>
+<p>对于 GOF 的建立约束与 AOF
+的约束类比建立。最后再建立一个正交机体坐标系 BF，BF 通常与 AF 和 GF
+之间有一个小角度的偏差。在非正交坐标系（AF 或
+GF）中测量得到的物理量<span class="math inline">\(s^S\)</span>可以转换到机体坐标系 BF 中得到<span class="math inline">\(s^B\)</span>于是得到下式：</p>
+<p><span class="math display">\[
+s^B = Ts^S,
+T = \begin{bmatrix}
+1 &amp; -\beta_{yz}  &amp; \beta_{zy} \\
+\beta_{xz} &amp; 1 &amp; -\beta_{zx} \\
+-\beta_{xy} &amp; \beta_{yx} &amp; 1
+\end{bmatrix}   \tag{1}
+\]</span></p>
+<p><span class="math inline">\(s^B 和 s^S\)</span>
+表示加速度或角速度在机体坐标系 BF 和加速度坐标系 AF 或陀螺仪坐标系 GF
+下测量表示量，<span class="math inline">\(\beta_{ij}\)</span>
+表示加速度或陀螺仪的 i 轴绕机体坐标系 BF 的 j 轴的旋转角度。如图二所示：
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/imuErr.png"></p>
+<span id="more"></span>
+<p>另外 BF 与 AOF 以及 BF 与 GOF 坐标系之间只有纯粹的旋转关系，我们假设
+BF 的 x 轴恰巧与 AOF 的 x 轴重合在这种情况下<span class="math inline">\(\beta_{xz},\beta_{xy},\beta_{yx}\)</span>变为 0
+因此上一式可以写为如下：</p>
+<p><span class="math display">\[
+a^O = T^aa^S, T^a = \begin{bmatrix}
+1 &amp; -\alpha_{yz} &amp; \alpha_{zy} \\
+0 &amp; 1 &amp; -\alpha_{zx} \\
+0 &amp; 0 &amp; 1
+\end{bmatrix}   \tag{2}
+\]</span></p>
+<p>这里<span class="math inline">\(a^O\)</span>和<span class="math inline">\(a^S\)</span>表示加速度在 AOF 和 AF
+坐标系下的表示。这里已经改变了<span class="math inline">\(\beta\)</span>的含义，用<span class="math inline">\(\alpha\)</span>来表示在 AF 与 AOF 的 x
+轴重合的情况下 AF 与 AOF 各轴之间的旋转情况而不再是与机体坐标系 BF
+之间的旋转关系了。 如前所述，陀螺仪可以按照同样的方式进行定义，</p>
+<p><span class="math display">\[
+w^O = T^gw^S, T^g = \begin{bmatrix}
+1 &amp; -\gamma_{yz} &amp; \gamma_{zy} \\
+\gamma_{xz} &amp; 1 &amp; -\gamma_{zx} \\
+-\gamma_{xy} &amp; \gamma_{yx}  &amp; 1
+\end{bmatrix}   \tag{3}
+\]</span></p>
+<blockquote>
+<p>注意到目前为止要重点区分 5 个坐标系，首先是加速度计坐标系 AF
+和陀螺仪坐标系 GF
+由于制造工艺的原因这两个坐标系都不是正交的，且这两个坐标系也不重合，然后根据
+AF 和 GF 分创建了两个正交坐标系 AOF 和
+GOF，建立的约束就是上文中提到的，最后又建立了一个机体坐标系。后面我们假设机体坐标系的
+x 轴与加速度正交坐标系 AOF 的 x
+轴重合于是建立了加速计方程（1）和（2）最后 BF 与 GOF 的 x
+轴不重合因此只有第一步公式（3）没有后续的推导。</p>
+</blockquote>
+<p>综上加速度计和陀螺仪的误差都是包含两部分比例误差 scale 和 0 偏误差
+bias，比例偏差 scale 用如下表示：</p>
+<p><span class="math display">\[
+K^a = \begin{bmatrix}
+s_{a}^{x} &amp; 0 &amp; 0 \\
+0 &amp; s_{a}^{y} &amp; 0 \\
+0 &amp; 0 &amp; s_{a}^{z}
+\end{bmatrix}, K^g = \begin{bmatrix}
+s_{g}^{x} &amp; 0 &amp; 0 \\
+0 &amp; s_{g}^{y} &amp; 0 \\
+0 &amp; 0 &amp; s_{g}^{z}
+\end{bmatrix}   \tag{4}
+\]</span></p>
+<p>两个 bias 向量用如下表示：</p>
+<p><span class="math display">\[
+b^a = \begin{bmatrix}
+b_{a}^{x}\\
+b_{a}^{y}\\
+b_{a}^{z}
+\end{bmatrix}, b^g = \begin{bmatrix}
+b_{g}^{x}\\
+b_{g}^{y}\\
+b_{g}^{z}
+\end{bmatrix}   \tag{5}
+\]</span></p>
+<p>完整的加速度误差模型如下：</p>
+<p><span class="math display">\[
+a^O = T^aK^a(a^S + b^a + v^a)   \tag{6}
+\]</span></p>
+<p>完整的角速度误差模型如下：</p>
+<p><span class="math display">\[
+w^O = T^gK^g(w^S + b^g + v^g)   \tag{7}
+\]</span></p>
+<p>其中<span class="math inline">\(v^a\)</span>和<span class="math inline">\(v^g\)</span>不是系统误差是测量噪声。到此 IMU
+的误差模型就讲清楚了，后面会基于这个误差模型进行建模校准传感器。</p>
+<h1 id="校准框架">校准框架</h1>
+<p>为了校准加速度计我们需要估计如下未知参数：</p>
+<p><span class="math display">\[
+\theta^{acc} =
+[\alpha_{yz},\alpha_{zy},\alpha_{zx},s_{a}^{x},s_{a}^{y},s_{a}^{z},b_{a}^{x},b_{a}^{y}b_{a}^{z}]
+\tag{8}
+\]</span></p>
+<p>我们定义如下函数：</p>
+<p><span class="math display">\[
+a^O = h(a^S,\theta_{acc}) = T^aK^a(a^S + b^a)   \tag{9}
+\]</span></p>
+<p>实际上是忽略了测量噪声。像传统的多位置方案中，我们移动 IMU 到 M
+个不同的临时稳定状态，可以提取加速度向量<span class="math inline">\(a_{k}^S\)</span>（在非正交坐标系 AF
+中）计算加速度计在每个静止状态下的平均值，使用如下代价方程来估计加速度计的参数：</p>
+<p><span class="math display">\[
+L(\theta_{acc}) =  \sum_{k=1}^{M}(||g||^2 -
+||h(a_k^S,\theta_{acc})||^2)^2  \tag{10}
+\]</span></p>
+<p><span class="math inline">\(||g||\)</span>是真实的当地重力加速度计，可以根据当地的经纬度非常容易的获取到，我们采用
+Levenberg-Marquardt 方法来求取当代价函数的最小值时的参数。</p>
+<p>为了校准陀螺仪我们可以在 IMU
+初始的静止阶段读取陀螺仪数据并取均值，作为陀螺仪 bias。 我们定义<span class="math inline">\(\Psi\)</span>操作，用读取的陀螺仪数据<span class="math inline">\(w_i^S\)</span>和重力向量<span class="math inline">\(u_{a,k-1}\)</span>作为输入队列（重力向量是经过上面步骤校准过的）该操作返回最终的重力向量<span class="math inline">\(u_{g,k}\)</span>。该操作可以是任意一个通过上一时刻加速度计与角速度计融合后得到当前重力向量的算法。</p>
+<p><span class="math display">\[
+u_{g,k} = \Psi(w_i^S,u_{a,k-1}) \tag{11}
+\]</span></p>
+<p>我们需要估计的未知陀螺仪参数如下：</p>
+<p><span class="math display">\[
+\theta^{gyro} =
+[\gamma_{yz},\gamma_{zy},\gamma_{xz},\gamma_{zx},\gamma_{xy},\gamma_{yx},s_x^g,s_y^g,s_z^g]
+\tag{12}
+\]</span></p>
+<p>在这种情况下我们定义代价函数：</p>
+<p><span class="math display">\[
+L(\theta_{gyro}) = \sum_{k=2}^M||u_{a,k} - u_{g,k}||^2  \tag{13}
+\]</span></p>
+<p>M 是静态状态读取数据的数量<span class="math inline">\(u_{a,k}\)</span>是加速度计计算得到的重力向量，<span class="math inline">\(u_{g,k}\)</span>是通过（13）式计算得到的，我们要获得<span class="math inline">\(\theta_{gyro}\)</span>的最小值同样采用上面提到的
+Levenberg-Marquardt 方法来求取。</p>
+<h1 id="校准过程">校准过程</h1>
+<h2 id="静态检测">静态检测</h2>
+<p>如前面校准框架所述，校准 IMU
+需要收集加速度计和陀螺仪的原始数据，采集的数据应该包含 IMU
+在各个稳定状态及其间隔状态下的数据。为了减小 bias
+噪声对上面两个代价函数的影响需要先对 0
+偏进行校准，初始阶段需要一段时间的静止用于校准陀螺仪的 bias
+以及用于静态检测参考。</p>
+<p>校准精度取决于对静止状态判断的准确性，校准加速度计需要在几个静态状态下进行运算，校准陀螺仪需要静态以及各个不同状态的静态之间的运动数据。根据经验对实际的数据集采用基于滤波的算子效果会较差，例如准静态检测器，检测静止状态通常会包含一些小的运动。而且基于滤波器的算法通常依赖滤波参数，需要对滤波参数进行调整。
+我们建议采用基于方差的静态检测器运算，他利用上面的静态检测间隔。我们的检测器基于<span class="math inline">\(t_{wait}\)</span>时间间隔进行采集加速度信号并计算方差大小：</p>
+<p><span class="math display">\[
+\zeta(t) = \sqrt{[var_{t_w}(a_x^t)]^2 + [var_{t_w}(a_y^t)]^2 +
+[var_{t_w}(a_z^t)]^2}    \tag{14}
+\]</span></p>
+<p>其中<span class="math inline">\(var_{t_w}(a^t)\)</span>是以时间 t
+为中心每隔时间间隔<span class="math inline">\(t_w\)</span>加速度信号的方差值，我们要对该状态进行分类为静止还是运动只需要对<span class="math inline">\(\zeta(t)\)</span>跟一个阈值进行比较就可以了。这个阈值我们可以选取
+IMU 在初始静止状态下的值<span class="math inline">\(\zeta(init)\)</span>，从而不依赖任何外部参数的调整。</p>
+<h2 id="龙格库塔法积分">龙格库塔法积分</h2>
+<p>在上面的 11 式中，通过 k-1 时刻的加速度计得到的重力向量与 k-1 到 k
+时刻的加速度进行运算得到 k 时刻的重力向量，这里 k-1 和 k
+是两个稳定状态，因此 k-1 和 k
+之间有一段时间的运动，需要对陀螺仪数据进行积分到加速度计的重力向量中去，在我们的实验中采用
+4 阶龙格库塔积分法（RK4n）比标准线性积分精度要高，下式 15
+用微分方程来描述四元数运动方程：</p>
+<p><span class="math display">\[
+f(q,t) = \dot{q} = \frac{1}{2}\Omega(w(t))q \tag{15}
+\]</span></p>
+<p>这里 q 是 t-1 时刻的重力向量的四元数表示，而<span class="math inline">\(\Omega(w)\)</span>是将角速度转化为斜对称旋转矩阵的操作，形式如下：</p>
+<p><span class="math display">\[
+\Omega(w) = \begin{bmatrix}
+0 &amp; -w_x &amp; -w_y &amp; -w_z \\
+w_x &amp; 0 &amp; w_z &amp; -w_y \\
+w_y &amp; -w_z &amp; 0 &amp; w_x \\
+w_z &amp; w_y &amp; -w_x &amp; 0
+\end{bmatrix}   \tag{16}
+\]</span></p>
+<p>RK4n 算法如下：</p>
+<p><span class="math display">\[
+q_{k+1} = q_k + \Delta t \frac{1}{6} (k_1 + 2k_2 + 2k_3 + k_4)  \tag{17}
+\]</span></p>
+<p><span class="math display">\[
+k_i = f(q^{(i)},t_k + c_i\Delta t)  \tag{18}
+\]</span></p>
+<p><span class="math display">\[
+q^{(i)} = q_k, for i = 1    \tag{19}
+\]</span></p>
+<p><span class="math display">\[
+q^{(i)} = q_k + \Delta t \sum_{j=1}^{i-1}a_{ij}k_j, for
+i&gt;1     \tag{20}
+\]</span></p>
+<p>所有需要的系数<span class="math inline">\(c_i\)</span>和<span class="math inline">\(a_{ij}\)</span>为：</p>
+<p><span class="math display">\[
+c_1 = 0, c_2 = \frac{1}{2}, c_3 =  \frac{1}{2},c_4 = 1, \\
+a_{21} = \frac{1}{2}, a_{31} = 0, a_{41} = 0,   \\
+a_{32} =  \frac{1}{2}, a_{42} = 0, a_{43} = 1.
+\]</span></p>
+<p>最后对于每一步我们需要归一化四元数 q：</p>
+<p><span class="math display">\[
+q_{k+1} \rightarrow  \frac{q_{k+1}}{||q_{k+1}||}  \tag{21}
+\]</span></p>
+<h2 id="阿伦方差">阿伦方差</h2>
+<p>我们使用艾伦方差来表示陀螺仪的随机漂移误差，这里用<span class="math inline">\(\delta_a^2\)</span>来衡量连续间隔陀螺仪数据平均值之间的方差：</p>
+<p><span class="math display">\[
+\delta_a^2 = &lt;(x(\tilde{t},k) - x(\tilde{t},k-1))^2&gt;   \\
+=\frac{1}{2K}\sum_{k=1}^K(x(\tilde{t},k) -
+x(\tilde{t},k-1))^2   \tag{22}
+\]</span></p>
+<p>其中<span class="math inline">\(x(t,k)\)</span>是第 k 个<span class="math inline">\(\tilde{t}\)</span>时间间隔陀螺仪数据的均值，K
+是所有时间的<span class="math inline">\(\tilde{t}\)</span>个数，我们对每一个轴计算阿伦方差，当阿伦方差收敛到很小的一个值时就表示校准
+ok 了，在初始阶段我们将对陀螺仪数据进行求阿伦方差进行校准。</p>
+<h2 id="完成校准">完成校准</h2>
+<p>为了得到较好的校准结果至少需要 9
+种不同姿态的数据，实验表明姿态数越多校准结果越好。</p>
+<h1 id="附录">附录</h1>
+<h2 id="levenberg-marquardt-算法">Levenberg-Marquardt 算法</h2>
+<h3 id="牛顿法">牛顿法</h3>
+<p>牛顿法（英语：Newton's
+method）又称为牛顿-拉弗森方法（英语：Newton-Raphson
+method），它是一种在实数域和复数域上近似求解方程的方法。方法使用函数<span class="math inline">\(f(x)\)</span>的泰勒级数的前面几项来寻找方程<span class="math inline">\(f(x)=0\)</span>的根。 算法过程：
+首先选择一个接近函数<span class="math inline">\(f(x)\)</span>零点的<span class="math inline">\(x_0\)</span>, 计算相应的<span class="math inline">\(f(x_0)\)</span>和切线斜率<span class="math inline">\({f}'(x_0)\)</span>，然后计算穿过点<span class="math inline">\((x_0,f(x_0))\)</span>并且斜率为<span class="math inline">\({f}'(x_0)\)</span>的直线和<span class="math inline">\(x\)</span>轴的交点的<span class="math inline">\(x\)</span>坐标，也就是求如下方程的解：</p>
+<p><span class="math display">\[
+0 = (x - x_0)\cdot f'(x_0) + f(x_0)
+\]</span></p>
+<p>我们求解 x，过程如下：</p>
+<p><span class="math display">\[
+0 = (x - x_0) + \frac{f(x_0)}{f'(x_0)}
+x - x_0 = - \frac{f(x_0)}{f'(x_0)}
+x = x_0 - \frac{f(x_0)}{f'(x_0)}
+\]</span></p>
+<p>我们将新求得的点<span class="math inline">\(x\)</span>坐标命名为<span class="math inline">\(x_1\)</span>，通常<span class="math inline">\(x_1\)</span>会比<span class="math inline">\(x_0\)</span>更接近方程<span class="math inline">\(f(x) = 0\)</span>的解，因此我们可以利用<span class="math inline">\(x_1\)</span>开始下一轮的迭代，迭代公式如下：</p>
+<p><span class="math display">\[
+x_{n+1} = x_n - \frac {f(x_n)}{f'(x_n)}
+\]</span></p>
+<p>对于多维的情况，对<span class="math inline">\(f(x)\)</span>在<span class="math inline">\(x_0\)</span>处进行二阶泰勒展开：</p>
+<p><span class="math display">\[
+f(x) = f(x_0) + \bigtriangledown f(x_0)^T(x - x_0) + \frac{1}{2}(x -
+x_0)^TH(x_0)(x - x_0)
+\]</span></p>
+<p>这里<span class="math inline">\(\bigtriangledown
+f(x_0)\)</span>是<span class="math inline">\(f(x)\)</span>的梯度向量在点<span class="math inline">\(x_0\)</span>处的值；<span class="math inline">\(H(x_0)\)</span>是<span class="math inline">\(f(x)\)</span>的海塞矩阵在点<span class="math inline">\(x_0\)</span>处的值，函数<span class="math inline">\(f(x)\)</span>有极值的必要条件是在极值点处一阶导数为
+0. 利用极小点的必要条件<span class="math inline">\(\bigtriangledown
+f(x_k) = 0\)</span>每次迭代从<span class="math inline">\(x_k\)</span>开始求目标函数的极小点，作为第<span class="math inline">\(k+1\)</span>次迭代值<span class="math inline">\(x_{k+1}\)</span> 假如<span class="math inline">\(x_{k+1}\)</span>满足<span class="math inline">\(\bigtriangledown f(x_{k+1}) = 0\)</span>对<span class="math inline">\(\bigtriangledown f(x)\)</span>进行泰勒展开：</p>
+<p><span class="math display">\[
+\bigtriangledown f(x) = \bigtriangledown f(x_k) + H(x_k)(x - x_k) \\
+\bigtriangledown f(x_k) + H(x_k)(x_{k+1} - x_k) = 0
+x_{k+1} = x_k - H(x_k)^{-1} \bigtriangledown f(x_k)
+\]</span></p>
+<p>可以写为如下：</p>
+<p><span class="math display">\[
+x_{k+1} = x_k - H_k^{-1}g_k
+\]</span></p>
+<p>这就是牛顿法的多维公式，其中<span class="math inline">\(g_k =
+\bigtriangledown f(x_k)\)</span></p>
+<h3 id="高斯-牛顿法">高斯-牛顿法</h3>
+<p>给定 m 个方程<span class="math inline">\(\textbf{r} =
+(r_1,r_2,...r_m)\)</span>（通常叫做残差方程）和 n 个变量<span class="math inline">\(\beta = (\beta_1,\beta_2,...\beta_n)\)</span>,
+其中<span class="math inline">\(m \geqslant n\)</span>,
+高斯-牛顿算法迭代找出下式取最小值时的最优值。</p>
+<p><span class="math display">\[
+s(\beta) = \sum_{i=1}^{m}r_i(\beta)^2
+\]</span></p>
+<p>从给定初始值<span class="math inline">\(\beta_0\)</span>开始，通过下式进行迭代寻找<span class="math inline">\(s(\beta)\)</span>的最小值：</p>
+<p><span class="math display">\[
+\beta_{s+1} = \beta_{s} - (J_rJ_r)^{-1} J_r^T r \beta_s
+\]</span></p>
+<p>这里<span class="math inline">\(r\)</span>和<span class="math inline">\(\beta\)</span>都是列向量，<span class="math inline">\(J_r\)</span>Jacobian matrix 为：</p>
+<p><span class="math display">\[
+(J_r)_{ij} = \tfrac{\partial r_i \beta_s}{\partial \beta_j}
+\]</span></p>
+<p>其中符号<span class="math inline">\(^T\)</span>是 matrix transpose.
+如果 m=n 则可以简化为如下：</p>
+<p><span class="math display">\[
+\beta_{s+1} = \beta_{s} - (J_r)^{-1} r \beta_s
+\]</span></p>
+<p>这就是一维牛顿法的直接推广。 在数据拟合中，目标是找到最佳参数<span class="math inline">\(\beta\)</span>使得<span class="math inline">\(\beta\)</span>满足给定模型<span class="math inline">\(y = f(x,\beta)\)</span>可以最好的符合数据点<span class="math inline">\((x,y)\)</span>, 方程<span class="math inline">\(r\)</span>是残差方程，如下：</p>
+<p><span class="math display">\[
+r_i(\beta) = y_i - f(x_i, \beta)
+\]</span></p>
+<p>高斯-牛顿法可以用函数<span class="math inline">\(f\)</span>的雅克比<span class="math inline">\(J_f\)</span>表示：</p>
+<p><span class="math display">\[
+\beta_{s+1} = \beta_{s} - (J_fJ_f)^{-1} J_f^T r \beta_s
+\]</span></p>
+<p>这里<span class="math inline">\((J_fJ_f)^{-1} J_f^T\)</span>是<span class="math inline">\(J_f\)</span>的伪逆（摩尔-彭罗斯逆）。</p>
+<p>高斯-牛顿算法将通过近似从牛顿方法优化函数中推导而来。牛顿方法最小化参数函数<span class="math inline">\(s\)</span>的递归关系<span class="math inline">\(\beta\)</span>为：</p>
+<p><span class="math display">\[
+\beta_{s+1} = \beta_s - H^{-1}g
+\]</span> 其中<span class="math inline">\(g\)</span>表示<span class="math inline">\(S\)</span>梯度向量，<span class="math inline">\(H\)</span>表示<span class="math inline">\(S\)</span>的海塞矩阵 ( Hessian matrix). 由于<span class="math inline">\(S =\sum_{i=1}^{m}r_i \frac{\partial r_i}{\partial
+\beta_j}\)</span>其梯度通过下式给出：</p>
+<p><span class="math display">\[
+g_{j}=2\sum _{i=1}^{m}r_{i}{\frac {\partial r_{i}}{\partial \beta _{j}}}
+\]</span></p>
+<p>海塞矩阵<span class="math inline">\(H\)</span>的元素通过梯度<span class="math inline">\(g_j\)</span>的不同元素<span class="math inline">\(\beta_k\)</span>计算得到：</p>
+<p><span class="math display">\[
+H_{jk}=2\sum _{i=1}^{m}\left({\frac {\partial r_{i}}{\partial \beta
+_{j}}}{\frac {\partial r_{i}}{\partial \beta _{k}}}+r_{i}{\frac
+{\partial ^{2}r_{i}}{\partial \beta _{j}\partial \beta _{k}}}\right)
+\]</span></p>
+<p>高斯-牛顿法忽略二阶小项，海塞矩阵<span class="math inline">\(H\)</span>可以近似写为：</p>
+<p><span class="math display">\[
+H_{jk}\approx 2\sum _{i=1}^{m}J_{ij}J_{ik}
+\]</span></p>
+<p>这里<span class="math inline">\(J_{ij}={\frac {\partial
+r_{i}}{\partial \beta _{j}}}\)</span>是雅克比矩阵<span class="math inline">\(J_r\)</span>的一项，梯度和海塞矩阵可以通过如下符号来表示：</p>
+<p><span class="math display">\[
+\mathbf {g} =2{\mathbf {J} _{\mathbf {r} }}^{\mathsf {T}}\mathbf {r}
+,\quad \mathbf {H} \approx 2{\mathbf {J} _{\mathbf {r} }}^{\mathsf
+{T}}\mathbf {J_{r}}
+\]</span></p>
+<p>将这些表达式代入上述递归关系中以获得运算方程式就得到：</p>
+<p><span class="math display">\[
+{\boldsymbol {\beta }}_{(s+1)}={\boldsymbol {\beta
+}}_{(s)}-\left(\mathbf {J_{r}} ^{\mathsf {T}}\mathbf {J_{r}}
+\right)^{-1}\mathbf {J_{r}} ^{\mathsf {T}}\mathbf {r} \left({\boldsymbol
+{\beta }}_{(s)}\right)
+\]</span></p>
+<p>注意并非在所有情况下都保证高斯-牛顿法的收敛性，下式要能够得到保证才可以：</p>
+<p><span class="math display">\[
+\left|r_{i}{\frac {\partial ^{2}r_{i}}{\partial \beta _{j}\partial \beta
+_{k}}}\right|\ll \left|{\frac {\partial r_{i}}{\partial \beta
+_{j}}}{\frac {\partial r_{i}}{\partial \beta _{k}}}\right|
+\]</span></p>
+<p>二阶导数足够小可以被忽略，在如下两种情况下都会收敛：</p>
+<p>1.<span class="math inline">\(r_i\)</span>在选取值附近要足够小，至少在最小值附近要足够小。
+2. 函数只有轻度的非线性，因此$ $在选取值附近才会足够小。</p>
+<h3 id="levenberg-marquardt-算法-1">Levenberg-Marquardt 算法</h3>
+<p>莱文贝格－马夸特方法（Levenberg–Marquardt
+algorithm）能提供数非线性最小化（局部最小）的数值解。、
+和其他最小化算法一样，LM
+算法也是采用迭代过程，首先也是要提供一个参数<span class="math inline">\(\beta\)</span>的猜测值，在只有一个最小值的情况下初始猜测参数为<span class="math inline">\({\boldsymbol {\beta
+}}^{\text{T}}={\begin{pmatrix}1,\ 1,\ \dots ,\
+1\end{pmatrix}}\)</span>也可以很好的工作，在有多个极小值的情况下仅当猜测值以及接近最终解时，算法才会收敛到全局最小值。在每一步迭代中参数向量<span class="math inline">\(\beta\)</span>用新的评估值<span class="math inline">\(\beta + \delta\)</span>替代之前的值，为了确定<span class="math inline">\(\delta\)</span>函数<span class="math inline">\({\displaystyle f\left(x_{i},{\boldsymbol {\beta
+}}+{\boldsymbol {\delta }}\right)}\)</span>需要近似线性化。</p>
+<p><span class="math display">\[
+f\left(x_{i},{\boldsymbol {\beta }}+{\boldsymbol {\delta
+}}\right)\approx f\left(x_{i},{\boldsymbol {\beta }}\right)+\mathbf {J}
+_{i}{\boldsymbol {\delta }}
+\]</span></p>
+<p>其中：</p>
+<p><span class="math display">\[
+\mathbf {J} _{i}={\frac {\partial f\left(x_{i},{\boldsymbol {\beta
+}}\right)}{\partial {\boldsymbol {\beta }}}}
+\]</span></p>
+<p>是函数<span class="math inline">\(f\)</span>对参数<span class="math inline">\(\beta\)</span>的梯度。 <span class="math inline">\(s(\beta)\)</span> 平方偏差之和在 <span class="math inline">\(f\)</span>对<span class="math inline">\(\beta\)</span> 的梯度为 0 时取最小值，上面是 <span class="math inline">\(f\left(x_{i},{\boldsymbol {\beta }}+{\boldsymbol
+{\delta }}\right)\)</span> 的一阶近似，则：</p>
+<p><span class="math display">\[
+S\left({\boldsymbol {\beta }}+{\boldsymbol {\delta }}\right)\approx \sum
+_{i=1}^{m}\left[y_{i}-f\left(x_{i},{\boldsymbol {\beta }}\right)-\mathbf
+{J} _{i}{\boldsymbol {\delta }}\right]^{2}
+\]</span></p>
+<p>或者用向量符号表示：</p>
+<p><span class="math display">\[
+{\begin{aligned}S\left({\boldsymbol {\beta }}+{\boldsymbol {\delta
+}}\right)&amp;\approx \left\|\mathbf {y} -\mathbf {f} \left({\boldsymbol
+{\beta }}\right)-\mathbf {J} {\boldsymbol {\delta
+}}\right\|^{2}\\&amp;=\left[\mathbf {y} -\mathbf {f} \left({\boldsymbol
+{\beta }}\right)-\mathbf {J} {\boldsymbol {\delta }}\right]^{\mathrm {T}
+}\left[\mathbf {y} -\mathbf {f} \left({\boldsymbol {\beta
+}}\right)-\mathbf {J} {\boldsymbol {\delta
+}}\right]\\&amp;=\left[\mathbf {y} -\mathbf {f} \left({\boldsymbol
+{\beta }}\right)\right]^{\mathrm {T} }\left[\mathbf {y} -\mathbf {f}
+\left({\boldsymbol {\beta }}\right)\right]-\left[\mathbf {y} -\mathbf
+{f} \left({\boldsymbol {\beta }}\right)\right]^{\mathrm {T} }\mathbf {J}
+{\boldsymbol {\delta }}-\left(\mathbf {J} {\boldsymbol {\delta
+}}\right)^{\mathrm {T} }\left[\mathbf {y} -\mathbf {f}
+\left({\boldsymbol {\beta }}\right)\right]+{\boldsymbol {\delta
+}}^{\mathrm {T} }\mathbf {J} ^{\mathrm {T} }\mathbf {J} {\boldsymbol
+{\delta }}\\&amp;=\left[\mathbf {y} -\mathbf {f} \left({\boldsymbol
+{\beta }}\right)\right]^{\mathrm {T} }\left[\mathbf {y} -\mathbf {f}
+\left({\boldsymbol {\beta }}\right)\right]-2\left[\mathbf {y} -\mathbf
+{f} \left({\boldsymbol {\beta }}\right)\right]^{\mathrm {T} }\mathbf {J}
+{\boldsymbol {\delta }}+{\boldsymbol {\delta }}^{\mathrm {T} }\mathbf
+{J} ^{\mathrm {T} }\mathbf {J} {\boldsymbol {\delta }}.\end{aligned}}
+\]</span></p>
+<p>这里暂时先不做理论推导了，目前没找到好的推导方法，直接上结论吧，</p>
+<p><span class="math display">\[
+(\mu \mathbf  {I}+(\mathbf  {J}^{T}\mathbf  {J})) \delta
+_{p}=\mathbf  {J}^{T}\epsilon_k
+\]</span></p>
+<p>就是莱文贝格－马夸特方法。如此一来 <span class="math inline">\(\mu\)</span>
+大的时候这种算法会接近最速下降法，小的时候会接近高斯-牛顿方法。为了确保每次
+<span class="math inline">\(\mathbf {\epsilon }\)</span>
+长度的减少，我们这么作：先采用一个小的 <span class="math inline">\(\mu\)</span> ，如果 <span class="math inline">\(\mathbf {\epsilon }\)</span> 长度变大就增加 <span class="math inline">\(\mu\)</span>
+。这个算法当以下某些条件达到时结束迭代：</p>
+<ul>
+<li>如果发现 <span class="math inline">\({\mathbf  {\epsilon }}\)</span>
+长度变化小于特定的给定值就结束。</li>
+<li>发现 <span class="math inline">\({\mathbf  {\delta _{p}}}\)</span>
+变化小于特定的给定值就结束。</li>
+<li>到达了迭代的上限设定就结束。</li>
+</ul>
+<h1 id="参考文献">参考文献</h1>
+<p>《A Robust and Easy to Implement Method for IMU Calibration without
+External Equipments》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/next/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/next/tags/Robot/" rel="tag"><i class="fa fa-tag"></i> Robot</a>
+              <a href="/next/tags/IMU/" rel="tag"><i class="fa fa-tag"></i> IMU</a>
+              <a href="/next/tags/EIS/" rel="tag"><i class="fa fa-tag"></i> EIS</a>
+              <a href="/next/tags/Image/" rel="tag"><i class="fa fa-tag"></i> Image</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/next/2020/Algorithm/imuAttitudeCalculation/" rel="prev" title="IMU 姿态解算">
+                  <i class="fa fa-angle-left"></i> IMU 姿态解算
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/next/2020/Algorithm/openshoe/" rel="next" title="openshoe 算法">
+                  openshoe 算法 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2024</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">483k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">29:17</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/next/js/comments.js"></script><script src="/next/js/utils.js"></script><script src="/next/js/motion.js"></script><script src="/next/js/schemes/muse.js"></script><script src="/next/js/sidebar.js"></script><script src="/next/js/next-boot.js"></script><script src="/next/js/bookmark.js"></script><script src="/next/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/next/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/next/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/next/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/next/2020/Algorithm/imuCalibration/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>
