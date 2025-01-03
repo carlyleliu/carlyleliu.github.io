@@ -1,0 +1,529 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="dark"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Buildroot | Matrix</title><meta name="author" content="CarlyleLiu"><meta name="copyright" content="CarlyleLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#0d0d0d"><meta name="description" content="Buildroot 配置 交叉编译工具链 Buildroot 为交叉编译工具链提供两种解决方案：  内部工具链后端，在配置界面中调用“Buildroot toolchain” 外部工具链后端，在配置界面中调用“External toolchain“；有三种方式来使用外部工具链：  让 Buildroot 基于预定义的外部工具链 profile 自动下载、安装。在&nbsp;Toolchain&amp;nb">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Buildroot">
+<meta property="og:url" content="http://carlyleliu.github.io/Note/Buildroot/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="Buildroot 配置 交叉编译工具链 Buildroot 为交叉编译工具链提供两种解决方案：  内部工具链后端，在配置界面中调用“Buildroot toolchain” 外部工具链后端，在配置界面中调用“External toolchain“；有三种方式来使用外部工具链：  让 Buildroot 基于预定义的外部工具链 profile 自动下载、安装。在&nbsp;Toolchain&amp;nb">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://unsplash.it/1600/900?random&579">
+<meta property="article:published_time" content="2019-10-21T18:22:04.000Z">
+<meta property="article:modified_time" content="2024-12-15T06:43:07.402Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Note">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://unsplash.it/1600/900?random&579"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://carlyleliu.github.io/Note/Buildroot/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":false,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Buildroot',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2024-12-15 14:43:07'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
+
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
+
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><link rel="stylesheet" href="/css/custom.css"><!-- hexo injector head_end start --><link rel="stylesheet" href="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/assets/font-awesome-animation.min.css" media="defer" onload="this.media='all'"><link rel="stylesheet" href="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/tag_plugins.css" media="defer" onload="this.media='all'"><script src="https://npm.elemecdn.com/hexo-butterfly-tag-plugins-plus@latest/lib/assets/carousel-touch.js"></script><link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-footer-beautify@1.0.0/lib/runtime.min.css" media="print" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.2.0">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://lsky.carlyleliu.vip/i/6749cdcf0b9af.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">206</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/next"><i class="fa-fw fa-solid fa-n"></i><span> 主题</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa-solid fa-mug-saucer"></i><span> 生活</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" target="_blank" rel="noopener" href="https://alist.carlyleliu.vip/"><i class="fa-fw fa-solid fa-cloud"></i><span> 网盘</span></a></li><li><a class="site-page child" href="/equipment/"><i class="fa-fw fa-solid fa-laptop"></i><span> 设备</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://calibre.carlyleliu.vip/"><i class="fa-fw fa-solid fa-book"></i><span> 书城</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/essay/"><i class="fa-fw fas fa-comments"></i><span> 随笔</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fa-solid fa-image"></i><span> 光影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://unsplash.it/1600/900?random&amp;579')"><nav id="nav"><span id="blog-info"><a href="/" title="Matrix"><span class="site-name">Matrix</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><a class="site-page" href="/next"><i class="fa-fw fa-solid fa-n"></i><span> 主题</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page group" href="javascript:void(0);"><i class="fa-fw fa-solid fa-mug-saucer"></i><span> 生活</span><i class="fas fa-chevron-down"></i></a><ul class="menus_item_child"><li><a class="site-page child" target="_blank" rel="noopener" href="https://alist.carlyleliu.vip/"><i class="fa-fw fa-solid fa-cloud"></i><span> 网盘</span></a></li><li><a class="site-page child" href="/equipment/"><i class="fa-fw fa-solid fa-laptop"></i><span> 设备</span></a></li><li><a class="site-page child" target="_blank" rel="noopener" href="https://calibre.carlyleliu.vip/"><i class="fa-fw fa-solid fa-book"></i><span> 书城</span></a></li><li><a class="site-page child" href="/music/"><i class="fa-fw fas fa-music"></i><span> 音乐</span></a></li><li><a class="site-page child" href="/essay/"><i class="fa-fw fas fa-comments"></i><span> 随笔</span></a></li><li><a class="site-page child" href="/gallery/"><i class="fa-fw fa-solid fa-image"></i><span> 光影</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Buildroot</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2019-10-21T18:22:04.000Z" title="发表于 2019-10-22 02:22:04">2019-10-22</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2024-12-15T06:43:07.402Z" title="更新于 2024-12-15 14:43:07">2024-12-15</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Note/">Note</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span id="" data-flag-title="Buildroot"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span class="waline-pageview-count" data-path="/Note/Buildroot/"><i class="fa-solid fa-spinner fa-spin"></i></span></span><span class="post-meta-separator">|</span><span class="post-meta-commentcount"><i class="far fa-comments fa-fw post-meta-icon"></i><span class="post-meta-label">评论数:</span><a href="/Note/Buildroot/#post-comment"><span class="waline-comment-count" data-path="/Note/Buildroot/"><i class="fa-solid fa-spinner fa-spin"></i></span></a></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="buildroot-配置">Buildroot 配置</h1>
+<h2 id="交叉编译工具链">交叉编译工具链</h2>
+<p>Buildroot 为交叉编译工具链提供两种解决方案：</p>
+<ul>
+<li>内部工具链后端，在配置界面中调用“Buildroot toolchain”</li>
+<li>外部工具链后端，在配置界面中调用“External
+toolchain“；有三种方式来使用外部工具链：
+<ul>
+<li>让 Buildroot 基于预定义的外部工具链 profile
+自动下载、安装。在&nbsp;<code>Toolchain</code>&nbsp;中选择已有的 profile 即可</li>
+<li>为 Buildroot 手动指定提前安装好的、预定义了 profile
+的工具链。在&nbsp;<code>Toolchain</code>&nbsp;中选择 profile
+后，反选掉&nbsp;<code>Download toolchain automatically</code>&nbsp;并在&nbsp;<code>Toolchain path</code>&nbsp;中填写已有工具链路径即可</li>
+<li>使用定制的外部工具链。通常用于使用 crosstool-NG 或 Buildroot
+生成的已有定制工具链。选择&nbsp;<code>Toolchain</code>&nbsp;列表中的&nbsp;<code>Custom toolchain</code>&nbsp;，然后填写&nbsp;<code>Toolchain path</code>,&nbsp;<code>Toolchain prefix</code>,&nbsp;<code>External toolchain C librrary</code>&nbsp;选项。若外部工具链使用
+glibc 库，只需要选择工具链是否支持 C++ 以及是否内建 RPC
+支持即可。如果使用 uClibc 库，则还有宽字符、本地化、程序
+invocation、线程支持等选项</li>
+</ul></li>
+</ul>
+<p>Buildroot 不支持由 OpenEmbedded、Yocto
+支持的工具链，因为这些工具生成的工具链并不是单纯的工具链——它们除了编译器、binutils、C/C++
+库之外还加了一大堆预编译的库和程序。因此 Buildroot 并没有办法导入它们的
+sysroot 。Buildroot
+也不支持发行版提供的工具链，这些工具链包含的东西也比较复杂，所以无法加载到构建环境中。</p>
+<span id="more"></span>
+<h2 id="dev-管理">/dev 管理</h2>
+<ul>
+<li><p>第一种方式是“Static using device table”<br>
+设备文件会被持久存储在根文件系统中（即重新启动后它们仍然存在），并且在系统添加或者移除硬件设备时，不能自动创建和删除这些设备文件。</p></li>
+<li><p>第二种方式是“Dynamic using devtmpfs only”<br>
+使用 devtmpfs 时需要启用以下内核配置选项：CONFIG_DEVTMPFS 和
+CONFIG_DEVTMPFS_MOUNT。</p></li>
+<li><p>第三种方式是“Dynamic using devtmpfs+mdev”<br>
+每次添加或移除设备时，内核都会调用 mdev。由于使用/etc/mdev.conf
+配置文件，因此 mdev
+可以进行相关配置，例如给设备文件设置特定的权限或所有权、在设备出现或消失时调用脚本或应用程序等等</p></li>
+<li><p>第四种方式是“Dynamic using devtmpfs+eudev”<br>
+eudev 是后台运行的守护程序，当系统添加或者移除设备时，内核将会调用它。与
+mdev 相比，它是重量级的解决方案，但是具有更高的灵活性。eudev 是 udev
+的独立版本</p></li>
+</ul>
+<h2 id="初始化系统">初始化系统</h2>
+<ul>
+<li>第一种是“BusyBox”：BusyBox init 程序会在启动时去读取/etc/inittab
+文件</li>
+<li>第二种是“systemV”：Sysvinit 同样使用 inittab 文件（其语法与 BusyBox
+中的语法略有不同）</li>
+<li>第三种是“systemd”：systemd 是用于 Linux 的新一代 init
+系统。它的功能远远超过传统的 init 程序：强大的并行处理能力、使用 socket
+和 D-Bus 激活启动服务、按需启动守护程序、使用 Linux
+控制组跟踪进程、支持对系统状态进行快照和还原等等。</li>
+</ul>
+<h1 id="ildroot一般用法">ildroot一般用法</h1>
+<h2 id="目录树外构建">目录树外构建</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /tmp/build; make O=<span class="variable">$PWD</span> -C path/to/buildroot</span><br></pre></td></tr></tbody></table></figure>
+<p>注意：“O”指定的路径可以是绝对路径，也可以是相对路径，但如果是相对路径，则需要注意，它是相对于
+Buildroot 的主目录而不是当前工作目录。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#! /bin/bash</span></span><br><span class="line"></span><br><span class="line">CURRENT_DIR=$(<span class="built_in">cd</span> $(<span class="built_in">dirname</span> <span class="variable">$0</span>); <span class="built_in">pwd</span>)</span><br><span class="line">make O=<span class="variable">${CURRENT_DIR}</span>/output -C ./Buildroot-2023.11/ stm32mp157_pro_ddr512m_systemV_core_defconfig</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成构建软件包依赖关系图</span></span><br><span class="line">make graph-depends</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成构建时间图</span></span><br><span class="line">make graph-build</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绘制软件包对文件系统大小贡献图</span></span><br><span class="line">make graph-size</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="在开发期间使用-buildroot">在开发期间使用 Buildroot</h2>
+<p>问题：直接在
+output/build/<package>-<version>中进行修改是不合适的，因为在“make
+clean”时会删除该目录。</version></package></p>
+<p>解决办法：Buildroot
+针对此场景提供了一种特定的机制：<pkg>_OVERRIDE_SRCDIR 机制。Buildroot
+会读取 override 文件，而该文件可以让用户告诉 Buildroot
+某些软件包的源码位置</pkg></p>
+<p>override 文件的默认位置是<span class="math inline">\((CONFIG_DIR)/local.mk，由
+BR2_PACKAGE_OVERRIDE_FILE 配置选项定义。\)</span>(CONFIG_DIR)是
+Buildroot 中.config 文件的位置，因此默认情况下，<a target="_blank" rel="noopener" href="http://local.mk">local.mk</a> 与.config
+文件在同一个目录下，这意味着： • 在目录树内构建的 Buildroot
+源码顶级目录中（即不使用“O=”时） •
+在目录树外构建的“O”参数指定的目录中（即使用“O=”时）
+如果需要的位置与默认位置不同，则可以通过 BR2_PACKAGE_OVERRIDE_FILE
+配置选项指定该位置。在该 override 文件中，Buildroot
+希望找到以下形式的参数行：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&lt;pkg1&gt;_OVERRIDE_SRCDIR = /path/to/pkg1/sources</span><br><span class="line">&lt;pkg2&gt;_OVERRIDE_SRCDIR = /path/to/pkg2/sources</span><br></pre></td></tr></tbody></table></figure>
+<p>例如：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">LINUX_OVERRIDE_SRCDIR = /home/bob/linux/</span><br><span class="line">BUSYBOX_OVERRIDE_SRCDIR = /home/bob/busybox/</span><br></pre></td></tr></tbody></table></figure>
+<p>当 Buildroot 发现指定软件包已经定义了<pkg>_OVERRIDE_SRCDIR
+时，它将不再尝试下载、提取和修补软件包。取而代之的是，它将直接使用指定目录中可用的源代码，并且使用“make
+clean”时不会删除该目录。</pkg></p>
+<p>此机制最好与 make <pkg>-rebuild 和 make <pkg>-reconfigure
+目标结合使用。make <pkg>-rebuild all 将使源代码从<pkg>_OVERRIDE_SRCDIR
+同步到 output/build/<package>-custom（由于
+rsync，它仅复制修改过的文件），然后重新启动该软件包的构建过程。</package></pkg></pkg></pkg></pkg></p>
+<p>在上述 linux 软件包示例中，开发人员可以在/home/bob/linux
+中更改源代码，然后运行：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make linux-rebuild all</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="特定项目的定制">特定项目的定制</h1>
+<p>...</p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Note/">Note</a></div><div class="post_share"><div class="social-share" data-image="https://unsplash.it/1600/900?random&amp;579" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/Note/BuildrootCommonIssue/" title="Buildroot 常见编译错误记录"><img class="cover" src="https://unsplash.it/1600/900?random&amp;7671" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Buildroot 常见编译错误记录</div></div></a></div><div class="next-post pull-right"><a href="/Program/rtosDesign/" title="RTOS 的设计"><img class="cover" src="https://unsplash.it/1600/900?random&amp;5358" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">RTOS 的设计</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/Note/ArchLinuxConfig/" title="archlinux(Manjaro) 配置"><img class="cover" src="https://unsplash.it/1600/900?random&3138" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-06-14</div><div class="title">archlinux(Manjaro) 配置</div></div></a></div><div><a href="/Note/BuildrootCommonIssue/" title="Buildroot 常见编译错误记录"><img class="cover" src="https://unsplash.it/1600/900?random&7671" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-12-22</div><div class="title">Buildroot 常见编译错误记录</div></div></a></div><div><a href="/Note/CompilePipe/" title="编译流程"><img class="cover" src="https://unsplash.it/1600/900?random&7125" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-01-25</div><div class="title">编译流程</div></div></a></div><div><a href="/Note/CPPTips/" title="C&#x2F;C++ Tips"><img class="cover" src="https://unsplash.it/1600/900?random&323" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-07-11</div><div class="title">C&#x2F;C++ Tips</div></div></a></div><div><a href="/Note/GtestGmock/" title="GTest &amp; GMock"><img class="cover" src="https://unsplash.it/1600/900?random&7268" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-05-23</div><div class="title">GTest &amp; GMock</div></div></a></div><div><a href="/Note/LeakTracer/" title="Leaktrace 使用方法"><img class="cover" src="https://unsplash.it/1600/900?random&5533" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2019-02-27</div><div class="title">Leaktrace 使用方法</div></div></a></div></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div><div class="comment-switch"><span class="first-comment">Waline</span><span id="switch-btn"></span><span class="second-comment">Twikoo</span></div></div><div class="comment-wrap"><div><div id="waline-wrap"></div></div><div><div id="twikoo-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://lsky.carlyleliu.vip/i/6749cdcf0b9af.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CarlyleLiu</div><div class="author-info__description">CarlyleLiu’s Blog</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">206</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/carlyleliu"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/carlyleliu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:yyliushuai@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-envelope" style="color: #24292e;"></i></a><a class="social-icon" href="https://twitter.com/yyliushuai" target="_blank" title="Twitter"><i class="fab fa-twitter" style="color: #24292e;"></i></a><a class="social-icon" href="https://youtube.com/carlyleliu" target="_blank" title="YouTube"><i class="fab fa-youtube" style="color: #24292e;"></i></a><a class="social-icon" href="https://instagram.com/blurredliu" target="_blank" title="Instagram"><i class="fab fa-instagram" style="color: #24292e;"></i></a><a class="social-icon" href="https://carlyleliu.github.io/atom.xml" target="_blank" title="Rss"><i class="fas fa-rss" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">next主题站 https://carlyleliu.github.io/next</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#buildroot-%E9%85%8D%E7%BD%AE"><span class="toc-number">1.</span> <span class="toc-text">Buildroot 配置</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E9%93%BE"><span class="toc-number">1.1.</span> <span class="toc-text">交叉编译工具链</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#dev-%E7%AE%A1%E7%90%86"><span class="toc-number">1.2.</span> <span class="toc-text">&#x2F;dev 管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E7%B3%BB%E7%BB%9F"><span class="toc-number">1.3.</span> <span class="toc-text">初始化系统</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ildroot%E4%B8%80%E8%88%AC%E7%94%A8%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">ildroot一般用法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95%E6%A0%91%E5%A4%96%E6%9E%84%E5%BB%BA"><span class="toc-number">2.1.</span> <span class="toc-text">目录树外构建</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9C%A8%E5%BC%80%E5%8F%91%E6%9C%9F%E9%97%B4%E4%BD%BF%E7%94%A8-buildroot"><span class="toc-number">2.2.</span> <span class="toc-text">在开发期间使用 Buildroot</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%89%B9%E5%AE%9A%E9%A1%B9%E7%9B%AE%E7%9A%84%E5%AE%9A%E5%88%B6"><span class="toc-number">3.</span> <span class="toc-text">特定项目的定制</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2025 By CarlyleLiu</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="直达评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, '']
+      }
+    }
+  }
+  
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script><script>(() => {
+  let initFn = window.walineFn || null
+
+  const initWaline = (Fn) => {
+    const waline = Fn(Object.assign({
+      el: '#waline-wrap',
+      serverURL: 'https://waline.carlyleliu.vip/',
+      pageview: true,
+      dark: 'html[data-theme="dark"]',
+      path: window.location.pathname,
+      comment: true,
+    }, {"locale":{"nick":"昵称","mail":"邮箱","link":"你的网站","placeholder":"填写数字QQ邮箱可以自动获取QQ头像","requiredMeta":[],"sofa":"评论区空空如也~~~","anonymous":"匿名的野猫","login":"登录(可选)"}}))
+
+    const destroyWaline = () => {
+      waline.destroy()
+    }
+
+    btf.addGlobalFn('pjax', destroyWaline, 'destroyWaline')
+  }
+
+  const loadWaline = async () => {
+    if (initFn) initWaline(initFn)
+    else {
+      await getCSS('https://cdn.jsdelivr.net/npm/@waline/client@3.1.2/dist/waline.min.css')
+      const { init } = await import('https://cdn.jsdelivr.net/npm/@waline/client@3.1.2/dist/waline.min.js')
+      initFn = init || Waline.init
+      initWaline(initFn)
+      window.walineFn = initFn
+    }
+  }
+
+  if ('Waline' === 'Waline' || !false) {
+    if (false) btf.loadComment(document.getElementById('waline-wrap'),loadWaline)
+    else setTimeout(loadWaline, 0)
+  } else {
+    window.loadOtherComment = loadWaline
+  }
+})()</script><script>(() => {
+  const getCount = () => {
+    const countELement = document.getElementById('twikoo-count')
+    if(!countELement) return
+    twikoo.getCommentsCount({
+      envId: 'https://twikoo.carlyleliu.vip/',
+      region: '',
+      urls: [window.location.pathname],
+      includeReply: false
+    }).then(res => {
+      countELement.textContent = res[0].count
+    }).catch(err => {
+      console.error(err)
+    })
+  }
+
+  const init = () => {
+    twikoo.init(Object.assign({
+      el: '#twikoo-wrap',
+      envId: 'https://twikoo.carlyleliu.vip/',
+      region: '',
+      onCommentLoaded: () => {
+        btf.loadLightbox(document.querySelectorAll('#twikoo .tk-content img:not(.tk-owo-emotion)'))
+      }
+    }, null))
+
+    GLOBAL_CONFIG_SITE.isPost && getCount()
+  }
+
+  const loadTwikoo = () => {
+    if (typeof twikoo === 'object') setTimeout(init,0)
+    else getScript('https://cdn.jsdelivr.net/npm/twikoo@1.6.31/dist/twikoo.all.min.js').then(init)
+  }
+
+  if ('Waline' === 'Twikoo' || !false) {
+    if (false) btf.loadComment(document.getElementById('twikoo-wrap'), loadTwikoo)
+    else loadTwikoo()
+  } else {
+    window.loadOtherComment = loadTwikoo
+  }
+})()</script></div><script>window.addEventListener('load', () => {
+  const changeContent = content => {
+    if (content === '') return content
+
+    content = content.replace(/<img.*?src="(.*?)"?[^\>]+>/ig, '[图片]') // replace image link
+    content = content.replace(/<a[^>]+?href=["']?([^"']+)["']?[^>]*>([^<]+)<\/a>/gi, '[链接]') // replace url
+    content = content.replace(/<pre><code>.*?<\/pre>/gi, '[代码]') // replace code
+    content = content.replace(/<[^>]+>/g,"") // remove html tag
+
+    if (content.length > 150) {
+      content = content.substring(0,150) + '...'
+    }
+    return content
+  }
+
+  const generateHtml = array => {
+    let result = ''
+
+    if (array.length) {
+      for (let i = 0; i < array.length; i++) {
+        result += '<div class=\'aside-list-item\'>'
+
+        if (true) {
+          const name = 'src'
+          result += `<a href='${array[i].url}' class='thumbnail'><img ${name}='${array[i].avatar}' alt='${array[i].nick}'></a>`
+        }
+
+        result += `<div class='content'>
+        <a class='comment' href='${array[i].url}' title='${array[i].content}'>${array[i].content}</a>
+        <div class='name'><span>${array[i].nick} / </span><time datetime="${array[i].date}">${btf.diffDate(array[i].date, true)}</time></div>
+        </div></div>`
+      }
+    } else {
+      result += '没有评论'
+    }
+
+    let $dom = document.querySelector('#card-newest-comments .aside-list')
+    $dom && ($dom.innerHTML= result)
+    window.lazyLoadInstance && window.lazyLoadInstance.update()
+    window.pjax && window.pjax.refresh($dom)
+  }
+
+  const getComment = async () => {
+    try {
+      const res = await fetch('https://waline.carlyleliu.vip/api/comment?type=recent&count=6', { method: 'GET' })
+      const result = await res.json()
+      const walineArray = result.data.map(e => {
+        return {
+          'content': changeContent(e.comment),
+          'avatar': e.avatar,
+          'nick': e.nick,
+          'url': e.url + '#' + e.objectId,
+          'date': e.time || e.insertedAt
+        }
+      })
+      saveToLocal.set('waline-newest-comments', JSON.stringify(walineArray), 10/(60*24))
+      generateHtml(walineArray)
+    } catch (err) {
+      console.error(err)
+      const $dom = document.querySelector('#card-newest-comments .aside-list')
+      $dom.textContent= "无法获取评论，请确认相关配置是否正确"
+    }
+  }
+
+  const newestCommentInit = () => {
+    if (document.querySelector('#card-newest-comments .aside-list')) {
+      const data = saveToLocal.get('waline-newest-comments')
+      if (data) {
+        generateHtml(JSON.parse(data))
+      } else {
+        getComment()
+      }
+    }
+  }
+
+  newestCommentInit()
+  document.addEventListener('pjax:complete', newestCommentInit)
+})</script><script defer="defer" id="ribbon" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/dist/canvas-ribbon.min.js" size="150" alpha="0.6" zIndex="-1" mobile="false" data-click="true"></script><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/aplayer@1.10.1/dist/APlayer.min.js"></script><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/metingjs/dist/Meting.min.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js"></script><script>let pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+var pjax = new Pjax({
+  elements: 'a:not([target="_blank"])',
+  selectors: pjaxSelectors,
+  cacheBust: false,
+  analytics: false,
+  scrollRestoration: false
+})
+
+document.addEventListener('pjax:send', function () {
+
+  // removeEventListener
+  btf.removeGlobalFnEvent('pjax')
+  btf.removeGlobalFnEvent('themeChange')
+
+  document.getElementById('rightside').classList.remove('rightside-show')
+  
+  if (window.aplayers) {
+    for (let i = 0; i < window.aplayers.length; i++) {
+      if (!window.aplayers[i].options.fixed) {
+        window.aplayers[i].destroy()
+      }
+    }
+  }
+
+  typeof typed === 'object' && typed.destroy()
+
+  //reset readmode
+  const $bodyClassList = document.body.classList
+  $bodyClassList.contains('read-mode') && $bodyClassList.remove('read-mode')
+
+  typeof disqusjs === 'object' && disqusjs.destroy()
+})
+
+document.addEventListener('pjax:complete', function () {
+  window.refreshFn()
+
+  document.querySelectorAll('script[data-pjax]').forEach(item => {
+    const newScript = document.createElement('script')
+    const content = item.text || item.textContent || item.innerHTML || ""
+    Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+    newScript.appendChild(document.createTextNode(content))
+    item.parentNode.replaceChild(newScript, item)
+  })
+
+  GLOBAL_CONFIG.islazyload && window.lazyLoadInstance.update()
+
+  typeof panguInit === 'function' && panguInit()
+
+  // google analytics
+  typeof gtag === 'function' && gtag('config', '', {'page_path': window.location.pathname});
+
+  // baidu analytics
+  typeof _hmt === 'object' && _hmt.push(['_trackPageview',window.location.pathname]);
+
+  typeof loadMeting === 'function' && document.getElementsByClassName('aplayer').length && loadMeting()
+
+  // prismjs
+  typeof Prism === 'object' && Prism.highlightAll()
+})
+
+document.addEventListener('pjax:error', e => {
+  if (e.request.status === 404) {
+    pjax.loadUrl('/404.html')
+  }
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.13.0"></script></div></div><!-- hexo injector body_end start --><script async src="//at.alicdn.com/t/font_2032782_8d5kxvn09md.js"></script><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a><a class="github-badge" target="_blank" href="https://blog.carlyleliu.vip/atom.xml" style="margin-inline:5px" data-title="RSS订阅本站" title=""><img src="https://img.shields.io/badge/Subscrip-RSS-yellow" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
+
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
+
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><!-- hexo injector body_end end --></body></html>
