@@ -6,7 +6,7 @@
   <link href="http://carlyleliu.github.io/atom.xml" rel="self"/>
   
   <link href="http://carlyleliu.github.io/"/>
-  <updated>2024-12-15T06:43:07.000Z</updated>
+  <updated>2025-01-23T14:05:16.552Z</updated>
   <id>http://carlyleliu.github.io/</id>
   
   <author>
@@ -15,6 +15,99 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>UAC 框架梳理</title>
+    <link href="http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACFramework/"/>
+    <id>http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACFramework/</id>
+    <published>2025-01-10T13:13:11.000Z</published>
+    <updated>2025-01-23T14:05:16.552Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;uac-host&quot;&gt;UAC Host&lt;/h1&gt;
+&lt;h2 id=&quot;uac-host-流程&quot;&gt;&lt;strong&gt;UAC Host 流程&lt;/strong&gt;&lt;/h2&gt;
+&lt;figure&gt;
+&lt;img src=&quot;https://lsky.carlyleliu.vip/i/67924c237da38.png&quot; alt=&quot;UACFM1.png&quot;&gt;
+&lt;figcaption aria-hidden=&quot;true&quot;&gt;UACFM1.png&lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;p&gt;代码流程都是类似的找到sound/usb/pcm.c文件里的struct snd_pcm_ops
+结构体，相关回调都在这里：&lt;/p&gt;
+&lt;figure class=&quot;highlight c&quot;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;7&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;8&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;9&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;10&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;11&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;&lt;span class=&quot;type&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;type&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;class&quot;&gt;&lt;span class=&quot;keyword&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;snd_pcm_ops&lt;/span&gt; &lt;span class=&quot;title&quot;&gt;snd_usb_playback_ops&lt;/span&gt; =&lt;/span&gt; {&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.open =		snd_usb_pcm_open,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.close =	snd_usb_pcm_close,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.hw_params =	snd_usb_pcm_hw_params,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.hw_free =	snd_usb_pcm_hw_free,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.prepare =	snd_usb_pcm_prepare,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.trigger =	snd_usb_substream_playback_trigger,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.sync_stop =	snd_usb_pcm_sync_stop,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.pointer =	snd_usb_pcm_pointer,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;	.ack =		snd_usb_pcm_playback_ack,&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;};&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;主要关注下snd_usb_substream_playback_trigger函数，收到SNDRV_PCM_TRIGGER_START消息后会调用start_endpoints(subs);将usb
+端点启动，然后注册端点操作函数指针，主要有两个：prepare_data_urb
+和retire_data_urb 其中&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;prepare_data_urb 就是负责将alsa hw buffer里的数据搬运到urb ring
+buffer里，usb控制器会将该ring buffer里的数据送到usb总线发送出去&lt;/li&gt;
+&lt;li&gt;retire_data_urb 是usb传输完成后的回调函数，可以不用关心&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;pipeline&quot;&gt;Pipeline&lt;/h2&gt;
+&lt;p&gt;以下是之前通过打印时间戳的方式统计的数据，实际存在一些偏差。 &lt;img src=&quot;https://lsky.carlyleliu.vip/i/67924c4d17104.png&quot; alt=&quot;UACFM2.png&quot;&gt;&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Technology Blog" scheme="http://carlyleliu.github.io/categories/Technology-Blog/"/>
+    
+    <category term="USB" scheme="http://carlyleliu.github.io/categories/Technology-Blog/USB/"/>
+    
+    
+    <category term="USB" scheme="http://carlyleliu.github.io/tags/USB/"/>
+    
+    <category term="UAC" scheme="http://carlyleliu.github.io/tags/UAC/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>一次UAC设备不识别问题追查</title>
+    <link href="http://carlyleliu.github.io/Debug/LinuxUacNotIdentify/"/>
+    <id>http://carlyleliu.github.io/Debug/LinuxUacNotIdentify/</id>
+    <published>2025-01-03T13:39:55.000Z</published>
+    <updated>2025-01-23T14:00:49.105Z</updated>
+    
+    
+    <summary type="html">&lt;h1 id=&quot;usb枚举流程&quot;&gt;&lt;strong&gt;USB枚举流程&lt;/strong&gt;&lt;/h1&gt;
+&lt;h2 id=&quot;usb连接过程&quot;&gt;USB连接过程&lt;/h2&gt;
+&lt;figure&gt;
+&lt;img src=&quot;https://lsky.carlyleliu.vip/i/6717886ddf1a1.png&quot; alt=&quot;UACId1.png&quot;&gt;
+&lt;figcaption aria-hidden=&quot;true&quot;&gt;UACId1.png&lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;p&gt;这个过程包括Attached、Powered、Reset（进入Default状态）、Set
+Address（进入Address状态）。然后会进入config阶段，如下：&lt;/p&gt;
+&lt;h2 id=&quot;config过程&quot;&gt;Config过程&lt;/h2&gt;
+&lt;h3 id=&quot;请求device描述符&quot;&gt;&lt;strong&gt;请求device描述符&lt;/strong&gt;&lt;/h3&gt;
+&lt;figure&gt;
+&lt;img src=&quot;https://lsky.carlyleliu.vip/i/67924961e9527.png&quot; alt=&quot;UACId2.png&quot;&gt;
+&lt;figcaption aria-hidden=&quot;true&quot;&gt;UACId2.png&lt;/figcaption&gt;
+&lt;/figure&gt;
+&lt;ul&gt;
+&lt;li&gt;bmRequestType：0x80表示从设备到主机，请求标准命令，接收者为设备&lt;/li&gt;
+&lt;li&gt;bRequest：0x06表示读取描述符&lt;/li&gt;
+&lt;li&gt;wValue:
+表示要获取描述符的索类型。（高字节为描述符类型，低字节为描述符索引）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;figure class=&quot;highlight plaintext&quot;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&quot;gutter&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;1&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;6&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&quot;code&quot;&gt;&lt;pre&gt;&lt;span class=&quot;line&quot;&gt;描述符的类型有:&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;1——设备描述符&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;2——配置描述符&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;3——字符串描述符&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;4——接口描述符 //随配置描述符一并获取&lt;/span&gt;&lt;br&gt;&lt;span class=&quot;line&quot;&gt;5——端点描述符 //随配置描述符一并获取&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/figure&gt;
+&lt;p&gt;这里0x0100，表示设备描述符，索引为0&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;wIndex：字段表示字符串描述符的语言ID, 其它描述符为0&lt;/li&gt;
+&lt;li&gt;wLength：指定了描述符的字节数，这里为0x12（18）字节&lt;/li&gt;
+&lt;/ul&gt;</summary>
+    
+    
+    
+    <category term="Technology Blog" scheme="http://carlyleliu.github.io/categories/Technology-Blog/"/>
+    
+    <category term="Programming" scheme="http://carlyleliu.github.io/categories/Technology-Blog/Programming/"/>
+    
+    <category term="Debug" scheme="http://carlyleliu.github.io/categories/Technology-Blog/Programming/Debug/"/>
+    
+    
+    <category term="UAC" scheme="http://carlyleliu.github.io/tags/UAC/"/>
+    
+    <category term="Programming" scheme="http://carlyleliu.github.io/tags/Programming/"/>
+    
+    <category term="Debug" scheme="http://carlyleliu.github.io/tags/Debug/"/>
+    
+  </entry>
   
   <entry>
     <title>栈溢出</title>
@@ -411,7 +504,7 @@ hexo-renderer-marked 快，支持插件配置，支持标题带安全的 id
     <link href="http://carlyleliu.github.io/Tools/NasDockerUsage/"/>
     <id>http://carlyleliu.github.io/Tools/NasDockerUsage/</id>
     <published>2024-07-01T03:59:43.000Z</published>
-    <updated>2024-12-15T07:20:23.000Z</updated>
+    <updated>2025-01-13T15:10:04.276Z</updated>
     
     
       
@@ -547,9 +640,9 @@ accesses.&lt;/p&gt;</summary>
     <category term="Driver" scheme="http://carlyleliu.github.io/categories/Technology-Blog/Linux/Driver/"/>
     
     
-    <category term="Linux" scheme="http://carlyleliu.github.io/tags/Linux/"/>
-    
     <category term="Driver" scheme="http://carlyleliu.github.io/tags/Driver/"/>
+    
+    <category term="Linux" scheme="http://carlyleliu.github.io/tags/Linux/"/>
     
   </entry>
   
@@ -581,9 +674,9 @@ ioremap(), and they can run out unless you call iounmap().&lt;/p&gt;</summary>
     <category term="Driver" scheme="http://carlyleliu.github.io/categories/Technology-Blog/Linux/Driver/"/>
     
     
-    <category term="Linux" scheme="http://carlyleliu.github.io/tags/Linux/"/>
-    
     <category term="Driver" scheme="http://carlyleliu.github.io/tags/Driver/"/>
+    
+    <category term="Linux" scheme="http://carlyleliu.github.io/tags/Linux/"/>
     
   </entry>
   
@@ -635,7 +728,7 @@ ioremap(), and they can run out unless you call iounmap().&lt;/p&gt;</summary>
     <link href="http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACFU/"/>
     <id>http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACFU/</id>
     <published>2024-04-17T13:13:11.000Z</published>
-    <updated>2024-12-15T06:43:07.396Z</updated>
+    <updated>2025-01-23T13:46:20.697Z</updated>
     
     
     <summary type="html">&lt;h1 id=&quot;音量基本概念&quot;&gt;音量基本概念&lt;/h1&gt;
@@ -671,75 +764,6 @@ dB = 20 * log(65536)
 &lt;p&gt;这非常接近听力最低阈值和产生痛感之间的区别，这个范围被认为非常适合还原音乐。&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;音量滑块与声音增幅大小线性变化&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/fu1.png&quot;&gt;&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="Technology Blog" scheme="http://carlyleliu.github.io/categories/Technology-Blog/"/>
-    
-    <category term="USB" scheme="http://carlyleliu.github.io/categories/Technology-Blog/USB/"/>
-    
-    
-    <category term="USB" scheme="http://carlyleliu.github.io/tags/USB/"/>
-    
-    <category term="UAC" scheme="http://carlyleliu.github.io/tags/UAC/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>UAC（四）HID</title>
-    <link href="http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACHID/"/>
-    <id>http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACHID/</id>
-    <published>2024-04-09T12:13:21.000Z</published>
-    <updated>2024-12-15T06:43:07.396Z</updated>
-    
-    
-    <summary type="html">&lt;h1 id=&quot;hid-相关概念&quot;&gt;HID 相关概念&lt;/h1&gt;
-&lt;p&gt;报表描述符由描述 HID 设备的数据项目（Item）组成，Item
-的第一个字节（项目前缀）由三部分构成，&lt;strong&gt;即项目类型（item
-type）、项目标签（item tag）和项目长度（item size）。&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;HID 的项目有短项目和长项目两种，其中短项目的格式如下图：&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/hid1.png&quot;&gt;&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="Technology Blog" scheme="http://carlyleliu.github.io/categories/Technology-Blog/"/>
-    
-    <category term="USB" scheme="http://carlyleliu.github.io/categories/Technology-Blog/USB/"/>
-    
-    
-    <category term="USB" scheme="http://carlyleliu.github.io/tags/USB/"/>
-    
-    <category term="UAC" scheme="http://carlyleliu.github.io/tags/UAC/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>UAC（三）Spec-Interrupt</title>
-    <link href="http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACSpecInterrupt/"/>
-    <id>http://carlyleliu.github.io/LinuxDriver/LinuxUSBUACSpecInterrupt/</id>
-    <published>2024-04-03T02:15:21.000Z</published>
-    <updated>2024-12-15T06:43:07.397Z</updated>
-    
-    
-    <summary type="html">&lt;h1 id=&quot;interrupts&quot;&gt;&lt;strong&gt;Interrupts&lt;/strong&gt;&lt;/h1&gt;
-&lt;p&gt;中断用于通知 host
-音频功能的当前状态发生了变化。本规范目前定义了两种不同类型的中断：&lt;/p&gt;
-&lt;ul&gt;
-&lt;li&gt;Memory Change:
-某些内部实体的内存位置已更新。可以通知主机软件，以便采取适当的行动。&lt;/li&gt;
-&lt;li&gt;Control Change:
-音频函数内部的某些可寻址控件更改了其一个或多个属性值&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;时钟实体、单元或终端内部的音频控件可以是中断的源。同样，AudioControl
-接口中的任何可寻址 Control 或任何 AudioStreaming
-接口都可以生成中断。最后所有与音频端点相关的可寻址控件都可能是中断的源。&lt;/p&gt;
-&lt;p&gt;音频功能的状态变化通常是由发生的特定事件引起的。事件可以是用户发起的，也可以是设备发起的。用户发起的插孔插入或移除是用户发起事件的典型示例。主机可以切换选择器或混音器，以便从刚刚插入的设备
-（例如耳机）播放音频，并停止从当前设备（例如扬声器）
-播放音频。设备启动事件的示例如下：一个外部设备 （例如 A/V
-接收器可以在其光学数字输出上从 PCM 转换为 AC-3
-编码数据，这取决于当前正在播放的材料如果此设备连接到具有自动检测功能的音频功能的光学数字输入，则该音频功能上的接口可能需要重新配置（例如，启动
-AC-3
-解码过程），这可能会导致所有其他接口的格式发生某些变化，甚至变得不可用。设备可以发出中断，让主机知道音频功能需要重新配置。&lt;/p&gt;</summary>
     
     
     
