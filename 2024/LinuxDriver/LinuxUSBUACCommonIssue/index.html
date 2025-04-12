@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/next/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/next/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/next/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/next/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/next/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/next/","images":"/next/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/next/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/next/js/config.js"></script>
+
+    <meta name="description" content="修改UAC配置参数后无法正常通信 如果修改了UAC的配置后出现UAC无法正常通信的问题，可以通过修改设备的idVendor和idProduct来解决，只有设备的idVendor和idProduct发生改变Windows才会重新读取设备的配置描述符。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UAC（九）UAC 常见问题">
+<meta property="og:url" content="https://carlyleliu.github.io/next/2024/LinuxDriver/LinuxUSBUACCommonIssue/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="修改UAC配置参数后无法正常通信 如果修改了UAC的配置后出现UAC无法正常通信的问题，可以通过修改设备的idVendor和idProduct来解决，只有设备的idVendor和idProduct发生改变Windows才会重新读取设备的配置描述符。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/uac1.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/uac2.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/67f145a0f17c9.png">
+<meta property="article:published_time" content="2024-06-30T05:15:01.000Z">
+<meta property="article:modified_time" content="2025-04-05T15:01:02.000Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="UAC">
+<meta property="article:tag" content="USB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/uac1.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/next/2024/LinuxDriver/LinuxUSBUACCommonIssue/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/next/2024/LinuxDriver/LinuxUSBUACCommonIssue/","path":"2024/LinuxDriver/LinuxUSBUACCommonIssue/","title":"UAC（九）UAC 常见问题"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>UAC（九）UAC 常见问题 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/next/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/next/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/next/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/next/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/next/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/next/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/next/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/next/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9uac%E9%85%8D%E7%BD%AE%E5%8F%82%E6%95%B0%E5%90%8E%E6%97%A0%E6%B3%95%E6%AD%A3%E5%B8%B8%E9%80%9A%E4%BF%A1"><span class="nav-text">修改UAC配置参数后无法正常通信</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#kernel-5.4%E5%86%85%E6%A0%B8%E9%85%8D%E7%BD%AE%E6%9F%90%E4%BA%9B%E5%8F%82%E6%95%B0%E5%90%8Euac%E9%80%9A%E4%BF%A1%E5%BC%82%E5%B8%B8"><span class="nav-text">Kernel
+5.4内核配置某些参数后UAC通信异常</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#uac1-%E6%97%A0%E6%B3%95%E6%94%AF%E6%8C%8148k4channel32bit%E9%97%AE%E9%A2%98"><span class="nav-text">UAC1
+无法支持48K、4channel、32bit问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#uac2%E6%97%A0%E6%B3%95%E6%94%AF%E6%8C%81%E5%A4%A7%E4%BA%8E192k4channel32bit%E5%8F%82%E6%95%B0%E9%97%AE%E9%A2%98"><span class="nav-text">UAC2无法支持大于192K、4channel、32bit参数问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%84%E7%B3%BB%E7%BB%9Fuac%E9%9F%B3%E9%87%8F%E8%B0%83%E8%8A%82%E6%94%AF%E6%8C%81%E6%83%85%E5%86%B5"><span class="nav-text">各系统UAC音量调节支持情况</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E4%BA%8Ewindows%E7%B3%BB%E7%BB%9Fuac1%E5%AF%B9fu%E6%94%AF%E6%8C%81%E6%83%85%E5%86%B5%E7%9A%84%E7%96%91%E9%97%AE"><span class="nav-text">关于windows系统UAC1对FU支持情况的疑问</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#supperpowered-latency-test-%E6%B5%8Buac-latency%E6%9C%89%E8%B7%B3%E5%8F%98"><span class="nav-text">supperpowered latency
+test 测uac latency有跳变</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/next/archives/">
+          <span class="site-state-item-count">212</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/next/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/next/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/next/2024/LinuxDriver/LinuxUSBUACCommonIssue/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/next/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="UAC（九）UAC 常见问题 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          UAC（九）UAC 常见问题
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/next/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/next/categories/Technology-Blog/USB/" itemprop="url" rel="index"><span itemprop="name">USB</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/next/2024/LinuxDriver/LinuxUSBUACCommonIssue/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/next/2024/LinuxDriver/LinuxUSBUACCommonIssue/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.9k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>7 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="修改uac配置参数后无法正常通信">修改UAC配置参数后无法正常通信</h1>
+<p>如果修改了UAC的配置后出现UAC无法正常通信的问题，可以通过修改设备的idVendor和idProduct来解决，只有设备的idVendor和idProduct发生改变Windows才会重新读取设备的配置描述符。</p>
+<span id="more"></span>
+<h1 id="kernel-5.4内核配置某些参数后uac通信异常">Kernel
+5.4内核配置某些参数后UAC通信异常</h1>
+<p>例如在44100采样率、4channel、32bit参数下Device到Host端通信异常，而Host端到Device端通信正常。
+问题的原因是由于Linux的UAC驱动计算的每次传输的usb包大小不正确，导致USB传输格式不匹配出现了通信异常。详细原因如下：</p>
+<ul>
+<li>该参数下每秒钟的数据量为44100 * 4 * 4 = 705600</li>
+<li>USB每秒传输一千个包，则每个包的大小为 705600 / 1000 = 705.6</li>
+<li>Linux下UAC驱动的做法是每次传输705字节数据，当余数足够多的时候传输705+16=721字节，然后依次循环下去。但是这种方式存在一个问题就是705不是frames大小的整数倍，即705
+/ (4 * 4) =
+44.0625,那么USB每次传输的数据不能完全送到声卡，要等下一次的数据到来后拼成一个完整的frame才能送到声卡，这样显然是非常麻烦的，且会造成更大的延迟</li>
+<li>Windows的做法是每次传输704字节，然后剩余的数据积攒到一帧的数据量后下次传输704
++ （4 * 4）= 720字节</li>
+<li>可以看到Linux和Windows每次传输和接收的大小都不一样，导致了两则无法正常通信，显然Linux的计算方法是错误的，Linux驱动中也没有自己拼接数据的逻辑，这个就是Linux下计算usb包大小的一个Bug。</li>
+</ul>
+<p>Linux上游社区已经发现并解决了这个Bug，最终计算到的大小与Windows的大小相同，计算方法如下：</p>
+<p><span class="math display">\[
+pkt\_size = frame\_size * \frac{sampling\_rate}{1000}
+\]</span></p>
+<p>即如下代码：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pkt_size = frame_size * (sampling_rate / <span class="number">1000</span>) <span class="comment">// 704 = 16 * (44100 / 1000) = 16 * 44</span></span><br></pre></td></tr></tbody></table></figure>
+<h1 id="uac1-无法支持48k4channel32bit问题">UAC1
+无法支持48K、4channel、32bit问题</h1>
+<p>drivers/usb/gadget/function/u_uac1.h：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#define UAC1_OUT_EP_MAX_PACKET_SIZE	200</span></span><br></pre></td></tr></tbody></table></figure>
+<p>这里闲置了usb每个包的大小不能超过200字节，我们可以计算一下数据量：</p>
+<p>对于48K、4channel、32bit每秒钟的数据量为：48000_4_4 = 768,000Byte</p>
+<p>USB每秒发送1000次数据，每次最大3个数据包，则每个包大小需要768000 /
+1000 / 3 =
+256。这里的宏定义将每个包的大小限制在200了，则带宽不够，需要放开这个限制，将宏大小改为1023就可以了。</p>
+<p>💡
+驱动中为什么默认设置为200呢，其实是为了保证usb低速设备可以正常使用才设置这么低的，对于usb低速设备1.5Mbit/s
+= 1.5 * 1024 *1024 / 8 / 1000 =
+196.如果usb支持全速或者高速可以将这个限制放开。</p>
+<h1 id="uac2无法支持大于192k4channel32bit参数问题">UAC2无法支持大于192K、4channel、32bit参数问题</h1>
+<p>drivers/usb/gadget/function/f_uac2.c:</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">static struct usb_endpoint_descriptor hs_epout_desc = {</span><br><span class="line">	.bLength = USB_DT_ENDPOINT_SIZE,</span><br><span class="line">	.bDescriptorType = USB_DT_ENDPOINT,</span><br><span class="line">	.bmAttributes = USB_ENDPOINT_XFER_ISOC | USB_ENDPOINT_SYNC_ADAPTIVE,</span><br><span class="line">	/* .wMaxPacketSize = DYNAMIC */</span><br><span class="line">	.bInterval = 4,</span><br><span class="line">};</span><br><span class="line">...</span><br><span class="line">static struct usb_endpoint_descriptor hs_epin_desc = {</span><br><span class="line">	.bLength = USB_DT_ENDPOINT_SIZE,</span><br><span class="line">	.bDescriptorType = USB_DT_ENDPOINT,</span><br><span class="line">	.bmAttributes = USB_ENDPOINT_XFER_ISOC | USB_ENDPOINT_SYNC_SYNC,</span><br><span class="line">	/* .wMaxPacketSize = DYNAMIC */</span><br><span class="line">	.bInterval = 4,</span><br><span class="line">};</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<p>这里bInterval是控制UAC发包频率的，USB全速总线1ms发送一次数据，USB高速总线可以125us发送一次数据，这里的bInterval就是用来控制UAC多久发送一次数据的，如果bInterval=1，则UAC数据包的间隔就是<span class="math inline">\(125us *
+2^{1-1}\)</span>如果bInterval=4则UAC发送间隔为<span class="math inline">\(125us *
+2^{4-1}=1ms\)</span>。驱动中默认是1ms发送一次数据，则最大的数据量就是1000
+* 1024 * 3 = 3072000 = 192K * 4channel * 4Byte。</p>
+<p>要解决这个问题只需要将bInterval改为1即可。</p>
+<p>💡
+bInterval=1具有更低的延迟，更大的带宽，但是对于大部分场景没必要设置这么高的频率，1ms就可以满足要求。</p>
+<h1 id="各系统uac音量调节支持情况">各系统UAC音量调节支持情况</h1>
+<table>
+<colgroup>
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr>
+<th></th>
+<th>Windows10/11</th>
+<th>Android 11（基于一加6）</th>
+<th>ios</th>
+<th>Macos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>UAC1 Disable FU</td>
+<td>通过调节音频数据幅值调节音量</td>
+<td>通过调节音频数据幅值调节音量</td>
+<td>不支持调节音量（音量滑块变灰不可拖动）</td>
+<td>同ios（未做验证）</td>
+</tr>
+<tr>
+<td>UAC1 Enable FU</td>
+<td>支持控制音量；不支持同步设备音量</td>
+<td>通过调节音频数据幅值调节音量</td>
+<td>支持控制音量；支持同步设备音量</td>
+<td>同ios（未做验证）</td>
+</tr>
+<tr>
+<td>UAC2 Disable FU</td>
+<td>通过调节音频数据幅值调节音量</td>
+<td>通过调节音频数据幅值调节音量</td>
+<td>不支持调节音量（音量滑块变灰不可拖动）</td>
+<td>同ios（未做验证）</td>
+</tr>
+<tr>
+<td>UAC2 Enable FU</td>
+<td>支持控制音量；支持同步设备音量</td>
+<td>通过调节音频数据幅值调节音量</td>
+<td>支持控制音量；支持同步设备音量</td>
+<td>同ios（未做验证）</td>
+</tr>
+</tbody>
+</table>
+<p>💡 1. 网上查到的信息Android是支持Feature
+Unit的，实测发现插入android设备的时候有读取feature
+unit描述符，并且获取和设置了一次音量值，当device端修改了音量值，这个信息也有被android读走，但是android的音频组件应该没有使用这一套机制，请教了android那边的人，他们说android调节uac音量都是直接调节音频文件幅值实现的。实测也是这样，android上调节音量，device录到的文件音频幅值就是被修改了的。android也不能同步device的音量。<br>
+2. windows系统 UAC1 Enable
+FU后，是不支持中断端点的，也就是windows可以通过FU控制设备音量，但是设备主动修改音量无法同步到Host。<br>
+3. Macos UAC1 Enable
+FU后，Device只能主动同步一次音量到Host，之后中断端点的数据不会被读取。</p>
+<h1 id="关于windows系统uac1对fu支持情况的疑问">关于windows系统UAC1对FU支持情况的疑问</h1>
+<p>Windows 的UAC2对Function的支持情况有明确说明：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/uac1.png"></p>
+<p>UAC2的Feature
+Unit是明确支持Interrupt的。但是没有查到UAC1对Function的支持情况。实际测试发现Windows是可以正确识别Feature
+unit端点描述符的，如下：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/uac2.png"></p>
+<p>这里面的信息与Spec里都能一一对应上，端点描述符没有任何问题，但是测试发现Windows不会去读取Interrupt端点数据，抓包发现没有任何该端点的读取操作，那么实测得到的UAC1对Feature支持情况是：</p>
+<ul>
+<li>支持：
+<ul>
+<li>GET CUR</li>
+<li>SET CUR</li>
+<li>GET RANGE</li>
+</ul></li>
+<li>不支持：
+<ul>
+<li>Interrupt</li>
+</ul></li>
+</ul>
+<h1 id="supperpowered-latency-test-测uac-latency有跳变">supperpowered&nbsp;latency
+test 测uac latency有跳变</h1>
+<figure>
+<img src="https://lsky.carlyleliu.vip/i/67f145a0f17c9.png" alt="latency.png">
+<figcaption aria-hidden="true">latency.png</figcaption>
+</figure>
+<p>是由于arecord |
+aplay之间的的管道缓存了一些数据导致的。可通过如下手段来验证：</p>
+<p>不停的重启test
+app当测得的latency很大时，按照上图步骤操作，将pipe里的数据清空后再次点击test，latency就会恢复到最初的42ms附近。</p>
+<p>latency的主要影响因素：</p>
+<ol type="1">
+<li>codec是否有开启dapm，当开启dapm后codec可能会进入休眠状态再唤醒会引入一定的延迟，大小取决于唤醒速度</li>
+<li>usb端的延迟非常小可以认为是us级别的</li>
+<li>线程调度引入的latency，这个一般再几十us到几个ms不等，取决于系统性能和负载</li>
+<li>主要latency取决于buffer缓存，hw
+buffer以及应用层开的buffer或者pipe管道缓存</li>
+</ol>
+<p>这是在公版上通过如下命令测得的数据</p>
+<p>arecord -D hw:2,0 -c 2 -f S16_LE -r 48000 --period-size=64
+--buffer-size=512 |aplay -D hw:2,0 -f S16_LE -r 48000 --period-size=64
+--buffer-size=512</p>
+<p>buffer
+size=512，对应的缓存latency为10ms，加上手机端的缓存64frames（1.4ms）以及整个链路上其他的缓存19ms这个值基本上是符合实际情况的。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/next/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/next/tags/UAC/" rel="tag"><i class="fa fa-tag"></i> UAC</a>
+              <a href="/next/tags/USB/" rel="tag"><i class="fa fa-tag"></i> USB</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/next/2024/LinuxDriver/LinuxUSBUACASYNCPPM/" rel="prev" title="UAC（八）PPM 评估">
+                  <i class="fa fa-angle-left"></i> UAC（八）PPM 评估
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/next/2024/Tools/NasDockerUsage/" rel="next" title="NAS 有趣的 Docker 推荐">
+                  NAS 有趣的 Docker 推荐 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:03</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/next/js/comments.js"></script><script src="/next/js/utils.js"></script><script src="/next/js/motion.js"></script><script src="/next/js/schemes/muse.js"></script><script src="/next/js/sidebar.js"></script><script src="/next/js/next-boot.js"></script><script src="/next/js/bookmark.js"></script><script src="/next/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/next/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/next/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/next/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/next/2024/LinuxDriver/LinuxUSBUACCommonIssue/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>
