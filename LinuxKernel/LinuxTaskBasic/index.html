@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图  进程的概念 进程是处于执行期的程序以及相关的资源的总称。进程并不仅仅局限于一段可执行程序代码，通常进程还要包含其他资源，像数据段、打开的文件、挂起的信号、处理器状态、一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution）等。 线程（thread），是在进程中活动的对象。每个线程都拥有一个独立的程序计数器、线程栈和一组进程寄存器，内核调度的对象是">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 进程管理（一）基本概念">
+<meta property="og:url" content="https://carlyleliu.github.io/LinuxKernel/LinuxTaskBasic/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图  进程的概念 进程是处于执行期的程序以及相关的资源的总称。进程并不仅仅局限于一段可执行程序代码，通常进程还要包含其他资源，像数据段、打开的文件、挂起的信号、处理器状态、一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution）等。 线程（thread），是在进程中活动的对象。每个线程都拥有一个独立的程序计数器、线程栈和一组进程寄存器，内核调度的对象是">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ProcessBasic.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/task_list.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/task_status.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/sched_list.png">
+<meta property="article:published_time" content="2021-10-30T18:41:22.000Z">
+<meta property="article:modified_time" content="2025-04-12T10:29:22.000Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Kernel">
+<meta property="article:tag" content="Task">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ProcessBasic.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxTaskBasic/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxKernel/LinuxTaskBasic/","path":"LinuxKernel/LinuxTaskBasic/","title":"Linux 进程管理（一）基本概念"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 进程管理（一）基本概念 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-text"> 进程的概念</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> 进程描述符</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-text"> 进程的生命周期</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A0%87%E8%AF%86"><span class="nav-text"> 进程标识</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E9%97%B4%E7%9A%84%E5%AE%B6%E6%97%8F%E5%85%B3%E7%B3%BB"><span class="nav-text"> 进程间的家族关系</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux-%E8%BF%9B%E7%A8%8B%E8%B0%83%E5%BA%A6"><span class="nav-text"> Linux 进程调度</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%86%E7%B1%BB"><span class="nav-text"> 进程的分类</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7%E5%92%8C%E6%9D%83%E9%87%8D"><span class="nav-text"> 进程的优先级和权重</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E7%AD%96%E7%95%A5"><span class="nav-text"> 调度策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%89%87"><span class="nav-text"> 时间片</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%8A%A2%E5%8D%A0"><span class="nav-text"> 抢占</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2"><span class="nav-text"> 上下文切换</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">212</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxKernel/LinuxTaskBasic/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 进程管理（一）基本概念 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 进程管理（一）基本概念
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/Kernel/" itemprop="url" rel="index"><span itemprop="name">Kernel</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/LinuxKernel/LinuxTaskBasic/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/LinuxKernel/LinuxTaskBasic/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>3.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>14 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ProcessBasic.png" alt=""><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1ZDg4NDFlMDg1MzA2ZjhjMzUxZjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<h1 id="进程的概念"><a class="markdownIt-Anchor" href="#进程的概念"></a> 进程的概念</h1>
+<p>进程是处于执行期的程序以及相关的资源的总称。进程并不仅仅局限于一段可执行程序代码，通常进程还要包含其他资源，像数据段、打开的文件、挂起的信号、处理器状态、一个或多个具有内存映射的内存地址空间及一个或多个执行线程（thread of execution）等。</p>
+<p>线程（thread），是在进程中活动的对象。每个线程都拥有一个独立的程序计数器、线程栈和一组进程寄存器，内核调度的对象是线程，而不是进程。</p>
+<p>在现代操作系统中，进程提供两种虚拟机制：虚拟处理器和虚拟内存。</p>
+<ul>
+<li>虚拟处理器给进程一种假象，让这些进程觉得自己在独享处理器</li>
+<li>虚拟内存让进程在分配和管理内存时觉得自己拥有整个系统的所有内存资源</li>
+</ul>
+<span id="more"></span>
+<h1 id="进程描述符"><a class="markdownIt-Anchor" href="#进程描述符"></a> 进程描述符</h1>
+<p>进程是操作系统中调度的实体，需要对进程所必须拥有的资源做抽象描述，这种对象描述称为进程控制块（Process Control Block，PCB）。进程控制块需要描述如下几类信息：</p>
+<ul>
+<li>进程的运行状态：包括就绪、运行、阻塞、僵尸等状态</li>
+<li>程序计数器：记录当前进程运行到哪条指令了</li>
+<li>CPU 寄存器：主要保存当前运行的上下文，记录 CPU 所有必须保存下来的寄存器信息，以便当前进程调度出去之后还能调度回来并接着运行</li>
+<li>CPU 调度信息：包括进程优先级、调度队列等相关信息</li>
+<li>内存管理信息：进程使用的内存信息，比如进程的页表等</li>
+<li>统计信息：包含进程运行时间等相关的统计信息</li>
+<li>文件相关信息：包括进程打开的文件等</li>
+</ul>
+<p>在 Linux 内核里面采用名为 task_struct 的数据结构来描述，Linux 内核利用链表 task_list 来存放所有进程描述符，task_struct 数据结构定义在 include/inux/sched.h 文件中。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/task_list.png" alt=""></p>
+<p>task_struct 数据结构很大，里面包含的内容很多，可以简单归纳成如下几类：</p>
+<ul>
+<li>进程属性的相关信息（包括进程状态、进程的 PID 等信息）</li>
+<li>进程间的关系（父子、兄弟、进程组等）</li>
+<li>进程调度的相关信息（优先级、调度类、policy 进程类型等）</li>
+<li>内存管理的相关信息（mm）</li>
+<li>文件管理的相关信息（fs）</li>
+<li>信号的相关信息</li>
+<li>资源限制的相关信息</li>
+</ul>
+<h1 id="进程的生命周期"><a class="markdownIt-Anchor" href="#进程的生命周期"></a> 进程的生命周期</h1>
+<p>典型的操作系统中的进程如下图所示，其中包含如下状态：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/task_status.png" alt=""></p>
+<ul>
+<li>TASK_RUNNING（可运行态或就绪态）：它是指进程处于可执行状态，或许正在执行，或许在就绪队列中等待执行</li>
+<li>TASK_INTERRUPTIBLE（可中断睡眠态）：进程进入睡眠状态（被阻塞）以等待，一旦条件达成或者资源就位，可以把进程的状态设置成可运行态（TASK_RUNNING）并加入就绪队列。也有人将这种状态称为浅睡眠状态</li>
+<li>TASK_UNINTERRUPTIBLE（不可中断态）：进程在睡眠等待时不受干扰，对信号不做任何反应，所以这种状态又称为不可中断态。通常，使用 ps 命令看到的被标记为 D 状态的进程就是处于不可中断态的进程，不可以发送 SIGKILL 信号终止它们，因为它们不响应信号。也有人把这种状态称为深度睡眠状态</li>
+<li>TASK_STOPPED（终止态）：进程停止运行了</li>
+<li>EXIT_ZOMBIE （僵尸态），进程已经消亡，但是 task_struct 数据结构还没有释放这种状态叫作僵尸状态，每个进程在自己的生命周期中都要经历这种状态。子进程退出时，父进程可以通过 wait() 或 waitpid() 来获取子进程消亡的原因</li>
+</ul>
+<h1 id="进程标识"><a class="markdownIt-Anchor" href="#进程标识"></a> 进程标识</h1>
+<p>在创建时会为进程分配唯一的号码来标识，这个号码就是进程标识符（Process Identife PID）。</p>
+<p>除了 PID 之外，Linux 内核还引入了线程组的概念。一个线程组中的所有线程都使用和该线程组中主线程相同的 PID，即该线程组中第一个线程的 PID，它会被存入 task_stuct 数据结构的 tgid 成员中。这与 POSIX 1003.1c 标准里的规定有关，一个多线程应用程序中的所有线程都必须有相同的 PID，这样就可以通过 PID 把信号发送给线程组里所有的线程。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">getpid() <span class="comment">// 会返回当前进程的 TGID</span></span><br><span class="line">gettid() <span class="comment">// 会返回线程的 PID</span></span><br></pre></td></tr></tbody></table></figure>
+<h1 id="进程间的家族关系"><a class="markdownIt-Anchor" href="#进程间的家族关系"></a> 进程间的家族关系</h1>
+<p>Linux 内核维护了进程之间的家族关系，比如：</p>
+<ul>
+<li>Linux 内核在启动时会有一个 init_task 进程，它是系统中所有进程的“鼻祖”，称为进程 0 或 idle 进程。当系统没有进程需要调度时，调度器就会执行 idle 进程。idle 进程在内核启动（start_kernel() 函数）时静态创建，所有的核心数据结构都预先静态赋值</li>
+<li>系统初始化快完成时会创建一个 init 进程，也就是常说的进程 1，它是所有用户进程的祖先，从这个进程开始，所有的进程都将参与调度</li>
+<li>如果进程 A 创建了进程 B，那么进程 A 称为父进程，进程 B 称为子进程。如果进程 B 创建了进程 C，那么进程 A 和进程 C 之间的关系就是祖孙关系</li>
+<li>如果进程 A 创建了 Bi（1 &lt; i&lt; n）个进程，那么这些进程之间为兄弟关系</li>
+</ul>
+<h1 id="linux-进程调度"><a class="markdownIt-Anchor" href="#linux-进程调度"></a> Linux 进程调度</h1>
+<h2 id="进程的分类"><a class="markdownIt-Anchor" href="#进程的分类"></a> 进程的分类</h2>
+<p>进程可以分成两类：一类是 CPU 消耗型（CPU-Bound），另外一类是 I/O 消耗型（I/O-Bound）。</p>
+<ul>
+<li>CPU 消耗型的进程会把大部分时间用在执行代码上，也就是一直占用 CPU</li>
+<li>I/O 消耗型的进程大部分时间在提交 I/O 请求或者等待 I/O 请求，比如需要键盘输入的进程或者等待网络 I/O 的进程</li>
+</ul>
+<h2 id="进程的优先级和权重"><a class="markdownIt-Anchor" href="#进程的优先级和权重"></a> 进程的优先级和权重</h2>
+<p>操作系统中最经典的进程调度算法是基于优先级调度。调度器总是从就绪队列中选择优先级高的进程进行调度，而且优先级高的进程分配的时间片也会比优先级低的进程多。</p>
+<p>Linux 系统最早采用 nice 值来调整进程的优先级。范围是-20~+19，默认值是 0。</p>
+<p>内核使用 0 ~ 139 的数值表示进程的优先级 (normal_prio)，数值越低优先级越高。优先级在 Linux 中的划分方式如下。</p>
+<ul>
+<li>普通进程的优先级：100~139(120 + nice)</li>
+<li>实时进程的优先级：0~99 (99 - rt_prio)</li>
+<li>deadline 进程的优先级：-1</li>
+</ul>
+<p>task struct 数据结构中有 4 个成员，用来描述进程的优先级。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> {</span></span><br><span class="line">    <span class="type">int</span> prio;</span><br><span class="line">    <span class="type">int</span> static_prio;</span><br><span class="line">    <span class="type">int</span> normal_prio;</span><br><span class="line">    unsignea <span class="type">int</span> rt_priority;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> MAX_RT_PRIO		100</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> __normal_prio(<span class="keyword">struct</span> task_struct *p)</span><br><span class="line">{</span><br><span class="line">   <span class="keyword">return</span> p-&gt;static_prio;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">normal_prio</span><span class="params">(<span class="keyword">struct</span> task_struct *p)</span></span><br><span class="line">{</span><br><span class="line">   <span class="type">int</span> prio;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">if</span> (task_has_dl_policy(p))</span><br><span class="line">   	prio = MAX_DL_PRIO<span class="number">-1</span>;</span><br><span class="line">   <span class="keyword">else</span> <span class="keyword">if</span> (task_has_rt_policy(p))</span><br><span class="line">   	prio = MAX_RT_PRIO<span class="number">-1</span> - p-&gt;rt_priority;</span><br><span class="line">   <span class="keyword">else</span></span><br><span class="line">   	prio = __normal_prio(p);</span><br><span class="line">   <span class="keyword">return</span> prio;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>static_prio 是静态优先级，在进程启动时分配 [120+nice]</li>
+<li>normal_prio 是基于 static_prio 和调度策略计算出来的优先级，在创建进程时会继承父进程的 normal_prio。对于普通进程来说，normal_prio 等同于 static_prio；对于实时进程，会根据 rt_priority 重新计算 normal_prio[99 - rt_priority]</li>
+<li>prio 保存着进程的动态优先级，也是调度类考虑使用的优先级。有些情况下需要暂时提高进程的优先级，例如实时互斥量等</li>
+<li>rt_priority 是实时进程的优先级</li>
+</ul>
+<p>在 Linux 内核中，除了使用优先级来表示进程的轻重缓急之外，在实际的调度器中也使用权重的概念来表示进程的优先级，详细的权重含义将在 CFS 调度器一节中介绍，这里不做过多介绍了。</p>
+<p>推荐阅读 <span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L3Byb2Nlc3MtcHJpb3JpdHkuaHRtbA==">Linux 调度器：进程优先级<i class="fa fa-external-link-alt"></i></span> 更详细。</p>
+<h2 id="调度策略"><a class="markdownIt-Anchor" href="#调度策略"></a> 调度策略</h2>
+<p>进程调度依赖于调度策略（schedule policy），Linux 内核把相同的调度策略抽象成了调度类（schedule class）。不同类型的进程采用不同的调度策略，目前 Linux 内核中默认实现了 5 个调度类，分别是 stop、 deadline、realtime、CFS 和 idle，它们分别使用 sched_class 来定义，并且通过 next 指针串联在一起，如图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/sched_list.png" alt=""></p>
+<ul>
+<li>
+<p>stop：</p>
+<ul>
+<li>最高优先级，比 deadline 进程的优先级高</li>
+<li>可以抢占任何进程</li>
+<li>在每个 CPU 上实现一个名为“migration/N”的内核线程，N 表示 CPU 的编号。该内核线程的优先级最高，可以抢占任何进程的执行，一般用来执行特殊的功能</li>
+<li>用于负载均衡机制中的进程迁移、softlockup 检测、CPU 热插拔、RCU 等</li>
+</ul>
+</li>
+<li>
+<p>deadline(SCHED_DEADLINE )：</p>
+<ul>
+<li>最高优先级的实时进程，优先级为-1</li>
+<li>用于调度有严格时间要求的实时进程，如视频编解码等</li>
+</ul>
+</li>
+<li>
+<p>realtime(SCHED_FIFO、SCHED_RR)：</p>
+<ul>
+<li>普通实时进程，优先级为 0~99</li>
+<li>用于普通的实时进程，比如 IRQ 线程化</li>
+</ul>
+</li>
+<li>
+<p>CFS(SCHED_NORMAL、SCHED_BATCH、SCHED_IDLE)：</p>
+<ul>
+<li>普通进程，优先级为 100~139，由 CFS 来调度</li>
+</ul>
+</li>
+<li>
+<p>idle：</p>
+<ul>
+<li>最低优先级的进程</li>
+<li>当就绪队列中没有其他进程时进入 idle 调度类，idle 调度类会让 CPU 进入低功耗模式</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>进程调度的入口是 schedule() 函数，他会调用 pick_next_task() 函数，pick_next_task() 会以优先级为序，从高到低，依次检查每一个调度类，并从最高优先级的调度类中选择最高优先级的进程运行。</p>
+</blockquote>
+<p>用户空间程序可以使用调度策略 API 函数，比如 sched_setscheduler() 来设定用户进程的调度策略。其中，SCHED_NORMAL、SCHED_BATCH 以及 SCHED_IDLE 使用完全公平调度器（CFS），SCHED_FIFO 和 SCHED_RR 使用 realtime 调度器，SCHED_DEADLINE 专用 deadline 调度器。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_NORMAL		0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_FIFO		    1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_RR		    2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_BATCH		    3</span></span><br><span class="line"><span class="comment">/* SCHED_ISO: reserved but not implemented yet */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_IDLE		    5</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SCHED_DEADLINE		6</span></span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>
+<p>SCHED_RR（循环）调度策略表示优先级相同的进程以循环分享时间的方式执行。进程每次使用 CPU 的时间为一个固定长度的时间片。进程会保持占有 CPU，直到下面的某个条件得到满足：</p>
+<ul>
+<li>时间片用完</li>
+<li>自愿放弃 CPU</li>
+<li>进程终止</li>
+<li>被高优先级进程抢占</li>
+</ul>
+</li>
+<li>
+<p>SCHED_FIFO（先进先出）调度策略与 SCHED_RR 调度策略类似，只不过没有时间片的概念。一旦进程获取了 CPU 控制权，就会一直执行下去，直到下面的某个条件得到满足：</p>
+<ul>
+<li>自愿放弃 CPU</li>
+<li>进程终止</li>
+<li>被更高优先级进程抢占</li>
+</ul>
+</li>
+<li>
+<p>SCHED_BATCH（批处理）调度策略是普通进程调度策略。这种调度策略会让调度器认为进程是 CPU 密集型的。因此，调度器对这类进程的唤醒惩罚（wakeup penalty）比较小。在 Linux 内核里，此类调度策略使用完全公平调度器：</p>
+</li>
+<li>
+<p>SCHED_NORMAL（以前称为 SCHED_OTHER）分时调度策略是非实时进程的默度策略。所有普通类型的进程的静态优先级都为 0，因此，任何使用 SCHED_FIFO、SCHED_RR 调度策略的就绪进程都会抢占它们。Linux 内核没有实现这类调度策略。</p>
+</li>
+<li>
+<p>SCHED_IDLE 空闲调度策略用于运行低优先级的任务。</p>
+</li>
+</ul>
+<blockquote>
+<p>其中实时进程一旦执行就会一直执行下去，需要进程自己主动放弃 CPU 使用权，只要有实时进程在运行其他普通进程就无法得到执行，因此实时进程的设计需要格外小心，需要主动放弃 CPU 使用权。</p>
+</blockquote>
+<h2 id="时间片"><a class="markdownIt-Anchor" href="#时间片"></a> 时间片</h2>
+<p>时间片（time slice）表示进程被调度进与被调度出去之间所能持续运行的时间长度。通常操作系统都会规定默认的时间片，但是很难确定多长的时间片是合适的。I/O 消耗型的进程不需要很长的时间片，而 CPU 消耗型的进程则希望时间片越长越好。</p>
+<p>早期的 Linux 中的调度器采用的是固定时间片，但是现在的 CFS 已经抛弃固定时间片的做法，而是采用进程权重占比的方法来公平地划分 CPU 时间，这样进程获得的 CPU 时间就与进程的权重以及 CPU 上的总权重有了关系。权重和优先级相关，优先级高的进程权重也高，有机会占用更多的 CPU 时间；而优先级低的进程权重也低，那么理应占用较少的 CPU 时间。</p>
+<h1 id="抢占"><a class="markdownIt-Anchor" href="#抢占"></a> 抢占</h1>
+<ul>
+<li>抢占内核：更高优先级的进程会打断当前进程的执行，得到优先执行。</li>
+<li>不可抢占内核：更高优先级的进程需要等到当前进程主动放弃 CPU 使用权才可以得到 CPU 使用权。</li>
+</ul>
+<p>用户抢占时机：</p>
+<ul>
+<li>从系统调用返回用户空间时</li>
+<li>从中断处理程序返回用户空间时</li>
+</ul>
+<p>内核抢占时机：</p>
+<ul>
+<li>中断处理程序正在执行，返回内核空间之前</li>
+<li>内核代码再一次具有可抢占性的时候</li>
+<li>内核显式调用 schedule()</li>
+<li>内核中的任务 sleep 的时候会调用 schedule()</li>
+</ul>
+<h1 id="上下文切换"><a class="markdownIt-Anchor" href="#上下文切换"></a> 上下文切换</h1>
+<ul>
+<li>
+<p>CPU 上下文切换：<br>
+CPU 上下文包括 CPU 寄存器和程序计数器，CPU 上下文切换就是先把前一个任务的 CPU 上下文（也就是 CPU 寄存器和程序计数器）保存起来，然后加载新任务的上下文到这些寄存器和程序计数器，最后再跳转到程序计数器所指的新位置，运行新任务。系统调用时会发生 CPU 上下文切换，但是没有切换进程，始终在同一个进程里运行。</p>
+</li>
+<li>
+<p>进程上下文切换：<br>
+进程上下文不仅包括了虚拟内存、栈、全局变量等用户空间的资源，还包括了内核堆栈、寄存器等内核空间的状态。进程的上下文切换就比系统调用时多了一步：在保存内核态资源（当前进程的内核状态和 CPU 寄存器）之前，需要先把该进程的用户态资源（虚拟内存、栈等）保存下来；而加载了下一进程的内核态后，还需要刷新进程的虚拟内存和用户栈。</p>
+</li>
+<li>
+<p>中断上下文切换：<br>
+中断上下文包括 CPU 寄存器、内核堆栈、硬件中断参数等。中断上下文切换并不涉及到进程的用户态。所以，即便中断过程打断了一个正处在用户态的进程，也不需要保存和恢复这个进程的虚拟内存、全局变量等用户态资源。只保存 CPU 寄存器、内核堆栈、硬件中断参数等中断服务程序执行所必需的状态。</p>
+</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50LzE5Lmh0bWw=">http://www.wowotech.net/process_management/19.html<i class="fa fa-external-link-alt"></i></span><br>
+《奔跑吧 Linux 内核》<br>
+《Linux 内核设计与实现》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
+              <a href="/tags/Task/" rel="tag"><i class="fa fa-tag"></i> Task</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/Program/ARM64Struct/" rel="prev" title="ARM64 架构基础">
+                  <i class="fa fa-angle-left"></i> ARM64 架构基础
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/LinuxKernel/LinuxTaskCreate/" rel="next" title="Linux 进程管理（二）进程的创建和终止">
+                  Linux 进程管理（二）进程的创建和终止 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:03</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxKernel/LinuxTaskBasic/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

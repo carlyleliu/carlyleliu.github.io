@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="实验 测试发现period_size&#x3D;512或者256时均不发生丢包，于是做以下实验：    sampling rate channel bit depth period_size package size 是否丢包     48k 2 16bit 1024 4096Byte 丢包   48k 1 16bit 1024 2048Byte 丢包   48k 2 16bit 512 2048Byte">
+<meta property="og:type" content="article">
+<meta property="og:title" content="记录一次UAC 丢包问题分析过程">
+<meta property="og:url" content="https://carlyleliu.github.io/Debug/LinuxperfdebugExample/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="实验 测试发现period_size&#x3D;512或者256时均不发生丢包，于是做以下实验：    sampling rate channel bit depth period_size package size 是否丢包     48k 2 16bit 1024 4096Byte 丢包   48k 1 16bit 1024 2048Byte 丢包   48k 2 16bit 512 2048Byte">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/08/31/66d33d376e043.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d33e3f4374a.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d33ee199eea.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f2d34516.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f75357dd.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d33fe0f2988.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d3402a4c773.png">
+<meta property="article:published_time" content="2024-08-28T11:44:15.000Z">
+<meta property="article:modified_time" content="2025-04-12T10:29:22.000Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Programming">
+<meta property="article:tag" content="Debug">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/i/2024/08/31/66d33d376e043.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/Debug/LinuxperfdebugExample/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/Debug/LinuxperfdebugExample/","path":"Debug/LinuxperfdebugExample/","title":"记录一次UAC 丢包问题分析过程"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>记录一次UAC 丢包问题分析过程 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-text"> 实验</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87perf-top%E5%88%86%E6%9E%90"><span class="nav-text"> 通过perf top分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E7%81%AB%E7%84%B0%E5%9B%BE%E5%88%86%E6%9E%90"><span class="nav-text"> 通过火焰图分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8function_graph%E5%8A%9F%E8%83%BD"><span class="nav-text"> 使用function_graph功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%81%AB%E7%84%B0%E5%9B%BE%E5%88%86%E6%9E%90"><span class="nav-text"> 使用火焰图分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E6%89%93%E5%8D%B0%E6%97%B6%E9%97%B4%E6%88%B3%E5%88%86%E6%9E%90"><span class="nav-text"> 通过打印时间戳分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cpuidle"><span class="nav-text"> cpuidle</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%97%ADcpuidle"><span class="nav-text"> 关闭cpuidle</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9cpuidle%E5%8F%82%E6%95%B0"><span class="nav-text"> 修改cpuidle参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pm-qos"><span class="nav-text"> pm qos</span></a></li></ol></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">212</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Debug/LinuxperfdebugExample/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="记录一次UAC 丢包问题分析过程 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          记录一次UAC 丢包问题分析过程
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Programming/Debug/" itemprop="url" rel="index"><span itemprop="name">Debug</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Debug/LinuxperfdebugExample/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Debug/LinuxperfdebugExample/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.2k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>4 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="实验"><a class="markdownIt-Anchor" href="#实验"></a> 实验</h1>
+<p>测试发现period_size=512或者256时均不发生丢包，于是做以下实验：</p>
+<table>
+<thead>
+<tr>
+<th>sampling rate</th>
+<th>channel</th>
+<th>bit depth</th>
+<th>period_size</th>
+<th>package size</th>
+<th>是否丢包</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>48k</td>
+<td>2</td>
+<td>16bit</td>
+<td>1024</td>
+<td>4096Byte</td>
+<td>丢包</td>
+</tr>
+<tr>
+<td>48k</td>
+<td>1</td>
+<td>16bit</td>
+<td>1024</td>
+<td>2048Byte</td>
+<td>丢包</td>
+</tr>
+<tr>
+<td>48k</td>
+<td>2</td>
+<td>16bit</td>
+<td>512</td>
+<td>2048Byte</td>
+<td>不丢包</td>
+</tr>
+<tr>
+<td>48k</td>
+<td>4</td>
+<td>16bit</td>
+<td>512</td>
+<td>4096Byte</td>
+<td>不丢包</td>
+</tr>
+</tbody>
+</table>
+<p>通过实验发现，丢包与period_size相关与package size无关。</p>
+<span id="more"></span>
+<h1 id="通过perf-top分析"><a class="markdownIt-Anchor" href="#通过perf-top分析"></a> 通过perf top分析</h1>
+<p>通过perf top查看系统和aplay中哪些函数占比高:</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/08/31/66d33d376e043.png" alt=""></p>
+<p>这里可以看到有大量的spin_lock函数占用比较高的cpu时间。猜测系统哪里可能有自旋锁使用不当。但是这里无法看到函数调用栈，不知道哪里调用的spinlock占用cpu资源多。</p>
+<h1 id="通过火焰图分析"><a class="markdownIt-Anchor" href="#通过火焰图分析"></a> 通过火焰图分析</h1>
+<p>查看ftrace</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mount -t debugfs none /sys/kernel/debug/</span><br><span class="line"><span class="built_in">cd</span> /sys/kernel/debug/tracing/</span><br><span class="line"><span class="built_in">echo</span> 0 &gt; tracing_on</span><br><span class="line"> </span><br><span class="line"><span class="built_in">echo</span> _raw_spin_unlock_irq &gt; set_ftrace_filter</span><br><span class="line"><span class="built_in">echo</span> <span class="keyword">function</span> &gt; current_tracer </span><br><span class="line"> </span><br><span class="line"><span class="built_in">echo</span> 1 &gt; options/func_stack_trace</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 过滤下pid, 因为调用_raw_spin_unlock_irq 的线程比较多</span></span><br><span class="line"><span class="built_in">echo</span> &lt;pid&gt; &gt; set_ftrace_pid</span><br><span class="line"> </span><br><span class="line">&gt; trace <span class="comment">#清除 trace 内容</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; tracing_on &amp;&amp; <span class="built_in">sleep</span> 1 &amp;&amp; <span class="built_in">echo</span> 0 &gt; tracing_on</span><br><span class="line"><span class="built_in">cat</span> trace</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="使用function_graph功能"><a class="markdownIt-Anchor" href="#使用function_graph功能"></a> 使用function_graph功能</h2>
+<p>需要内核开启FUNCYTION_PROFILER选项。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt;  ./function_profile_enabled</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 等过2分钟再查看统计 </span></span><br><span class="line"><span class="built_in">cat</span> ./trace_stat/function0 | <span class="built_in">head</span> -100</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="使用火焰图分析"><a class="markdownIt-Anchor" href="#使用火焰图分析"></a> 使用火焰图分析</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">perf record -F 5000 -p &lt;pid&gt; -g -- <span class="built_in">sleep</span> 60</span><br><span class="line"></span><br><span class="line">record：表示采集系统事件，没有采用 -e 执行采集事件，则默认采集 cycles（即 CPU clock 周期）。</span><br><span class="line"> </span><br><span class="line">-F 5000：指定采样频率为 5000Hz（每秒5000次），如果 5000次都返回同一个函数名, 那就说明 CPU 这一秒钟都在执行同一个函数，可能存在性能问题。</span><br><span class="line"> </span><br><span class="line">-p &lt;pid&gt;：指定进程号，对某一个进程分析。</span><br><span class="line"> </span><br><span class="line">-g：表示记录调用栈。</span><br><span class="line"> </span><br><span class="line"><span class="built_in">sleep</span> 60：表示持续 60 秒</span><br><span class="line"></span><br><span class="line"><span class="comment"># 可以使用下面命令来简单查看 perf.data内容</span></span><br><span class="line">perf report -n --stdio</span><br></pre></td></tr></tbody></table></figure>
+<p>生成火焰图：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/brendangregg/FlameGraph.git</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成折叠后的调用栈</span></span><br><span class="line">perf script -i perf.data &amp;&gt; perf.unfold</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 将perf.unfold 用adb pull出来，在服务器上生成火焰图</span></span><br><span class="line"><span class="comment"># 生成火焰图</span></span><br><span class="line">./FlameGraph/stackcollapse-perf.pl perf.unfold &amp;&gt; perf.folded</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 生成svg</span></span><br><span class="line">./FlameGraph/flamegraph.pl perf.folded &gt; perf.svg</span><br></pre></td></tr></tbody></table></figure>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33e3f4374a.png" alt=""></p>
+<p>这里可以看到__snd_pcm_lib_xfer这个函数里的spinlock占用比较高的cpu资源。</p>
+<h2 id="通过打印时间戳分析"><a class="markdownIt-Anchor" href="#通过打印时间戳分析"></a> 通过打印时间戳分析</h2>
+<p>前面发现__snd_pcm_lib_xfer这个函数耗时很久于是打印这个函数的耗时信息：</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33ee199eea.png" alt="perf3.png"></p>
+<p>蓝色为period_size=1024时__snd_pcm_lib_xfer函数运行时间单位为ns，平均下来就是一个period_size间隔时间为1024 * 1000 / 48000 = 21ms</p>
+<p>橙色为period_size=512时__snd_pcm_lib_xfer函数运行时间单位为ns，平均下来就是一个period_size间隔时间为512* 1000 / 48000 = 11ms</p>
+<p>__snd_pcm_lib_xfer这个函数里有多段自旋锁，逐个打印看是否有不合理的值，最终发现大部分sleep都在schedule_timeout这个函数里，schedule_timeout的sleep的时间计算方式有问题，对比kernel6.6已经修复了sleep时间的计算方式，但是这里也不会导致丢包因为schedule_timeout函数的sleep会被各种event打断，这里代码中是sleep 10s，但是实际sleep 20ms（对于period_size=1024情况下）就被uac里的signal打断返回而提前结束。</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f2d34516.png" alt="perf4.png"></p>
+<p>schedule_timeout函数运行时间为：</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f75357dd.png" alt="perf5.png"></p>
+<p>__snd_pcm_lib_xfer函数执行时间21ms其中20多ms都在schedule_timeout（没有在自旋锁内）里。到这里基本上看不出spinlock有什么问题。对比period_size=512差别只是schedule_timeout中sleep的时间长短不一致。同时根据perf top中的耗时函数看，耗时最长的是cpuidle_enter_state这个函数，怀疑是跟cpuidle相关。</p>
+<h1 id="cpuidle"><a class="markdownIt-Anchor" href="#cpuidle"></a> cpuidle</h1>
+<h2 id="关闭cpuidle"><a class="markdownIt-Anchor" href="#关闭cpuidle"></a> 关闭cpuidle</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu0/cpuidle/state1/disable</span><br><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu1/cpuidle/state1/disable</span><br><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu2/cpuidle/state1/disable</span><br><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu3/cpuidle/state1/disable</span><br></pre></td></tr></tbody></table></figure>
+<p>测试发现period_size=1024也不丢包了。</p>
+<h2 id="修改cpuidle参数"><a class="markdownIt-Anchor" href="#修改cpuidle参数"></a> 修改cpuidle参数</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">idle-states {</span><br><span class="line">	entry-method = <span class="string">"arm,psci-0.2"</span>;</span><br><span class="line">	CPU_SLEEP_0: cpu-sleep-0 {</span><br><span class="line">			compatible = <span class="string">"arm,idle-state"</span>;</span><br><span class="line">			arm,psci-suspend-param = &lt;0x0010000&gt;;</span><br><span class="line">			local-timer-stop;</span><br><span class="line">			entry-latency-us = &lt;5000&gt;;</span><br><span class="line">			exit-latency-us = &lt;5000&gt;;</span><br><span class="line">			min-residency-us = &lt;15000&gt;;</span><br><span class="line">	};</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>entry-latency-us为进入cpuidle需要耗时的时间，axg上写的是5ms，这个值一看就不对，不可能耗时这么久，这个值要根据实际测试值来填写的</li>
+<li>exit-latency-us为退出cpuidle需要耗时的时间，同样这里也是5ms，这个值肯定不是真实的值</li>
+<li>min-residency-us为cpu至少要保持cpuidle状态的时间，也就是至少保持15ms，进入cpuidle才划算</li>
+</ul>
+<p>我们period_size=1024的时候会sleep20多ms那么这期间就大概率会触发cpuidle进入休眠，尝试将其改成30ms，发现丢包率降低，但还是会丢包（实际查看发现cpu仍然在进入cpuidle状态）。查询cpuidle相关实现<a href="http"></a>这些值是算法中的一个参数，详细的算法没去研究比较复杂，但是大致知道里面有一些权重因子，驱动不会严格按照min-residency-us来决定是否进入cpuidle而是会作用到一个权重因子，同时参考其他信息，有pm qos、以及中断、timer等相关信息来决定是否进入cpuidle状态。</p>
+<p>这里将min-residency-us改成一个远大于period_size的值发现usb不丢包了。</p>
+<p>反向验证下，为什么period_size=256或者512不丢包呢，查看cpuidle状态可以看到period_size=256或者512时不会进入cpuidle状态。</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33fe0f2988.png" alt="perf6.png"></p>
+<p>schedule_timeout这里sleep的时间短，不足以触发进入cpuidle的条件。</p>
+<h2 id="pm-qos"><a class="markdownIt-Anchor" href="#pm-qos"></a> pm qos</h2>
+<p>前面直接通过关闭cpuidle或者修改min-residency-us都是不合理的，min-residency-us参数正确的计算方法是cpu进入cpuidle和退出cpuidle是需要额外功耗的，那么就必须保证待在cpuidle里的时间要足够久至少为min-residency-us才能保证进入cpuidle是划算的（如果进入cpuidle后立马退出那么功耗不仅不能降低还会增加，期间还disabled cpu irq）。</p>
+<p>更合理的做法是各driver对cpuidle模块提出要求，比如这里的uac，要通过pm qos对cpuidle提出要求我的传输包间隔是period size间隔时间，期间你不能进入休眠。追查代码发现实际上我们系统里有调用pm qos接口：</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d3402a4c773.png" alt="perf7.png"></p>
+<p>但是实际测试发现cpu仍然不停的进入cpuidle，可能是多核smp导致的，跑arecord aplay的cpu核可以满足条件，但是其他核还是可以休眠，如果关闭其他核，cpu0就不进入cpuidle了，当前也不好做验证。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
+              <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/Embedded/EncryptionAlgorithm/" rel="prev" title="Encryption Algorithm">
+                  <i class="fa fa-angle-left"></i> Encryption Algorithm
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/Debug/LinuxCpuIdle/" rel="next" title="CPUIdle">
+                  CPUIdle <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:03</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/Debug/LinuxperfdebugExample/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

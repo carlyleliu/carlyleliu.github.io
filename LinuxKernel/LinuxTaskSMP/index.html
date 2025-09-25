@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 进程管理（四）多核调度">
+<meta property="og:url" content="https://carlyleliu.github.io/LinuxKernel/LinuxTaskSMP/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskSMP.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/smp.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/sched_domain.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/queue_cpu.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/task_load.png">
+<meta property="article:published_time" content="2021-10-31T07:53:38.000Z">
+<meta property="article:modified_time" content="2025-04-12T10:29:22.000Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Kernel">
+<meta property="article:tag" content="Task">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskSMP.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxTaskSMP/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxKernel/LinuxTaskSMP/","path":"LinuxKernel/LinuxTaskSMP/","title":"Linux 进程管理（四）多核调度"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 进程管理（四）多核调度 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E5%9F%9F%E5%92%8C%E8%B0%83%E5%BA%A6%E7%BB%84"><span class="nav-text"> 调度域和调度组</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD%E7%9A%84%E8%AE%A1%E7%AE%97"><span class="nav-text"> 负载的计算</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B-1"><span class="nav-text"> 例 1</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BE%8B-2"><span class="nav-text"> 例 2</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E7%AE%97%E6%B3%95"><span class="nav-text"> 负载均衡算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#per-cpu-%E5%8F%98%E9%87%8F"><span class="nav-text"> Per-CPU 变量</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#per-cpu-%E5%8F%98%E9%87%8F%E7%9A%84%E5%AE%9A%E4%B9%89%E5%92%8C%E5%A3%B0%E6%98%8E"><span class="nav-text"> Per-CPU 变量的定义和声明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-per-cpu-%E5%8F%98%E9%87%8F"><span class="nav-text"> 使用 Per-CPU 变量</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#tlb-%E5%A4%84%E7%90%86"><span class="nav-text"> TLB 处理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%95%E6%A0%B8%E5%A4%84%E7%90%86"><span class="nav-text"> 单核处理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E6%A0%B8%E5%A4%84%E7%90%86"><span class="nav-text"> 多核处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">212</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxKernel/LinuxTaskSMP/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 进程管理（四）多核调度 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 进程管理（四）多核调度
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/Kernel/" itemprop="url" rel="index"><span itemprop="name">Kernel</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/LinuxKernel/LinuxTaskSMP/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/LinuxKernel/LinuxTaskSMP/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>3.6k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>13 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskSMP.png" alt=""><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2YjhlYzFlZmFkNDA3NTI1MTE2NDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
+<p>SMP（Symmetrical MultiProcessing）的全称是“对称多处理”技术，是指在一台计算机上汇集了一组处理器，这些处理器都是对等的，它们之间共享内存子系统和系统总线。</p>
+<p>下图所示为 4 核的 SMP 处理器架构，在 4 核处理器中，每个物理 CPU 核心拥有独立的 L1 缓存且不支持超线程技术，分成两个簇（cluster）簇 0 和簇 1，每个簇包含两个物理 CPU 核，簇中的 CPU 核共享 L2 缓存。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/smp.png" alt=""></p>
+<h1 id="调度域和调度组"><a class="markdownIt-Anchor" href="#调度域和调度组"></a> 调度域和调度组</h1>
+<p>根据处理器的实际物理属性，CPU 和 Linux 内核的分类如下所示。</p>
+<ul>
+<li>
+<p>SMT（超线程）：<br>
+Linux 内核配置项 CONFIG_SCHED_SMT<br>
+一个物理核心可以有两个或更多执行线程，被称为超线程技术。超线程使用相同的 cpu 资源且共享 L1 缓存，迁移进程不会影响高速缓存的利用率</p>
+</li>
+<li>
+<p>MC（多核）：<br>
+Linux 内核配置项 CONFIG_SCHED_MC<br>
+每个物理核心独享 L1 高速缓存，多个物理核心可以组成族，族里的 cpu 共享 L2 高速缓存</p>
+</li>
+<li>
+<p>SOC（处理器）：<br>
+内核称为 DIE<br>
+SOC 级别</p>
+</li>
+</ul>
+<p>Linux 内核使用数据结构 sched_domain_topology_level 来描述 CPU 的层次关系，本节中简称为 SDTL。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;include/linux/sched/topology.h&gt;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">sched_domain_topology_level</span> {</span></span><br><span class="line">	sched_domain_mask_f mask; <span class="comment">//函数指针，用于指定某个 SDTL 的 cpumask 位图</span></span><br><span class="line">	sched_domain_flags_f sd_flags;<span class="comment">//函数指针，用于指定某个 SDTL 的标志位</span></span><br><span class="line">	<span class="type">int</span>		    flags;</span><br><span class="line">	<span class="type">int</span>		    numa_level;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">sd_data</span>      <span class="title">data</span>;</span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SCHED_DEBUG</span></span><br><span class="line">	<span class="type">char</span>                *name;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>另外，Linux 内核默认定义了数组 default_topology[] 来概括 CPU 物理域的层次结构。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&lt;kernel/sched/topology.c&gt;</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Topology list, bottom-up.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">sched_domain_topology_level</span> <span class="title">default_topology</span>[] =</span> {</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SCHED_SMT</span></span><br><span class="line">	{ cpu_smt_mask, cpu_smt_flags, SD_INIT_NAME(SMT) },</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_SCHED_MC</span></span><br><span class="line">	{ cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },</span><br><span class="line">	{ <span class="literal">NULL</span>, },</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>Linux 内核使用 sched_domain 数据结构来描述调度层级，从 defaul_topology[] 数组可知，系统默认支持 DIE 类型层级、SMT 类型层级以及 MC 类型层级。另外，可在调度域里划分调度组，然后使用 sched_group 数据结构来描述调度组，调度组是负载均衡调度的最小单位。在最低层级的调度域中，通常用调度组描述 CPU 核心。<br>
+在支持 NUMA 架构的处理器中，假设支持 SMT 技术，那么整个系统的调度域和调度组的关系如图所示，可在默认的调度层级中新增 NUMA 层级的调度域。在超大系统中，系统会频繁访问调度域数据结构。为了提升系统的性能和可扩展性，调度域数据结构 sched_domain 采用 Per-CPU 变量来构建<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/sched_domain.png" alt=""></p>
+<h1 id="负载的计算"><a class="markdownIt-Anchor" href="#负载的计算"></a> 负载的计算</h1>
+<h3 id="例-1"><a class="markdownIt-Anchor" href="#例-1"></a> 例 1</h3>
+<p>假设在如图所示的双核处理器里，CPU0 的就绪队列里有 4 个进程，CPU1 的就绪队列里有两个进程，那么究竟哪个 CPU 上的负载重呢？<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/queue_cpu.png" alt=""></p>
+<p>假设上述 6 个进程的 nice 值是相同的，也就是优先级和权重都相同，那么明显可以看出 CPU0 的就绪队列里有 4 个进程，相比 CPU1 的就绪队列里的进程数目要多，从而得出 CPU0 上的负载相比 CPU1 更重的结论。</p>
+<pre><code>CPU 上的负载=就绪队列的总权重
+</code></pre>
+<p>为了计算 CPU 上的负载，最简单的方法是计算 CPU 的就绪队列中所有进程的权重。</p>
+<p>但是，仅考虑优先级和权重是有问题的，有的是 CPU 密集型的，也有的是 I/O 密集型的。如果延伸到多 CPU 之间的负载均衡，结果就显得不准确了。</p>
+<h3 id="例-2"><a class="markdownIt-Anchor" href="#例-2"></a> 例 2</h3>
+<p>在如图所示的双核处理器里，CPU0 和 CPU1 的就绪队列里都只有一个进程在运行，而且进程的优先级和权重相同。但是，CPUO 上的进程一直在占用 CPU，而 CPU1 上的进程走走停停，那么究竟 CPU0 和 CPU1 上的负载是不是相同呢？<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/task_load.png" alt=""></p>
+<p>从例 1 中的判断条件看，两个 CPU 上的负载是一样的。但是，从我们的直观感受看，CPU0 上的进程一直占用 CPU，CPU0 是一直满负荷运行的，而 CPU1 上的进程走走停停，CPU 使用率不高。为什么会得出不一样的结论呢？<br>
+这是因为例 1 使用的计算方法没有考虑进程在时间因素下的作用，也就是没有考虑历史负载对当前负载的影响。那么该如何计算历史负载对 CPU 上的负载的影响呢？</p>
+<p>CPU 上的负载的计算公式如下。</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mtable width="100%"><mtr><mtd width="50%"></mtd><mtd><mrow><mi>C</mi><mi>P</mi><mi>U</mi><mtext>上的负载</mtext><mo>=</mo><mfrac><mtext>运行时间</mtext><mtext>总时间</mtext></mfrac><mo>×</mo><mtext>就绪队列总权重</mtext></mrow></mtd><mtd width="50%"></mtd><mtd><mtext>(2)</mtext></mtd></mtr></mtable><annotation encoding="application/x-tex">CPU 上的负载 = \frac{运行时间}{总时间} \times  就绪队列总权重 \tag{2}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mord mathnormal" style="margin-right:0.10903em;">U</span><span class="mord cjk_fallback">上</span><span class="mord cjk_fallback">的</span><span class="mord cjk_fallback">负</span><span class="mord cjk_fallback">载</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.04633em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.36033em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord cjk_fallback">总</span><span class="mord cjk_fallback">时</span><span class="mord cjk_fallback">间</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord cjk_fallback">运</span><span class="mord cjk_fallback">行</span><span class="mord cjk_fallback">时</span><span class="mord cjk_fallback">间</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord cjk_fallback">就</span><span class="mord cjk_fallback">绪</span><span class="mord cjk_fallback">队</span><span class="mord cjk_fallback">列</span><span class="mord cjk_fallback">总</span><span class="mord cjk_fallback">权</span><span class="mord cjk_fallback">重</span></span><span class="tag"><span class="strut" style="height:2.04633em;vertical-align:-0.686em;"></span><span class="mord text"><span class="mord">(</span><span class="mord"><span class="mord">2</span></span><span class="mord">)</span></span></span></span></span></span></p>
+<p>其中，运行时间是指就绪队列占用 CPU 的总时间；总时间是指采样的总时间，包括 CPU 处于空闲的时间以及 CPU 正在运行的时间；就绪队列总权重是指就绪队列里所有进程的总权重。</p>
+<p>式 2 把负载这个概念量化到了权重，这样不同运行行为的进程就有了量化的标准来衡量负载，本书把这种用运行时间与总时间的比值来计算的权重，称为量化负载。另外，我们把时间与权重的乘积称为工作负载。</p>
+<p>式 2 并不完美，因为它把历史工作负载和当前工作负载平等对待了。</p>
+<p>因此，自 Linux3.8 内核以后，进程的负载计算不仅要考虑权重，而且要跟踪每个调度实体的历史负载情况，因而称为 PELT （Per-Entitv Load Tracking）。PELT 算法引入了 "accumulation of an infinite geometric series”这个概念，英文字面意思是无穷几何级数的累加，本书把这个概念简单称为历史累计计算。</p>
+<p>Linux 内核使用量化负载这个概念来计算和比较进程以及就绪队列的负载。<br>
+根据量化负载的定义，量化负载的计算如式 3 所示。</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mtable width="100%"><mtr><mtd width="50%"></mtd><mtd><mrow><mi>d</mi><mi>e</mi><mi>c</mi><mi>a</mi><mi>y</mi><mi mathvariant="normal">_</mi><mi>a</mi><mi>v</mi><mi>g</mi><mi mathvariant="normal">_</mi><mi>l</mi><mi>o</mi><mi>a</mi><mi>d</mi><mo>=</mo><mo stretchy="false">(</mo><mfrac><mrow><mi>d</mi><mi>e</mi><mi>c</mi><mi>a</mi><mi>y</mi><mi mathvariant="normal">_</mi><mi>s</mi><mi>u</mi><mi>m</mi><mi mathvariant="normal">_</mi><mi>r</mi><mi>u</mi><mi>n</mi><mi>n</mi><mi>a</mi><mi>b</mi><mi>l</mi><mi>e</mi><mi mathvariant="normal">_</mi><mi>t</mi><mi>i</mi><mi>m</mi><mi>e</mi></mrow><mrow><mi>d</mi><mi>e</mi><mi>c</mi><mi>a</mi><mi>y</mi><mi mathvariant="normal">_</mi><mi>s</mi><mi>u</mi><mi>m</mi><mi mathvariant="normal">_</mi><mi>r</mi><mi>u</mi><mi>n</mi><mi>n</mi><mi>a</mi><mi>b</mi><mi>l</mi><mi>e</mi><mi mathvariant="normal">_</mi><mi>t</mi><mi>i</mi><mi>m</mi><mi>e</mi></mrow></mfrac><mo stretchy="false">)</mo><mo>×</mo><mi>w</mi><mi>e</mi><mi>i</mi><mi>g</mi><mi>h</mi><mi>t</mi></mrow></mtd><mtd width="50%"></mtd><mtd><mtext>(3)</mtext></mtd></mtr></mtable><annotation encoding="application/x-tex">decay\_avg\_load = (\frac{decay\_sum\_runnable\_time}{decay\_sum\_runnable\_time}) \times  weight \tag{3}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.00444em;vertical-align:-0.31em;"></span><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.03588em;">v</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">o</span><span class="mord mathnormal">a</span><span class="mord mathnormal">d</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.39044em;vertical-align:-0.996em;"></span><span class="mopen">(</span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.39444em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal">s</span><span class="mord mathnormal">u</span><span class="mord mathnormal">m</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal" style="margin-right:0.02778em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">n</span><span class="mord mathnormal">a</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">e</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.6999999999999997em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathnormal">d</span><span class="mord mathnormal">e</span><span class="mord mathnormal">c</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal">s</span><span class="mord mathnormal">u</span><span class="mord mathnormal">m</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal" style="margin-right:0.02778em;">r</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">n</span><span class="mord mathnormal">a</span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal">e</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mord mathnormal">t</span><span class="mord mathnormal">i</span><span class="mord mathnormal">m</span><span class="mord mathnormal">e</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.996em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8888799999999999em;vertical-align:-0.19444em;"></span><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="mord mathnormal">e</span><span class="mord mathnormal">i</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mord mathnormal">h</span><span class="mord mathnormal">t</span></span><span class="tag"><span class="strut" style="height:2.39044em;vertical-align:-0.996em;"></span><span class="mord text"><span class="mord">(</span><span class="mord"><span class="mord">3</span></span><span class="mord">)</span></span></span></span></span></span></p>
+<p>其中，decay_avg_load 表示量化负载；decay_sum_runnable_time 指的是就绪队列或调度实体在可运行状态下的所有历史累计衰减时间；decay_sum_period_time 指的是就绪队列或调度实体在所有的采样周期里全部时间的累加衰减时间。通常从进程开始执行时就计算和累计这些值。weight 表示调度实体或就绪队列的权重。<br>
+计算进程的量化负载的意义在于能够把负载量化到权重里。当一个进程的 decay_sumrunnable_time 无限接近 decay_sum_period_time 时，它的量化负载就无限接近权重值，说明这个进程一直在占用 CPU，满负荷工作，CPU 占用率很高。一个进程的 decay_sum_runnable_time 越小，它的量化负载就越小，说明这个进程的工作负荷很小，占用的 CPU 资源很少，CPU 占用率很低。这样，我们就对负载实现了统一和标准化的量化计算，不同行为的进程就可以进行标准化的负载计算和比较了。</p>
+<h1 id="负载均衡算法"><a class="markdownIt-Anchor" href="#负载均衡算法"></a> 负载均衡算法</h1>
+<p>SMP 负载均衡机制从注册软中断开始，系统每次调度 tick 中断时，都会检查当前是否需要处理 SMP 负载均衡。rebalance_domains() 函数是负载均衡的核心入口。load_balance() 函数中的主要流程如下。</p>
+<ul>
+<li>负载均衡以当前 CPU 开始，由下至上地遍历调度域，从最底层的调度域开始做负载均衡</li>
+<li>允许做负载均衡的首要条件是当前 CPU 是调度域中的第一个 CPU，或者当前 CPU 是空闲 CPU。详见 should_we_balance() 函数</li>
+<li>在调度域中查找最繁忙的调度组，更新调度域和调度组的相关信息，最后计算出调度域的不均衡负载值</li>
+<li>最繁忙的调度组中找出最繁忙的 CPU，然后把繁忙 CPU 中的进程迁移到当前 CPU 上，迁移的负载量为不均衡负载值</li>
+</ul>
+<h1 id="per-cpu-变量"><a class="markdownIt-Anchor" href="#per-cpu-变量"></a> Per-CPU 变量</h1>
+<p>Per-CPU 变量是 Linux 内核中同步机制的一种。当系统中的所有 CPU 都访问共享的一个变量 v 时，如果 CPU0 修改了变量 v 的值，而 CPU1 也在同时修改变量 v 的值，就会导致变量 v 的值不正确。一种可行的办法就是在 CPU0 访问变量 v 时使用原子加锁指令，这样 CPU1 访问变量 v 时就只能等待了，但这样做有两个比较明显的缺点。</p>
+<ul>
+<li>原子操作是比较耗时的</li>
+<li>在现代处理器中，每个 CPU 都有 L1 缓存，因而多个 CPU 同时访问同一个变量就会导致缓存一致性问题。当某个 CPU 对共享的数据变量 v 进行修改后，其他 CPU 上对应的缓存行需要做无效操作，这对性能是有损耗的</li>
+</ul>
+<p>Per-CPU 变量是为了解决上述问题而出现的一种有趣的特性，它为系统中的每个处理器都分配自身的副本。这样在多处理器系统中，当处理器只能访问属于自己的那个变量副本时，不需要考虑与其他处理器的竞争问题，还能充分利用处理器本地的硬件缓存来提升性能。</p>
+<h2 id="per-cpu-变量的定义和声明"><a class="markdownIt-Anchor" href="#per-cpu-变量的定义和声明"></a> Per-CPU 变量的定义和声明</h2>
+<p>Per-CPU 变量的定义和声明有两种方式。一种是静态声明，另一种是动态分配。静态的 Per-CPU 变量可通过 DEFINE_PER_CPU 和 DECLARE_PER_CPU 宏来定义和声明。这类变量与普通变量的主要区别在于它们存放在一个特殊的段中。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Variant on the per-CPU variable declaration/definition theme used for</span></span><br><span class="line"><span class="comment"> * ordinary per-CPU variables.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> DECLARE_PER_CPU(type, name)					\</span></span><br><span class="line"><span class="meta">	DECLARE_PER_CPU_SECTION(type, name, <span class="string">""</span>)</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> DEFINE_PER_CPU(type, name)					\</span></span><br><span class="line"><span class="meta">	DEFINE_PER_CPU_SECTION(type, name, <span class="string">""</span>)</span></span><br></pre></td></tr></tbody></table></figure>
+<p>用于动态分配和释放 per-cpu 变量的 API 函数如下。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> alloc_percpu(type)						\</span></span><br><span class="line"><span class="meta">	(typeof(type) __percpu *)__alloc_percpu(sizeof(type),		\</span></span><br><span class="line"><span class="meta">						__alignof__(type))</span></span><br><span class="line"><span class="keyword">extern</span> <span class="type">void</span> <span class="title function_">free_percpu</span><span class="params">(<span class="type">void</span> __percpu *__pdata)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="使用-per-cpu-变量"><a class="markdownIt-Anchor" href="#使用-per-cpu-变量"></a> 使用 Per-CPU 变量</h2>
+<p>对于静态定义的 Per-CPU 变量，可以通过 get_cpu_var() 和 put_cpu_var() 函数来访问和修改，这两个函数内置了关闭和打开内核抢占的功能。另外需要注意的是，这两个函数需要配对使用。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> get_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">(*({									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(&amp;var);						\</span></span><br><span class="line"><span class="meta">}))</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> put_cpu_var(var)						\</span></span><br><span class="line"><span class="meta">do {									\</span></span><br><span class="line"><span class="meta">	(void)&amp;(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">} while (0)</span></span><br></pre></td></tr></tbody></table></figure>
+<p>对于动态分配的 Per-CPU 变量，需要通过以下接口来访问：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> get_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">({									\</span></span><br><span class="line"><span class="meta">	preempt_disable();						\</span></span><br><span class="line"><span class="meta">	this_cpu_ptr(var);						\</span></span><br><span class="line"><span class="meta">})</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> put_cpu_ptr(var)						\</span></span><br><span class="line"><span class="meta">do {									\</span></span><br><span class="line"><span class="meta">	(void)(var);							\</span></span><br><span class="line"><span class="meta">	preempt_enable();						\</span></span><br><span class="line"><span class="meta">} while (0)</span></span><br></pre></td></tr></tbody></table></figure>
+<h1 id="tlb-处理"><a class="markdownIt-Anchor" href="#tlb-处理"></a> TLB 处理</h1>
+<h2 id="单核处理"><a class="markdownIt-Anchor" href="#单核处理"></a> 单核处理</h2>
+<p>在进程切换的时候，需要有 tlb 的操作，以便清除旧进程的影响，具体怎样做呢？我们下面一一讨论。</p>
+<ul>
+<li>
+<p>绝对没有问题，但是性能不佳的方案：<br>
+所有 TLB 和 Cache 的数据都全部 flush 掉。当然，稍微有一点遗憾的就是在 B 进程开始执行的时候，TLB 和 Cache 都是冰冷的</p>
+</li>
+<li>
+<p>如何提高 TLB 的性能：<br>
+对于所有的进程（包括内核线程），内核地址空间是一样的，因此对于这部分地址翻译，无论进程如何切换，内核地址空间转换到物理地址的关系是永远不变的，不需要 flush TLB。对于用户地址空间，各个进程都有自己独立的地址空间，在进程 A 切换到 B 的时候，TLB 中的和 A 进程相关的 entry（上图中，青色的 block）需要 flush 掉<br>
+我们其实需要区分 global 和 local 这两种类型的地址翻译，因此，在页表描述符中往往有一个 bit 来标识该地址翻译是 global 还是 local 的，同样的，在 TLB 中，这个标识 global 还是 local 的 flag 也会被缓存起来。有了这样的设计之后，我们可以根据不同的场景而 flush all 或者只是 flush local tlb entry</p>
+</li>
+<li>
+<p>特殊情况的考量：<br>
+对于多线程环境，切换可能发生在一个进程中的两个线程，这时候，线程在同样的地址空间，也根本不需要 flush tlb</p>
+</li>
+<li>
+<p>进一步提升 TLB 的性能：<br>
+这里有一个术语叫做 ASID（address space ID）。原来 TLB 查找是通过虚拟地址 VA 来判断是否 TLB hit。有了 ASID 的支持后，TLB hit 的判断标准修改为（虚拟地址＋ASID），ASID 是每一个进程分配一个，标识自己的进程地址空间。TLB block 如何知道一个 tlb entry 的 ASID 呢？一般会来自 CPU 的系统寄存器（对于 ARM64 平台，它来自 TTBRx_EL1 寄存器），这样在 TLB block 在缓存（VA-PA-Global flag）的同时，也就把当前的 ASID 缓存在了对应的 TLB entry 中，这样一个 TLB entry 中包括了（VA-PA-Global flag-ASID）</p>
+</li>
+</ul>
+<h2 id="多核处理"><a class="markdownIt-Anchor" href="#多核处理"></a> 多核处理</h2>
+<p>在多核系统中，进程切换的时候，TLB 的操作要复杂一些，原因是进程可以调度到任何一个 cpu core 上执行。</p>
+<p>根据上一节的描述，我们了解到地址翻译有 global（各个进程共享）和 local（进程特定的）的概念，因而 tlb entry 也有 global 和 local 的区分。如果区分 global 和 local，那么 tlb 操作也基本类似，只不过进程切换的时候，不是 flush 该 cpu 上的所有 tlb entry，而是 flush 所有的 tlb local entry 就 OK 了。</p>
+<p>对 local tlb entry 还可以进一步细分，那就是 ASID（address space ID）或者 PCID（process context ID）的概念了（global tlb entry 不区分 ASID）。如果支持 ASID（或者 PCID）的话，tlb 操作变得简单一些，或者说我们没有必要执行 tlb 操作了，因为在 TLB 搜索的时候已经可以区分各个 task 上下文了，这样，各个 cpu 中残留的 tlb 不会影响其他任务的执行。</p>
+<p>不过，对于多核系统，这种情况有一点点的麻烦，其实也就是传说中的 TLB shootdown 带来的性能问题。在多核系统中，如果 cpu 支持 PCID 并且在进程切换的时候不 flush tlb，那么系统中各个 cpu 中的 tlb entry 则保留各种 task 的 tlb entry，当在某个 cpu 上，一个进程被销毁，或者修改了自己的页表（也就是修改了 VA PA 映射关系）的时候，我们必须将该 task 的相关 tlb entry 从系统中清除出去。这时候，你不仅仅需要 flush 本 cpu 上对应的 TLB entry，还需要 shootdown 其他 cpu 上的和该 task 相关的 tlb 残余。而这个动作一般是通过 IPI 实现（例如 X86），从而引入了开销。此外 PCID 的分配和管理也会带来额外的开销，因此，OS 是否支持 PCID（或者 ASID）是由各个 arch 代码自己决定。</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>《奔跑吧 Linux 内核》<br>
+《Linux 内核设计与实现》<br>
+<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L2NvbnRleHQtc3dpdGNoLXRsYi5odG1s">http://www.wowotech.net/process_management/context-switch-tlb.html<i class="fa fa-external-link-alt"></i></span></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
+              <a href="/tags/Task/" rel="tag"><i class="fa fa-tag"></i> Task</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/LinuxKernel/LinuxTaskCFS/" rel="prev" title="Linux 进程管理（三）CFS 调度器">
+                  <i class="fa fa-angle-left"></i> Linux 进程管理（三）CFS 调度器
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/LinuxKernel/LinuxTaskDebug/" rel="next" title="Linux 进程管理（五）进程调度的调试">
+                  Linux 进程管理（五）进程调度的调试 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:03</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxKernel/LinuxTaskSMP/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>
