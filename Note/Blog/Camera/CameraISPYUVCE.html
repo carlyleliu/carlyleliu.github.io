@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="相关概念  直方图 Histogram 在分析图像数据的统计特性时，有时可以抛弃图像的色度分量，只考察图像的亮度分量，此时可以引入图像的亮度直方图（Luminance Histogram），以常用的 8 位精度图像为例，直方图的 X 轴为 0~255，共 256 个桶，每个桶刚好覆盖 1 个像素值，直方图的 Y 轴表示每个桶盛纳了多少个像素。所有桶中盛纳的像素数加到一起应等于图像的总像素数。">
+    <meta name="description" content="相关概念 直方图 Histogram 在分析图像数据的统计特性时，有时可以抛弃图像的色度分量，只考察图像的亮度分量，此时可以引入图像的亮度直方图（Luminance Histogram），以常用的 8 位精度图像为例，直方图的 X 轴为 0~255，共 256 个桶，每个桶刚好覆盖 1 个像素值，直方图的 Y 轴表示每个桶盛纳了多少个像素。所有桶中盛纳的像素数加到一起应等于图像的总像素数。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ISP YUV 域之 CE（Contrast Enhancement）">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/Camera/CameraISPYUVCE.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="相关概念  直方图 Histogram 在分析图像数据的统计特性时，有时可以抛弃图像的色度分量，只考察图像的亮度分量，此时可以引入图像的亮度直方图（Luminance Histogram），以常用的 8 位精度图像为例，直方图的 X 轴为 0~255，共 256 个桶，每个桶刚好覆盖 1 个像素值，直方图的 Y 轴表示每个桶盛纳了多少个像素。所有桶中盛纳的像素数加到一起应等于图像的总像素数。">
+<meta property="og:description" content="相关概念 直方图 Histogram 在分析图像数据的统计特性时，有时可以抛弃图像的色度分量，只考察图像的亮度分量，此时可以引入图像的亮度直方图（Luminance Histogram），以常用的 8 位精度图像为例，直方图的 X 轴为 0~255，共 256 个桶，每个桶刚好覆盖 1 个像素值，直方图的 Y 轴表示每个桶盛纳了多少个像素。所有桶中盛纳的像素数加到一起应等于图像的总像素数。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce1.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce2.png">
@@ -168,7 +168,11 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5"><span class="nav-text"> 相关概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B4%E6%96%B9%E5%9B%BE-histogram"><span class="nav-text"> 直方图 Histogram</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94%E5%BA%A6-contrast"><span class="nav-text"> 对比度 Contrast</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94%E5%BA%A6%E6%8B%89%E4%BC%B8-contrast-stretching"><span class="nav-text"> 对比度拉伸 Contrast Stretching</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1%E5%8C%96-histogram-equalization"><span class="nav-text"> 直方图均衡化 Histogram Equalization</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1%E7%9A%84%E5%B1%80%E9%99%90"><span class="nav-text"> 直方图均衡的局限</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E8%89%B2%E9%97%AE%E9%A2%98"><span class="nav-text"> 分色问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E9%BD%90%E9%97%AE%E9%A2%98"><span class="nav-text"> 对齐问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%99%AA%E5%A3%B0%E9%97%AE%E9%A2%98"><span class="nav-text"> 噪声问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E9%80%82%E5%BA%94%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1-adaptive-histogram-equalizationahe"><span class="nav-text"> 自适应直方图均衡 Adaptive Histogram Equalization（AHE)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%90%E5%88%B6%E5%AF%B9%E6%AF%94%E5%BA%A6%E8%87%AA%E9%80%82%E5%BA%94%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1-clahe"><span class="nav-text"> 限制对比度自适应直方图均衡 CLAHE</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E6%A6%82%E5%BF%B5"><span class="nav-text">相关概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%B4%E6%96%B9%E5%9B%BE-histogram"><span class="nav-text">直方图 Histogram</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94%E5%BA%A6-contrast"><span class="nav-text">对比度 Contrast</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E6%AF%94%E5%BA%A6%E6%8B%89%E4%BC%B8-contrast-stretching"><span class="nav-text">对比度拉伸 Contrast
+Stretching</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1%E5%8C%96-histogram-equalization"><span class="nav-text">直方图均衡化 Histogram
+Equalization</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1%E7%9A%84%E5%B1%80%E9%99%90"><span class="nav-text">直方图均衡的局限</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E8%89%B2%E9%97%AE%E9%A2%98"><span class="nav-text">分色问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E9%BD%90%E9%97%AE%E9%A2%98"><span class="nav-text">对齐问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%99%AA%E5%A3%B0%E9%97%AE%E9%A2%98"><span class="nav-text">噪声问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E9%80%82%E5%BA%94%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1-adaptive-histogram-equalizationahe"><span class="nav-text">自适应直方图均衡
+Adaptive Histogram Equalization（AHE)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%90%E5%88%B6%E5%AF%B9%E6%AF%94%E5%BA%A6%E8%87%AA%E9%80%82%E5%BA%94%E7%9B%B4%E6%96%B9%E5%9B%BE%E5%9D%87%E8%A1%A1-clahe"><span class="nav-text">限制对比度自适应直方图均衡
+CLAHE</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -256,71 +260,98 @@
       
       
       <div class="post-body">
-          <h1 id="相关概念"><a class="markdownIt-Anchor" href="#相关概念"></a> 相关概念</h1>
-<h2 id="直方图-histogram"><a class="markdownIt-Anchor" href="#直方图-histogram"></a> 直方图 Histogram</h2>
-<p>在分析图像数据的统计特性时，有时可以抛弃图像的色度分量，只考察图像的亮度分量，此时可以引入图像的亮度直方图（Luminance Histogram），以常用的 8 位精度图像为例，直方图的 X 轴为 0~255，共 256 个桶，每个桶刚好覆盖 1 个像素值，直方图的 Y 轴表示每个桶盛纳了多少个像素。所有桶中盛纳的像素数加到一起应等于图像的总像素数。</p>
+          <h1 id="相关概念">相关概念</h1>
+<h2 id="直方图-histogram">直方图 Histogram</h2>
+<p>在分析图像数据的统计特性时，有时可以抛弃图像的色度分量，只考察图像的亮度分量，此时可以引入图像的亮度直方图（Luminance
+Histogram），以常用的 8 位精度图像为例，直方图的 X 轴为 0~255，共 256
+个桶，每个桶刚好覆盖 1 个像素值，直方图的 Y
+轴表示每个桶盛纳了多少个像素。所有桶中盛纳的像素数加到一起应等于图像的总像素数。</p>
 <span id="more"></span>
-<p>在分析画面的亮暗特征，人们经常把亮度区间定性地划分成暗调、阴影、中调、亮调、高光等几个区域，各区域的边界则可以根据应用特点灵活掌握。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce1.png" alt=""></p>
-<p>当需要分析图像的颜色特性时，可以引入通道直方图（Channel Histogram），分别对 R/G/B 三个颜色通道进行直方图统计。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce2.png" alt=""></p>
-<h2 id="对比度-contrast"><a class="markdownIt-Anchor" href="#对比度-contrast"></a> 对比度 Contrast</h2>
-<p>图像对比度指的是一幅图像中最亮的白和最暗的黑之间灰度反差的大小。差异越大代表对比越大，否则对比越小。一种常用的定量度量方法是 Michelson 对比度，定义为</p>
-<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>C</mi><mi>M</mi></msub><mo>=</mo><mfrac><mrow><msub><mi>I</mi><mrow><mi>M</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>−</mo><msub><mi>I</mi><mrow><mi>M</mi><mi>i</mi><mi>n</mi></mrow></msub></mrow><mrow><msub><mi>I</mi><mrow><mi>M</mi><mi>a</mi><mi>x</mi></mrow></msub><mo>+</mo><msub><mi>I</mi><mrow><mi>M</mi><mi>i</mi><mi>n</mi></mrow></msub></mrow></mfrac></mrow><annotation encoding="application/x-tex">C_M = \frac{I_{Max} - I_{Min}}{I_{Max} + I_{Min}}
-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07153em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.19633em;vertical-align:-0.8360000000000001em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.36033em;"><span style="top:-2.3139999999999996em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span><span class="mord mathnormal mtight">i</span><span class="mord mathnormal mtight">n</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.07847em;">I</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.07847em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.10903em;">M</span><span class="mord mathnormal mtight">i</span><span class="mord mathnormal mtight">n</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.8360000000000001em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></span></p>
-<p>当一幅图像最白和最黑像素灰度都是 128 时，图像对比度最低，C=0。<br>
-当一幅图像最白像素灰度=255，最黑像素灰度=0 时，图像对比度最高，C=1.0。</p>
-<h2 id="对比度拉伸-contrast-stretching"><a class="markdownIt-Anchor" href="#对比度拉伸-contrast-stretching"></a> 对比度拉伸 Contrast Stretching</h2>
-<p>既然搞清楚了图像不通透的原因，就很容通过数学的方法将一个低对比度图像处理得更通透一些。一类简单有效的处理方法叫做对比度拉伸（Contrast Stretching），基本思想是用一个下图所示分段线性函数（Piece-Wise Linear, PWL Function）对像素亮度进行映射。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce3.png" alt=""></p>
-<p>这种方法虽然简单，但是对很多低对比度图像能够收到相当好的效果。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce4.png" alt=""></p>
+<p>在分析画面的亮暗特征，人们经常把亮度区间定性地划分成暗调、阴影、中调、亮调、高光等几个区域，各区域的边界则可以根据应用特点灵活掌握。
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce1.png"></p>
+<p>当需要分析图像的颜色特性时，可以引入通道直方图（Channel
+Histogram），分别对 R/G/B 三个颜色通道进行直方图统计。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce2.png"></p>
+<h2 id="对比度-contrast">对比度 Contrast</h2>
+<p>图像对比度指的是一幅图像中最亮的白和最暗的黑之间灰度反差的大小。差异越大代表对比越大，否则对比越小。一种常用的定量度量方法是
+Michelson 对比度，定义为</p>
+<p><span class="math display">$$
+C_M = \frac{I_{Max} - I_{Min}}{I_{Max} + I_{Min}}
+$$</span></p>
+<p>当一幅图像最白和最黑像素灰度都是 128 时，图像对比度最低，C=0。
+当一幅图像最白像素灰度=255，最黑像素灰度=0
+时，图像对比度最高，C=1.0。</p>
+<h2 id="对比度拉伸-contrast-stretching">对比度拉伸 Contrast
+Stretching</h2>
+<p>既然搞清楚了图像不通透的原因，就很容通过数学的方法将一个低对比度图像处理得更通透一些。一类简单有效的处理方法叫做对比度拉伸（Contrast
+Stretching），基本思想是用一个下图所示分段线性函数（Piece-Wise Linear,
+PWL Function）对像素亮度进行映射。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce3.png"></p>
+<p>这种方法虽然简单，但是对很多低对比度图像能够收到相当好的效果。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce4.png"></p>
 <p>对比度拉伸的局限：对比度拉伸适合处理低动态（LDR）图像，这类图像的特点是对比度低，直方图的跨度较小，存在向两极拉伸的空间。对于高动态（HDR）图像，直方图跨度已经很大，对比度拉伸没有操作的空间。</p>
-<h1 id="直方图均衡化-histogram-equalization"><a class="markdownIt-Anchor" href="#直方图均衡化-histogram-equalization"></a> 直方图均衡化 Histogram Equalization</h1>
+<h1 id="直方图均衡化-histogram-equalization">直方图均衡化 Histogram
+Equalization</h1>
 <p>直方图均衡化被认为是提升图像对比度最为有效的方法，它的基本思想是用数学方法重新调整像素的亮度分布，使调整后的直方图具有最大的动态范围，每个桶（bin/bucket）盛纳的像素数量几乎相等。</p>
-<p>用数学语言描述，假设均衡前直方图的像素密度函数为 p(x)，每个桶的宽度为 dx，则每个桶的像素数量为 p(x)dx。假设均衡后像素密度函数为 p(y)，且 p(y) 为常数，不妨取 1。</p>
-<p>直方图均衡的方法是 dy=p(x)dx，意义是将源直方图 dx 宽度所盛纳的 p(x)dx 个像素映射到目标直方图的 dy 宽度中，映射前后像素数量不变，密度发生变化，意义如下图所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce5.png" alt=""></p>
+<p>用数学语言描述，假设均衡前直方图的像素密度函数为 p(x)，每个桶的宽度为
+dx，则每个桶的像素数量为 p(x)dx。假设均衡后像素密度函数为 p(y)，且 p(y)
+为常数，不妨取 1。</p>
+<p>直方图均衡的方法是 dy=p(x)dx，意义是将源直方图 dx 宽度所盛纳的 p(x)dx
+个像素映射到目标直方图的 dy
+宽度中，映射前后像素数量不变，密度发生变化，意义如下图所示。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce5.png"></p>
 <p>显然直方图均衡前后图像的总像素数量应保持不变，所以有约束方程</p>
-<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msubsup><mo>∫</mo><mn>0</mn><mn>1</mn></msubsup><mi>p</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><mn>1</mn></msubsup><mi>d</mi><mi>y</mi><mo>=</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">\int_{0}^{1}  p(x)dx = \int_{0}^{1} dy = 1
-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:2.4759580000000003em;vertical-align:-0.9119499999999999em;"></span><span class="mop"><span class="mop op-symbol large-op" style="margin-right:0.44445em;position:relative;top:-0.0011249999999999316em;">∫</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5640080000000003em;"><span style="top:-1.7880500000000001em;margin-left:-0.44445em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">0</span></span></span></span><span style="top:-3.8129000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9119499999999999em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal">p</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span><span class="mord mathnormal">d</span><span class="mord mathnormal">x</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.4759580000000003em;vertical-align:-0.9119499999999999em;"></span><span class="mop"><span class="mop op-symbol large-op" style="margin-right:0.44445em;position:relative;top:-0.0011249999999999316em;">∫</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5640080000000003em;"><span style="top:-1.7880500000000001em;margin-left:-0.44445em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">0</span></span></span></span><span style="top:-3.8129000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9119499999999999em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal">d</span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.64444em;vertical-align:0em;"></span><span class="mord">1</span></span></span></span></span></p>
-<p>我们的最终目标是求解 x 与 y 的映射函数 y=f(x)，这个的问题并不困难，</p>
-<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>y</mi><mo>=</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><msubsup><mo>∫</mo><mn>0</mn><mi>x</mi></msubsup><mi>p</mi><mo stretchy="false">(</mo><mi>u</mi><mo stretchy="false">)</mo><mi>d</mi><mi>u</mi><mo>=</mo><mi>P</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>−</mo><mi>P</mi><mo stretchy="false">(</mo><mn>0</mn><mo stretchy="false">)</mo><mo>=</mo><mi>P</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">y = f(x) = \int_{0}^{x}p(u)du = P(x) - P(0) = P(x) 
-</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.326242em;vertical-align:-0.9119499999999999em;"></span><span class="mop"><span class="mop op-symbol large-op" style="margin-right:0.44445em;position:relative;top:-0.0011249999999999316em;">∫</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.414292em;"><span style="top:-1.7880500000000001em;margin-left:-0.44445em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">0</span></span></span></span><span style="top:-3.8129000000000004em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">x</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.9119499999999999em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mord mathnormal">p</span><span class="mopen">(</span><span class="mord mathnormal">u</span><span class="mclose">)</span><span class="mord mathnormal">d</span><span class="mord mathnormal">u</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mopen">(</span><span class="mord">0</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mopen">(</span><span class="mord mathnormal">x</span><span class="mclose">)</span></span></span></span></span></p>
-<p>这个公式可以理解为，x 对应的 y 值是原图上 0~x 这些像素的概率之和。原图中最大的 x 对应 y=1。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce6.png" alt=""></p>
-<p>下面一组图显示了直方图均衡改善图像对比度的效果。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce7.png" alt=""><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce8.png" alt=""></p>
-<p>下图是对直方图拉伸和均衡两种方法的效果做比较。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce9.png" alt=""></p>
-<h1 id="直方图均衡的局限"><a class="markdownIt-Anchor" href="#直方图均衡的局限"></a> 直方图均衡的局限</h1>
+<p><span class="math display">∫<sub>0</sub><sup>1</sup><em>p</em>(<em>x</em>)<em>d</em><em>x</em> = ∫<sub>0</sub><sup>1</sup><em>d</em><em>y</em> = 1</span></p>
+<p>我们的最终目标是求解 x 与 y 的映射函数
+y=f(x)，这个的问题并不困难，</p>
+<p><span class="math display"><em>y</em> = <em>f</em>(<em>x</em>) = ∫<sub>0</sub><sup><em>x</em></sup><em>p</em>(<em>u</em>)<em>d</em><em>u</em> = <em>P</em>(<em>x</em>) − <em>P</em>(0) = <em>P</em>(<em>x</em>)</span></p>
+<p>这个公式可以理解为，x 对应的 y 值是原图上 0~x
+这些像素的概率之和。原图中最大的 x 对应 y=1。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce6.png"></p>
+<p>下面一组图显示了直方图均衡改善图像对比度的效果。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce7.png">
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce8.png"></p>
+<p>下图是对直方图拉伸和均衡两种方法的效果做比较。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce9.png"></p>
+<h1 id="直方图均衡的局限">直方图均衡的局限</h1>
 <p>朴素的直方图均衡算法对整幅图像的像素使用相同的变换公式，当图像像素值分布比较均衡时效果较好。如果图像的颜色比较集中，比如存在明显的暗区或亮区，则这些区域的处理效果会不太理想。</p>
-<h2 id="分色问题"><a class="markdownIt-Anchor" href="#分色问题"></a> 分色问题</h2>
-<p>当原图的直方图比较集中时，这意味着原图实际上只出现了少数几个颜色值，如果对原图进行拉伸操作，则这些颜色之间的距离就会变大，直方图上留下了更多概率为 0 的空洞，这样，原本比较接近的颜色在拉伸后的图上会出现显著的差异，图像出现颜色分层现象（banding），或者叫分色现象。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce10.png" alt=""></p>
-<h2 id="对齐问题"><a class="markdownIt-Anchor" href="#对齐问题"></a> 对齐问题</h2>
-<p>直方图均衡的一个重要特征是把原图中最亮的像素对齐到预设的最大值（比如 8bit 图是 255）。当原图中颜色比较丰富时，这个操作一般问题不大。但是也会有有一些比较极端的情况，比如原图中所有像素都是一个值（例如 8，这对应一幅纯黑的图像，多半是拍摄于夜间），则均衡之后所有像素都被映射到 255，图像变成了纯白的。于是，直方图均衡相当于无脑改变了原图的色调，而不管这种改变是否合理。</p>
-<h2 id="噪声问题"><a class="markdownIt-Anchor" href="#噪声问题"></a> 噪声问题</h2>
-<p>直方图均衡算法一种常见的问题是放大暗区的噪声，其根源也是对齐问题。如果一个区域的像素分布大体是均匀的，但是图像中带有一些噪声，则 HE 变换函数会把原图中很窄的 x 值分布映射到整个 y 值空间，这同时也就放大了原图中的噪声。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce11.png" alt=""></p>
-<h1 id="自适应直方图均衡-adaptive-histogram-equalizationahe"><a class="markdownIt-Anchor" href="#自适应直方图均衡-adaptive-histogram-equalizationahe"></a> 自适应直方图均衡 Adaptive Histogram Equalization（AHE)</h1>
-<p>参考人类视觉的局部性原理，人们提出了自适应直方图均衡算法（AHE），基本思想是将图像分成若干个区域（tile），比如 8x8=64 个 tile，直方图均衡的基本单位不再是整个图像，而是对每个小区域做直方图均衡。AHE 更适合于用来改善图像的局部对比度，以及增强图像边缘信息，但是并没有解决直方图均衡会放大图像噪声的问题。</p>
-<h2 id="限制对比度自适应直方图均衡-clahe"><a class="markdownIt-Anchor" href="#限制对比度自适应直方图均衡-clahe"></a> 限制对比度自适应直方图均衡 CLAHE</h2>
+<h2 id="分色问题">分色问题</h2>
+<p>当原图的直方图比较集中时，这意味着原图实际上只出现了少数几个颜色值，如果对原图进行拉伸操作，则这些颜色之间的距离就会变大，直方图上留下了更多概率为
+0
+的空洞，这样，原本比较接近的颜色在拉伸后的图上会出现显著的差异，图像出现颜色分层现象（banding），或者叫分色现象。
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce10.png"></p>
+<h2 id="对齐问题">对齐问题</h2>
+<p>直方图均衡的一个重要特征是把原图中最亮的像素对齐到预设的最大值（比如
+8bit 图是
+255）。当原图中颜色比较丰富时，这个操作一般问题不大。但是也会有有一些比较极端的情况，比如原图中所有像素都是一个值（例如
+8，这对应一幅纯黑的图像，多半是拍摄于夜间），则均衡之后所有像素都被映射到
+255，图像变成了纯白的。于是，直方图均衡相当于无脑改变了原图的色调，而不管这种改变是否合理。</p>
+<h2 id="噪声问题">噪声问题</h2>
+<p>直方图均衡算法一种常见的问题是放大暗区的噪声，其根源也是对齐问题。如果一个区域的像素分布大体是均匀的，但是图像中带有一些噪声，则
+HE 变换函数会把原图中很窄的 x 值分布映射到整个 y
+值空间，这同时也就放大了原图中的噪声。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce11.png"></p>
+<h1 id="自适应直方图均衡-adaptive-histogram-equalizationahe">自适应直方图均衡
+Adaptive Histogram Equalization（AHE)</h1>
+<p>参考人类视觉的局部性原理，人们提出了自适应直方图均衡算法（AHE），基本思想是将图像分成若干个区域（tile），比如
+8x8=64 个
+tile，直方图均衡的基本单位不再是整个图像，而是对每个小区域做直方图均衡。AHE
+更适合于用来改善图像的局部对比度，以及增强图像边缘信息，但是并没有解决直方图均衡会放大图像噪声的问题。</p>
+<h2 id="限制对比度自适应直方图均衡-clahe">限制对比度自适应直方图均衡
+CLAHE</h2>
 <p>我们已经知道，如果原图中某些颜色的频率太高，挤占了其它颜色的机会，均衡后的图像就会出现颜色分层、色调异常、噪声过大等比较棘手的问题。</p>
-<p>为了解决这些问题，一个显然的思路就是损有余而补不足，或者叫削峰填谷，把我们认为多余的概率平均分摊给其它像素，使亮度增益相对均匀地散布到所有像素上，而不是让某一个颜色突然地对齐到最大亮度。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce12.png" alt=""></p>
-<p>按照这个思路设计的算法就是 Contrast Limited Adaptive Histogram Equalization。</p>
-<p>回头再来分析那个黑图像被对齐到全白的例子。如果用 CLAHE 来处理这个黑图，我们可以拍脑袋规定直方图每个 bin 的频数不能超过总像素数的 50%，超过的部分要被均摊到各个 bin 中。根据这个规定，像素 x=8 被映射成</p>
+<p>为了解决这些问题，一个显然的思路就是损有余而补不足，或者叫削峰填谷，把我们认为多余的概率平均分摊给其它像素，使亮度增益相对均匀地散布到所有像素上，而不是让某一个颜色突然地对齐到最大亮度。
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce12.png"></p>
+<p>按照这个思路设计的算法就是 Contrast Limited Adaptive Histogram
+Equalization。</p>
+<p>回头再来分析那个黑图像被对齐到全白的例子。如果用 CLAHE
+来处理这个黑图，我们可以拍脑袋规定直方图每个 bin
+的频数不能超过总像素数的 50%，超过的部分要被均摊到各个 bin
+中。根据这个规定，像素 x=8 被映射成</p>
 <p>y=P(8)=0.5*255=128.</p>
-<p>CLAHE 把 x=8 的频数强制分给了其它 X 值，但是由于原图中并不存在所谓的其它 X 值，所以这部分频数实际上就浪费了，目标图中除了 128 之外，根本不会出现别的像素值。</p>
-<p>以下图为例，由于 CLAHE 人为削减了最亮像素的频数，所以 CLAHE 图的亮区得到了抑制，而暗区的亮度得到了明显的提升。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce13.png" alt=""><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce14.png" alt=""></p>
+<p>CLAHE 把 x=8 的频数强制分给了其它 X
+值，但是由于原图中并不存在所谓的其它 X
+值，所以这部分频数实际上就浪费了，目标图中除了 128
+之外，根本不会出现别的像素值。</p>
+<p>以下图为例，由于 CLAHE 人为削减了最亮像素的频数，所以 CLAHE
+图的亮区得到了抑制，而暗区的亮度得到了明显的提升。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce13.png">
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/ce14.png"></p>
 <p>如果仔细分析图像质量的话，这个图的绿植效果其实并不好，绿得很不自然，可能还不如原图的效果。其实原图的主要问题是亮部对比度不足，需要拉伸，而暗部的直方图分布是没有太大问题的，不调整也可以。</p>
 <p>从这个例子我们发现，被强制裁掉的频数该如何分配仍然是一个可以讨论的话题。有的时候可能直接丢弃了会比较好，如果舍不得丢，也可以考虑优先分配给离本主比较近的像素。</p>
 <p>当然，单纯地限制像素频数无助于解决颜色数量不够导致的分色问题。如果需要改善分色问题，则还要引入抖色（dither）之类的机制，让原本一个颜色随机地抖动变成一些相近的颜色，以填补直方图中的空洞。从视觉效果上看，抖色相对于在图像中主动添加噪声，而噪声会模糊两层颜色之间的边界，起到平滑过渡的作用。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xNTAzODE5Mzc=">https://zhuanlan.zhihu.com/p/150381937<i class="fa fa-external-link-alt"></i></span></p>
 
       </div>

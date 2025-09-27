@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="原图  异常级别  通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全">
+    <meta name="description" content="原图 异常级别  通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Linux 中断子系统（二）ARM64 的异常处理过程">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxKernel/LinuxKernelInterruptARMExcept.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="原图  异常级别  通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全">
+<meta property="og:description" content="原图 异常级别  通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png">
@@ -158,7 +158,8 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%BA%A7%E5%88%AB"><span class="nav-text"> 异常级别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%B1%BB%E5%9E%8B"><span class="nav-text"> 异常类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD"><span class="nav-text"> 中断</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%AD%A2"><span class="nav-text"> 中止</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E4%BD%8D"><span class="nav-text"> 复位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E4%BA%A7%E7%94%9F%E7%9A%84%E5%BC%82%E5%B8%B8"><span class="nav-text"> 软件产生的异常</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%BC%82%E5%B8%B8%E5%92%8C%E5%BC%82%E6%AD%A5%E5%BC%82%E5%B8%B8"><span class="nav-text"> 同步异常和异步异常</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%9A%84%E5%8F%91%E7%94%9F%E5%92%8C%E9%80%80%E5%87%BA"><span class="nav-text"> 异常的发生和退出</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8"><span class="nav-text"> 异常向量表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8%E5%9C%A8-linux-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%89%A9%E5%B1%95"><span class="nav-text"> 异常向量表在 Linux 中的实现（扩展）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E5%AE%8F%E5%AE%9A%E4%B9%89"><span class="nav-text"> 汇编宏定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81"><span class="nav-text"> 源码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%BA%A7%E5%88%AB"><span class="nav-text">异常级别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%B1%BB%E5%9E%8B"><span class="nav-text">异常类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD"><span class="nav-text">中断</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%AD%A2"><span class="nav-text">中止</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E4%BD%8D"><span class="nav-text">复位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E4%BA%A7%E7%94%9F%E7%9A%84%E5%BC%82%E5%B8%B8"><span class="nav-text">软件产生的异常</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%BC%82%E5%B8%B8%E5%92%8C%E5%BC%82%E6%AD%A5%E5%BC%82%E5%B8%B8"><span class="nav-text">同步异常和异步异常</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%9A%84%E5%8F%91%E7%94%9F%E5%92%8C%E9%80%80%E5%87%BA"><span class="nav-text">异常的发生和退出</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8"><span class="nav-text">异常向量表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8%E5%9C%A8-linux-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%89%A9%E5%B1%95"><span class="nav-text">异常向量表在 Linux
+中的实现（扩展）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E5%AE%8F%E5%AE%9A%E4%B9%89"><span class="nav-text">汇编宏定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81"><span class="nav-text">源码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -246,30 +247,41 @@
       
       
       <div class="post-body">
-          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png" alt=""><br>
+          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png">
 <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1Nzk2NjA3OTEyOTA2ZjUwN2QxMDg=">原图<i class="fa fa-external-link-alt"></i></span></p>
-<h1 id="异常级别"><a class="markdownIt-Anchor" href="#异常级别"></a> 异常级别</h1>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png" alt=""></p>
+<h1 id="异常级别">异常级别</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png"></p>
 <p>通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。</p>
-<p>虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。</p>
-<p>ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世界，两个世界只能通过异常级别 3 的安全监视器切换。</p>
+<p>虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是
+QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM
+的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。</p>
+<p>ARM64
+架构的安全扩展定义了两种安全状态，正常世界和安全世界，两个世界只能通过异常级别
+3 的安全监视器切换。</p>
 <span id="more"></span>
-<h1 id="异常类型"><a class="markdownIt-Anchor" href="#异常类型"></a> 异常类型</h1>
-<h2 id="中断"><a class="markdownIt-Anchor" href="#中断"></a> 中断</h2>
-<p>在 ARM 处理器中，FIQ（Fast Interruptre Quest）的优先级要高于 IRQ（Interrupt ReQuest）。在芯片内部，分别由 IRQ 和 FIQ 两根中断线连接到中断控制器再连接到处理器内部，发送中断信号给处理器。</p>
-<h3 id="中止"><a class="markdownIt-Anchor" href="#中止"></a> 中止</h3>
-<p>中止（abort）主要有指令中止（instruction abort）和数据中止（data abort）两种，通常是因为访问外部存储单元时发生了错误，处理器内部的 MMU（Memory Management Unit）能捕获这些错误并且报告给处理器。指令中止是指当处理器尝试执行某条指令时发生了错误，而数据中止是指使用加载或存储指令读写外部存储单元时发生了错误。</p>
-<h2 id="复位"><a class="markdownIt-Anchor" href="#复位"></a> 复位</h2>
+<h1 id="异常类型">异常类型</h1>
+<h2 id="中断">中断</h2>
+<p>在 ARM 处理器中，FIQ（Fast Interruptre Quest）的优先级要高于
+IRQ（Interrupt ReQuest）。在芯片内部，分别由 IRQ 和 FIQ
+两根中断线连接到中断控制器再连接到处理器内部，发送中断信号给处理器。</p>
+<h3 id="中止">中止</h3>
+<p>中止（abort）主要有指令中止（instruction abort）和数据中止（data
+abort）两种，通常是因为访问外部存储单元时发生了错误，处理器内部的
+MMU（Memory Management
+Unit）能捕获这些错误并且报告给处理器。指令中止是指当处理器尝试执行某条指令时发生了错误，而数据中止是指使用加载或存储指令读写外部存储单元时发生了错误。</p>
+<h2 id="复位">复位</h2>
 <p>复位（reset）操作是优先级最高的一种异常处理，复位操作包括上电复位和手动复位两种。</p>
-<h2 id="软件产生的异常"><a class="markdownIt-Anchor" href="#软件产生的异常"></a> 软件产生的异常</h2>
-<p>ARMv8 加构提供了 3 种软件产生的异常。发生这些异常通常是因为软件想尝试进入高的异常等级。</p>
+<h2 id="软件产生的异常">软件产生的异常</h2>
+<p>ARMv8 加构提供了 3
+种软件产生的异常。发生这些异常通常是因为软件想尝试进入高的异常等级。</p>
 <ul>
 <li>SVC 指令：允许用户模式下的程序请求操作系统服务</li>
 <li>HVC 指令：允许客户机（guestOS）请求主机服务</li>
 <li>SMC 指令：允许普通世界（normal world）中的程序请求安全监控服务</li>
 </ul>
-<h1 id="同步异常和异步异常"><a class="markdownIt-Anchor" href="#同步异常和异步异常"></a> 同步异常和异步异常</h1>
-<p>ARMv8 架构把异常分成同步异常和异步异常两种。同步异常是指处理器需要等待异常处理的结果，然后再继续执行后面的指令，比如数据中止发生时我们知道发生数据异常的地址，因而可以在异常处理函数中修复这个地址。常见的同步异常如下。</p>
+<h1 id="同步异常和异步异常">同步异常和异步异常</h1>
+<p>ARMv8
+架构把异常分成同步异常和异步异常两种。同步异常是指处理器需要等待异常处理的结果，然后再继续执行后面的指令，比如数据中止发生时我们知道发生数据异常的地址，因而可以在异常处理函数中修复这个地址。常见的同步异常如下。</p>
 <ul>
 <li>尝试访问异常等级不恰当的寄存器</li>
 <li>尝试执行没有定义（UNDEFINED）的指令</li>
@@ -283,47 +295,75 @@
 <li>物理中断分为系统错误、IRQ、FIQ。</li>
 <li>虚拟中断分为 vSError、 vIRQ、vFIQ。</li>
 </ul>
-<h1 id="异常的发生和退出"><a class="markdownIt-Anchor" href="#异常的发生和退出"></a> 异常的发生和退出</h1>
+<h1 id="异常的发生和退出">异常的发生和退出</h1>
 <p>当异常发生时，CPU 会自动做如下一些事情。</p>
 <ul>
 <li>将处理器状态寄存器 PSTATE 保存到对应目标异常等级的 SPSR_ELx 中</li>
 <li>将返回地址保存在对应目标异常等级的 ELRELx 中</li>
-<li>把 PSTATE 寄存器里的 DAIF 域都设置为 1，这相当于把调试异常、系统错误 （SError）、IRQ 以及 FIQ 都关闭了。具体异常原因需要查看 ESR_ELx</li>
+<li>把 PSTATE 寄存器里的 DAIF 域都设置为 1，这相当于把调试异常、系统错误
+（SError）、IRQ 以及 FIQ 都关闭了。具体异常原因需要查看 ESR_ELx</li>
 <li>设置栈指针，指向对应目标异常等级下的栈，自动切换 SP 到 SP_ELx</li>
-<li>CPU 处理器会从异常发生现场的异常等级切换到对应目标异常等级，然后跳转到异常向量表并执行</li>
+<li>CPU
+处理器会从异常发生现场的异常等级切换到对应目标异常等级，然后跳转到异常向量表并执行</li>
 </ul>
-<p>上述是 ARMv8 处理器检测到异常发生后自动做的事情。操作系统需要做的事情是从中断向量表开始，根据异常发生的类型，跳转到合适的异常向量表。异常向量表中的每项会保存一个异常处理的跳转函数，然后跳转到恰当的异常处理函数并处理异常。</p>
-<p>当操作系统的异常处理完成后，执行一条 eret 指令即可从异常返回。这条指令会自动完成如下工作</p>
+<p>上述是 ARMv8
+处理器检测到异常发生后自动做的事情。操作系统需要做的事情是从中断向量表开始，根据异常发生的类型，跳转到合适的异常向量表。异常向量表中的每项会保存一个异常处理的跳转函数，然后跳转到恰当的异常处理函数并处理异常。</p>
+<p>当操作系统的异常处理完成后，执行一条 eret
+指令即可从异常返回。这条指令会自动完成如下工作</p>
 <ul>
 <li>从 ELR_ELx 中恢复 PC 指针</li>
 <li>从 SPSR_ELx 恢复处理器的状态</li>
 </ul>
-<h1 id="异常向量表"><a class="markdownIt-Anchor" href="#异常向量表"></a> 异常向量表</h1>
-<p>ARMv7 架构的异常向量表比较简单，每个表项占用 4 字节，并且每个表项里存放了一条跳转指令。但是 ARMv8 架构的异常向量表发生了变化。每一个表项需要 128 字节，这样可以存放 32 条指令。注意，ARMv8 指令集支持 64 位指令集，但是每一条指令的位宽是 32 位宽而不是 64 位宽。</p>
-<p>在下表中，异常向量表存放的基地址可以通过 VBAR （Vector Base Address Register）来设置。VBAR 是异常向量表的基地址寄存器。见《ARM Architecture Reference Manual，ARMv8，for ARMv8-A architecture profile v8.4》的 D.1.10 节。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/armv8_vector.png" alt=""></p>
+<h1 id="异常向量表">异常向量表</h1>
+<p>ARMv7 架构的异常向量表比较简单，每个表项占用 4
+字节，并且每个表项里存放了一条跳转指令。但是 ARMv8
+架构的异常向量表发生了变化。每一个表项需要 128 字节，这样可以存放 32
+条指令。注意，ARMv8 指令集支持 64 位指令集，但是每一条指令的位宽是 32
+位宽而不是 64 位宽。</p>
+<p>在下表中，异常向量表存放的基地址可以通过 VBAR （Vector Base Address
+Register）来设置。VBAR 是异常向量表的基地址寄存器。见《ARM Architecture
+Reference Manual，ARMv8，for ARMv8-A architecture profile v8.4》的
+D.1.10 节。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/armv8_vector.png"></p>
 <hr>
-<h1 id="异常向量表在-linux-中的实现扩展"><a class="markdownIt-Anchor" href="#异常向量表在-linux-中的实现扩展"></a> 异常向量表在 Linux 中的实现（扩展）</h1>
-<h2 id="汇编宏定义"><a class="markdownIt-Anchor" href="#汇编宏定义"></a> 汇编宏定义</h2>
-<p>要理解下面这段代码需要先简单了解一下一些汇编语法，下面做简单介绍：<br>
-首先是。macro 命令 .macro 和 .endm 之间允许您定义生成汇编输出的宏。例如，如下这段宏定义：</p>
+<h1 id="异常向量表在-linux-中的实现扩展">异常向量表在 Linux
+中的实现（扩展）</h1>
+<h2 id="汇编宏定义">汇编宏定义</h2>
+<p>要理解下面这段代码需要先简单了解一下一些汇编语法，下面做简单介绍：
+首先是。macro 命令 .macro 和 .endm
+之间允许您定义生成汇编输出的宏。例如，如下这段宏定义：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.macro  sum from=0, to=5</span><br><span class="line">.long   \from</span><br><span class="line">.if     \to-\from</span><br><span class="line">sum     "(\from+1)",\to</span><br><span class="line">.endif</span><br><span class="line">.endm</span><br></pre></td></tr></tbody></table></figure>
 <p>根据该定义，“SUM 0,5”等效于以下程序集输入：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.long   0</span><br><span class="line">.long   1</span><br><span class="line">.long   2</span><br><span class="line">.long   3</span><br><span class="line">.long   4</span><br><span class="line">.long   5</span><br></pre></td></tr></tbody></table></figure>
 <p>.macro comm 开始定义一个名为 comm 的宏，它不带参数。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.macro plus1 p, p1</span><br><span class="line">.macro plus1 p p1</span><br></pre></td></tr></tbody></table></figure>
-<p>任一语句都开始定义一个名为 plus1 的宏，它带有两个参数；在宏定义中，写“\p”或“\p1”来计算参数。</p>
+<p>任一语句都开始定义一个名为 plus1
+的宏，它带有两个参数；在宏定义中，写“”或“”来计算参数。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.macro reserve_str p1=0 p2</span><br></pre></td></tr></tbody></table></figure>
-<p>以两个参数开始一个名为 reserve_str 的宏的定义。 第一个参数有一个默认值，但第二个没有。 定义完成后，您可以将宏调用为 ‘reserve_str a,b’（‘\p1’ 计算为 a，‘\p2’ 计算为 b），或为 ‘reserve_str ,b’（使用 ‘\p1 ’ 计算为默认值，在本例中为 ‘0’，’\p2’ 计算为 b)。</p>
+<p>以两个参数开始一个名为 reserve_str 的宏的定义。
+第一个参数有一个默认值，但第二个没有。 定义完成后，您可以将宏调用为
+‘reserve_str a,b’（‘’ 计算为 a，‘’ 计算为 b），或为 ‘reserve_str
+,b’（使用 ‘’ 计算为默认值，在本例中为 ‘0’，‘’ 计算为 b)。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.macro m p1:req, p2=0, p3:vararg</span><br></pre></td></tr></tbody></table></figure>
-<p>以至少三个参数开始一个名为 m 的宏的定义。 第一个参数必须始终指定一个值，但第二个参数不是，而是具有默认值。 第三个形式将被分配在调用时指定的所有剩余参数。</p>
-<p>调用宏时，可以按位置或关键字指定参数值。 例如，“sum 9,17”等价于“sum to=17, from=9”。</p>
-<p>请注意，由于每个 macargs 都可以是与目标架构允许的任何其他标识符完全相同的标识符，因此如果目标在某些字符出现在特殊位置时对其制作了特殊含义，则可能会偶尔出现问题。 例如，如果冒号 (😃 通常被允许作为符号名称的一部分，但架构特定代码在作为符号的最后一个字符（以表示标签）出现时将其特殊化，则宏参数替换 代码将无法知道这一点并将整个构造（包括冒号）视为标识符，并仅检查此标识符是否受参数替换。 例如这个宏定义：</p>
+<p>以至少三个参数开始一个名为 m 的宏的定义。
+第一个参数必须始终指定一个值，但第二个参数不是，而是具有默认值。
+第三个形式将被分配在调用时指定的所有剩余参数。</p>
+<p>调用宏时，可以按位置或关键字指定参数值。 例如，“sum 9,17”等价于“sum
+to=17, from=9”。</p>
+<p>请注意，由于每个 macargs
+都可以是与目标架构允许的任何其他标识符完全相同的标识符，因此如果目标在某些字符出现在特殊位置时对其制作了特殊含义，则可能会偶尔出现问题。
+例如，如果冒号 (:)
+通常被允许作为符号名称的一部分，但架构特定代码在作为符号的最后一个字符（以表示标签）出现时将其特殊化，则宏参数替换
+代码将无法知道这一点并将整个构造（包括冒号）视为标识符，并仅检查此标识符是否受参数替换。
+例如这个宏定义：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">	.macro label l</span><br><span class="line">\l:</span><br><span class="line">	.endm</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
-<p>可能无法按预期工作。 调用“label foo”可能不会创建一个名为“foo”的标签，而只是将文本“\l:”插入到汇编源代码中，可能会产生关于无法识别的标识符的错误。</p>
-<p>类似的问题可能会出现在操作码名称（以及标识符名称）中通常允许使用的句点字符 (‘.’) 中。 因此，例如构造一个宏以根据基本名称和长度说明符构建操作码，如下所示：</p>
+<p>可能无法按预期工作。 调用“label
+foo”可能不会创建一个名为“foo”的标签，而只是将文本“:”插入到汇编源代码中，可能会产生关于无法识别的标识符的错误。</p>
+<p>类似的问题可能会出现在操作码名称（以及标识符名称）中通常允许使用的句点字符
+(‘.’) 中。
+因此，例如构造一个宏以根据基本名称和长度说明符构建操作码，如下所示：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">.macro opcode base length</span><br><span class="line">       \base.\length</span><br><span class="line">.endm</span><br></pre></td></tr></tbody></table></figure>
-<p>并将其作为“opcode store l”调用不会创建“store.l”指令，而是在汇编器尝试解释文本“\base.\length”时产生某种错误。<br>
+<p>并将其作为“opcode store
+l”调用不会创建“store.l”指令，而是在汇编器尝试解释文本“.”时产生某种错误。
 有几种可能的方法可以解决这个问题：</p>
 <ul>
 <li>Insert white space</li>
@@ -340,38 +380,50 @@
 </ul>
 <p>在替代宏语法模式中，与号字符 (‘&amp;’) 可用作分隔符。例如：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">	.altmacro</span><br><span class="line">	.macro label l</span><br><span class="line">l&amp;:</span><br><span class="line">	.endm</span><br></pre></td></tr></tbody></table></figure>
-<p>正确识别伪操作的字符串参数的这个问题也适用于 .irp 和 .irpc 中使用的标识符。</p>
+<p>正确识别伪操作的字符串参数的这个问题也适用于 .irp 和 .irpc
+中使用的标识符。</p>
 <p>.endm 标记宏定义的结尾。</p>
-<h2 id="源码"><a class="markdownIt-Anchor" href="#源码"></a> 源码</h2>
-<p>下面看下 Linux 中 arm64 的异常向量表，在 arch/arm64/kernel/entry.S 文件中有：</p>
+<h2 id="源码">源码</h2>
+<p>下面看下 Linux 中 arm64 的异常向量表，在 arch/arm64/kernel/entry.S
+文件中有：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Exception vectors.</span><br><span class="line"> */</span><br><span class="line">	.pushsection ".entry.text", "ax"</span><br><span class="line"></span><br><span class="line">	.align	11</span><br><span class="line">SYM_CODE_START(vectors)</span><br><span class="line">    # 使用 SP0 寄存器的当前的异常类型的异常向量表</span><br><span class="line">	kernel_ventry	1, t, 64, sync		// Synchronous EL1t</span><br><span class="line">	kernel_ventry	1, t, 64, irq		// IRQ EL1t</span><br><span class="line">	kernel_ventry	1, t, 64, fiq		// FIQ EL1h</span><br><span class="line">	kernel_ventry	1, t, 64, error		// Error EL1t</span><br><span class="line"></span><br><span class="line">    # 使用 SPx 寄存器的当前异常类型的异常向量表</span><br><span class="line">	kernel_ventry	1, h, 64, sync		// Synchronous EL1h</span><br><span class="line">	kernel_ventry	1, h, 64, irq		// IRQ EL1h</span><br><span class="line">	kernel_ventry	1, h, 64, fiq		// FIQ EL1h</span><br><span class="line">	kernel_ventry	1, h, 64, error		// Error EL1h</span><br><span class="line"></span><br><span class="line">    # AArch64 下低异常等级的异常向量表</span><br><span class="line">	kernel_ventry	0, t, 64, sync		// Synchronous 64-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 64, irq		// IRQ 64-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 64, fiq		// FIQ 64-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 64, error		// Error 64-bit EL0</span><br><span class="line"></span><br><span class="line">    # AArch32 下低异常等级的异常向量表</span><br><span class="line">	kernel_ventry	0, t, 32, sync		// Synchronous 32-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 32, irq		// IRQ 32-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 32, fiq		// FIQ 32-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 32, error		// Error 32-bit EL0</span><br><span class="line">SYM_CODE_END(vectors)</span><br></pre></td></tr></tbody></table></figure>
-<p>上述异常向量表的定义和前面那张图是一致的，其中 kernel_ventry 是一个宏，他的实现如下：</p>
+<p>上述异常向量表的定义和前面那张图是一致的，其中 kernel_ventry
+是一个宏，他的实现如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">	.macro kernel_ventry, el:req, ht:req, regsize:req, label:req</span><br><span class="line">	.align 7</span><br><span class="line">#ifdef CONFIG_UNMAP_KERNEL_AT_EL0</span><br><span class="line">	.if	\el == 0</span><br><span class="line">alternative_if ARM64_UNMAP_KERNEL_AT_EL0</span><br><span class="line">	.if	\regsize == 64</span><br><span class="line">	mrs	x30, tpidrro_el0</span><br><span class="line">	msr	tpidrro_el0, xzr</span><br><span class="line">	.else</span><br><span class="line">	mov	x30, xzr</span><br><span class="line">	.endif</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">	.endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	sub	sp, sp, #PT_REGS_SIZE</span><br><span class="line">#ifdef CONFIG_VMAP_STACK</span><br><span class="line">	/*</span><br><span class="line">	 * Test whether the SP has overflowed, without corrupting a GPR.</span><br><span class="line">	 * Task and IRQ stacks are aligned so that SP &amp; (1 &lt;&lt; THREAD_SHIFT)</span><br><span class="line">	 * should always be zero.</span><br><span class="line">	 */</span><br><span class="line">	add	sp, sp, x0			// sp' = sp + x0</span><br><span class="line">	sub	x0, sp, x0			// x0' = sp' - x0 = (sp + x0) - x0 = sp</span><br><span class="line">	tbnz	x0, #THREAD_SHIFT, 0f</span><br><span class="line">	sub	x0, sp, x0			// x0'' = sp' - x0' = (sp + x0) - sp = x0</span><br><span class="line">	sub	sp, sp, x0			// sp'' = sp' - x0 = (sp + x0) - x0 = sp</span><br><span class="line">	b	el\el\ht\()_\regsize\()_\label</span><br><span class="line"></span><br><span class="line">0:</span><br><span class="line">	/*</span><br><span class="line">	 * Either we've just detected an overflow, or we've taken an exception</span><br><span class="line">	 * while on the overflow stack. Either way, we won't return to</span><br><span class="line">	 * userspace, and can clobber EL0 registers to free up GPRs.</span><br><span class="line">	 */</span><br><span class="line"></span><br><span class="line">	/* Stash the original SP (minus PT_REGS_SIZE) in tpidr_el0. */</span><br><span class="line">	msr	tpidr_el0, x0</span><br><span class="line"></span><br><span class="line">	/* Recover the original x0 value and stash it in tpidrro_el0 */</span><br><span class="line">	sub	x0, sp, x0</span><br><span class="line">	msr	tpidrro_el0, x0</span><br><span class="line"></span><br><span class="line">	/* Switch to the overflow stack */</span><br><span class="line">	adr_this_cpu sp, overflow_stack + OVERFLOW_STACK_SIZE, x0</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * Check whether we were already on the overflow stack. This may happen</span><br><span class="line">	 * after panic() re-enables interrupts.</span><br><span class="line">	 */</span><br><span class="line">	mrs	x0, tpidr_el0			// sp of interrupted context</span><br><span class="line">	sub	x0, sp, x0			// delta with top of overflow stack</span><br><span class="line">	tst	x0, #~(OVERFLOW_STACK_SIZE - 1)	// within range?</span><br><span class="line">	b.ne	__bad_stack			// no? -&gt; bad stack pointer</span><br><span class="line"></span><br><span class="line">	/* We were already on the overflow stack. Restore sp/x0 and carry on. */</span><br><span class="line">	sub	sp, sp, x0</span><br><span class="line">	mrs	x0, tpidrro_el0</span><br><span class="line">#endif</span><br><span class="line">	b	el\el\ht\()_\regsize\()_\label</span><br><span class="line">	.endm</span><br></pre></td></tr></tbody></table></figure>
-<p>.macro kernel_ventry, el:req, ht:req, regsize:req, label:req 定义 kernel_ventry 宏有 4 个参数，其中：req 代表这个参数必须提供。撇开各种宏定义我们看下里面其实主要就是如下三行代码，我们一一分析：</p>
+<p>.macro kernel_ventry, el:req, ht:req, regsize:req, label:req 定义
+kernel_ventry 宏有 4 个参数，其中：req
+代表这个参数必须提供。撇开各种宏定义我们看下里面其实主要就是如下三行代码，我们一一分析：</p>
 <ul>
 <li>.align 7</li>
 </ul>
 <p>表示把一条指令的地址对其到 2 的 7 次方，即 128 字节。</p>
 <ul>
-<li>sub	sp, sp, #PT_REGS_SIZE</li>
+<li>sub sp, sp, #PT_REGS_SIZE</li>
 </ul>
-<p>sp 指针减去 PT_REGS_SIZE，PT_REGS_SIZE 的定义在 arch/arm64/kernel/asm_offset.c 文件中，如下：</p>
+<p>sp 指针减去 PT_REGS_SIZE，PT_REGS_SIZE 的定义在
+arch/arm64/kernel/asm_offset.c 文件中，如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DEFINE(PT_REGS_SIZE,		<span class="keyword">sizeof</span>(<span class="keyword">struct</span> pt_regs));</span><br></pre></td></tr></tbody></table></figure>
 <p>pt_regs 定义如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pt_regs</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">user_pt_regs</span> <span class="title">user_regs</span>;</span></span><br><span class="line">		<span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">			u64 regs[<span class="number">31</span>];</span><br><span class="line">			u64 sp;</span><br><span class="line">			u64 pc;</span><br><span class="line">			u64 pstate;</span><br><span class="line">		};</span><br><span class="line">	};</span><br><span class="line">	u64 orig_x0;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __AARCH64EB__</span></span><br><span class="line">	u32 unused2;</span><br><span class="line">	s32 syscallno;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	s32 syscallno;</span><br><span class="line">	u32 unused2;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	u64 sdei_ttbr1;</span><br><span class="line">	<span class="comment">/* Only valid when ARM64_HAS_IRQ_PRIO_MASKING is enabled. */</span></span><br><span class="line">	u64 pmr_save;</span><br><span class="line">	u64 stackframe[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Only valid for some EL1 exceptions. */</span></span><br><span class="line">	u64 lockdep_hardirqs;</span><br><span class="line">	u64 exit_rcu;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
-<p>该结构定义了异常期间寄存器在堆栈上的存储方式。 请注意 sizeof(struct pt_regs) 必须是 16 的倍数（用于堆栈对齐）。</p>
+<p>该结构定义了异常期间寄存器在堆栈上的存储方式。 请注意 sizeof(struct
+pt_regs) 必须是 16 的倍数（用于堆栈对齐）。</p>
 <ul>
-<li>b	el\el\ht()<em>\regsize()</em>\label</li>
+<li>b el()<em>()</em></li>
 </ul>
-<p>以 kernel_ventry	1, t, 64, sync 为例将宏展开得到：el1t_64_sync, 下面我们去看看该标号的实现，如下：</p>
+<p>以 kernel_ventry 1, t, 64, sync 为例将宏展开得到：el1t_64_sync,
+下面我们去看看该标号的实现，如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">	.macro entry_handler el:req, ht:req, regsize:req, label:req</span><br><span class="line">SYM_CODE_START_LOCAL(el\el\ht\()_\regsize\()_\label)</span><br><span class="line">	kernel_entry \el, \regsize</span><br><span class="line">	mov	x0, sp</span><br><span class="line">	bl	el\el\ht\()_\regsize\()_\label\()_handler</span><br><span class="line">	.if \el == 0</span><br><span class="line">	b	ret_to_user</span><br><span class="line">	.else</span><br><span class="line">	b	ret_to_kernel</span><br><span class="line">	.endif</span><br><span class="line">SYM_CODE_END(el\el\ht\()_\regsize\()_\label)</span><br><span class="line">	.endm</span><br><span class="line">/*</span><br><span class="line"> * Early exception handlers</span><br><span class="line"> */</span><br><span class="line">	entry_handler	1, t, 64, sync</span><br><span class="line">	entry_handler	1, t, 64, irq</span><br><span class="line">	entry_handler	1, t, 64, fiq</span><br><span class="line">	entry_handler	1, t, 64, error</span><br><span class="line"></span><br><span class="line">	entry_handler	1, h, 64, sync</span><br><span class="line">	entry_handler	1, h, 64, irq</span><br><span class="line">	entry_handler	1, h, 64, fiq</span><br><span class="line">	entry_handler	1, h, 64, error</span><br><span class="line"></span><br><span class="line">	entry_handler	0, t, 64, sync</span><br><span class="line">	entry_handler	0, t, 64, irq</span><br><span class="line">	entry_handler	0, t, 64, fiq</span><br><span class="line">	entry_handler	0, t, 64, error</span><br><span class="line"></span><br><span class="line">	entry_handler	0, t, 32, sync</span><br><span class="line">	entry_handler	0, t, 32, irq</span><br><span class="line">	entry_handler	0, t, 32, fiq</span><br><span class="line">	entry_handler	0, t, 32, error</span><br></pre></td></tr></tbody></table></figure>
-<p>将	entry_handler	1, t, 64, sync 宏展开，得到如下：</p>
+<p>将 entry_handler 1, t, 64, sync 宏展开，得到如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">el1t_64_sync:</span><br><span class="line">  	kernel_entry \el, \regsize</span><br><span class="line">	mov	x0, sp</span><br><span class="line">	bl	el\el\ht\()_\regsize\()_\label\()_handler</span><br><span class="line">	.if \el == 0</span><br><span class="line">	b	ret_to_user</span><br><span class="line">	.else</span><br><span class="line">	b	ret_to_kernel</span><br><span class="line">	.endif</span><br></pre></td></tr></tbody></table></figure>
 <p>kernel_entry 宏定义如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line">	.macro	kernel_entry, el, regsize = 64</span><br><span class="line">	.if	\regsize == 32</span><br><span class="line">	mov	w0, w0				// zero upper 32 bits of x0</span><br><span class="line">	.endif</span><br><span class="line">	stp	x0, x1, [sp, #16 * 0]</span><br><span class="line">	stp	x2, x3, [sp, #16 * 1]</span><br><span class="line">	stp	x4, x5, [sp, #16 * 2]</span><br><span class="line">	stp	x6, x7, [sp, #16 * 3]</span><br><span class="line">	stp	x8, x9, [sp, #16 * 4]</span><br><span class="line">	stp	x10, x11, [sp, #16 * 5]</span><br><span class="line">	stp	x12, x13, [sp, #16 * 6]</span><br><span class="line">	stp	x14, x15, [sp, #16 * 7]</span><br><span class="line">	stp	x16, x17, [sp, #16 * 8]</span><br><span class="line">	stp	x18, x19, [sp, #16 * 9]</span><br><span class="line">	stp	x20, x21, [sp, #16 * 10]</span><br><span class="line">	stp	x22, x23, [sp, #16 * 11]</span><br><span class="line">	stp	x24, x25, [sp, #16 * 12]</span><br><span class="line">	stp	x26, x27, [sp, #16 * 13]</span><br><span class="line">	stp	x28, x29, [sp, #16 * 14]</span><br><span class="line"></span><br><span class="line">	.if	\el == 0</span><br><span class="line">	clear_gp_regs</span><br><span class="line">	mrs	x21, sp_el0</span><br><span class="line">	ldr_this_cpu	tsk, __entry_task, x20</span><br><span class="line">	msr	sp_el0, tsk</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * Ensure MDSCR_EL1.SS is clear, since we can unmask debug exceptions</span><br><span class="line">	 * when scheduling.</span><br><span class="line">	 */</span><br><span class="line">	ldr	x19, [tsk, #TSK_TI_FLAGS]</span><br><span class="line">	disable_step_tsk x19, x20</span><br><span class="line"></span><br><span class="line">	/* Check for asynchronous tag check faults in user space */</span><br><span class="line">	check_mte_async_tcf x22, x23</span><br><span class="line">	apply_ssbd 1, x22, x23</span><br><span class="line"></span><br><span class="line">#ifdef CONFIG_ARM64_PTR_AUTH</span><br><span class="line">alternative_if ARM64_HAS_ADDRESS_AUTH</span><br><span class="line">	/*</span><br><span class="line">	 * Enable IA for in-kernel PAC if the task had it disabled. Although</span><br><span class="line">	 * this could be implemented with an unconditional MRS which would avoid</span><br><span class="line">	 * a load, this was measured to be slower on Cortex-A75 and Cortex-A76.</span><br><span class="line">	 *</span><br><span class="line">	 * Install the kernel IA key only if IA was enabled in the task. If IA</span><br><span class="line">	 * was disabled on kernel exit then we would have left the kernel IA</span><br><span class="line">	 * installed so there is no need to install it again.</span><br><span class="line">	 */</span><br><span class="line">	ldr	x0, [tsk, THREAD_SCTLR_USER]</span><br><span class="line">	tbz	x0, SCTLR_ELx_ENIA_SHIFT, 1f</span><br><span class="line">	__ptrauth_keys_install_kernel_nosync tsk, x20, x22, x23</span><br><span class="line">	b	2f</span><br><span class="line">1:</span><br><span class="line">	mrs	x0, sctlr_el1</span><br><span class="line">	orr	x0, x0, SCTLR_ELx_ENIA</span><br><span class="line">	msr	sctlr_el1, x0</span><br><span class="line">2:</span><br><span class="line">	isb</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	mte_set_kernel_gcr x22, x23</span><br><span class="line"></span><br><span class="line">	scs_load tsk</span><br><span class="line">	.else</span><br><span class="line">	add	x21, sp, #PT_REGS_SIZE</span><br><span class="line">	get_current_task tsk</span><br><span class="line">	.endif /* \el == 0 */</span><br><span class="line">	mrs	x22, elr_el1</span><br><span class="line">	mrs	x23, spsr_el1</span><br><span class="line">	stp	lr, x21, [sp, #S_LR]</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * For exceptions from EL0, create a final frame record.</span><br><span class="line">	 * For exceptions from EL1, create a synthetic frame record so the</span><br><span class="line">	 * interrupted code shows up in the backtrace.</span><br><span class="line">	 */</span><br><span class="line">	.if \el == 0</span><br><span class="line">	stp	xzr, xzr, [sp, #S_STACKFRAME]</span><br><span class="line">	.else</span><br><span class="line">	stp	x29, x22, [sp, #S_STACKFRAME]</span><br><span class="line">	.endif</span><br><span class="line">	add	x29, sp, #S_STACKFRAME</span><br><span class="line"></span><br><span class="line">#ifdef CONFIG_ARM64_SW_TTBR0_PAN</span><br><span class="line">alternative_if_not ARM64_HAS_PAN</span><br><span class="line">	bl	__swpan_entry_el\el</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	stp	x22, x23, [sp, #S_PC]</span><br><span class="line"></span><br><span class="line">	/* Not in a syscall by default (el0_svc overwrites for real syscall) */</span><br><span class="line">	.if	\el == 0</span><br><span class="line">	mov	w21, #NO_SYSCALL</span><br><span class="line">	str	w21, [sp, #S_SYSCALLNO]</span><br><span class="line">	.endif</span><br><span class="line"></span><br><span class="line">	/* Save pmr */</span><br><span class="line">alternative_if ARM64_HAS_IRQ_PRIO_MASKING</span><br><span class="line">	mrs_s	x20, SYS_ICC_PMR_EL1</span><br><span class="line">	str	x20, [sp, #S_PMR_SAVE]</span><br><span class="line">	mov	x20, #GIC_PRIO_IRQON | GIC_PRIO_PSR_I_SET</span><br><span class="line">	msr_s	SYS_ICC_PMR_EL1, x20</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line"></span><br><span class="line">	/* Re-enable tag checking (TCO set on exception entry) */</span><br><span class="line">#ifdef CONFIG_ARM64_MTE</span><br><span class="line">alternative_if ARM64_MTE</span><br><span class="line">	SET_PSTATE_TCO(0)</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * Registers that may be useful after this macro is invoked:</span><br><span class="line">	 *</span><br><span class="line">	 * x20 - ICC_PMR_EL1</span><br><span class="line">	 * x21 - aborted SP</span><br><span class="line">	 * x22 - aborted PC</span><br><span class="line">	 * x23 - aborted PSTATE</span><br><span class="line">	*/</span><br><span class="line">	.endm</span><br></pre></td></tr></tbody></table></figure>
-<p>这里不做详细分析了，除了对一些寄存器做基础处理，保存基本和特殊寄存器值外最重要的就是 bl	el\el\ht()<em>\regsize()</em>\label()_handler，同样以上面第一个宏定义为例，展开为 el1t_64_sync_handler，这些函数的定义和实现在 linux/arch/arm64/include/asm/exception.h 和 linux/arch/arm64/kernel/entry-common.c 中。</p>
+<p>这里不做详细分析了，除了对一些寄存器做基础处理，保存基本和特殊寄存器值外最重要的就是
+bl el()<em>()</em>()_handler，同样以上面第一个宏定义为例，展开为
+el1t_64_sync_handler，这些函数的定义和实现在
+linux/arch/arm64/include/asm/exception.h 和
+linux/arch/arm64/kernel/entry-common.c 中。</p>
 <p>在上面的一系列函数中，其实就是一个中断向量表，及其里面的函数实现，当外部中断发生时，跳转到具体标处运行代码。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly9zb3VyY2V3YXJlLm9yZy9iaW51dGlscy9kb2NzL2FzL01hY3JvLmh0bWwjTWFjcm8=">https://sourceware.org/binutils/docs/as/Macro.html#Macro<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly9zb3VyY2V3YXJlLm9yZy9iaW51dGlscy9kb2NzL2FzLw==">https://sourceware.org/binutils/docs/as/<i class="fa fa-external-link-alt"></i></span><br>
 《奔跑吧 Linux 内核》<br>

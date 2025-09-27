@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="ucos 优先级调度算法  保证调度延迟的确定性 普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。">
+    <meta name="description" content="ucos 优先级调度算法 保证调度延迟的确定性 普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ucos 相关实现">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/Program/ucosDesign.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="ucos 优先级调度算法  保证调度延迟的确定性 普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。">
+<meta property="og:description" content="ucos 优先级调度算法 保证调度延迟的确定性 普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/RTOS_Sche_issue.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/prio_table.jpg">
@@ -159,7 +159,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ucos-%E4%BC%98%E5%85%88%E7%BA%A7%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text"> ucos 优先级调度算法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E8%AF%81%E8%B0%83%E5%BA%A6%E5%BB%B6%E8%BF%9F%E7%9A%84%E7%A1%AE%E5%AE%9A%E6%80%A7"><span class="nav-text"> 保证调度延迟的确定性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ucos-%E8%B0%83%E5%BA%A6%E5%8E%9F%E7%90%86"><span class="nav-text"> ucos 调度原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE%E6%9C%80%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7-task"><span class="nav-text"> 查找最高优先级 task</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E8%BF%87%E7%A8%8B"><span class="nav-text"> 调度过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#os_sched-%E5%87%BD%E6%95%B0"><span class="nav-text"> OS_Sched 函数：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#os_task_sw-%E5%87%BD%E6%95%B0"><span class="nav-text"> OS_TASK_SW 函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 同步的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-text"> 事件控制块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A9%BA%E4%BA%8B%E4%BB%B6%E6%8E%A7%E5%88%B6%E5%9D%97%E9%93%BE%E8%A1%A8"><span class="nav-text"> 空事件控制块链表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E5%87%BD%E6%95%B0"><span class="nav-text"> 操作函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%9F%E8%AE%A1-task"><span class="nav-text"> 统计 task</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#ucos-%E4%BC%98%E5%85%88%E7%BA%A7%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text">ucos 优先级调度算法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E8%AF%81%E8%B0%83%E5%BA%A6%E5%BB%B6%E8%BF%9F%E7%9A%84%E7%A1%AE%E5%AE%9A%E6%80%A7"><span class="nav-text">保证调度延迟的确定性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ucos-%E8%B0%83%E5%BA%A6%E5%8E%9F%E7%90%86"><span class="nav-text">ucos 调度原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E6%89%BE%E6%9C%80%E9%AB%98%E4%BC%98%E5%85%88%E7%BA%A7-task"><span class="nav-text">查找最高优先级 task</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E5%BA%A6%E8%BF%87%E7%A8%8B"><span class="nav-text">调度过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#os_sched-%E5%87%BD%E6%95%B0"><span class="nav-text">OS_Sched 函数：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#os_task_sw-%E5%87%BD%E6%95%B0"><span class="nav-text">OS_TASK_SW 函数</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-text">同步的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E6%8E%A7%E5%88%B6%E5%9D%97"><span class="nav-text">事件控制块</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A9%BA%E4%BA%8B%E4%BB%B6%E6%8E%A7%E5%88%B6%E5%9D%97%E9%93%BE%E8%A1%A8"><span class="nav-text">空事件控制块链表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%93%8D%E4%BD%9C%E5%87%BD%E6%95%B0"><span class="nav-text">操作函数</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%9F%E8%AE%A1-task"><span class="nav-text">统计 task</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -247,106 +247,147 @@
       
       
       <div class="post-body">
-          <h1 id="ucos-优先级调度算法"><a class="markdownIt-Anchor" href="#ucos-优先级调度算法"></a> ucos 优先级调度算法</h1>
-<h2 id="保证调度延迟的确定性"><a class="markdownIt-Anchor" href="#保证调度延迟的确定性"></a> 保证调度延迟的确定性</h2>
-<p>普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/RTOS_Sche_issue.png" alt=""></p>
+          <h1 id="ucos-优先级调度算法">ucos 优先级调度算法</h1>
+<h2 id="保证调度延迟的确定性">保证调度延迟的确定性</h2>
+<p>普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task
+会比就绪态优先级低的 task 先被查找到，造成不同优先级 task
+在调度上花费时间不一致的情况，这违背了实时性的原则。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/RTOS_Sche_issue.png"></p>
 <span id="more"></span>
-<h2 id="ucos-调度原理"><a class="markdownIt-Anchor" href="#ucos-调度原理"></a> ucos 调度原理</h2>
-<p>为了确保调度延迟一致性，ucos 采用了空间换取时间的算法在相同时间里查找到不同优先级 task，具体算法如下。<br>
-整个算法由两个变量、两个表格和三个程序组成：两个变量是 OSRdyGrp 和 OSRdyTbl[]; 两个表格是位掩码表 OSMapTbl[] 和优先级判定表 OSUnMap[]，三个程序分别是使 task 进入就绪、脱离就绪、寻找就绪态最高优先级 task。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/prio_table.jpg" alt=""><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/os_map_tbl.jpg" alt=""></p>
+<h2 id="ucos-调度原理">ucos 调度原理</h2>
+<p>为了确保调度延迟一致性，ucos
+采用了空间换取时间的算法在相同时间里查找到不同优先级
+task，具体算法如下。
+整个算法由两个变量、两个表格和三个程序组成：两个变量是 OSRdyGrp 和
+OSRdyTbl[]; 两个表格是位掩码表 OSMapTbl[] 和优先级判定表
+OSUnMap[]，三个程序分别是使 task
+进入就绪、脱离就绪、寻找就绪态最高优先级 task。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/prio_table.jpg">
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/os_map_tbl.jpg"></p>
 <p>使 task 进入就绪态的程序如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 将 prio 优先级放入就绪态优先级表中 */</span></span><br><span class="line">OSRdyGrp = OSMapTbl[prio&gt;&gt;<span class="number">3</span>];               <span class="comment">//设置就绪态优先级组标志</span></span><br><span class="line">OSRdyTbl[prio&gt;&gt;<span class="number">3</span>] |= OSMapTbl[prio&amp;<span class="number">0x07</span>];   <span class="comment">//设置就绪态优先级组内的位标志</span></span><br></pre></td></tr></tbody></table></figure>
-<p>就是将 OSRdyTbl 相应元素的相应位置位，使 task 脱离就绪状态就是将相应位置零，程序如下：</p>
+<p>就是将 OSRdyTbl 相应元素的相应位置位，使 task
+脱离就绪状态就是将相应位置零，程序如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 将 prio 优先级从就绪态优先级表中删除 */</span></span><br><span class="line"><span class="keyword">if</span>(OSRdyTbl[prio&gt;&gt;<span class="number">3</span>] &amp;=~OSMapTbl[prio &amp; <span class="number">0x07</span>]) == <span class="number">0</span>)</span><br><span class="line">    OSRdyGrp &amp;=~ OSMapTbl[prio&gt;&gt;<span class="number">3</span>];</span><br></pre></td></tr></tbody></table></figure>
 <p>变量 OSRdyGrp 的每一位就代表一个组。</p>
-<h2 id="查找最高优先级-task"><a class="markdownIt-Anchor" href="#查找最高优先级-task"></a> 查找最高优先级 task</h2>
-<p>task 优先级计算公式 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mi>r</mi><mi>i</mi><mi>o</mi><mo>=</mo><mi>y</mi><mo>∗</mo><mn>8</mn><mo>+</mo><mi>x</mi></mrow><annotation encoding="application/x-tex">prio=y*8+x</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.85396em;vertical-align:-0.19444em;"></span><span class="mord mathnormal">p</span><span class="mord mathnormal" style="margin-right:0.02778em;">r</span><span class="mord mathnormal">i</span><span class="mord mathnormal">o</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.6597200000000001em;vertical-align:-0.19444em;"></span><span class="mord mathnormal" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.72777em;vertical-align:-0.08333em;"></span><span class="mord">8</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">+</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathnormal">x</span></span></span></span> ，其中 y=OSRdyGrp 最高优先级的 task 在 OSRdyGrp 的最低不为 0 的位的那个组，在这个组里优先级最高的 task 在组内最低不为 0 的位，因此寻找最高优先级 task 就相当于寻找这两个变量里最低不为 0 的位。接下来就是通过 OSUnMapTbl[] 数组来查找最低位不为 0 的位的数组：</p>
+<h2 id="查找最高优先级-task">查找最高优先级 task</h2>
+<p>task 优先级计算公式 <span class="math inline"><em>p</em><em>r</em><em>i</em><em>o</em> = <em>y</em> * 8 + <em>x</em></span>
+，其中 y=OSRdyGrp 最高优先级的 task 在 OSRdyGrp 的最低不为 0
+的位的那个组，在这个组里优先级最高的 task 在组内最低不为 0
+的位，因此寻找最高优先级 task 就相当于寻找这两个变量里最低不为 0
+的位。接下来就是通过 OSUnMapTbl[] 数组来查找最低位不为 0
+的位的数组：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">INT8U <span class="type">const</span> OSUnMapTbl[<span class="number">256</span>] = {</span><br><span class="line">    <span class="number">0</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x00 to 0x0F */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x10 to 0x1F */</span></span><br><span class="line">    <span class="number">5</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x20 to 0x2F */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x30 to 0x3F */</span></span><br><span class="line">    <span class="number">6</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x40 to 0x4F */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x50 to 0x5F */</span></span><br><span class="line">    <span class="number">5</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x60 to 0x6F */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x70 to 0x7F */</span></span><br><span class="line">    <span class="number">7</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x80 to 0x8F */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0x90 to 0x9F */</span></span><br><span class="line">    <span class="number">5</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0xA0 to 0xAF */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0xB0 to 0xBF */</span></span><br><span class="line">    <span class="number">6</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0xC0 to 0xCF */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0xD0 to 0xDF */</span></span><br><span class="line">    <span class="number">5</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="comment">/* 0xE0 to 0xEF */</span></span><br><span class="line">    <span class="number">4</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">3</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">0</span>  <span class="comment">/* 0xF0 to 0xFF */</span></span><br><span class="line">}；</span><br></pre></td></tr></tbody></table></figure>
-<p>这个表格里的数据很奇怪，好像没什么规律，其实这些数据是 0x00-0xff 这些数据中最低位不为 0 的位数详细如下：</p>
+<p>这个表格里的数据很奇怪，好像没什么规律，其实这些数据是 0x00-0xff
+这些数据中最低位不为 0 的位数详细如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">0x00 ==00000000b 最低位为 1 的位数为 bit0；</span><br><span class="line">0x01 ==00000001b 最低位为 1 的位数为 bit0；</span><br><span class="line">0x02 ==00000010b 最低位为 1 的位数为 bit1；</span><br><span class="line">0x03 ==00000011b 最低位为 1 的位数为 bit0；</span><br><span class="line">0x04 ==00000100b 最低位为 1 的位数为 bit2；</span><br><span class="line">0x05 ==00000101b 最低位为 1 的位数为 bit0；</span><br></pre></td></tr></tbody></table></figure>
-<p>以此类推就得到 OSUnMapTbl 表格。最高优先级 task 就是在优先级组和位里找到最低位不为 0 的位并组合位一个完整的优先级，计算如下：</p>
+<p>以此类推就得到 OSUnMapTbl 表格。最高优先级 task
+就是在优先级组和位里找到最低位不为 0
+的位并组合位一个完整的优先级，计算如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 计算就绪态最高优先级 */</span></span><br><span class="line">y&nbsp;= OSUnMapTbl[OSRdyGrp];</span><br><span class="line">x = OSUnMapTbl[OSRdyTbl[y]];</span><br><span class="line">OSPrioHighRdy = (INT8U)((y &lt;&lt; <span class="number">3</span>) + x);</span><br></pre></td></tr></tbody></table></figure>
-<p>这就是用空间换时间的算法，可以保障寻找到最高优先级 task 的时间相同。</p>
-<h2 id="调度过程"><a class="markdownIt-Anchor" href="#调度过程"></a> 调度过程</h2>
-<p>操作系统提供的一个基本功能就是多 task 运行，而多 task 运行实质上是轮询占用 CPU。task 的调度就是利用中断来进行 task 之间的切换，周期性进入中断函数，然后选择一个合适的 task 运行就是操作系统的 task 调度算法。调度算法是操作系统的一项核心功能，ucos 操作系统是基于优先级的可剥夺内核调度，即 task 的调度基于 task 的优先级，同时高优先级 task 可以抢占低优先级 task 运行，因此，每个 task 在运行完需要一个延时以将 cpu 资源让给其他低优先级 task。ucos 的 task 调度分为两种方式：一种是 task 级的调度由函数 OS_SChed() 函数完成，另一种是中断级的调度由函数 OSIntExt() 函数完成，本文只分析 task 级调度：</p>
-<h3 id="os_sched-函数"><a class="markdownIt-Anchor" href="#os_sched-函数"></a> OS_Sched 函数：</h3>
+<p>这就是用空间换时间的算法，可以保障寻找到最高优先级 task
+的时间相同。</p>
+<h2 id="调度过程">调度过程</h2>
+<p>操作系统提供的一个基本功能就是多 task 运行，而多 task
+运行实质上是轮询占用 CPU。task 的调度就是利用中断来进行 task
+之间的切换，周期性进入中断函数，然后选择一个合适的 task
+运行就是操作系统的 task 调度算法。调度算法是操作系统的一项核心功能，ucos
+操作系统是基于优先级的可剥夺内核调度，即 task 的调度基于 task
+的优先级，同时高优先级 task 可以抢占低优先级 task 运行，因此，每个 task
+在运行完需要一个延时以将 cpu 资源让给其他低优先级 task。ucos 的 task
+调度分为两种方式：一种是 task 级的调度由函数 OS_SChed()
+函数完成，另一种是中断级的调度由函数 OSIntExt() 函数完成，本文只分析
+task 级调度：</p>
+<h3 id="os_sched-函数">OS_Sched 函数：</h3>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span>  <span class="title function_">OS_Sched</span> <span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">    OS_CPU_SR  cpu_sr = <span class="number">0</span>;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">    OS_ENTER_CRITICAL();</span><br><span class="line">    <span class="keyword">if</span> (OSIntNesting == <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">if</span> (OSLockNesting == <span class="number">0</span>) {</span><br><span class="line">            OS_SchedNew();</span><br><span class="line">            <span class="keyword">if</span> (OSPrioHighRdy != OSPrioCur) {</span><br><span class="line">                OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];</span><br><span class="line"><span class="meta">#<span class="keyword">if</span> OS_TASK_PROFILE_EN &gt; 0</span></span><br><span class="line">                OSTCBHighRdy-&gt;OSTCBCtxSwCtr++;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">                OSCtxSwCtr++;</span><br><span class="line">                OS_TASK_SW();</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    OS_EXIT_CRITICAL();</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>函数主要完成以下工作：</p>
 <ul>
-<li>
-<p>定义关中断方式：</p>
- <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">OS_CPU_SR cpu_sr = <span class="number">0</span>;</span><br></pre></td></tr></tbody></table></figure>
+<li><p>定义关中断方式：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">if</span> OS_CRITICAL_METHOD == 3</span></span><br><span class="line">OS_CPU_SR cpu_sr = <span class="number">0</span>;</span><br></pre></td></tr></tbody></table></figure><p></p>
 <p>定义第三种方法开关中断，这里插入讲解一下 os 开关中断的三种方式，</p>
 <ul>
-<li>第一种是利用 cpu 自带的总中断寄存器来实现开关全局中断，优点是实现方便缺点是总中断有可能原本就是关着的，在调用完会将全局中断打开。</li>
+<li>第一种是利用 cpu
+自带的总中断寄存器来实现开关全局中断，优点是实现方便缺点是总中断有可能原本就是关着的，在调用完会将全局中断打开。</li>
 <li>第二种开关全局中断的方式是利用堆栈保存中断的状态，关中断后恢复之前的中断状态，解决了第一种中断的弊端。</li>
-<li>第三种方法是定义一个局部变量 cpu_sr 来保存 PSW 再关中断之后再恢复 cpu_sr 到 PSW 程序状态寄存器中。</li>
+<li>第三种方法是定义一个局部变量 cpu_sr 来保存 PSW 再关中断之后再恢复
+cpu_sr 到 PSW 程序状态寄存器中。</li>
+</ul></li>
+<li><p>关中断：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OS_ENTER_CRITICAL();</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>判断是否在中断里或调度器是否上锁，是就执行一次调度：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (OSIntNesting == <span class="number">0</span>) {</span><br><span class="line">    <span class="keyword">if</span> (OSLockNesting == <span class="number">0</span>) {</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>判断当前 task 是否是就绪的最高优先级 task 以减少 task
+调度带来的额外开销：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (OSPrioHighRdy != OSPrioCur)</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>将准备就绪的最高优先级 task 指向该该 task 的 task 控制块：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>task 切换统计计数器加一：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSCtxSwCtr++;</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>task 切换：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OS_TASK_SW();</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>开中断：</p>
+<p></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OS_EXIT_CRITICAL();</span><br></pre></td></tr></tbody></table></figure><p></p></li>
 </ul>
-</li>
-<li>
-<p>关中断：</p>
-  <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OS_ENTER_CRITICAL();</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>判断是否在中断里或调度器是否上锁，是就执行一次调度：</p>
-  <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (OSIntNesting == <span class="number">0</span>) {</span><br><span class="line">    <span class="keyword">if</span> (OSLockNesting == <span class="number">0</span>) {</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>判断当前 task 是否是就绪的最高优先级 task 以减少 task 调度带来的额外开销：</p>
-  <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (OSPrioHighRdy != OSPrioCur)</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>将准备就绪的最高优先级 task 指向该该 task 的 task 控制块：</p>
-  <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSTCBHighRdy = OSTCBPrioTbl[OSPrioHighRdy];</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>task 切换统计计数器加一：</p>
-  <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSCtxSwCtr++;</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>task 切换：</p>
-  <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OS_TASK_SW();</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>开中断：</p>
-  <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OS_EXIT_CRITICAL();</span><br></pre></td></tr></tbody></table></figure>
-</li>
-</ul>
-<h3 id="os_task_sw-函数"><a class="markdownIt-Anchor" href="#os_task_sw-函数"></a> OS_TASK_SW 函数</h3>
-<p>下面介绍 OS_TASK_SW() 函数，task 级调度其实就是认为模拟一次中断分两步进行，第一步是将被挂起 task 的 CPU 寄存器压入堆栈，第二步是将准备就绪的最高优先级 task 的寄存器从 task 堆栈中恢复到寄存器中。</p>
+<h3 id="os_task_sw-函数">OS_TASK_SW 函数</h3>
+<p>下面介绍 OS_TASK_SW() 函数，task
+级调度其实就是认为模拟一次中断分两步进行，第一步是将被挂起 task 的 CPU
+寄存器压入堆栈，第二步是将准备就绪的最高优先级 task 的寄存器从 task
+堆栈中恢复到寄存器中。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">OSCtxSw</span><br><span class="line">LDR R0, =NVIC_INT_CTRL ; Trigger the PendSV exception (causes context switch)</span><br><span class="line">LDR R1, =NVIC_PENDSVSET</span><br><span class="line">STR R1, [R0]</span><br><span class="line">BX LR</span><br></pre></td></tr></tbody></table></figure>
 <p>OS_TASK_SW() 是一个宏定义他实际上是 OSCtxSw 汇编代码的宏定义：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">NVIC_INT_CTRL EQU 0xE000ED04</span><br><span class="line"></span><br><span class="line">NVIC_PENDSVSET EQU 0x10000000</span><br></pre></td></tr></tbody></table></figure>
-<p>这段汇编代码是为了触发 PendSV 异常，进入异常指令代码去执行，通过查询我们发现跳转到 OS_CPU_PendSVHandler 处执行，代码如下：</p>
+<p>这段汇编代码是为了触发 PendSV
+异常，进入异常指令代码去执行，通过查询我们发现跳转到
+OS_CPU_PendSVHandler 处执行，代码如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">OS_CPU_PendSVHandler</span><br><span class="line">CPSID I ; Prevent interruption during context switch</span><br><span class="line">MRS R0, PSP ; PSP is process stack pointer</span><br><span class="line">CBZ R0, OS_CPU_PendSVHandler_nosave ; Skip register save the first time</span><br><span class="line"></span><br><span class="line">SUBS R0, R0, #0x20 ; Save remaining regs r4-11 on process stack</span><br><span class="line">STM R0, {R4-R11}</span><br><span class="line"></span><br><span class="line">LDR R1, =OSTCBCur ; OSTCBCur-&gt;OSTCBStkPtr = SP;</span><br><span class="line">LDR R1, [R1]</span><br><span class="line">STR R0, [R1] ; R0 is SP of process being switched out; At this point, entire context of process has been saved</span><br><span class="line">OS_CPU_PendSVHandler_nosave</span><br><span class="line">PUSH {R14} ; Save LR exc_return value</span><br><span class="line">LDR R0, =OSTaskSwHook ; OSTaskSwHook();</span><br><span class="line">BLX R0</span><br><span class="line">POP {R14}</span><br><span class="line"></span><br><span class="line">LDR R0, =OSPrioCur ; OSPrioCur = OSPrioHighRdy;</span><br><span class="line">LDR R1, =OSPrioHighRdy</span><br><span class="line">LDRB R2, [R1]</span><br><span class="line">STRB R2, [R0]</span><br><span class="line"></span><br><span class="line">LDR R0, =OSTCBCur ; OSTCBCur = OSTCBHighRdy;</span><br><span class="line">LDR R1, =OSTCBHighRdy</span><br><span class="line">LDR R2, [R1]</span><br><span class="line">STR R2, [R0]</span><br><span class="line"></span><br><span class="line">LDR R0, [R2] ; R0 is new process SP; SP = OSTCBHighRdy-&gt;OSTCBStkPtr;</span><br><span class="line">LDM R0, {R4-R11} ; Restore r4-11 from new process stack</span><br><span class="line">ADDS R0, R0, #0x20</span><br><span class="line">MSR PSP, R0 ; Load PSP with new process SP</span><br><span class="line">ORR LR, LR, #0x04 ; Ensure exception return uses process stack</span><br><span class="line">CPSIE I</span><br><span class="line">BX LR ; Exception return will restore remaining context</span><br><span class="line">END</span><br></pre></td></tr></tbody></table></figure>
 <p>总结起来就是将当前寄存器保存到当前查询堆栈中。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSTCPHightRdy-&gt;OSTCBsTKpTR</span><br></pre></td></tr></tbody></table></figure>
-<p>获取到就绪态最高优先级 task 的 SP 并将其恢复到 CPU SP 寄存器中，将其他寄存器弹出执行中断返回，当前寄存器环境 sp，pc 等就是要切换 task 的环境值，运行代码就是切换后的 task，操作系统实现了 task 调度。</p>
-<h1 id="同步的实现"><a class="markdownIt-Anchor" href="#同步的实现"></a> 同步的实现</h1>
+<p>获取到就绪态最高优先级 task 的 SP 并将其恢复到 CPU SP
+寄存器中，将其他寄存器弹出执行中断返回，当前寄存器环境 sp，pc
+等就是要切换 task 的环境值，运行代码就是切换后的 task，操作系统实现了
+task 调度。</p>
+<h1 id="同步的实现">同步的实现</h1>
 <p>同步的手段有很多这里以事件控制块及其处理函数为例来说明，其他同步手段实现原理是相同的只是根据不同的需求做了响应的设计。</p>
-<h2 id="事件控制块"><a class="markdownIt-Anchor" href="#事件控制块"></a> 事件控制块</h2>
-<p>事件同步和资源同步都是通过事件控制块 ECB 结构来管理的，对于事件或者资源的请求或者释放伴随着 task 的挂起和恢复。</p>
+<h2 id="事件控制块">事件控制块</h2>
+<p>事件同步和资源同步都是通过事件控制块 ECB
+结构来管理的，对于事件或者资源的请求或者释放伴随着 task
+的挂起和恢复。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> <span class="title">os_event</span> {</span></span><br><span class="line">    INT8U    OSEventType;                    <span class="comment">/*事件类型 Type of event control block (see OS_EVENT_TYPE_xxxx)    */</span></span><br><span class="line">    <span class="type">void</span>    *OSEventPtr;                     <span class="comment">/*指向消息或者消息队列的指针 Pointer to message or queue structure     */</span></span><br><span class="line">    INT16U   OSEventCnt;                     <span class="comment">/*计数器 Semaphore Count (not used if other EVENT type)          */</span></span><br><span class="line">    OS_PRIO  OSEventGrp;                     <span class="comment">/*等待 task 所在的组 Group corresponding to tasks waiting for event to occur */</span></span><br><span class="line">    OS_PRIO  OSEventTbl[OS_EVENT_TBL_SIZE];  <span class="comment">/*等待 task 列表 List of tasks waiting for event to occur                */</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> OS_EVENT_NAME_EN &gt; 0u</span></span><br><span class="line">    INT8U   *OSEventName;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">} OS_EVENT;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>OSEventPtr 指针，只有在所定义的事件是邮箱或者消息队列时才使用。当所定义的事件是邮箱时，它指向一个消息，而当所定义的事件是消息队列时，它指向一个数据结构。</li>
-<li>OSEventTbl[] 和 OSEventGrp 很像前面讲到的 OSRdyTbl[] 和 OSRdyGrp，只不过前两者包含的是等待某事件的 task，而后两者包含的是系统中处于就绪状态的 task。</li>
-<li>OSEventCnt 当事件是一个信号量时，.OSEventCnt 是用于信号量的计数器。</li>
-<li>OSEventType 定义了事件的具体类型。它可以是信号量（OS_EVENT_SEM）、邮箱（OS_EVENT_TYPE_MBOX）或消息队列（OS_EVENT_TYPE_Q）中的一种。用户要根据该域的具体值来调用相应的系统函数，以保证对其进行的操作的正确性。</li>
+<li>OSEventPtr
+指针，只有在所定义的事件是邮箱或者消息队列时才使用。当所定义的事件是邮箱时，它指向一个消息，而当所定义的事件是消息队列时，它指向一个数据结构。</li>
+<li>OSEventTbl[] 和 OSEventGrp 很像前面讲到的 OSRdyTbl[] 和
+OSRdyGrp，只不过前两者包含的是等待某事件的
+task，而后两者包含的是系统中处于就绪状态的 task。</li>
+<li>OSEventCnt 当事件是一个信号量时，.OSEventCnt
+是用于信号量的计数器。</li>
+<li>OSEventType
+定义了事件的具体类型。它可以是信号量（OS_EVENT_SEM）、邮箱（OS_EVENT_TYPE_MBOX）或消息队列（OS_EVENT_TYPE_Q）中的一种。用户要根据该域的具体值来调用相应的系统函数，以保证对其进行的操作的正确性。</li>
 </ul>
-<p>对于等待事件任务的记录，uC/OS-II 又使用了与任务就绪表类似的位图，即定义了一个 UINT8 类型的数组 OSEventTbl[] 来作为等待事件任务的记录表，即等待任务表。</p>
-<p>等待任务表仍然以任务的优先级别为顺序为每个任务分配一个二进制位，并用该位为 1 来表示这一位对应的任务为事件的等待任务，否则不是等待任务。同样，为了加快对该表的访问速度，也定义了一个 UINT8 类型的变量 OSEventGrp 来表示等待任务表中的任务组。等待任务表 OSEventTbl[] 与变量 OSEventGrp 的示意图如图所示：</p>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/RTOS_ECB.png" alt=""></p>
-<p>至于等待任务的等待时限，则记录在等待任务的任务控制块 TCB 的成员 OSTCBDIy 中并在每个时钟节拍中断服务程序中对该数据进行维护。每当有任务的等待时限到时，将该务从等待任务表中删除，并使它进入就绪状态。</p>
-<h2 id="空事件控制块链表"><a class="markdownIt-Anchor" href="#空事件控制块链表"></a> 空事件控制块链表</h2>
-<p>在μC/OS-II 初始化时，系统在初始化函数 OSnit() 中创建 OS_MAX_EVEINTS 个空事件控制块并借用成员 OSEventPtr 作为链接指针，把这些空事件控制块链接成一个如图 5-11 所示的单向链表。由于链表中的所有控制叫做空事件控制块且尚未与具体事件相关联，因此该链表叫空事件控制块链表。以后，每当应用程序创建一个事件时，系统就会从链表中取出一个事件控制块，并对事件控制块进行初始化以描述该事件。而当用程序删除一个事件时，就会将该事件控制块归还给空事件控制块链表。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/rtos_event_list.png" alt=""></p>
-<h2 id="操作函数"><a class="markdownIt-Anchor" href="#操作函数"></a> 操作函数</h2>
-<p>当 task 请求一个事件的时候（OS_EventTaskWait()），而该事件正好被另一个 task 持有，那么当前 task 就会挂起放到 OSEventTbl 和 OSEventGrp 里。在持有事件的 task 释放事件的时候会再将请求该事件的 task 唤醒 (OS_EventTaskRdy())。从而实现两个 task 之间的同步（事件或资源）。</p>
+<p>对于等待事件任务的记录，uC/OS-II
+又使用了与任务就绪表类似的位图，即定义了一个 UINT8 类型的数组
+OSEventTbl[] 来作为等待事件任务的记录表，即等待任务表。</p>
+<p>等待任务表仍然以任务的优先级别为顺序为每个任务分配一个二进制位，并用该位为
+1
+来表示这一位对应的任务为事件的等待任务，否则不是等待任务。同样，为了加快对该表的访问速度，也定义了一个
+UINT8 类型的变量 OSEventGrp 来表示等待任务表中的任务组。等待任务表
+OSEventTbl[] 与变量 OSEventGrp 的示意图如图所示：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/RTOS_ECB.png"></p>
+<p>至于等待任务的等待时限，则记录在等待任务的任务控制块 TCB 的成员
+OSTCBDIy
+中并在每个时钟节拍中断服务程序中对该数据进行维护。每当有任务的等待时限到时，将该务从等待任务表中删除，并使它进入就绪状态。</p>
+<h2 id="空事件控制块链表">空事件控制块链表</h2>
+<p>在μC/OS-II 初始化时，系统在初始化函数 OSnit() 中创建 OS_MAX_EVEINTS
+个空事件控制块并借用成员 OSEventPtr
+作为链接指针，把这些空事件控制块链接成一个如图 5-11
+所示的单向链表。由于链表中的所有控制叫做空事件控制块且尚未与具体事件相关联，因此该链表叫空事件控制块链表。以后，每当应用程序创建一个事件时，系统就会从链表中取出一个事件控制块，并对事件控制块进行初始化以描述该事件。而当用程序删除一个事件时，就会将该事件控制块归还给空事件控制块链表。
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/rtos_event_list.png"></p>
+<h2 id="操作函数">操作函数</h2>
+<p>当 task
+请求一个事件的时候（OS_EventTaskWait()），而该事件正好被另一个 task
+持有，那么当前 task 就会挂起放到 OSEventTbl 和 OSEventGrp
+里。在持有事件的 task 释放事件的时候会再将请求该事件的 task 唤醒
+(OS_EventTaskRdy())。从而实现两个 task 之间的同步（事件或资源）。</p>
 <p>其他信号量、互斥信号量、消息队列、消息邮箱等实现原理是相同的，这里不再一一列出了。</p>
-<h1 id="统计-task"><a class="markdownIt-Anchor" href="#统计-task"></a> 统计 task</h1>
+<h1 id="统计-task">统计 task</h1>
 <p>ucos 计算 CPU 利用率的实现方法是：</p>
 <ul>
 <li>在运行 task 之前计算出空闲 task 运行的最大速率 OSIdleCtrMax。</li>
@@ -355,7 +396,7 @@
 </ul>
 <p>就是通过计算 cpu 进入空闲 task 的比例来推算出 cpu 利用率。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">OSCPUUsage   = (INT8U)(<span class="number">100L</span> - OSIdleCtrRun / OSIdleCtrMax);</span><br></pre></td></tr></tbody></table></figure>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<h1 id="参考文献">参考文献</h1>
 <p>《嵌入式实时操作系统 ucos-ii 教程》<br>
 《周慈航-基于嵌入式实时操作系统的程序设计技术》<br>
 《嵌入式实时操作系统μCOS-II原理及应用-任哲》</p>

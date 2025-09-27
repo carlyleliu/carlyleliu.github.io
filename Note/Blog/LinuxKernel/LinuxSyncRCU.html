@@ -159,7 +159,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#rcu-%E6%A6%82%E8%BF%B0"><span class="nav-text"> RCU 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E-rcu-%E7%9A%84%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E4%BE%8B%E5%AD%90"><span class="nav-text"> 关于 RCU 的一个简单例子</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%8F%E5%85%B8-rcu-%E5%92%8C-tree-rcu"><span class="nav-text"> 经典 RCU 和 Tree RCU</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#rcu-%E6%A6%82%E8%BF%B0"><span class="nav-text">RCU 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%B3%E4%BA%8E-rcu-%E7%9A%84%E4%B8%80%E4%B8%AA%E7%AE%80%E5%8D%95%E4%BE%8B%E5%AD%90"><span class="nav-text">关于 RCU 的一个简单例子</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%8F%E5%85%B8-rcu-%E5%92%8C-tree-rcu"><span class="nav-text">经典 RCU 和 Tree RCU</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -247,55 +247,106 @@
       
       
       <div class="post-body">
-          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/syncRCU.png" alt=""><br>
+          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/syncRCU.png">
 <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YWMzNzBlM2U3NDA3NGNmODlhMDI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h1 id="rcu-概述"><a class="markdownIt-Anchor" href="#rcu-概述"></a> RCU 概述</h1>
-<p>RCU 的全称 Read-Copy-Update，它是 Linux 内核中一种重要的同步机制。Linux 内核中已有了原子操作、自旋锁、读写自旋锁、读写信号量、互斥锁等锁机制，为什么要单独设计一个比它们复杂得多的新机制呢？回忆自旋锁、读写信号量和互斥锁的实现，它们都使用了原子操作指令，即原子地访问内存，多 CPU 争用共享的变量会让高速缓存一致性变得很糟，使得性能下降。</p>
-<p>以读写信号量为例，除了上述缺点外，读写信号量还有一个致命弱点，它允许多个读者同时存在，但是读者和写者不能同时存在。因此 RCU 机制要实现的目标是，读者线程没有同步开销，或者说同步开销变得很小，甚至可以忽略不计，不需要额外的锁，不需要使用原子操作指令和内存屏障指令，即可畅通无阻地访问；而把需要同步的任务交给写者线程，写者线程等待所有读者线程完成后才会把旧数据销毁。</p>
-<p>在 RCU 中，如果有多个写者同时存在，那么需要额外的保护机制。RCU 机制的原理可以概括为 RCU 记录了所有指向共享数据的指针的使用者，当要修改共享数据时，首先创建一个副本，在副本中修改。所有读者线程离开读者临界区之后，指针指向修改后的副本，并且删除旧数据。</p>
-<p>RCU 的一个重要的应用场景是链表，链表可以有效地提高遍历读取数据的效率。读取链表成员数据时通常只需要 rcu_read_lock() 函数，允许多个线程同时读取该链表，并且允许一个线程同时修改链表。那为什么这个过程能保证链表访问的正确性呢？<br>
-在读者遍历链表时，假设另外一个线程删除了一个节点。删除线程会把这个节点从链表中移出，但不会直接销毁它。RCU 会等到所有读线程读取完成后，才销毁这个节点。<br>
-RCU 提供的接口如下。</p>
+<h1 id="rcu-概述">RCU 概述</h1>
+<p>RCU 的全称 Read-Copy-Update，它是 Linux
+内核中一种重要的同步机制。Linux
+内核中已有了原子操作、自旋锁、读写自旋锁、读写信号量、互斥锁等锁机制，为什么要单独设计一个比它们复杂得多的新机制呢？回忆自旋锁、读写信号量和互斥锁的实现，它们都使用了原子操作指令，即原子地访问内存，多
+CPU 争用共享的变量会让高速缓存一致性变得很糟，使得性能下降。</p>
+<p>以读写信号量为例，除了上述缺点外，读写信号量还有一个致命弱点，它允许多个读者同时存在，但是读者和写者不能同时存在。因此
+RCU
+机制要实现的目标是，读者线程没有同步开销，或者说同步开销变得很小，甚至可以忽略不计，不需要额外的锁，不需要使用原子操作指令和内存屏障指令，即可畅通无阻地访问；而把需要同步的任务交给写者线程，写者线程等待所有读者线程完成后才会把旧数据销毁。</p>
+<p>在 RCU 中，如果有多个写者同时存在，那么需要额外的保护机制。RCU
+机制的原理可以概括为 RCU
+记录了所有指向共享数据的指针的使用者，当要修改共享数据时，首先创建一个副本，在副本中修改。所有读者线程离开读者临界区之后，指针指向修改后的副本，并且删除旧数据。</p>
+<p>RCU
+的一个重要的应用场景是链表，链表可以有效地提高遍历读取数据的效率。读取链表成员数据时通常只需要
+rcu_read_lock()
+函数，允许多个线程同时读取该链表，并且允许一个线程同时修改链表。那为什么这个过程能保证链表访问的正确性呢？
+在读者遍历链表时，假设另外一个线程删除了一个节点。删除线程会把这个节点从链表中移出，但不会直接销毁它。RCU
+会等到所有读线程读取完成后，才销毁这个节点。 RCU 提供的接口如下。</p>
 <ul>
 <li>rcu_read_lock()/ rcu_read_unlock()：组成一个 RCU 读者临界区</li>
-<li>rcu_dereference()：用于获取被 RCU 保护的指针，读者线程要访问 RCU 保护的共享数据，需要使用该函数创建一个新指针，并且指向被 RCU 保护的指针</li>
-<li>rcu_assign_pointer()：通常用于写者线程。在写者线程完成新数据的修改后，调用该接口可以让被 RCU 保护的指针指向新创建的数据，用 RCU 的术语是发布了更新后的数据</li>
+<li>rcu_dereference()：用于获取被 RCU 保护的指针，读者线程要访问 RCU
+保护的共享数据，需要使用该函数创建一个新指针，并且指向被 RCU
+保护的指针</li>
+<li>rcu_assign_pointer()：通常用于写者线程。在写者线程完成新数据的修改后，调用该接口可以让被
+RCU 保护的指针指向新创建的数据，用 RCU 的术语是发布了更新后的数据</li>
 <li>synchronize_rcu()：同步等待所有现存的读访问完成</li>
 <li>call_rcu()：注册一个回调函数，当所有现存的读访问完成后，调用这个回调函数销毁旧数据</li>
 </ul>
-<h1 id="关于-rcu-的一个简单例子"><a class="markdownIt-Anchor" href="#关于-rcu-的一个简单例子"></a> 关于 RCU 的一个简单例子</h1>
-<p>下面通过关于 RCU 的一个简单例子来理解上述接口的含义，该例子来源于内核源代码中的 Documents/RCU/whatisrcu.rst，并且省略了一些异常处理情况。</p>
+<h1 id="关于-rcu-的一个简单例子">关于 RCU 的一个简单例子</h1>
+<p>下面通过关于 RCU
+的一个简单例子来理解上述接口的含义，该例子来源于内核源代码中的
+Documents/RCU/whatisrcu.rst，并且省略了一些异常处理情况。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line">《关于 RCU 的一个简单例子》</span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/spinlock.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span><span class="string">&lt;linux/rcupdate.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/kthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;linux/delay.h&gt;</span></span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">foo</span></span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">    <span class="type">int</span> a:</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">rcu_head</span> <span class="title">rcu</span>;</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">foo</span> *<span class="title">g_ptr</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">myrcu_reader_thread</span><span class="params">(<span class="type">void</span>* data)</span> <span class="comment">//读者线程</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">foo</span> *<span class="title">p</span> =</span> <span class="literal">NULL</span>;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">        msleep(<span class="number">200</span>);</span><br><span class="line">        rcu_read_lock();</span><br><span class="line">        p = rcu_dereference(g_ptr);</span><br><span class="line">        <span class="keyword">if</span> (p) {</span><br><span class="line">            printk(<span class="string">"%s: read a = %d\n"</span>, __func__, p-&gt;a);</span><br><span class="line">        }</span><br><span class="line">        rcu_read_unlock();</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">myrcu_del</span><span class="params">(<span class="keyword">struct</span> rcu_head *rh)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">foo</span> *<span class="title">p</span> =</span> container_of(rh, <span class="keyword">struct</span> foo, rcu);</span><br><span class="line">    printk(<span class="string">"%s: read a = %d\n"</span>, __func__, p-&gt;a);</span><br><span class="line">    kfree(p);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">myrcu_writer_thread</span><span class="params">(<span class="type">void</span>* p)</span> <span class="comment">//写者线程</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">foo</span> *<span class="title">new</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">foo</span> *<span class="title">old</span>;</span></span><br><span class="line">    <span class="type">int</span> value = (<span class="type">unsigned</span> <span class="type">int</span>)p;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">        msleep(<span class="number">400</span>);</span><br><span class="line">        <span class="class"><span class="keyword">struct</span> <span class="title">foo</span> *<span class="title">new_ptr</span> =</span> kmalloc(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> foo), GFP_KERNEL);</span><br><span class="line">        old = g_ptr;</span><br><span class="line">        printk(<span class="string">"%s: read a = %d\n"</span>, __func__, value);</span><br><span class="line">        *new_ptr = *old;</span><br><span class="line">        new_ptr-&gt;a = value;</span><br><span class="line">        rcu_assign_pointer(g_ptr, new_ptr);</span><br><span class="line">        call_rcu(&amp;old_rcu, myrcu_del);</span><br><span class="line">        value++;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">my_test_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">reader_thread</span>;</span></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">task_struct</span> *<span class="title">writer_thread</span>;</span></span><br><span class="line">    <span class="type">int</span> value = <span class="number">5</span>;</span><br><span class="line"></span><br><span class="line">    printk(<span class="string">"BEN: my module init\n"</span>);</span><br><span class="line"></span><br><span class="line">    g_ptr = kzalloc(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> foo), GFP_KERNEL);</span><br><span class="line"></span><br><span class="line">    read_thread = kthread_run(myrcu_reader_thread, <span class="literal">NULL</span>, <span class="string">"rcu_reader"</span>);</span><br><span class="line">    writer_thread = kthread_run(myrcu_writer_thread, (<span class="type">void</span>*)(<span class="type">unsigned</span> <span class="type">long</span>)value, <span class="string">"rcu_writer"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">my_test_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    printk(<span class="string">"GoodBye\n"</span>);</span><br><span class="line">    <span class="keyword">if</span>(g_ptr)</span><br><span class="line">        kfree(g_ptr);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">MODULE_LICENCE(<span class="string">"GPL);</span></span><br><span class="line"><span class="string">module_init(my_test_init);</span></span><br></pre></td></tr></tbody></table></figure>
-<p>该例子的目的是通过 RCU 机制保护 my_test_init() 函数分配的共享数据结构 g_ptr，并创建一个读者线程和一个写者线程来模拟同步场景。对于 myrcu_reader_thread，注意以下几点。</p>
+<p>该例子的目的是通过 RCU 机制保护 my_test_init() 函数分配的共享数据结构
+g_ptr，并创建一个读者线程和一个写者线程来模拟同步场景。对于
+myrcu_reader_thread，注意以下几点。</p>
 <ul>
-<li>通过 rcu_read_lock() 函数和 rcu_read_unlock() 函数来构建一个读者临界区</li>
-<li>调用 rcu_dereference() 函数获取被保护数据的副本，即指针 p，这时 p 和 g_ptr 都指向旧的被保护数据</li>
+<li>通过 rcu_read_lock() 函数和 rcu_read_unlock()
+函数来构建一个读者临界区</li>
+<li>调用 rcu_dereference() 函数获取被保护数据的副本，即指针 p，这时 p 和
+g_ptr 都指向旧的被保护数据</li>
 <li>读者线程每隔 200ms 读取一次被保护数据</li>
 </ul>
 <p>对于 myrcu_writer_thread，注意以下几点。</p>
 <ul>
 <li>分配新的保护数据，并修改相应数据</li>
 <li>rcu_assign_pointer() 函数让 g_ptr 指向新数据</li>
-<li>call_rcu() 函数注册一个回调函数，确保所有对旧数据的引用都执行完成之后，才调用回调函数来删除旧数据</li>
+<li>call_rcu()
+函数注册一个回调函数，确保所有对旧数据的引用都执行完成之后，才调用回调函数来删除旧数据</li>
 <li>写者线程每隔 400ms 修改被保护数据</li>
 </ul>
-<p>上述过程如图所示：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/RCU.png" alt=""></p>
-<p>在所有访问结束之后，内核可以释放旧数据，关于何时释放旧数据，内核提供了两个接口函数–synchronize_rcu() 和 call_rcu()。</p>
-<h1 id="经典-rcu-和-tree-rcu"><a class="markdownIt-Anchor" href="#经典-rcu-和-tree-rcu"></a> 经典 RCU 和 Tree RCU</h1>
-<p>本节重点介绍经典 RCU 和 Tree RCU 的实现，可睡眠 RCU 和可抢占 RCU 留给读者学习。RCU 里有两个很重要的概念，分别是宽限期（ Grace Period，GP）和静止状态（Quiescent State, QS）。</p>
+<p>上述过程如图所示： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/RCU.png"></p>
+<p>在所有访问结束之后，内核可以释放旧数据，关于何时释放旧数据，内核提供了两个接口函数–synchronize_rcu()
+和 call_rcu()。</p>
+<h1 id="经典-rcu-和-tree-rcu">经典 RCU 和 Tree RCU</h1>
+<p>本节重点介绍经典 RCU 和 Tree RCU 的实现，可睡眠 RCU 和可抢占 RCU
+留给读者学习。RCU 里有两个很重要的概念，分别是宽限期（ Grace
+Period，GP）和静止状态（Quiescent State, QS）。</p>
 <ul>
-<li>宽限期：GP 有生命周期，有开始和结束之分。从 GP 开始算起，如果所有处于读者临界区的 CPU 都离开了临界区，也就是都至少经历了一次 QS，那么认为一个 GP 可以结束了。GP 结束后，RCU 会调用注册的回调函数，如销毁旧数据等。</li>
-<li>静止状态：在 RCU 设计中，如果一个 CPU 处于 RCU 读者临界区中，说明它的状态是活跃的：如果在时钟滴答中检测到该 CPU 处于用户模式或空闲状态，说明该 CPU 已经离开了读者临界区，那么它是 QS。在不支持抢占的 RCU 实现中，只要检测到 CPU 有上下文切换，就可以知道离开了读者临界区。</li>
+<li>宽限期：GP 有生命周期，有开始和结束之分。从 GP
+开始算起，如果所有处于读者临界区的 CPU
+都离开了临界区，也就是都至少经历了一次 QS，那么认为一个 GP
+可以结束了。GP 结束后，RCU 会调用注册的回调函数，如销毁旧数据等。</li>
+<li>静止状态：在 RCU 设计中，如果一个 CPU 处于 RCU
+读者临界区中，说明它的状态是活跃的：如果在时钟滴答中检测到该 CPU
+处于用户模式或空闲状态，说明该 CPU 已经离开了读者临界区，那么它是
+QS。在不支持抢占的 RCU 实现中，只要检测到 CPU
+有上下文切换，就可以知道离开了读者临界区。</li>
 </ul>
-<p>RCU 在开发 Linux2.5 内核时已经被添加到 Linux 内核中，但是在 Linux2.6.29 内核之前的 RCU 通常称为经典 RCU（ Classic RCU）。经典 RCU 在大型系统中遇到了性能问题，后来在 Linux2.6.29 内核中 IBM 的内核专家 Paul E. Mckenney 提出了 Tree RCU 的实现， Tree RCU 也称为 Hierarchical RCU。</p>
-<p>经典 RCU 的实现在超级大系统中遇到了问题，特别是有些系统的 CPU 内核超过了 1024 个，甚至达到 4096 个。经典 RCU 在判断是否完成一次 GP 时采用全局的 cpumask 图。如果每位表示一个 CPU，那么在 1024 个 CPU 内核的系统中， cpumask 位图就有 1024 位。每个 CPU 在 GP 开始时要设置位图中对应的位，GP 结束时要清除相应的位。全局的 cpumask 位图会导致很多 CPU 竞争使用，因此需要自旋锁来保护位图。这样导致锁争用变得很激烈，激烈程度随着 CPU 的个数线性递增。以 4 核 CPU 为例，经典 RCU 的实現如图所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/rcu1.png" alt=""></p>
-<p>而 Tree RCU 的实现巧妙地解决了 cpumask 位图竞争锁的问题，以上述 4 核 CPU 为例，假设 Tree RCU 以两个 CPU 为一个 rcu_node, 这样 4 个 CPU 被分配到两个 rcu_node，使用另外一个 rcu_node 来管理这两个 rcu_node。节点 1 管理 pu0 和 cpu1，节点 2 管理 pu2 和 cpu3。而节点 0 是根节点，管理节点 1 和节点 2。每个节点只需要两位的位图就可以管理各自的 CPU 或者节点，每个节点都通过各自的自旋锁来保护相应的位图。</p>
-<p>假设 4 个 CPU 都经历过一个 QS，那么 4 个 CPU 首先在 Leve0 的节点 1 和节点 2 上修改位图。对于节点 1 或者节点 2 来说，只有两个 CPU 竞争锁，这比经典 RCU 上的锁争用要减少一半。当节点 1 和节点 2 上的位图都被清除干浄后，才会清除上一级节点的位图，并且只有最后清除节点的 CPU 才有机会尝试清除上一级节点的位图。因此对于节点 0 来说，还是两个 CPU 争用锁。整个过程中只有两个 CPU 争用一个锁。这类似于足球比赛，进入四强的 4 支球队被分成上下半区，每个半区有两支球队，只有半决赛获胜的球队才能进入决赛。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/rcu2.png" alt=""></p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>RCU 在开发 Linux2.5 内核时已经被添加到 Linux 内核中，但是在
+Linux2.6.29 内核之前的 RCU 通常称为经典 RCU（ Classic RCU）。经典 RCU
+在大型系统中遇到了性能问题，后来在 Linux2.6.29 内核中 IBM 的内核专家
+Paul E. Mckenney 提出了 Tree RCU 的实现， Tree RCU 也称为 Hierarchical
+RCU。</p>
+<p>经典 RCU 的实现在超级大系统中遇到了问题，特别是有些系统的 CPU
+内核超过了 1024 个，甚至达到 4096 个。经典 RCU 在判断是否完成一次 GP
+时采用全局的 cpumask 图。如果每位表示一个 CPU，那么在 1024 个 CPU
+内核的系统中， cpumask 位图就有 1024 位。每个 CPU 在 GP
+开始时要设置位图中对应的位，GP 结束时要清除相应的位。全局的 cpumask
+位图会导致很多 CPU
+竞争使用，因此需要自旋锁来保护位图。这样导致锁争用变得很激烈，激烈程度随着
+CPU 的个数线性递增。以 4 核 CPU 为例，经典 RCU 的实現如图所示。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/rcu1.png"></p>
+<p>而 Tree RCU 的实现巧妙地解决了 cpumask 位图竞争锁的问题，以上述 4 核
+CPU 为例，假设 Tree RCU 以两个 CPU 为一个 rcu_node, 这样 4 个 CPU
+被分配到两个 rcu_node，使用另外一个 rcu_node 来管理这两个 rcu_node。节点
+1 管理 pu0 和 cpu1，节点 2 管理 pu2 和 cpu3。而节点 0 是根节点，管理节点
+1 和节点 2。每个节点只需要两位的位图就可以管理各自的 CPU
+或者节点，每个节点都通过各自的自旋锁来保护相应的位图。</p>
+<p>假设 4 个 CPU 都经历过一个 QS，那么 4 个 CPU 首先在 Leve0 的节点 1
+和节点 2 上修改位图。对于节点 1 或者节点 2 来说，只有两个 CPU
+竞争锁，这比经典 RCU 上的锁争用要减少一半。当节点 1 和节点 2
+上的位图都被清除干浄后，才会清除上一级节点的位图，并且只有最后清除节点的
+CPU 才有机会尝试清除上一级节点的位图。因此对于节点 0 来说，还是两个 CPU
+争用锁。整个过程中只有两个 CPU 争用一个锁。这类似于足球比赛，进入四强的
+4
+支球队被分成上下半区，每个半区有两支球队，只有半决赛获胜的球队才能进入决赛。
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/rcu2.png"></p>
+<h1 id="参考文献">参考文献</h1>
 <p>《奔跑吧 Linux 内核》</p>
 
       </div>

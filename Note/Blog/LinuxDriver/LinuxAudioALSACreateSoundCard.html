@@ -158,7 +158,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hw-buffer"><span class="nav-text"> HW Buffer</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B"><span class="nav-text"> 流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hw-buffer"><span class="nav-text">HW Buffer</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B"><span class="nav-text">流程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -246,36 +246,56 @@
       
       
       <div class="post-body">
-          <h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YzA2ZjYwZTNlNzQwNmUyMDNmMzkz">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/ALSA_Struct1.png" alt=""></p>
+          <h1 id="数据结构">数据结构</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YzA2ZjYwZTNlNzQwNmUyMDNmMzkz">原图<i class="fa fa-external-link-alt"></i></span>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/ALSA_Struct1.png"></p>
 <span id="more"></span>
 <ul>
-<li>snd_card: 是最顶层数据结构，通过链表挂载该 sound card 的所有设备 snd_device。</li>
+<li>snd_card: 是最顶层数据结构，通过链表挂载该 sound card 的所有设备
+snd_device。</li>
 <li>snd_pcm: 挂在 snd_card 下面的一个 snd_device。</li>
 <li>snd_pcm_str: 代表 playback stream 和 capture stream。</li>
-<li>snd_pcm_substream: 是 pcm 中间层的核心，绝大部分任务都是在 substream 中处理，尤其是他的 ops（snd_pcm_ops）字段，许多 user 空间的应用程序通过 alsa-lib 对驱动程序的请求都是由该结构中的函数处理。它的 runtime 字段则指向 snd_pcm_runtime 结构，snd_pcm_runtime 记录这 substream 的一些重要的软件和硬件运行环境和参数。</li>
+<li>snd_pcm_substream: 是 pcm 中间层的核心，绝大部分任务都是在 substream
+中处理，尤其是他的 ops（snd_pcm_ops）字段，许多 user 空间的应用程序通过
+alsa-lib 对驱动程序的请求都是由该结构中的函数处理。它的 runtime
+字段则指向 snd_pcm_runtime 结构，snd_pcm_runtime 记录这 substream
+的一些重要的软件和硬件运行环境和参数。</li>
 <li>snd_pcm_ops: 创建声卡需要提供的回调。</li>
-<li>snd_pcm_runtime: 运行时参数，包括 sample rate、channel、format 等参数，以及 buffer 相关信息。</li>
+<li>snd_pcm_runtime: 运行时参数，包括 sample rate、channel、format
+等参数，以及 buffer 相关信息。</li>
 <li>snd_pcm_harward: 硬件相关参数，创建声卡需要提供相关参数。</li>
 </ul>
-<h1 id="hw-buffer"><a class="markdownIt-Anchor" href="#hw-buffer"></a> HW Buffer</h1>
-<p>当 app 在调用 snd_pcm_writei 时，alsa core 将 app 传来的数据搬到 HW buffer（即 DMA buffer）中，alsa driver 从 HW buffer 中读取数据传输到硬件播放。</p>
-<p>ALSA buffer 是采用 ring buffer 来实现的。ring buffer 有多个 HW buffer 组成。HW buffer 一般是在 alsa driver 的 hw_params 函数中分配的一块大小为 buffer size 的 DMA buffer. 之所以采用多个 HW buffer 来组成 ring buffer, 是防止读写指针的前后位置频繁的互换（即写指针到达 HW buffer 边界时，就要回到 HW buffer 起始点）。</p>
-<p>ring buffer = n * HW buffer. 通常这个 n 比较大，在数据读写的过程中，很少会出现读写指针互换的情况。下图是 ALSA buffer 的实现以及读写指针更新的方法：</p>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/hw_buffer.png" alt=""></p>
+<h1 id="hw-buffer">HW Buffer</h1>
+<p>当 app 在调用 snd_pcm_writei 时，alsa core 将 app 传来的数据搬到 HW
+buffer（即 DMA buffer）中，alsa driver 从 HW buffer
+中读取数据传输到硬件播放。</p>
+<p>ALSA buffer 是采用 ring buffer 来实现的。ring buffer 有多个 HW buffer
+组成。HW buffer 一般是在 alsa driver 的 hw_params 函数中分配的一块大小为
+buffer size 的 DMA buffer. 之所以采用多个 HW buffer 来组成 ring buffer,
+是防止读写指针的前后位置频繁的互换（即写指针到达 HW buffer
+边界时，就要回到 HW buffer 起始点）。</p>
+<p>ring buffer = n * HW buffer. 通常这个 n
+比较大，在数据读写的过程中，很少会出现读写指针互换的情况。下图是 ALSA
+buffer 的实现以及读写指针更新的方法：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/hw_buffer.png"></p>
 <ul>
-<li>hw_ptr_base: 是当前 HW buffer 在 Ring buffer 中的起始位置。当读指针到达 HW buffer 尾部时，hw_ptr_base 按 buffer size 移动。</li>
-<li>hw_ptr: 即 HW buffer 的读指针。alsa driver 将数据从 HW buffer 中读走并送到声卡硬件时，hw_ptr 就会移动到新位置。</li>
-<li>appl_ptr: 即 HW buffer 的写指针。app 在调用 snd_pcm_write 写数据，alsa core 将数据 copy 到 HW buffer 后，appl_ptr 就更新。</li>
+<li>hw_ptr_base: 是当前 HW buffer 在 Ring buffer
+中的起始位置。当读指针到达 HW buffer 尾部时，hw_ptr_base 按 buffer size
+移动。</li>
+<li>hw_ptr: 即 HW buffer 的读指针。alsa driver 将数据从 HW buffer
+中读走并送到声卡硬件时，hw_ptr 就会移动到新位置。</li>
+<li>appl_ptr: 即 HW buffer 的写指针。app 在调用 snd_pcm_write
+写数据，alsa core 将数据 copy 到 HW buffer 后，appl_ptr 就更新。</li>
 <li>boundary: 即 Ring buffer 边界。</li>
-<li>hw_ofs: 是读指针在当前 HW buffer 中的位置。由 alsa driver 的 pointer() 返回。</li>
+<li>hw_ofs: 是读指针在当前 HW buffer 中的位置。由 alsa driver 的
+pointer() 返回。</li>
 <li>appl_ofs: 是写指针在当前 HW buffer 中的位置。</li>
 </ul>
-<p>hw_ptr 的更新是通过调用 snd_pcm_update_hw_ptr() 完成。此函数在 app 写数据时会调用，也会在硬件中断时通过 snd_pcm_peroid_elapsed 调用</p>
-<h1 id="流程"><a class="markdownIt-Anchor" href="#流程"></a> 流程</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YmMwYzUxZTA4NTMwNmQ3NDJlYzkz">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/snd_card_register1.png" alt=""></p>
+<p>hw_ptr 的更新是通过调用 snd_pcm_update_hw_ptr() 完成。此函数在 app
+写数据时会调用，也会在硬件中断时通过 snd_pcm_peroid_elapsed 调用</p>
+<h1 id="流程">流程</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YmMwYzUxZTA4NTMwNmQ3NDJlYzkz">原图<i class="fa fa-external-link-alt"></i></span>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/snd_card_register1.png"></p>
 <ul>
 <li>分配并设置 snd_card 数据结构</li>
 <li>创建 snd_pcm instance</li>
@@ -283,7 +303,7 @@
 <li>分配 DMA 内存</li>
 <li>注册声卡</li>
 </ul>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<h1 id="参考文献">参考文献</h1>
 <p>《Linux 设备驱动开发-约翰-马德奥》</p>
 
       </div>

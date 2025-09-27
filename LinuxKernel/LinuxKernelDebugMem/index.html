@@ -35,8 +35,8 @@
 <meta property="article:modified_time" content="2025-09-27T04:36:15.359Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Linux">
-<meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Debug">
+<meta property="article:tag" content="Kernel">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Debugftrace.png">
 
@@ -155,7 +155,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#slub_debug"><span class="nav-text"> slub_debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%92%8C%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8"><span class="nav-text"> 配置和编译内核</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0-slub_debug-%E9%80%89%E9%A1%B9"><span class="nav-text"> 添加 slub_debug 选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91-slabinfo-%E5%B7%A5%E5%85%B7"><span class="nav-text"> 编译 slabinfo 工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C"><span class="nav-text"> 运行</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#kasan-%E5%86%85%E5%AD%98%E6%A3%80%E6%B5%8B"><span class="nav-text"> KASAN 内存检测</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#slub_debug"><span class="nav-text">slub_debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E5%92%8C%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8"><span class="nav-text">配置和编译内核</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0-slub_debug-%E9%80%89%E9%A1%B9"><span class="nav-text">添加 slub_debug 选项</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E8%AF%91-slabinfo-%E5%B7%A5%E5%85%B7"><span class="nav-text">编译 slabinfo 工具</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C"><span class="nav-text">运行</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#kasan-%E5%86%85%E5%AD%98%E6%A3%80%E6%B5%8B"><span class="nav-text">KASAN 内存检测</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -314,7 +314,7 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Debugftrace.png" alt=""><br>
+    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Debugftrace.png">
 <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM5YjAzNWU0MDFmZDA3MGJiYTBlYmE=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
 <p>一般的内存访问错误如下。</p>
@@ -326,34 +326,43 @@
 <li>栈溢出（stack overflow）</li>
 </ul>
 <p>本节主要介绍 Linux 内核中常用的内存检测的工具和方法。</p>
-<h1 id="slub_debug"><a class="markdownIt-Anchor" href="#slub_debug"></a> slub_debug</h1>
-<p>在 Linux 内核中，对于小块内存分配，大量使用 slab/slub 分配器。slab/slub 分配器提供了一个内存检测功能，很方便在产品开发阶段进行内存检查。内存访问中比较容易出现错误的地方如下。</p>
+<h1 id="slub_debug">slub_debug</h1>
+<p>在 Linux 内核中，对于小块内存分配，大量使用 slab/slub
+分配器。slab/slub
+分配器提供了一个内存检测功能，很方便在产品开发阶段进行内存检查。内存访问中比较容易出现错误的地方如下。</p>
 <ul>
 <li>访问己经被释放的内存</li>
 <li>越界访问</li>
 <li>释放己经释放过的内存</li>
 </ul>
-<h2 id="配置和编译内核"><a class="markdownIt-Anchor" href="#配置和编译内核"></a> 配置和编译内核</h2>
-<p>首先，需要重新配置内核选项，打开 CONFIG_SLUB、CONFIG_SLUB_DEBUG_ON 以及 CONFIG_SLUB_STATS 选项。</p>
+<h2 id="配置和编译内核">配置和编译内核</h2>
+<p>首先，需要重新配置内核选项，打开 CONFIG_SLUB、CONFIG_SLUB_DEBUG_ON
+以及 CONFIG_SLUB_STATS 选项。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># CONFIG_SLAB is not <span class="built_in">set</span></span><br><span class="line">CONFIG_SLUB=y</span><br><span class="line">CONFIG_SLUB_DEBUG_ON=y</span><br><span class="line">CONFIG_SLUB_STATS=y</span><br></pre></td></tr></tbody></table></figure>
 <p>修改了上述配置文件之后，需要重新编译内核并更新根文件系统。</p>
-<h2 id="添加-slub_debug-选项"><a class="markdownIt-Anchor" href="#添加-slub_debug-选项"></a> 添加 slub_debug 选项</h2>
+<h2 id="添加-slub_debug-选项">添加 slub_debug 选项</h2>
 <p>在内核 commandline 中添加 slub_debug 字符串来打开该功能。</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">-append <span class="string">"nointrd root=/dev/vda rootfstype=ext4 rw loglevel=8 slub_debug=UFPZ"</span> \</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="编译-slabinfo-工具"><a class="markdownIt-Anchor" href="#编译-slabinfo-工具"></a> 编译 slabinfo 工具</h2>
+<h2 id="编译-slabinfo-工具">编译 slabinfo 工具</h2>
 <p>在 Linux-5.0 内核的 tools/vm 目录下编译 slabinfo 工具。</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># gcc slabinfo.c -o slabinfo</span></span><br></pre></td></tr></tbody></table></figure>
-<h2 id="运行"><a class="markdownIt-Anchor" href="#运行"></a> 运行</h2>
+<h2 id="运行">运行</h2>
 <p>加载驱动或运行程序，启动 slabinfo：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ slabinfo -v</span><br></pre></td></tr></tbody></table></figure>
 <p>之后如果有内存越界访问就会有异常 log 输出。</p>
-<h1 id="kasan-内存检测"><a class="markdownIt-Anchor" href="#kasan-内存检测"></a> KASAN 内存检测</h1>
-<p>KASAN 在 Linux4.0 内核中被合并到官方 Linux 内核，他是一个动态检测内存错误的工具，可以检查内存越界访问和使用已经被释放的内存等问题。Linux 内核早期有一个类似的工具 kmemcheck，KASAN 比 kmemeheck 的检测速度更快。要使用 KASAN，必须打开 CONFIG_KASAN 等选项。</p>
+<h1 id="kasan-内存检测">KASAN 内存检测</h1>
+<p>KASAN 在 Linux4.0 内核中被合并到官方 Linux
+内核，他是一个动态检测内存错误的工具，可以检查内存越界访问和使用已经被释放的内存等问题。Linux
+内核早期有一个类似的工具 kmemcheck，KASAN 比 kmemeheck
+的检测速度更快。要使用 KASAN，必须打开 CONFIG_KASAN 等选项。</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;<span class="built_in">arch</span>/arm64/configs/debian_defconfig&gt;</span><br><span class="line">CONFIG_HAVE_ARCH_KASAN=y</span><br><span class="line">CONFIG_KASAN=y</span><br><span class="line">CONFIG_KASAN_OUTLINE=y</span><br><span class="line">CONFIG_KASAN_INLINE=y</span><br><span class="line">CONFIG_TEST_KASAN=m</span><br></pre></td></tr></tbody></table></figure>
-<p>使用起来比较简单，不需要像 slab_debug 一样还有单独运行 slabinfo 程序。KASAN 启动后会动态监测内存访问，如果出错会打印相关 log 信息。</p>
-<p>KASAN 总体效率比 slub_debug 要高得多，并且支持的内存错误访问类型更多。缺点是 KASAN 需要较新的内核（Linx4.4 内核才支持 ARM64 版本的 KASAN）和较新的 GCC 编译<br>
+<p>使用起来比较简单，不需要像 slab_debug 一样还有单独运行 slabinfo
+程序。KASAN 启动后会动态监测内存访问，如果出错会打印相关 log 信息。</p>
+<p>KASAN 总体效率比 slub_debug
+要高得多，并且支持的内存错误访问类型更多。缺点是 KASAN
+需要较新的内核（Linx4.4 内核才支持 ARM64 版本的 KASAN）和较新的 GCC 编译
 器（GCC-4.9.2 以上）。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<h1 id="参考文献">参考文献</h1>
 <p>《奔跑吧 Linux 内核》</p>
 
     </div>
@@ -394,8 +403,8 @@
 
           <div class="post-tags">
               <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
-              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
               <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
+              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
           </div>
 
         

@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="Linux SPI 驱动框架 对于 SPI 的驱动框架与 I2C 是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供 transfer 函数，进行 spi 协议的收发。 另一层是设备驱动层，基于 spi_bus_type，在 driver 里则使用 spi_read、spi_writer 等函数，最终也会调用到 controller-&gt;transfer">
+    <meta name="description" content="Linux SPI 驱动框架 对于 SPI 的驱动框架与 I2C 是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供 transfer 函数，进行 spi 协议的收发。 另一层是设备驱动层，基于 spi_bus_type，在 driver 里则使用 spi_read、spi_writer 等函数，最终也会调用到 controller-&gt;transfer 函">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Linux 驱动之 SPI 子系统">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxDriverSPI.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="Linux SPI 驱动框架 对于 SPI 的驱动框架与 I2C 是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供 transfer 函数，进行 spi 协议的收发。 另一层是设备驱动层，基于 spi_bus_type，在 driver 里则使用 spi_read、spi_writer 等函数，最终也会调用到 controller-&gt;transfer">
+<meta property="og:description" content="Linux SPI 驱动框架 对于 SPI 的驱动框架与 I2C 是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供 transfer 函数，进行 spi 协议的收发。 另一层是设备驱动层，基于 spi_bus_type，在 driver 里则使用 spi_read、spi_writer 等函数，最终也会调用到 controller-&gt;transfer 函">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/SPI_Struct.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/spi4mode.png">
@@ -156,7 +156,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#linux-spi-%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6"><span class="nav-text"> Linux SPI 驱动框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#linux-spi-%E9%A9%B1%E5%8A%A8%E6%A1%86%E6%9E%B6"><span class="nav-text">Linux SPI 驱动框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -244,44 +244,57 @@
       
       
       <div class="post-body">
-          <h1 id="linux-spi-驱动框架"><a class="markdownIt-Anchor" href="#linux-spi-驱动框架"></a> Linux SPI 驱动框架</h1>
-<p>对于 SPI 的驱动框架与 I2C 是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供 transfer 函数，进行 spi 协议的收发。</p>
-<p>另一层是设备驱动层，基于 spi_bus_type，在 driver 里则使用 spi_read、spi_writer 等函数，最终也会调用到 controller-&gt;transfer 函数进行发送接收。</p>
+          <h1 id="linux-spi-驱动框架">Linux SPI 驱动框架</h1>
+<p>对于 SPI 的驱动框架与 I2C
+是大致一致的，也分为两层，控制器驱动程序层叫 spi_controller ，主要提供
+transfer 函数，进行 spi 协议的收发。</p>
+<p>另一层是设备驱动层，基于 spi_bus_type，在 driver 里则使用
+spi_read、spi_writer 等函数，最终也会调用到 controller-&gt;transfer
+函数进行发送接收。</p>
 <span id="more"></span>
-<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
+<h1 id="数据结构">数据结构</h1>
 <p>整体数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU0NzQ2Mzc2ODkyMWZhMjUwYTJk">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/SPI_Struct.png" alt=""></p>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/SPI_Struct.png"></p>
 <ul>
-<li>spi_controller 结构体用于描述一个 spi 控制器，可以类比 iic 的 i2c_adapt。</li>
-<li>spi_device 结构体用于描述一个 spi 设备，可以类比于 i2c_client 结构体。</li>
+<li>spi_controller 结构体用于描述一个 spi 控制器，可以类比 iic 的
+i2c_adapt。</li>
+<li>spi_device 结构体用于描述一个 spi 设备，可以类比于 i2c_client
+结构体。</li>
 </ul>
-<p>spi_device 结构里有个 mode 很重要下面是其详细描述，SPI 模式主要有两个特征：</p>
+<p>spi_device 结构里有个 mode 很重要下面是其详细描述，SPI
+模式主要有两个特征：</p>
 <ul>
-<li>
-<p>CPOL：这是时钟极性：</p>
+<li>CPOL：这是时钟极性：
 <ul>
-<li>0：初始时钟状态为低电平，第一个时钟边沿是上升沿</li>
+<li>0：初始时钟状态为低电平，第一个时钟边沿是上升沿<br>
+</li>
 <li>1：初始时钟状态为高电平，第一个时钟边沿是下降沿</li>
-</ul>
-</li>
-<li>
-<p>CPHA：这是时钟相位，选择在哪个边沿采样数据：</p>
+</ul></li>
+<li>CPHA：这是时钟相位，选择在哪个边沿采样数据：
 <ul>
-<li>0：数据在下降沿锁存，输出在上升沿改变</li>
-<li>1：数据在上升沿锁存，并在下降沿输出</li>
-</ul>
+<li>0：数据在下降沿锁存，输出在上升沿改变<br>
 </li>
+<li>1：数据在上升沿锁存，并在下降沿输出</li>
+</ul></li>
 </ul>
-<p>这有四种 SPI 模式，如下：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/spi4mode.png" alt=""></p>
+<p>这有四种 SPI 模式，如下： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/spi4mode.png"></p>
 <ul>
 <li>spi_driver 用于驱动 spi 设备，可以类比 i2c_driver 结构体。</li>
-<li>spi_message 用于描述 spi 传输的消息，由多个 spi_transfer 段组成，可以类比 i2c_message 结构体。</li>
-<li>spi_transfer 代表一个读写缓冲对，包含接收缓冲区及发送缓冲区，其实，spi_transfer 的发送是通过构建 spi_message 实现，通过将 spi_transfer 中的链 transfer_list 链接到 spi_message 中的 transfers，再以 spi_message 形势向底层发送数据。</li>
+<li>spi_message 用于描述 spi 传输的消息，由多个 spi_transfer
+段组成，可以类比 i2c_message 结构体。</li>
+<li>spi_transfer
+代表一个读写缓冲对，包含接收缓冲区及发送缓冲区，其实，spi_transfer
+的发送是通过构建 spi_message 实现，通过将 spi_transfer 中的链
+transfer_list 链接到 spi_message 中的 transfers，再以 spi_message
+形势向底层发送数据。</li>
 </ul>
-<h2 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h2>
-<p>关于 spi 的实现其实也是分为 controller 和设备及设备驱动这三部分，controller 一般由 soc 厂商编写好了驱动通过 spi_register_controller 向内核注册一个 controller 设备并挂载在 spi_bus 总线下，而 device 和 device_driver 的实现根 platform 或 iic 的实现也是大同小异，这里不做详细的分析了，感兴趣的可以查看内核源码。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<h2 id="实现">实现</h2>
+<p>关于 spi 的实现其实也是分为 controller
+和设备及设备驱动这三部分，controller 一般由 soc 厂商编写好了驱动通过
+spi_register_controller 向内核注册一个 controller 设备并挂载在 spi_bus
+总线下，而 device 和 device_driver 的实现根 platform 或 iic
+的实现也是大同小异，这里不做详细的分析了，感兴趣的可以查看内核源码。</p>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly93d3cud2lraXdhbmQuY29tL3poLWNuLyVFNSVCQSU4RiVFNSU4OCU5NyVFNSU5MSVBOCVFOSU4MiU4QSVFNCVCQiU4QiVFOSU5RCVBMg==">https://www.wikiwand.com/zh-cn/%E5%BA%8F%E5%88%97%E5%91%A8%E9%82%8A%E4%BB%8B%E9%9D%A2<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpenVvYmluMi9hcnRpY2xlL2RldGFpbHMvNTE3MzU5NjM=">https://blog.csdn.net/lizuobin2/article/details/51735963<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3pob3V0YW9wb3dlci9hcnRpY2xlL2RldGFpbHMvOTk4NjY3NzM=">https://blog.csdn.net/zhoutaopower/article/details/99866773<i class="fa fa-external-link-alt"></i></span><br>

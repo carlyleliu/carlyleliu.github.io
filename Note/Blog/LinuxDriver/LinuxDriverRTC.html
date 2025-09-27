@@ -157,7 +157,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sysfs-%E6%8E%A5%E5%8F%A3"><span class="nav-text"> sysfs 接口</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hwclock-%E5%B7%A5%E5%85%B7"><span class="nav-text"> hwclock 工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sysfs-%E6%8E%A5%E5%8F%A3"><span class="nav-text">sysfs 接口</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#hwclock-%E5%B7%A5%E5%85%B7"><span class="nav-text">hwclock 工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -245,84 +245,102 @@
       
       
       <div class="post-body">
-          <h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
-<p>RTC 和系统时钟有不同的用途。前者是硬件时钟，以非易失方式维护绝对时间和日期，而后者是内核维护的软件时钟，用于实现 gettimeofday（2）和 time（2）系统调用，以及在文件上设置时间戳等。系统时钟报告从起点开始的秒和微秒，起点定义为 POSIX 纪元：1970-01-0100:00：00 +0000(UTC)。</p>
+          <h1 id="概述">概述</h1>
+<p>RTC
+和系统时钟有不同的用途。前者是硬件时钟，以非易失方式维护绝对时间和日期，而后者是内核维护的软件时钟，用于实现
+gettimeofday（2）和
+time（2）系统调用，以及在文件上设置时间戳等。系统时钟报告从起点开始的秒和微秒，起点定义为
+POSIX 纪元：1970-01-0100:00：00 +0000(UTC)。</p>
 <span id="more"></span>
-<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
-<p>rtc 数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDU5MTYwNzkxMjk1NzEwYjZiNjM0">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/RTC_Struct.png" alt=""></p>
+<h1 id="数据结构">数据结构</h1>
+<p>rtc 数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDU5MTYwNzkxMjk1NzEwYjZiNjM0">原图<i class="fa fa-external-link-alt"></i></span>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/RTC_Struct.png"></p>
 <ul>
-<li>
-<p>rtc_device：<br>
-内核中使用 rtc_device 结构体来抽象一个 rtc 设备，rtc_device 结构体屏蔽了不同 RTC 硬件之间的差异，通过 rtc_class_ops 结构体为上层提供了访问硬件设备的统一接口</p>
-</li>
-<li>
-<p>rtc_class_ops：<br>
-该结构体提供了对底层差异的抽象，rtc_device 用于描述一个 rtc 设备，而访问该设备的方法对于不同的设备是不同的，rtc_class_ops 用于抽象对 rtc 设备的访问，对上屏蔽了底层操作的差异。编写一个 rtc 设备驱动就是构造一个 rtc_device 结构体并注册进系统，rtc 的访问方法就是 rtc_class_ops 结构体</p>
-</li>
-<li>
-<p>rtc_time：<br>
-这是一个描述时间的结构体</p>
-</li>
-<li>
-<p>rtc_timer：<br>
-用于对 rtc 设备的管理</p>
-</li>
+<li><p>rtc_device： 内核中使用 rtc_device 结构体来抽象一个 rtc
+设备，rtc_device 结构体屏蔽了不同 RTC 硬件之间的差异，通过 rtc_class_ops
+结构体为上层提供了访问硬件设备的统一接口</p></li>
+<li><p>rtc_class_ops： 该结构体提供了对底层差异的抽象，rtc_device
+用于描述一个 rtc
+设备，而访问该设备的方法对于不同的设备是不同的，rtc_class_ops 用于抽象对
+rtc 设备的访问，对上屏蔽了底层操作的差异。编写一个 rtc
+设备驱动就是构造一个 rtc_device 结构体并注册进系统，rtc 的访问方法就是
+rtc_class_ops 结构体</p></li>
+<li><p>rtc_time： 这是一个描述时间的结构体</p></li>
+<li><p>rtc_timer： 用于对 rtc 设备的管理</p></li>
 </ul>
-<h1 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h1>
-<p>rtc 实现的整体框架如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDYxNzMxZWZhZDQyNDNkNDc0MTA2">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/RTC_Framework.png" alt=""></p>
+<h1 id="实现">实现</h1>
+<p>rtc 实现的整体框架如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDYxNzMxZWZhZDQyNDNkNDc0MTA2">原图<i class="fa fa-external-link-alt"></i></span>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/RTC_Framework.png"></p>
 <ul>
-<li>在 rtc 设备驱动模型的最上层，针对 procfs 文件、sysfs 属性文件、字符设备文件相关的处理接口，分别抽象出 rtc-dev 相关接口、rtc-sysfs 相关接口、rtc-procfs 相关接口，分别存储在 rtc-dev.c、rtc-sysfs.c、rtc-proc.c 这三个文件中。</li>
-<li>在 rtc-dev.c、rtc-sysfs.c、rtc-proc.c 中定义了这三类文件的操作接口（open、read、write、close…）。</li>
-<li>上述三类文件的操作接口（open、read、write、close…），会借助 rtc interface 接口，调用各设备的操作接口，rtc interface 接口可以理解为调用设备驱动的桥梁；<br>
-针对 rtc 设备驱动，均需要实现 rtc class ops 中的方法，以便被 rtc 上层接口调用，从而完成与 rtc 设备的通信操作。</li>
-<li>应用程序通过系统调用接口、vfs 相关接口、设备文件系统的 inode 的操作接口、sysfs 文件系统的 inode 的操作接口、procfs 文件系统的 inode 的操作接口，方才进入 rtc 设备驱动模型的处理接口中。</li>
+<li>在 rtc 设备驱动模型的最上层，针对 procfs 文件、sysfs
+属性文件、字符设备文件相关的处理接口，分别抽象出 rtc-dev
+相关接口、rtc-sysfs 相关接口、rtc-procfs 相关接口，分别存储在
+rtc-dev.c、rtc-sysfs.c、rtc-proc.c 这三个文件中。</li>
+<li>在 rtc-dev.c、rtc-sysfs.c、rtc-proc.c
+中定义了这三类文件的操作接口（open、read、write、close…）。</li>
+<li>上述三类文件的操作接口（open、read、write、close…），会借助 rtc
+interface 接口，调用各设备的操作接口，rtc interface
+接口可以理解为调用设备驱动的桥梁； 针对 rtc 设备驱动，均需要实现 rtc
+class ops 中的方法，以便被 rtc 上层接口调用，从而完成与 rtc
+设备的通信操作。</li>
+<li>应用程序通过系统调用接口、vfs 相关接口、设备文件系统的 inode
+的操作接口、sysfs 文件系统的 inode 的操作接口、procfs 文件系统的 inode
+的操作接口，方才进入 rtc 设备驱动模型的处理接口中。</li>
 </ul>
-<p>实现流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDZjYWExZWZhZDQyNDNkNDc0Zjdk">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/rtc_register.png" alt=""></p>
-<p>devm_rtc_device_register 函数就是注册一个 rtc 设备的 api。注册流程如下：</p>
+<p>实现流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDZjYWExZWZhZDQyNDNkNDc0Zjdk">原图<i class="fa fa-external-link-alt"></i></span>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/rtc_register.png"></p>
+<p>devm_rtc_device_register 函数就是注册一个 rtc 设备的
+api。注册流程如下：</p>
 <ul>
 <li>devm_rtc_allocate_device 分配并设置 rtc_device 结构体。</li>
-<li>devm_rtc_register_device 注册 rtc_device 结构体。这里是/linux/drivers/rtc/dev.c 文件里提供的 cdev 的 file_operations 结构体，该结构体函数指针提供了对 interface 的访问。</li>
-<li>在/linux/drivers/rtc/interface.c 文件里向上为/linux/drivers/rtc/dev.c 提供接口，向下提供访问 rtc_class_ops 的接口。</li>
+<li>devm_rtc_register_device 注册 rtc_device
+结构体。这里是/linux/drivers/rtc/dev.c 文件里提供的 cdev 的
+file_operations 结构体，该结构体函数指针提供了对 interface 的访问。</li>
+<li>在/linux/drivers/rtc/interface.c
+文件里向上为/linux/drivers/rtc/dev.c 提供接口，向下提供访问
+rtc_class_ops 的接口。</li>
 <li>rtc_class_ops 由具体的 rtc 设备在注册的时候提供。</li>
 </ul>
-<h1 id="sysfs-接口"><a class="markdownIt-Anchor" href="#sysfs-接口"></a> sysfs 接口</h1>
-<p>在 Linux 系统上，从用户空间正确管理 RTC 需要关注两个内核选项。这两个选项是 CONFIG_RTC_HCTOSYS 和 CONFIG_RTC_HCTOSYS_DEVICE。<br>
-要使用 CONFIG_RTC_HCTOSYS 应在内核构建过程中包含代码文件 driversrtc/hctosys.c，它在启动和恢复时从 RTC 设置系统时间。一旦启用此选项，就将使用从指定 RTC 设备读取的值设置系统时间。RTC 设备应该在 CONFIG_RTC_HCTOSYSDEVICE 中指定：</p>
+<h1 id="sysfs-接口">sysfs 接口</h1>
+<p>在 Linux 系统上，从用户空间正确管理 RTC
+需要关注两个内核选项。这两个选项是 CONFIG_RTC_HCTOSYS 和
+CONFIG_RTC_HCTOSYS_DEVICE。 要使用 CONFIG_RTC_HCTOSYS
+应在内核构建过程中包含代码文件 driversrtc/hctosys.c，它在启动和恢复时从
+RTC 设置系统时间。一旦启用此选项，就将使用从指定 RTC
+设备读取的值设置系统时间。RTC 设备应该在 CONFIG_RTC_HCTOSYSDEVICE
+中指定：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CONFIG_RTC_HCTOSYS=y</span><br><span class="line">CONFIG_RTC_HCTOSYS_DEVICE=<span class="string">"rtcO"</span></span><br></pre></td></tr></tbody></table></figure>
-<p>负责在 sysfs 中实例化 RTC 属性的内核代码在内核源码树的 drivers/rtc/rtc_sysfs.c 中定义。一旦注册，RTC 设备就将在/sys/class/rtc 下创建 rtc<id> 目录，该目录包含一组只读属性，其中重要的属性如下。</id></p>
+<p>负责在 sysfs 中实例化 RTC 属性的内核代码在内核源码树的
+drivers/rtc/rtc_sysfs.c 中定义。一旦注册，RTC 设备就将在/sys/class/rtc
+下创建 rtc<id> 目录，该目录包含一组只读属性，其中重要的属性如下。</id></p>
 <ul>
-<li>
-<p>date: 该文件打印 RTC 接口的当前日期：</p>
-  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/date</span><br><span class="line">2017-8-28</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>time: 打印此 RTC 的当前时间：</p>
-  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/time</span><br><span class="line">14:54:20</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>hctosys: 该属性指出 RTC 设备是否是 CONFIG_RTC_HCTOSYS_DEVICE 中指定的设备，也就是在启动和恢复时是否使用该 RTC 设置系统时间。其值为 1 表示真，0 表示假：</p>
-  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/hctosys</span><br><span class="line">1</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>dev: 此属性显示设备的主设备号和次设备号。数据格式为主设备号：次设备号：</p>
-  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/dev</span><br><span class="line">251:0</span><br></pre></td></tr></tbody></table></figure>
-</li>
-<li>
-<p>since_epoch: 该属性将显示从 UNIX 纪元（自 1970 年 1 月 1 日起）以来的秒数：</p>
-  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/since epoch</span><br><span class="line">1503931738</span><br></pre></td></tr></tbody></table></figure>
-</li>
+<li><p>date: 该文件打印 RTC 接口的当前日期：<br>
+</p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/date</span><br><span class="line">2017-8-28</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>time: 打印此 RTC 的当前时间：<br>
+</p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/time</span><br><span class="line">14:54:20</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>hctosys: 该属性指出 RTC 设备是否是 CONFIG_RTC_HCTOSYS_DEVICE
+中指定的设备，也就是在启动和恢复时是否使用该 RTC 设置系统时间。其值为 1
+表示真，0 表示假：<br>
+</p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/hctosys</span><br><span class="line">1</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>dev:
+此属性显示设备的主设备号和次设备号。数据格式为主设备号：次设备号：<br>
+</p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/dev</span><br><span class="line">251:0</span><br></pre></td></tr></tbody></table></figure><p></p></li>
+<li><p>since_epoch: 该属性将显示从 UNIX 纪元（自 1970 年 1 月 1
+日起）以来的秒数：<br>
+</p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/class/rtc/rtc0/since epoch</span><br><span class="line">1503931738</span><br></pre></td></tr></tbody></table></figure><p></p></li>
 </ul>
-<h1 id="hwclock-工具"><a class="markdownIt-Anchor" href="#hwclock-工具"></a> hwclock 工具</h1>
-<p>硬件时钟（hwclock）工具用于访问 RTC 设备。man hwclock 命令可能比本节讨论的所有内容都更有意义。尽管如此，下面还是编写一些命令，以从系统时钟设置 hwclockRTC:</p>
+<h1 id="hwclock-工具">hwclock 工具</h1>
+<p>硬件时钟（hwclock）工具用于访问 RTC 设备。man hwclock
+命令可能比本节讨论的所有内容都更有意义。尽管如此，下面还是编写一些命令，以从系统时钟设置
+hwclockRTC:</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ntpd -q              <span class="comment">#确保系统时钟是从网络时间设置的</span></span><br><span class="line">$ sudo hwclock --systohc    <span class="comment">#从系统时钟设置 RTC</span></span><br><span class="line">$ sudo hwclock --show       <span class="comment">#设置 RTC</span></span><br><span class="line">Sat May 17 17:36:50 2017 -0.671045 seconds</span><br></pre></td></tr></tbody></table></figure>
-<p>上面的例子假定主机具有网络连接，可以访问 NTP 服务器。也可以手动设置系统时间：</p>
+<p>上面的例子假定主机具有网络连接，可以访问 NTP
+服务器。也可以手动设置系统时间：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo <span class="built_in">date</span> -s <span class="string">'2017-08-28 17:14:00'</span>+s<span class="string">' #手动设置系统时钟</span></span><br><span class="line"><span class="string">$ sudo hwclock 一 systohc                #在系统时间上同步 RTC 芯片</span></span><br></pre></td></tr></tbody></table></figure>
-<p>如果没有给出参数，hwclock 假定 RTC 设备文件是/dev/rtc，它实际上是真正 RTC 设备的符号链接：</p>
+<p>如果没有给出参数，hwclock 假定 RTC 设备文件是/dev/rtc，它实际上是真正
+RTC 设备的符号链接：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ls</span> -l /dev/rtc</span><br><span class="line">lrwxrwxrwx 1 root root 4 aout 27 17:50 /dev/rtc -&gt; rtc0</span><br></pre></td></tr></tbody></table></figure>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vMDUzMTc5aHUvcC8xNDEzMDMwMC5odG1s">https://www.cnblogs.com/053179hu/p/14130300.html<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDM4NDE5NDE/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/103841941?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span></p>
 

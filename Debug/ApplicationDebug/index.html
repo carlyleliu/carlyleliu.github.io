@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="前言 应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器 syslog 能快速解决 90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过 syslog 就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于">
+    <meta name="description" content="前言 应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器 syslog 能快速解决 90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过 syslog 就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是">
 <meta property="og:type" content="article">
 <meta property="og:title" content="应用崩溃调试分析">
 <meta property="og:url" content="https://carlyleliu.github.io/Debug/ApplicationDebug/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="前言 应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器 syslog 能快速解决 90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过 syslog 就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于">
+<meta property="og:description" content="前言 应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器 syslog 能快速解决 90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过 syslog 就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/start_core.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/strip.png">
@@ -45,8 +45,8 @@
 <meta property="article:published_time" content="2022-03-26T11:44:15.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.397Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Debug">
 <meta property="article:tag" content="Programming">
+<meta property="article:tag" content="Debug">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/start_core.png">
 
@@ -165,7 +165,12 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text"> 前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E5%90%AF-core-dump-%E5%8A%9F%E8%83%BD"><span class="nav-text"> 开启 core dump 功能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E6%B7%BB%E5%8A%A0%E8%B0%83%E8%AF%95%E4%BF%A1%E6%81%AF%E5%92%8C%E7%AC%A6%E5%8F%B7%E8%A1%A8"><span class="nav-text"> 添加添加调试信息和符号表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E6%8E%89%E7%BC%96%E8%AF%91%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%85%A8%E5%B1%80-strip%E7%94%B1-strip-%E6%94%B9%E4%B8%BA-none"><span class="nav-text"> 去掉编译系统的全局 strip（由 strip 改为 none）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E4%B8%AD%E6%B7%BB%E5%8A%A0%E7%AC%A6%E5%8F%B7%E4%BF%A1%E6%81%AF"><span class="nav-text"> 应用中添加符号信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AF-gdb"><span class="nav-text"> 开启 gdb</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E5%BA%94%E7%94%A8%E5%B4%A9%E6%BA%83%E7%8E%B0%E5%9C%BA"><span class="nav-text"> 调试应用崩溃现场</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8-pc-%E4%B8%8A%E8%BF%9B%E8%A1%8C%E8%B0%83%E8%AF%95"><span class="nav-text"> 在 pc 上进行调试</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E6%8E%89-gdb"><span class="nav-text"> 去掉 gdb</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E9%93%BEgdb"><span class="nav-text"> 设置交叉编译工具链（gdb）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8B%B7%E8%B4%9D%E6%96%87%E4%BB%B6-xxxapp-%E5%92%8C-core-dump-%E6%96%87%E4%BB%B6%E8%A6%81%E6%8B%B7%E8%B4%9D%E5%B8%A6%E7%AC%A6%E5%8F%B7%E8%A1%A8%E7%9A%84-xxxapp"><span class="nav-text"> 拷贝文件 (xxxapp 和 core dump 文件，要拷贝带符号表的 xxxapp)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E9%93%BE%E4%B8%AD%E7%9A%84-gdb-%E7%A8%8B%E5%BA%8F"><span class="nav-text"> 运行交叉编译工具链中的 gdb 程序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E8%BF%90%E8%A1%8C-gdb-%E4%B9%8B%E5%90%8E%E8%AE%BE%E7%BD%AE%E7%B3%BB%E7%BB%9F%E5%BA%93%E8%B7%AF%E5%BE%84%E7%94%B1%E4%BA%8E%E6%98%AF%E5%9C%A8-pc-%E7%AB%AF%E8%BF%90%E8%A1%8Cxxxapp-%E9%87%8C%E4%B8%8D%E5%8C%85%E5%90%AB%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%86%85%E5%AE%B9%E4%BD%86%E6%98%AF-sdk-%E8%B7%AF%E5%BE%84%E9%87%8C%E6%98%AF%E6%9C%89-rootfs-%E6%96%87%E4%BB%B6%E7%9A%84"><span class="nav-text"> 在运行 gdb 之后设置系统库路径（由于是在 pc 端运行，xxxapp 里不包含共享库的内容但是 sdk 路径里是有 rootfs 文件的）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%93%E5%8D%B0%E8%BF%BD%E6%BA%AF%E6%A0%88"><span class="nav-text"> 打印追溯栈</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-text">前言</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E5%90%AF-core-dump-%E5%8A%9F%E8%83%BD"><span class="nav-text">开启 core dump 功能</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E6%B7%BB%E5%8A%A0%E8%B0%83%E8%AF%95%E4%BF%A1%E6%81%AF%E5%92%8C%E7%AC%A6%E5%8F%B7%E8%A1%A8"><span class="nav-text">添加添加调试信息和符号表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E6%8E%89%E7%BC%96%E8%AF%91%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%85%A8%E5%B1%80-strip%E7%94%B1-strip-%E6%94%B9%E4%B8%BA-none"><span class="nav-text">去掉编译系统的全局
+strip（由 strip 改为 none）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E4%B8%AD%E6%B7%BB%E5%8A%A0%E7%AC%A6%E5%8F%B7%E4%BF%A1%E6%81%AF"><span class="nav-text">应用中添加符号信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AF-gdb"><span class="nav-text">开启 gdb</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%B0%83%E8%AF%95%E5%BA%94%E7%94%A8%E5%B4%A9%E6%BA%83%E7%8E%B0%E5%9C%BA"><span class="nav-text">调试应用崩溃现场</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8-pc-%E4%B8%8A%E8%BF%9B%E8%A1%8C%E8%B0%83%E8%AF%95"><span class="nav-text">在 pc 上进行调试</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E6%8E%89-gdb"><span class="nav-text">去掉 gdb</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E7%BD%AE%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E9%93%BEgdb"><span class="nav-text">设置交叉编译工具链（gdb）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8B%B7%E8%B4%9D%E6%96%87%E4%BB%B6-xxxapp-%E5%92%8C-core-dump-%E6%96%87%E4%BB%B6%E8%A6%81%E6%8B%B7%E8%B4%9D%E5%B8%A6%E7%AC%A6%E5%8F%B7%E8%A1%A8%E7%9A%84-xxxapp"><span class="nav-text">拷贝文件
+(xxxapp 和 core dump 文件，要拷贝带符号表的 xxxapp)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91%E5%B7%A5%E5%85%B7%E9%93%BE%E4%B8%AD%E7%9A%84-gdb-%E7%A8%8B%E5%BA%8F"><span class="nav-text">运行交叉编译工具链中的 gdb
+程序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%A8%E8%BF%90%E8%A1%8C-gdb-%E4%B9%8B%E5%90%8E%E8%AE%BE%E7%BD%AE%E7%B3%BB%E7%BB%9F%E5%BA%93%E8%B7%AF%E5%BE%84%E7%94%B1%E4%BA%8E%E6%98%AF%E5%9C%A8-pc-%E7%AB%AF%E8%BF%90%E8%A1%8Cxxxapp-%E9%87%8C%E4%B8%8D%E5%8C%85%E5%90%AB%E5%85%B1%E4%BA%AB%E5%BA%93%E7%9A%84%E5%86%85%E5%AE%B9%E4%BD%86%E6%98%AF-sdk-%E8%B7%AF%E5%BE%84%E9%87%8C%E6%98%AF%E6%9C%89-rootfs-%E6%96%87%E4%BB%B6%E7%9A%84"><span class="nav-text">在运行
+gdb 之后设置系统库路径（由于是在 pc 端运行，xxxapp
+里不包含共享库的内容但是 sdk 路径里是有 rootfs 文件的）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%93%E5%8D%B0%E8%BF%BD%E6%BA%AF%E6%A0%88"><span class="nav-text">打印追溯栈</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -324,89 +329,118 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="前言"><a class="markdownIt-Anchor" href="#前言"></a> 前言</h1>
-<p>应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器 syslog 能快速解决 90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过 syslog 就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是这里尝试提供一种方法来快速定位问题。当然这类问题都是一个路子，掌握这种分析方法以后遇到这类问题就都可以轻松处理了。</p>
-<p>本文提供的一种解决方案是通过 gdb+core dump 文件分析调试方法，具体如下：</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="前言">前言</h1>
+<p>应用崩溃，各种空指针等大概是应用开发过程中最常遇到的问题了。而我们传统的调试利器
+syslog 能快速解决
+90%的问题，但是对于那些低概率，需要老化几十小时才能复现到的问题通过
+syslog
+就很难定位到问题了。这时如果可以提供一种情景再现的方式将应用崩溃现场的调用栈以及栈内数据给展现出来那么对于我们定位问题是大有帮助的。而笔者最近就遇到大量这种（基本都是老化过程中遇到的低概率）问题，于是这里尝试提供一种方法来快速定位问题。当然这类问题都是一个路子，掌握这种分析方法以后遇到这类问题就都可以轻松处理了。</p>
+<p>本文提供的一种解决方案是通过 gdb+core dump
+文件分析调试方法，具体如下：</p>
 <span id="more"></span>
-<h1 id="开启-core-dump-功能"><a class="markdownIt-Anchor" href="#开启-core-dump-功能"></a> 开启 core dump 功能</h1>
+<h1 id="开启-core-dump-功能">开启 core dump 功能</h1>
 <p>在 init 脚本的 start_service 中添加</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">procd_set_param limits core=<span class="string">"unlimited"</span></span><br></pre></td></tr></tbody></table></figure>
-<p>这样一条代码，例如 xxxapp 中的添加如下：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/start_core.png" alt=""></p>
+<p>这样一条代码，例如 xxxapp 中的添加如下： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/start_core.png"></p>
 <p>或者直接在 shell 中执行：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">ulimit</span> -c unlimited</span><br><span class="line"><span class="built_in">echo</span> <span class="string">"/tmp/core-%e-%p-%t"</span> &gt; /proc/sys/kernel/core_pattern</span><br></pre></td></tr></tbody></table></figure>
 <p>然后执行应用。</p>
-<h1 id="添加添加调试信息和符号表"><a class="markdownIt-Anchor" href="#添加添加调试信息和符号表"></a> 添加添加调试信息和符号表</h1>
-<h2 id="去掉编译系统的全局-strip由-strip-改为-none"><a class="markdownIt-Anchor" href="#去掉编译系统的全局-strip由-strip-改为-none"></a> 去掉编译系统的全局 strip（由 strip 改为 none）</h2>
+<h1 id="添加添加调试信息和符号表">添加添加调试信息和符号表</h1>
+<h2 id="去掉编译系统的全局-strip由-strip-改为-none">去掉编译系统的全局
+strip（由 strip 改为 none）</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make menuconfig </span><br><span class="line">    -&gt; Global build settings  </span><br><span class="line">        ---&gt; Binary stripping method (none)  </span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/strip.png" alt=""></p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/strip.png"></p>
 <blockquote>
-<p>注意：因为 xxxapp 上存储容量限制，可以在 strip 模式下编译完系统后再改为 none，然后在编译 xxxapp，这样就只有 xxxapp 有符号表和调试信息。</p>
+<p>注意：因为 xxxapp 上存储容量限制，可以在 strip
+模式下编译完系统后再改为 none，然后在编译 xxxapp，这样就只有 xxxapp
+有符号表和调试信息。</p>
 </blockquote>
-<h2 id="应用中添加符号信息"><a class="markdownIt-Anchor" href="#应用中添加符号信息"></a> 应用中添加符号信息</h2>
-<p>应用或者库中添加符号信息只需要在 gcc 编译的时候加上-g 选项，一般为了方便调试需要去掉-Ox 选项。例如 xxxapp 调试时的编译选项如下：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/g.png" alt=""></p>
-<h2 id="开启-gdb"><a class="markdownIt-Anchor" href="#开启-gdb"></a> 开启 gdb</h2>
+<h2 id="应用中添加符号信息">应用中添加符号信息</h2>
+<p>应用或者库中添加符号信息只需要在 gcc 编译的时候加上-g
+选项，一般为了方便调试需要去掉-Ox 选项。例如 xxxapp
+调试时的编译选项如下： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/g.png"></p>
+<h2 id="开启-gdb">开启 gdb</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make menuconfig </span><br><span class="line">    -&gt; Development  </span><br><span class="line">        ---&gt; &lt;*&gt; gdb</span><br></pre></td></tr></tbody></table></figure>
-<h1 id="调试应用崩溃现场"><a class="markdownIt-Anchor" href="#调试应用崩溃现场"></a> 调试应用崩溃现场</h1>
+<h1 id="调试应用崩溃现场">调试应用崩溃现场</h1>
 <p>在小机端使用“gdb 可执行程序 core 文件”开启 gdb，例如：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ gdb /usr/bin/xxxapp /tmp/core-startEventCall-675-1610194273</span><br></pre></td></tr></tbody></table></figure>
 <p>加载完符号表之后，就可以查看程序 dump 时候的栈追溯，命令为 bt</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) bt</span><br></pre></td></tr></tbody></table></figure>
-<p>如果没有符号表，bt 打印的就只有地址；如果有符号表，bt 的打印如下：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core1.png" alt=""></p>
+<p>如果没有符号表，bt 打印的就只有地址；如果有符号表，bt 的打印如下：
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core1.png"></p>
 <blockquote>
-<p>说明：这个调用栈是从#0 到#12 这个顺序看的，就是说应用是在#0 这个点退出，调用顺序是从#12 到#0,</p>
+<p>说明：这个调用栈是从#0 到#12 这个顺序看的，就是说应用是在#0
+这个点退出，调用顺序是从#12 到#0,</p>
 </blockquote>
-<p>如果既有符号表，又有 debug 信息，函数的参数会同步打印出来<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core2.png" alt=""></p>
+<p>如果既有符号表，又有 debug 信息，函数的参数会同步打印出来 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core2.png"></p>
 <blockquote>
-<p>说明：添加符号表后会标识出调用函数所在的文件和行数，以及调用的时候的参数，通过调用栈可以知道程序是在#2（BitmapDDAScalerEx）这个点出错，然后进入到了 c 库的崩溃处理函数</p>
+<p>说明：添加符号表后会标识出调用函数所在的文件和行数，以及调用的时候的参数，通过调用栈可以知道程序是在#2（BitmapDDAScalerEx）这个点出错，然后进入到了
+c 库的崩溃处理函数</p>
 </blockquote>
 <p>进入#2 帧进行调试的命令如下：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ frame 2</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core3.png" alt=""></p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core3.png"></p>
 <blockquote>
-<p>说明：通过 pc 端打开 bitmap.c 定位到 1989 行（也可以把文件放到 tf 卡上使用 gdb 同步调试）</p>
+<p>说明：通过 pc 端打开 bitmap.c 定位到 1989 行（也可以把文件放到 tf
+卡上使用 gdb 同步调试）</p>
 </blockquote>
-<p>这部分的代码如下：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core4.png" alt=""></p>
-<p>对照源码可以打印现场 dp1，dp2 以及 sx 的值<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core5.png" alt=""></p>
+<p>这部分的代码如下： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core4.png"></p>
+<p>对照源码可以打印现场 dp1，dp2 以及 sx 的值 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core5.png"></p>
 <blockquote>
-<p>说明：通过源码可以看出这里的 dp1 已经是一个错误的地址，程序无法访问，接来下就要探索 dp1 的值从哪里来的。</p>
+<p>说明：通过源码可以看出这里的 dp1
+已经是一个错误的地址，程序无法访问，接来下就要探索 dp1
+的值从哪里来的。</p>
 </blockquote>
-<p>找到该程序的上下文<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core6.png" alt=""></p>
-<p>通过源码走读，需要打印的变量如下：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core7.png" alt=""></p>
+<p>找到该程序的上下文 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core6.png"></p>
+<p>通过源码走读，需要打印的变量如下： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core7.png"></p>
 <blockquote>
-<p>说明：通过这里我们可以知道这里是要将一个长为 59，宽为 24 的图片，缩放成长为 50，宽为 28 的图片，图片的像素宽度为 4 个字节，但是图片的内容已经被改写没有了。</p>
+<p>说明：通过这里我们可以知道这里是要将一个长为 59，宽为 24
+的图片，缩放成长为 50，宽为 28 的图片，图片的像素宽度为 4
+个字节，但是图片的内容已经被改写没有了。</p>
 </blockquote>
 <p>但是没有有找到 dp1 对应的值的来源，汇编看看：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) disassemble</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core8.png" alt=""></p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core8.png"></p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) info registers</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core9.png" alt=""></p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/core9.png"></p>
 <blockquote>
-<p>说明：通过现场能够知道 dp1 对应地址为栈上的地址 0xbe973990，这个地址里保存的值为 0x135c，但是这个函数的汇编太长了，追踪内存很耗时先放弃了。</p>
+<p>说明：通过现场能够知道 dp1 对应地址为栈上的地址
+0xbe973990，这个地址里保存的值为
+0x135c，但是这个函数的汇编太长了，追踪内存很耗时先放弃了。</p>
 </blockquote>
-<p>通过在 xxxapp 中查找对应的图片，能够知道目前缩放的图片是电池电量图标的图片，这个是 minigui 里的一个 bug，跟图标刷新有关。这里不再继续下去了。以上就是一个应用崩溃后通过 gdb+core dump 文件对现场进行分析调试过程。以后遇到的应用崩溃问题都可以通过类似分析方法进行分析。</p>
-<h1 id="在-pc-上进行调试"><a class="markdownIt-Anchor" href="#在-pc-上进行调试"></a> 在 pc 上进行调试</h1>
-<p>最近在开发中遇到一个新问题，flash（16M nor flash）满了，机器端 flash 没有空间放 gdb 了，内存、带宽和 cpu 都超极限了，需要对系统进行优化，而优化的改动是很大的，期间非常容易引入各种死机问题，而此时又没有 gdb 了。只能通过 syslog 来调试，一些低概率的老化很久才会出现的问题很难通过 syslog 的打印查找出来，还是需要 gdb+core dump 文件才能快速定位问题。为此我们又研究了在 pc 端使用 gdb 和 core dump 文件的方法。具体差异点如下：</p>
-<h2 id="去掉-gdb"><a class="markdownIt-Anchor" href="#去掉-gdb"></a> 去掉 gdb</h2>
+<p>通过在 xxxapp
+中查找对应的图片，能够知道目前缩放的图片是电池电量图标的图片，这个是
+minigui 里的一个
+bug，跟图标刷新有关。这里不再继续下去了。以上就是一个应用崩溃后通过
+gdb+core dump
+文件对现场进行分析调试过程。以后遇到的应用崩溃问题都可以通过类似分析方法进行分析。</p>
+<h1 id="在-pc-上进行调试">在 pc 上进行调试</h1>
+<p>最近在开发中遇到一个新问题，flash（16M nor flash）满了，机器端 flash
+没有空间放 gdb 了，内存、带宽和 cpu
+都超极限了，需要对系统进行优化，而优化的改动是很大的，期间非常容易引入各种死机问题，而此时又没有
+gdb 了。只能通过 syslog
+来调试，一些低概率的老化很久才会出现的问题很难通过 syslog
+的打印查找出来，还是需要 gdb+core dump
+文件才能快速定位问题。为此我们又研究了在 pc 端使用 gdb 和 core dump
+文件的方法。具体差异点如下：</p>
+<h2 id="去掉-gdb">去掉 gdb</h2>
 <p>当然你的 flash 已经容不下 gdb 了，此时。</p>
-<h2 id="设置交叉编译工具链gdb"><a class="markdownIt-Anchor" href="#设置交叉编译工具链gdb"></a> 设置交叉编译工具链（gdb）</h2>
+<h2 id="设置交叉编译工具链gdb">设置交叉编译工具链（gdb）</h2>
 <p>在~/.bashrc 文件里添加如下：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PATH=<span class="variable">$PATH</span>:/home/liushuai/workspace/project/prebuilt/gcc/linux-x86/arm/toolchain-sunxi-musl/toolchain/bin</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="拷贝文件-xxxapp-和-core-dump-文件要拷贝带符号表的-xxxapp"><a class="markdownIt-Anchor" href="#拷贝文件-xxxapp-和-core-dump-文件要拷贝带符号表的-xxxapp"></a> 拷贝文件 (xxxapp 和 core dump 文件，要拷贝带符号表的 xxxapp)</h2>
+<h2 id="拷贝文件-xxxapp-和-core-dump-文件要拷贝带符号表的-xxxapp">拷贝文件
+(xxxapp 和 core dump 文件，要拷贝带符号表的 xxxapp)</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cp</span> ~/workspace/project/out/v833-perf1/staging_dir/target/rootfs/usr/bin/***app ./</span><br></pre></td></tr></tbody></table></figure>
-<p>将机器端复现到问题后产生的 core 文件拷贝到 pc 端，adb pull /tmp/core****</p>
-<h2 id="运行交叉编译工具链中的-gdb-程序"><a class="markdownIt-Anchor" href="#运行交叉编译工具链中的-gdb-程序"></a> 运行交叉编译工具链中的 gdb 程序</h2>
+<p>将机器端复现到问题后产生的 core 文件拷贝到 pc 端，adb pull
+/tmp/core****</p>
+<h2 id="运行交叉编译工具链中的-gdb-程序">运行交叉编译工具链中的 gdb
+程序</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">arm-openwrt-linux-gdb vegoapp core-startEventCall-675-1610194273</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="在运行-gdb-之后设置系统库路径由于是在-pc-端运行xxxapp-里不包含共享库的内容但是-sdk-路径里是有-rootfs-文件的"><a class="markdownIt-Anchor" href="#在运行-gdb-之后设置系统库路径由于是在-pc-端运行xxxapp-里不包含共享库的内容但是-sdk-路径里是有-rootfs-文件的"></a> 在运行 gdb 之后设置系统库路径（由于是在 pc 端运行，xxxapp 里不包含共享库的内容但是 sdk 路径里是有 rootfs 文件的）</h2>
+<h2 id="在运行-gdb-之后设置系统库路径由于是在-pc-端运行xxxapp-里不包含共享库的内容但是-sdk-路径里是有-rootfs-文件的">在运行
+gdb 之后设置系统库路径（由于是在 pc 端运行，xxxapp
+里不包含共享库的内容但是 sdk 路径里是有 rootfs 文件的）</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) <span class="built_in">set</span> sysroot /home/liushuai/workspace/project/out/v833-perf1/staging_dir/target/rootfs</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="打印追溯栈"><a class="markdownIt-Anchor" href="#打印追溯栈"></a> 打印追溯栈</h2>
+<h2 id="打印追溯栈">打印追溯栈</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ (gdb) bt</span><br></pre></td></tr></tbody></table></figure>
 <p>剩下的就跟在机器端调试一样了。</p>
 
@@ -447,8 +481,8 @@
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
               <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
+              <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
           </div>
 
         

@@ -167,7 +167,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#shared_ptr"><span class="nav-text"> shared_ptr</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-text"> 实现原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%90%E6%9E%84"><span class="nav-text"> 析构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#issues"><span class="nav-text"> Issues</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#weak_ptr"><span class="nav-text"> Weak_Ptr</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-text"> 原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#enable_shared_from_this"><span class="nav-text"> enable_shared_from_this</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-text"> 使用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#unique_ptr"><span class="nav-text"> unique_ptr</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#shared_ptr"><span class="nav-text">shared_ptr</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-text">实现原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%90%E6%9E%84"><span class="nav-text">析构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#issues"><span class="nav-text">Issues</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#weak_ptr"><span class="nav-text">Weak_Ptr</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#enable_shared_from_this"><span class="nav-text">enable_shared_from_this</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8"><span class="nav-text">使用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#unique_ptr"><span class="nav-text">unique_ptr</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -326,95 +326,134 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/CPP11ImproveTypeSafety.png" alt=""><br>
+    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/CPP11ImproveTypeSafety.png">
 <span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMyZjM0NjU2NTNiYjA3NGIyMmU3Njg=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h1 id="shared_ptr"><a class="markdownIt-Anchor" href="#shared_ptr"></a> shared_ptr</h1>
-<h2 id="实现原理"><a class="markdownIt-Anchor" href="#实现原理"></a> 实现原理</h2>
-<p>一个 shared_ptr 对象的内存开销要比裸指针和无自定义 deleter 的 unique_ptr 对象略大。shared_ptr 需要维护的信息有两部分：</p>
+<h1 id="shared_ptr">shared_ptr</h1>
+<h2 id="实现原理">实现原理</h2>
+<p>一个 shared_ptr 对象的内存开销要比裸指针和无自定义 deleter 的
+unique_ptr 对象略大。shared_ptr 需要维护的信息有两部分：</p>
 <ul>
 <li>指向共享资源的指针</li>
 <li>引用计数等共享资源的控制信息——实现上是维护一个指向控制信息的指针</li>
 </ul>
-<p>所以，shared_ptr 对象需要保存两个指针。shared_ptr 的 deleter 是保存在控制信息中，所以，是否有自定义 deleter 不影响 shared_ptr 对象的大小。当我们创建一个 shared_ptr 时，其实现一般如下：</p>
+<p>所以，shared_ptr 对象需要保存两个指针。shared_ptr 的 deleter
+是保存在控制信息中，所以，是否有自定义 deleter 不影响 shared_ptr
+对象的大小。当我们创建一个 shared_ptr 时，其实现一般如下：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">std::shared_ptr&lt;T&gt; <span class="title">sptr1</span><span class="params">(<span class="keyword">new</span> T)</span></span>;</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer1.jpg" alt=""></p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer1.jpg"></p>
 <p>复制一个 shared_ptr ：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">std::shared_ptr&lt;T&gt; sptr2 = sptr1;</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer2.jpg" alt=""></p>
-<p>为什么控制信息和每个 shared_ptr 对象都需要保存指向共享资源的指针？可不可以去掉 shared_ptr 对象中指向共享资源的指针，以节省内存开销？</p>
-<p>答案是：不能。 因为 shared_ptr 对象中的指针指向的对象不一定和控制块中的指针指向的对象一样。</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer2.jpg"></p>
+<p>为什么控制信息和每个 shared_ptr
+对象都需要保存指向共享资源的指针？可不可以去掉 shared_ptr
+对象中指向共享资源的指针，以节省内存开销？</p>
+<p>答案是：不能。 因为 shared_ptr
+对象中的指针指向的对象不一定和控制块中的指针指向的对象一样。</p>
 <p>来看一个例子。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Fruit</span> {</span><br><span class="line">    <span class="type">int</span> juice;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Vegetable</span> {</span><br><span class="line">    <span class="type">int</span> fiber;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Tomato</span> : <span class="keyword">public</span> Fruit, Vegetable {</span><br><span class="line">    <span class="type">int</span> sauce;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"> <span class="comment">// 由于继承的存在，shared_ptr 可能指向基类对象</span></span><br><span class="line">std::shared_ptr&lt;Tomato&gt; tomato = std::<span class="built_in">make_shared</span>&lt;Tomato&gt;();</span><br><span class="line">std::shared_ptr&lt;Fruit&gt; fruit = tomato;</span><br><span class="line">std::shared_ptr&lt;Vegetable&gt; vegetable = tomato;</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer3.jpg" alt=""></p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer3.jpg"></p>
 <p>另外，std::shared_ptr 支持 aliasing constructor。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt; <span class="keyword">class</span> Y &gt;</span></span><br><span class="line"><span class="function"><span class="title">shared_ptr</span><span class="params">( <span class="type">const</span> shared_ptr&lt;Y&gt;&amp; r, element_type* ptr )</span> <span class="keyword">noexcept</span></span>;</span><br></pre></td></tr></tbody></table></figure>
-<p>Aliasing constructor，简单说就是构造出来的 shared_ptr 对象和参数 r 指向同一个控制块（会影响 r 指向的资源的生命周期），但是指向共享资源的指针是参数 ptr。看下面这个例子。</p>
+<p>Aliasing constructor，简单说就是构造出来的 shared_ptr 对象和参数 r
+指向同一个控制块（会影响 r
+指向的资源的生命周期），但是指向共享资源的指针是参数
+ptr。看下面这个例子。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">using</span> Vec = std::vector&lt;<span class="type">int</span>&gt;;</span><br><span class="line"><span class="function">std::shared_ptr&lt;<span class="type">int</span>&gt; <span class="title">GetSPtr</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">auto</span> elts = {<span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>};</span><br><span class="line">    std::shared_ptr&lt;Vec&gt; pvec = std::<span class="built_in">make_shared</span>&lt;Vec&gt;(elts);</span><br><span class="line">    <span class="keyword">return</span> std::<span class="built_in">shared_ptr</span>&lt;<span class="type">int</span>&gt;(pvec, &amp;(*pvec)[<span class="number">2</span>]);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">std::shared_ptr&lt;<span class="type">int</span>&gt; sptr = <span class="built_in">GetSPtr</span>();</span><br><span class="line"><span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">-2</span>; i &lt; <span class="number">3</span>; ++i) {</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"%d\n"</span>, sptr.<span class="built_in">get</span>()[i]);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer4.jpg" alt=""></p>
-<p>看上面的例子，使用 std::shared_ptr 时，会涉及两次内存分配：一次分配共享资源对象；一次分配控制块。C++ 标准库提供了 std::make_shared 函数来创建一个 shared_ptr 对象，只需要一次内存分配。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer5.jpg" alt=""></p>
-<p>这种情况下，不用通过控制块中的指针，我们也能知道共享资源的位置——这个指针也可以省略掉。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer6.jpg" alt=""></p>
-<h2 id="析构"><a class="markdownIt-Anchor" href="#析构"></a> 析构</h2>
-<p>shared_ptr 默认调用 delete 释放关联的资源。如果用户采用一个不一样的析构策略时，他可以自由指定构造这个 shared_ptr 的策略。下面的例子是一个由于采用默认析构策略导致的问题：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer4.jpg"></p>
+<p>看上面的例子，使用 std::shared_ptr
+时，会涉及两次内存分配：一次分配共享资源对象；一次分配控制块。C++
+标准库提供了 std::make_shared 函数来创建一个 shared_ptr
+对象，只需要一次内存分配。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer5.jpg"></p>
+<p>这种情况下，不用通过控制块中的指针，我们也能知道共享资源的位置——这个指针也可以省略掉。
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer6.jpg"></p>
+<h2 id="析构">析构</h2>
+<p>shared_ptr 默认调用 delete
+释放关联的资源。如果用户采用一个不一样的析构策略时，他可以自由指定构造这个
+shared_ptr 的策略。下面的例子是一个由于采用默认析构策略导致的问题：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Test</span> {...};</span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">main</span><span class="params">( )</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="function">shared_ptr&lt;Test&gt; <span class="title">sptr1</span><span class="params">( <span class="keyword">new</span> Test[<span class="number">5</span>] )</span></span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<p>在此场景下，shared_ptr 指向一组对象，但是当离开作用域时，默认的析构函数调用 delete 释放资源。实际上，我们应该调用 delete[] 来销毁这个数组。用户可以通过调用一个函数，例如一个 lamda 表达式，来指定一个通用的释放步骤。</p>
+<p>在此场景下，shared_ptr
+指向一组对象，但是当离开作用域时，默认的析构函数调用 delete
+释放资源。实际上，我们应该调用 delete[]
+来销毁这个数组。用户可以通过调用一个函数，例如一个 lamda
+表达式，来指定一个通用的释放步骤。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">main</span><span class="params">( )</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="function">shared_ptr&lt;Test&gt; <span class="title">sptr1</span><span class="params">( <span class="keyword">new</span> Test[<span class="number">5</span>],</span></span></span><br><span class="line"><span class="params"><span class="function">        [ ](Test* p) { <span class="keyword">delete</span>[ ] p; } )</span></span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>通过指定 delete[] 来析构，上面的代码可以完美运行。</p>
-<h2 id="issues"><a class="markdownIt-Anchor" href="#issues"></a> Issues</h2>
-<p>所有的 shared_ptrs 拥有相同的引用计数，属于相同的组。上述代码工作良好，让我们看另外一组例子。</p>
+<h2 id="issues">Issues</h2>
+<p>所有的 shared_ptrs
+拥有相同的引用计数，属于相同的组。上述代码工作良好，让我们看另外一组例子。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">main</span><span class="params">( )</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="type">int</span>* p = <span class="keyword">new</span> <span class="type">int</span>;</span><br><span class="line">    <span class="function">shared_ptr&lt;<span class="type">int</span>&gt; <span class="title">sptr1</span><span class="params">( p)</span></span>;</span><br><span class="line">    <span class="function">shared_ptr&lt;<span class="type">int</span>&gt; <span class="title">sptr2</span><span class="params">( p )</span></span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<p>上述代码会产生一个错误，因为两个来自不同组的 shared_ptr 指向同一个资源。下表给你关于错误原因的图景：</p>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/sp1.jpg" alt=""></p>
-<p>避免这个问题，尽量不要从一个裸指针 (naked pointer) 创建 shared_ptr。</p>
+<p>上述代码会产生一个错误，因为两个来自不同组的 shared_ptr
+指向同一个资源。下表给你关于错误原因的图景：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/sp1.jpg"></p>
+<p>避免这个问题，尽量不要从一个裸指针 (naked pointer) 创建
+shared_ptr。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">B</span>;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>() : <span class="built_in">m_sptrB</span>(<span class="literal">nullptr</span>) { };</span><br><span class="line">    ~<span class="built_in">A</span>()</span><br><span class="line">    {</span><br><span class="line">     cout&lt;&lt;<span class="string">" A is destroyed"</span>&lt;&lt;endl;</span><br><span class="line">    }</span><br><span class="line">    shared_ptr&lt;B&gt; m_sptrB;</span><br><span class="line">};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">B</span>() : <span class="built_in">m_sptrA</span>(<span class="literal">nullptr</span>) { };</span><br><span class="line">    ~<span class="built_in">B</span>()</span><br><span class="line">    {</span><br><span class="line">     cout&lt;&lt;<span class="string">" B is destroyed"</span>&lt;&lt;endl;</span><br><span class="line">    }</span><br><span class="line">    shared_ptr&lt;A&gt; m_sptrA;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">main</span><span class="params">( )</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="function">shared_ptr&lt;B&gt; <span class="title">sptrB</span><span class="params">( <span class="keyword">new</span> B )</span></span>;</span><br><span class="line">    <span class="function">shared_ptr&lt;A&gt; <span class="title">sptrA</span><span class="params">( <span class="keyword">new</span> A )</span></span>;</span><br><span class="line">    sptrB-&gt;m_sptrA = sptrA;</span><br><span class="line">    sptrA-&gt;m_sptrB = sptrB;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<p>上面的代码产生了一个循环引用，A 对 B 有一个 shared_ptr, B 对 A 也有一个 shared_ptr ，与 sptrA 和 sptrB 关联的资源都没有被释放，参考下表：</p>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/sp2.jpg" alt=""></p>
-<p>当 sptrA 和 sptrB 离开作用域时，它们的引用计数都只减少到 1，所以它们指向的资源并没有释放！！！！！</p>
+<p>上面的代码产生了一个循环引用，A 对 B 有一个 shared_ptr, B 对 A
+也有一个 shared_ptr ，与 sptrA 和 sptrB
+关联的资源都没有被释放，参考下表：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/sp2.jpg"></p>
+<p>当 sptrA 和 sptrB 离开作用域时，它们的引用计数都只减少到
+1，所以它们指向的资源并没有释放！！！！！</p>
 <ul>
 <li>如果几个 shared_ptrs 指向的内存块属于不同组，将产生错误。</li>
-<li>如果从一个普通指针创建一个 shared_ptr 还会引发另外一个问题。在上面的代码中，考虑到只有一个 shared_ptr 是由 p 创建的，代码可以好好工作。万一程序员在智能指针作用域结束之前删除了普通指针 p。天啦噜！！！又是一个 crash。</li>
+<li>如果从一个普通指针创建一个 shared_ptr
+还会引发另外一个问题。在上面的代码中，考虑到只有一个 shared_ptr 是由 p
+创建的，代码可以好好工作。万一程序员在智能指针作用域结束之前删除了普通指针
+p。天啦噜！！！又是一个 crash。</li>
 <li>循环引用：如果共享智能指针卷入了循环引用，资源都不会正常释放。</li>
 </ul>
 <p>为了解决循环引用，C++提供了另外一种智能指针：weak_ptr</p>
-<h1 id="weak_ptr"><a class="markdownIt-Anchor" href="#weak_ptr"></a> Weak_Ptr</h1>
-<h2 id="原理"><a class="markdownIt-Anchor" href="#原理"></a> 原理</h2>
-<p>std::weak_ptr 要与 std::shared_ptr 一起使用。 一个 std::weak_ptr 对象看做是 std::shared_ptr 对象管理的资源的观察者，它不影响共享资源的生命周期：</p>
+<h1 id="weak_ptr">Weak_Ptr</h1>
+<h2 id="原理">原理</h2>
+<p>std::weak_ptr 要与 std::shared_ptr 一起使用。 一个 std::weak_ptr
+对象看做是 std::shared_ptr
+对象管理的资源的观察者，它不影响共享资源的生命周期：</p>
 <ul>
-<li>如果需要使用 weak_ptr 正在观察的资源，可以将 weak_ptr 提升为 shared_ptr</li>
+<li>如果需要使用 weak_ptr 正在观察的资源，可以将 weak_ptr 提升为
+shared_ptr</li>
 <li>当 shared_ptr 管理的资源被释放时，weak_ptr 会自动变成 nullptr</li>
 </ul>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">Observe</span><span class="params">(std::weak_ptr&lt;<span class="type">int</span>&gt; wptr)</span> </span>{</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">auto</span> sptr = wptr.<span class="built_in">lock</span>()) {</span><br><span class="line">        std::cout &lt;&lt; <span class="string">"value: "</span> &lt;&lt; *sptr &lt;&lt; std::endl;</span><br><span class="line">    } <span class="keyword">else</span> {</span><br><span class="line">        std::cout &lt;&lt; <span class="string">"wptr lock fail"</span> &lt;&lt; std::endl;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">std::weak_ptr&lt;<span class="type">int</span>&gt; wptr;</span><br><span class="line">{</span><br><span class="line">    <span class="keyword">auto</span> sptr = std::<span class="built_in">make_shared</span>&lt;<span class="type">int</span>&gt;(<span class="number">111</span>);</span><br><span class="line">    wptr = sptr;</span><br><span class="line">    <span class="built_in">Observe</span>(wptr);  <span class="comment">// sptr 指向的资源没被释放，wptr 可以成功提升为 shared_ptr</span></span><br><span class="line">}</span><br><span class="line"><span class="built_in">Observe</span>(wptr);  <span class="comment">// sptr 指向的资源已被释放，wptr 无法提升为 shared_ptr</span></span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer7.jpg" alt=""></p>
-<p>当 shared_ptr 析构并释放共享资源的时候，只要 weak_ptr 对象还存在，控制块就会保留，weak_ptr 可以通过控制块观察到对象是否存活。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer8.jpg" alt=""></p>
-<h2 id="enable_shared_from_this"><a class="markdownIt-Anchor" href="#enable_shared_from_this"></a> enable_shared_from_this</h2>
-<p>一个类的成员函数如何获得指向自身（this）的 shared_ptr？ 看看下面这个例子有没有问题？</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer7.jpg"></p>
+<p>当 shared_ptr 析构并释放共享资源的时候，只要 weak_ptr
+对象还存在，控制块就会保留，weak_ptr 可以通过控制块观察到对象是否存活。
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer8.jpg"></p>
+<h2 id="enable_shared_from_this">enable_shared_from_this</h2>
+<p>一个类的成员函数如何获得指向自身（this）的 shared_ptr？
+看看下面这个例子有没有问题？</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Foo</span> {</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="function">std::shared_ptr&lt;Foo&gt; <span class="title">GetSPtr</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> std::<span class="built_in">shared_ptr</span>&lt;Foo&gt;(<span class="keyword">this</span>);</span><br><span class="line">  }</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">auto</span> sptr1 = std::<span class="built_in">make_shared</span>&lt;Foo&gt;();</span><br><span class="line"><span class="built_in">assert</span>(sptr1.<span class="built_in">use_count</span>() == <span class="number">1</span>);</span><br><span class="line"><span class="keyword">auto</span> sptr2 = sptr1-&gt;<span class="built_in">GetSPtr</span>();</span><br><span class="line"><span class="built_in">assert</span>(sptr1.<span class="built_in">use_count</span>() == <span class="number">1</span>);</span><br><span class="line"><span class="built_in">assert</span>(sptr2.<span class="built_in">use_count</span>() == <span class="number">1</span>);</span><br></pre></td></tr></tbody></table></figure>
-<p>上面的代码其实会生成两个独立的 shared_ptr，他们的控制块是独立的，最终导致一个 Foo 对象会被 delete 两次。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer9.jpg" alt=""></p>
-<p>成员函数获取 this 的 shared_ptr 的正确的做法是继承 std::enable_shared_from_this。</p>
+<p>上面的代码其实会生成两个独立的
+shared_ptr，他们的控制块是独立的，最终导致一个 Foo 对象会被 delete
+两次。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer9.jpg"></p>
+<p>成员函数获取 this 的 shared_ptr 的正确的做法是继承
+std::enable_shared_from_this。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Bar</span> : <span class="keyword">public</span> std::enable_shared_from_this&lt;Bar&gt; {</span><br><span class="line"> <span class="keyword">public</span>:</span><br><span class="line">  <span class="function">std::shared_ptr&lt;Bar&gt; <span class="title">GetSPtr</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">shared_from_this</span>();</span><br><span class="line">  }</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">auto</span> sptr1 = std::<span class="built_in">make_shared</span>&lt;Bar&gt;();</span><br><span class="line"><span class="built_in">assert</span>(sptr1.<span class="built_in">use_count</span>() == <span class="number">1</span>);</span><br><span class="line"><span class="keyword">auto</span> sptr2 = sptr1-&gt;<span class="built_in">GetSPtr</span>();</span><br><span class="line"><span class="built_in">assert</span>(sptr1.<span class="built_in">use_count</span>() == <span class="number">2</span>);</span><br><span class="line"><span class="built_in">assert</span>(sptr2.<span class="built_in">use_count</span>() == <span class="number">2</span>);</span><br></pre></td></tr></tbody></table></figure>
-<p>一般情况下，继承了 std::enable_shared_from_this 的子类，成员变量中增加了一个指向 this 的 weak_ptr。这个 weak_ptr 在第一次创建 shared_ptr 的时候会被初始化，指向 this。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer10.jpg" alt=""></p>
-<p>似乎继承了 std::enable_shared_from_this 的类都被强制必须通过 shared_ptr 进行管理。</p>
+<p>一般情况下，继承了 std::enable_shared_from_this
+的子类，成员变量中增加了一个指向 this 的 weak_ptr。这个 weak_ptr
+在第一次创建 shared_ptr 的时候会被初始化，指向 this。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/smart_pointer10.jpg"></p>
+<p>似乎继承了 std::enable_shared_from_this 的类都被强制必须通过
+shared_ptr 进行管理。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">auto</span> b = <span class="keyword">new</span> Bar;</span><br><span class="line"><span class="keyword">auto</span> sptr = b-&gt;<span class="built_in">shared_from_this</span>();</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="使用"><a class="markdownIt-Anchor" href="#使用"></a> 使用</h2>
+<h2 id="使用">使用</h2>
 <p>现在让我们见识一下 weak_ptr 如何解决循环引用问题：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">B</span>;</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">A</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">A</span>(  ) : <span class="built_in">m_a</span>(<span class="number">5</span>)  { };</span><br><span class="line">    ~<span class="built_in">A</span>( )</span><br><span class="line">    {</span><br><span class="line">     cout&lt;&lt;<span class="string">" A is destroyed"</span>&lt;&lt;endl;</span><br><span class="line">    }</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">PrintSpB</span><span class="params">( )</span></span>;</span><br><span class="line">    weak_ptr&lt;B&gt; m_sptrB;</span><br><span class="line">    <span class="type">int</span> m_a;</span><br><span class="line">};</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">B</span></span><br><span class="line">{</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">B</span>(  ) : <span class="built_in">m_b</span>(<span class="number">10</span>) { };</span><br><span class="line">    ~<span class="built_in">B</span>( )</span><br><span class="line">    {</span><br><span class="line">     cout&lt;&lt;<span class="string">" B is destroyed"</span>&lt;&lt;endl;</span><br><span class="line">    }</span><br><span class="line">    weak_ptr&lt;A&gt; m_sptrA;</span><br><span class="line">    <span class="type">int</span> m_b;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">A::PrintSpB</span><span class="params">( )</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">if</span>( !m_sptrB.<span class="built_in">expired</span>() )</span><br><span class="line">    {</span><br><span class="line">     cout&lt;&lt; m_sptrB.<span class="built_in">lock</span>( )-&gt;m_b&lt;&lt;endl;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">main</span><span class="params">( )</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="function">shared_ptr&lt;B&gt; <span class="title">sptrB</span><span class="params">( <span class="keyword">new</span> B )</span></span>;</span><br><span class="line">    <span class="function">shared_ptr&lt;A&gt; <span class="title">sptrA</span><span class="params">( <span class="keyword">new</span> A )</span></span>;</span><br><span class="line">    sptrB-&gt;m_sptrA = sptrA;</span><br><span class="line">    sptrA-&gt;m_sptrB = sptrB;</span><br><span class="line">    sptrA-&gt;<span class="built_in">PrintSpB</span>( );</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/sp3.jpg" alt=""></p>
-<h1 id="unique_ptr"><a class="markdownIt-Anchor" href="#unique_ptr"></a> unique_ptr</h1>
-<p>unique_ptr 遵循着独占语义。在任何时间点，资源只能唯一地被一个 unique_ptr 占有。当 unique_ptr 离开作用域，所包含的资源被释放。如果资源被其它资源重写了，之前拥有的资源将被释放。所以它保证了他所关联的资源总是能被释放。</p>
-<p><strong>创建</strong></p>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">unique_ptr&lt;<span class="type">int</span>&gt; <span class="title">uptr</span><span class="params">( <span class="keyword">new</span> <span class="type">int</span> )</span></span>;</span><br></pre></td></tr></tbody></table></figure>
-<p>当创建 unique_ptr 时，这一组对象被视作模板参数的部分。这样，程序员就不需要再提供一个指定的析构方法，如下：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/sp3.jpg"></p>
+<h1 id="unique_ptr">unique_ptr</h1>
+<p>unique_ptr 遵循着独占语义。在任何时间点，资源只能唯一地被一个
+unique_ptr 占有。当 unique_ptr
+离开作用域，所包含的资源被释放。如果资源被其它资源重写了，之前拥有的资源将被释放。所以它保证了他所关联的资源总是能被释放。</p>
+<p><strong>创建</strong> </p><figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">unique_ptr&lt;<span class="type">int</span>&gt; <span class="title">uptr</span><span class="params">( <span class="keyword">new</span> <span class="type">int</span> )</span></span>;</span><br></pre></td></tr></tbody></table></figure><p></p>
+<p>当创建 unique_ptr
+时，这一组对象被视作模板参数的部分。这样，程序员就不需要再提供一个指定的析构方法，如下：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">unique_ptr&lt;<span class="type">int</span>[ ]&gt; <span class="title">uptr</span><span class="params">( <span class="keyword">new</span> <span class="type">int</span>[<span class="number">5</span>] )</span></span>;</span><br></pre></td></tr></tbody></table></figure>
-<p>当把 unique_ptr 赋给另外一个对象时，资源的所有权就会被转移。记住 unique_ptr 不提供复制语义（拷贝赋值和拷贝构造都不可以），只支持移动语义 (move semantics)。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>当把 unique_ptr 赋给另外一个对象时，资源的所有权就会被转移。记住
+unique_ptr 不提供复制语义（拷贝赋值和拷贝构造都不可以），只支持移动语义
+(move semantics)。</p>
+<h1 id="参考文献">参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly93d3cuamlhbnNodS5jb20vcC9lNDkxOWYxYzNhMjg=">https://www.jianshu.com/p/e4919f1c3a28<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xNTA1NTUxNjU=">https://zhuanlan.zhihu.com/p/150555165<i class="fa fa-external-link-alt"></i></span><br>
-《深入理解 C<ins>11：C</ins>11 新特性解析与应用》</p>
+《深入理解 C++11：C++11 新特性解析与应用》</p>
 
     </div>
 
