@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="IIC 协议写操作流程如下：  主芯片要发出一个 start 信号 然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读&#x2F;写，0 表示写，1 表示读） 从设备回应（用来确定这个设备是否存在），然后就可以传输数据 主设备发送一个字节数据给从设备，并等待回应 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据 数据发送完之后，主芯片就会发送一个停止信号">
+    <meta name="description" content="IIC 协议  写操作 流程如下：  主芯片要发出一个 start 信号 然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读&#x2F;写，0 表示写，1 表示读） 从设备回应（用来确定这个设备是否存在），然后就可以传输数据 主设备发送一个字节数据给从设备，并等待回应 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据 数据发送完之后，主芯片就会发送一个停止">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Linux 驱动之 IIC 子系统">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxDriverIIC.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="IIC 协议写操作流程如下：  主芯片要发出一个 start 信号 然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读&#x2F;写，0 表示写，1 表示读） 从设备回应（用来确定这个设备是否存在），然后就可以传输数据 主设备发送一个字节数据给从设备，并等待回应 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据 数据发送完之后，主芯片就会发送一个停止信号">
+<meta property="og:description" content="IIC 协议  写操作 流程如下：  主芯片要发出一个 start 信号 然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读&#x2F;写，0 表示写，1 表示读） 从设备回应（用来确定这个设备是否存在），然后就可以传输数据 主设备发送一个字节数据给从设备，并等待回应 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据 数据发送完之后，主芯片就会发送一个停止">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/007_i2c_write.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/008_i2c_read.png">
@@ -163,7 +163,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#IIC-%E5%8D%8F%E8%AE%AE"><span class="nav-text">IIC 协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C"><span class="nav-text">写操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E6%93%8D%E4%BD%9C"><span class="nav-text">读操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IIC-%E4%BF%A1%E5%8F%B7"><span class="nav-text">IIC 信号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0"><span class="nav-text">硬件实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E6%8B%93%E6%89%91"><span class="nav-text">硬件拓扑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#SMBus-%E5%8D%8F%E8%AE%AE"><span class="nav-text">SMBus 协议</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90"><span class="nav-text">流程分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#I2C-tools"><span class="nav-text">I2C tools</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E5%B7%A5%E5%85%B7-i2c-tools"><span class="nav-text">选择工具 i2c_tools</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%B3%95"><span class="nav-text">用法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE%EF%BC%9A"><span class="nav-text">参考文献：</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#iic-%E5%8D%8F%E8%AE%AE"><span class="nav-text"> IIC 协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C"><span class="nav-text"> 写操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E6%93%8D%E4%BD%9C"><span class="nav-text"> 读操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iic-%E4%BF%A1%E5%8F%B7"><span class="nav-text"> IIC 信号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 硬件实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E6%8B%93%E6%89%91"><span class="nav-text"> 硬件拓扑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#smbus-%E5%8D%8F%E8%AE%AE"><span class="nav-text"> SMBus 协议</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90"><span class="nav-text"> 流程分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#i2c-tools"><span class="nav-text"> I2C tools</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E5%B7%A5%E5%85%B7-i2c_tools"><span class="nav-text"> 选择工具 i2c_tools</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%B3%95"><span class="nav-text"> 用法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献：</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -251,7 +251,9 @@
       
       
       <div class="post-body">
-          <h1 id="IIC-协议"><a href="#IIC-协议" class="headerlink" title="IIC 协议"></a>IIC 协议</h1><h2 id="写操作"><a href="#写操作" class="headerlink" title="写操作"></a>写操作</h2><p>流程如下：</p>
+          <h1 id="iic-协议"><a class="markdownIt-Anchor" href="#iic-协议"></a> IIC 协议</h1>
+<h2 id="写操作"><a class="markdownIt-Anchor" href="#写操作"></a> 写操作</h2>
+<p>流程如下：</p>
 <ul>
 <li>主芯片要发出一个 start 信号</li>
 <li>然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读/写，0 表示写，1 表示读）</li>
@@ -260,9 +262,11 @@
 <li>每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据</li>
 <li>数据发送完之后，主芯片就会发送一个停止信号</li>
 </ul>
-<p>下图：白色背景表示”主→从”，灰色背景表示”从→主”<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/007_i2c_write.png" alt=""></p>
+<p>下图：白色背景表示"主→从"，灰色背景表示"从→主"<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/007_i2c_write.png" alt=""></p>
 <span id="more"></span>
-<h2 id="读操作"><a href="#读操作" class="headerlink" title="读操作"></a>读操作</h2><p>流程如下：</p>
+<h2 id="读操作"><a class="markdownIt-Anchor" href="#读操作"></a> 读操作</h2>
+<p>流程如下：</p>
 <ul>
 <li>主芯片要发出一个 start 信号</li>
 <li>然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读/写，0 表示写，1 表示读）</li>
@@ -271,59 +275,94 @@
 <li>每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据</li>
 <li>数据发送完之后，主芯片就会发送一个停止信号</li>
 </ul>
-<p>下图：白色背景表示”主→从”，灰色背景表示”从→主”<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/008_i2c_read.png" alt=""></p>
-<h2 id="IIC-信号"><a href="#IIC-信号" class="headerlink" title="IIC 信号"></a>IIC 信号</h2><p>IIC 协议中数据传输的单位是字节，也就是 8 位。但是要用到 9 个时钟：前面 8 个时钟用来传输 8 数据，第 9 个时钟用来传输回应信号。传输时，先传输最高位 (MSB)。</p>
+<p>下图：白色背景表示"主→从"，灰色背景表示"从→主"<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/008_i2c_read.png" alt=""></p>
+<h2 id="iic-信号"><a class="markdownIt-Anchor" href="#iic-信号"></a> IIC 信号</h2>
+<p>IIC 协议中数据传输的单位是字节，也就是 8 位。但是要用到 9 个时钟：前面 8 个时钟用来传输 8 数据，第 9 个时钟用来传输回应信号。传输时，先传输最高位 (MSB)。</p>
 <ul>
 <li>开始信号（S）：SCL 为高电平时，SDA 从高电平向低电平跳变，开始传送数据</li>
 <li>结束信号（P）：SCL 为高电平时，SDA 由低电平向高电平跳变，结束传送数据</li>
 <li>响应信号 (ACK)：接收器在接收到 8 位数据后，在第 9 个时钟周期，拉低 SDA</li>
 <li>SDA 上传输的数据必须在 SCL 为高电平期间保持稳定，SDA 上的数据只能在 SCL 为低电平期间变化</li>
 </ul>
-<p>IIC 协议信号如下：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/009_i2c_signal.png" alt=""></p>
-<h2 id="硬件实现"><a href="#硬件实现" class="headerlink" title="硬件实现"></a>硬件实现</h2><p>scl 和 sda 管脚都采用开漏输出的驱动方式，需要外接上拉电阻来输出高电平。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/010_i2c_signal_internal.png" alt=""></p>
-<p>真值表如下：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/011_true_value_table.png" alt=""></p>
+<p>IIC 协议信号如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/009_i2c_signal.png" alt=""></p>
+<h2 id="硬件实现"><a class="markdownIt-Anchor" href="#硬件实现"></a> 硬件实现</h2>
+<p>scl 和 sda 管脚都采用开漏输出的驱动方式，需要外接上拉电阻来输出高电平。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/010_i2c_signal_internal.png" alt=""></p>
+<p>真值表如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/011_true_value_table.png" alt=""></p>
 <p>从真值表和电路图我们可以知道：</p>
 <ul>
 <li>当某一个芯片不想影响 SDA 线时，那就不驱动这个三极管</li>
 <li>想让 SDA 输出高电平，双方都不驱动三极管 (SDA 通过上拉电阻变为高电平）</li>
 <li>想让 SDA 输出低电平，就驱动三极管</li>
 </ul>
-<h2 id="硬件拓扑"><a href="#硬件拓扑" class="headerlink" title="硬件拓扑"></a>硬件拓扑</h2><p>soc 中的 iic 控制器与挂载在 iic 总线上的设备的拓扑图如下：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/001_i2c_hardware_block.png" alt=""></p>
-<h2 id="SMBus-协议"><a href="#SMBus-协议" class="headerlink" title="SMBus 协议"></a>SMBus 协议</h2><p>SMBus 是基于 IIC 协议的，SMBus 要求更严格，SMBus 是 IIC 协议的子集，做了相关限制，例如 VDD 的极限值不一样、地址回应 (Address Acknowledge)、时钟频率等都有相关限制，这里不做过多说明。</p>
-<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>首先通过一张图来展示这些数据结构之间的关系，如下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjOTQ2Mzc2ODkyMWZhMjUwMWMx">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_Struct.png" alt=""></p>
+<h2 id="硬件拓扑"><a class="markdownIt-Anchor" href="#硬件拓扑"></a> 硬件拓扑</h2>
+<p>soc 中的 iic 控制器与挂载在 iic 总线上的设备的拓扑图如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/001_i2c_hardware_block.png" alt=""></p>
+<h2 id="smbus-协议"><a class="markdownIt-Anchor" href="#smbus-协议"></a> SMBus 协议</h2>
+<p>SMBus 是基于 IIC 协议的，SMBus 要求更严格，SMBus 是 IIC 协议的子集，做了相关限制，例如 VDD 的极限值不一样、地址回应 (Address Acknowledge)、时钟频率等都有相关限制，这里不做过多说明。</p>
+<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
+<p>首先通过一张图来展示这些数据结构之间的关系，如下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjOTQ2Mzc2ODkyMWZhMjUwMWMx">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_Struct.png" alt=""></p>
 <ul>
-<li><p>bus_type:<br>  iic 是一个总线设备，linux 启动阶段会创建一个 iic 总线 i2c_bus_type，该总线用于管理 i2c_client 设备和 i2c_driver 驱动。该结构跟 linux 驱动之设备模型里的总线相同，这里实现了它自己的 match 和 probe 函数</p>
+<li>
+<p>bus_type:<br>
+iic 是一个总线设备，linux 启动阶段会创建一个 iic 总线 i2c_bus_type，该总线用于管理 i2c_client 设备和 i2c_driver 驱动。该结构跟 linux 驱动之设备模型里的总线相同，这里实现了它自己的 match 和 probe 函数</p>
 </li>
-<li><p>i2c_adapter:<br>  每个 soc 内部都有自己的多个 iic 控制器，i2c_adapter 结构体就是用于描述 iic 控制器的结构体（就是 iic controler），结构体里的 nr 用于表述该控制器是第几个控制器例如 iic-0，iic-1 等。这里面有一个最重要的结构就是 i2c_algorithm，该结构是具体 controler 实际 iic 传输的实现，由具体的平台实现自己的 i2c_algorithm</p>
+<li>
+<p>i2c_adapter:<br>
+每个 soc 内部都有自己的多个 iic 控制器，i2c_adapter 结构体就是用于描述 iic 控制器的结构体（就是 iic controler），结构体里的 nr 用于表述该控制器是第几个控制器例如 iic-0，iic-1 等。这里面有一个最重要的结构就是 i2c_algorithm，该结构是具体 controler 实际 iic 传输的实现，由具体的平台实现自己的 i2c_algorithm</p>
 </li>
-<li><p>i2c_client:<br>  一个 iic 下会挂载一个或多个设备，每个设备的信息由 i2c_client 结构体描述，例如设备地址等信息。该结构体还有一个指针指向 i2c_adapter，表示该设备挂载在哪个 iic controler 下以便在 iic 通信的时候通过 i2c_adapter 提供的 i2c_algorithm 提供的接口完成实际的数据传输</p>
+<li>
+<p>i2c_client:<br>
+一个 iic 下会挂载一个或多个设备，每个设备的信息由 i2c_client 结构体描述，例如设备地址等信息。该结构体还有一个指针指向 i2c_adapter，表示该设备挂载在哪个 iic controler 下以便在 iic 通信的时候通过 i2c_adapter 提供的 i2c_algorithm 提供的接口完成实际的数据传输</p>
 </li>
-<li><p>i2c_driver:<br>  iic 下挂载的设备例如 tp、温湿度传感器等设备的驱动由该数据结构来描述，这个是我们实际编写驱动中最常用的，通过 iic 驱动具体的挂载在 iic 总线上的设备。i2c_driver 跟 i2c_client 匹配成功后，就调用 i2c_driver.probe 函数</p>
+<li>
+<p>i2c_driver:<br>
+iic 下挂载的设备例如 tp、温湿度传感器等设备的驱动由该数据结构来描述，这个是我们实际编写驱动中最常用的，通过 iic 驱动具体的挂载在 iic 总线上的设备。i2c_driver 跟 i2c_client 匹配成功后，就调用 i2c_driver.probe 函数</p>
 </li>
-<li><p>i2c_msg:<br>  有了 iic 设备和 iic 驱动了，iic 是通信总线，那就是要用来传输消息的，还有一个描述具体消息的结构体就是 i2c_msg，该结构体描述了消息方向，传输地址，消息长度以及消息本身内容</p>
+<li>
+<p>i2c_msg:<br>
+有了 iic 设备和 iic 驱动了，iic 是通信总线，那就是要用来传输消息的，还有一个描述具体消息的结构体就是 i2c_msg，该结构体描述了消息方向，传输地址，消息长度以及消息本身内容</p>
 </li>
 </ul>
 <p>可以看到我们的 iic 驱动也是使用之前描述的设备驱动模型，bus 下挂载链条结构一个挂载设备一个挂载驱动通过总线提供的 match 函数进行匹配实现 device 找到 device_driver 或则 device_driver 找到要驱动的 device，然后在 match 成功后通过总线的 probe 函数调用到驱动的 probe 函数，实际驱动开发人员只需要填充 i2c_driver 结构体并将其注册到总线就可以了。区别在于 iic 总线是一个具体实实在在的总线，soc 内部有 iic 控制器，通过 i2c_adapter 描述提供统一的接口，i2c_driver 通过 i2c_adapter 提供的 iic 传输函数来操作 i2c_client 设备，这就是 iic 总线驱动的整体框架了。</p>
-<h1 id="流程分析"><a href="#流程分析" class="headerlink" title="流程分析"></a>流程分析</h1><p>i2c_register_adapter 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjYjY2Mzc2ODkyMWZhMjUwMWUz">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterAdapt.png" alt=""></p>
+<h1 id="流程分析"><a class="markdownIt-Anchor" href="#流程分析"></a> 流程分析</h1>
+<p>i2c_register_adapter 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjYjY2Mzc2ODkyMWZhMjUwMWUz">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterAdapt.png" alt=""></p>
 <p>这里面有一个函数 i2c_detect 需要注意，该函数会遍历总线下的每一个 i2c_driver 并调用 i2c_driver 的 detect 函数，具体的 i2c_driver 的 detect 函数由具体的驱动实现。</p>
-<p>i2c_register_driver 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjZDM2Mzc2ODkyMWZhMjUwMjA0">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterDriver.png" alt=""></p>
+<p>i2c_register_driver 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjZDM2Mzc2ODkyMWZhMjUwMjA0">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterDriver.png" alt=""></p>
 <p>i2c_driver 同 adapt 的注册有一些相同的流程，其中 detect 函数就是其中之一，注册 i2c_driver 的时候也会遍历 bus 下的 i2c_driver 并调用相应的 detect 函数。</p>
-<h1 id="I2C-tools"><a href="#I2C-tools" class="headerlink" title="I2C tools"></a>I2C tools</h1><h2 id="选择工具-i2c-tools"><a href="#选择工具-i2c-tools" class="headerlink" title="选择工具 i2c_tools"></a>选择工具 i2c_tools</h2><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Utilities--&gt;</span><br><span class="line">		i2c-tools--&gt;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="用法"><a href="#用法" class="headerlink" title="用法"></a>用法</h2><ul>
-<li><p>i2cdetect:   </p>
+<h1 id="i2c-tools"><a class="markdownIt-Anchor" href="#i2c-tools"></a> I2C tools</h1>
+<h2 id="选择工具-i2c_tools"><a class="markdownIt-Anchor" href="#选择工具-i2c_tools"></a> 选择工具 i2c_tools</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Utilities--&gt;</span><br><span class="line">		i2c-tools--&gt;</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="用法"><a class="markdownIt-Anchor" href="#用法"></a> 用法</h2>
+<ul>
+<li>
+<p>i2cdetect:</p>
   <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cdetect [-y] [-a] [-q|-r] I2CBUS [FIRST LAST]</span><br><span class="line">       i2cdetect -F I2CBUS</span><br><span class="line">       i2cdetect -l</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  If provided, FIRST and LAST <span class="built_in">limit</span> the probing range.</span><br></pre></td></tr></tbody></table></figure>
 </li>
-<li><p>i2cdump:   </p>
+<li>
+<p>i2cdump:</p>
   <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cdump [-f] [-y] [-r first-last] I2CBUS ADDRESS [MODE [BANK [BANKREG]]]</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  ADDRESS is an <span class="built_in">integer</span> (0x03 - 0x77)</span><br><span class="line">  MODE is one of:</span><br><span class="line">    b (byte, default)</span><br><span class="line">    w (word)</span><br><span class="line">    W (word on even register addresses)</span><br><span class="line">    s (SMBus block)</span><br><span class="line">    i (I2C block)</span><br><span class="line">    c (consecutive byte)</span><br><span class="line">    Append p <span class="keyword">for</span> SMBus PEC</span><br></pre></td></tr></tbody></table></figure>
 </li>
-<li><p>i2cget：   </p>
+<li>
+<p>i2cget：</p>
   <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cget [-f] [-y] I2CBUS CHIP-ADDRESS [DATA-ADDRESS [MODE]]</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  ADDRESS is an <span class="built_in">integer</span> (0x03 - 0x77)</span><br><span class="line">  MODE is one of:</span><br><span class="line">    b (<span class="built_in">read</span> byte data, default)</span><br><span class="line">    w (<span class="built_in">read</span> word data)</span><br><span class="line">    c (write byte/read byte)</span><br><span class="line">    Append p <span class="keyword">for</span> SMBus PEC</span><br></pre></td></tr></tbody></table></figure>
 </li>
-<li><p>i2cset：   </p>
+<li>
+<p>i2cset：</p>
   <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cset [-f] [-y] [-m MASK] [-r] I2CBUS CHIP-ADDRESS DATA-ADDRESS [VALUE] ... [MODE]</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  ADDRESS is an <span class="built_in">integer</span> (0x03 - 0x77)</span><br><span class="line">  MODE is one of:</span><br><span class="line">    c (byte, no value)</span><br><span class="line">    b (byte data, default)</span><br><span class="line">    w (word data)</span><br><span class="line">    i (I2C block data)</span><br><span class="line">    s (SMBus block data)</span><br><span class="line">    Append p <span class="keyword">for</span> SMBus PEC</span><br></pre></td></tr></tbody></table></figure>
 </li>
 </ul>
-<h1 id="参考文献："><a href="#参考文献：" class="headerlink" title="参考文献："></a>参考文献：</h1><p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9jb21t">http://www.wowotech.net/sort/comm<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vbGtubGZ5L3AvMzI2NTEwOC5odG1s">https://www.cnblogs.com/lknlfy/p/3265108.html<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly93d3cuY3h5YmIuY29tL2FydGljbGUvcm9ja3JvY2t3dS83NDM1ODE3">https://www.cxybb.com/article/rockrockwu/7435817<i class="fa fa-external-link-alt"></i></span><br>《Linux 设备驱动开发》  </p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献：</h1>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9jb21t">http://www.wowotech.net/sort/comm<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vbGtubGZ5L3AvMzI2NTEwOC5odG1s">https://www.cnblogs.com/lknlfy/p/3265108.html<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY3h5YmIuY29tL2FydGljbGUvcm9ja3JvY2t3dS83NDM1ODE3">https://www.cxybb.com/article/rockrockwu/7435817<i class="fa fa-external-link-alt"></i></span><br>
+《Linux 设备驱动开发》</p>
 
       </div>
       
