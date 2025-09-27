@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。 核心层：承上">
+    <meta name="description" content="概述按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：  驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。 核心层：承上启下，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 驱动之 Input 子系统">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxDriverInput/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。 核心层：承上">
+<meta property="og:description" content="概述按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：  驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。 核心层：承上启下，">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/input.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Input_Struct.png">
@@ -37,8 +37,8 @@
 <meta property="article:published_time" content="2020-09-30T04:00:55.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.386Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Driver">
+<meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/input.png">
 
@@ -157,7 +157,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#input_dev-%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text"> input_dev 注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input_handler-%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text"> input_handler 的注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input_handle-%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text"> input_handle 的注册流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%8C%E6%95%B4%E7%9A%84%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5%E6%B5%81%E7%A8%8B"><span class="nav-text"> 一个完整的事件上报流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E6%89%93%E5%BC%80%E5%B9%B6%E8%AF%BB%E8%AE%BE%E5%A4%87"><span class="nav-text"> 应用打开并读设备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E4%BA%A7%E7%94%9F%E4%B8%8A%E6%8A%A5%E6%95%B0%E6%8D%AE"><span class="nav-text"> 事件产生上报数据</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#input-tools"><span class="nav-text"> Input Tools</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#getevent-%E5%91%BD%E4%BB%A4"><span class="nav-text"> getevent 命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tslib-%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7"><span class="nav-text"> tslib 调试工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-tslib"><span class="nav-text"> 配置 tslib</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6"><span class="nav-text"> 插件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ts_calibrate-%E8%A7%A6%E6%91%B8%E5%B1%8F%E6%A0%A1%E5%87%86%E5%B7%A5%E5%85%B7"><span class="nav-text"> ts_calibrate 触摸屏校准工具</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text"> 总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#input-dev-%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">input_dev 注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input-handler-%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">input_handler 的注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input-handle-%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text">input_handle 的注册流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%8C%E6%95%B4%E7%9A%84%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5%E6%B5%81%E7%A8%8B"><span class="nav-text">一个完整的事件上报流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E6%89%93%E5%BC%80%E5%B9%B6%E8%AF%BB%E8%AE%BE%E5%A4%87"><span class="nav-text">应用打开并读设备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E4%BA%A7%E7%94%9F%E4%B8%8A%E6%8A%A5%E6%95%B0%E6%8D%AE"><span class="nav-text">事件产生上报数据</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Input-Tools"><span class="nav-text">Input Tools</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#getevent-%E5%91%BD%E4%BB%A4"><span class="nav-text">getevent 命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tslib-%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7"><span class="nav-text">tslib 调试工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-tslib"><span class="nav-text">配置 tslib</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6"><span class="nav-text">插件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ts-calibrate-%E8%A7%A6%E6%91%B8%E5%B1%8F%E6%A0%A1%E5%87%86%E5%B7%A5%E5%85%B7"><span class="nav-text">ts_calibrate 触摸屏校准工具</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -316,83 +316,56 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
-<p>按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/input.png" alt=""></p>
+    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/input.png" alt=""></p>
 <ul>
 <li>驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。</li>
 <li>核心层：承上启下，为驱动层提供输入设备注册和操作接口。通知事件层对输入事件进行处理。</li>
 <li>事件层：主要和用户空间进行交互。</li>
 </ul>
 <span id="more"></span>
-<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
-<p>Input 子系统实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1NWY2ZTVlMGIzNGQwOTEyMzViN2U1">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Input_Struct.png" alt=""></p>
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>Input 子系统实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1NWY2ZTVlMGIzNGQwOTEyMzViN2U1">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Input_Struct.png" alt=""></p>
 <ul>
-<li>
-<p>input_dev:<br>
-input_dev 结构体用于描述一个 input 设备，例如按键、鼠标、键盘等，我们编写设备驱动主要就是构造这个结构体。该结构体包含设备类型，消息类型，事件 code 等信息。该数据结构在内核里会挂载到一个全局链表 input_dev_list，所有注册的 input 设备都会挂载到该链表中</p>
+<li><p>input_dev:<br>  input_dev 结构体用于描述一个 input 设备，例如按键、鼠标、键盘等，我们编写设备驱动主要就是构造这个结构体。该结构体包含设备类型，消息类型，事件 code 等信息。该数据结构在内核里会挂载到一个全局链表 input_dev_list，所有注册的 input 设备都会挂载到该链表中</p>
 </li>
-<li>
-<p>input_handler:<br>
-input_handler 用于表示一个 input 事件，用于上报 input 事件，系统中所有注册的 input_handler 也会挂载到一个全局链表 input_handler_list 中。input_handler 可以类比设备驱动模型中 driver 方法，用于驱动 device，这里 input_handler 用于处理 input_dev 设备产生的事件。input_dev 和 input_handler 之间也是通过一种匹配规则来进行匹配建立联系，当 input_dev 注册的时候会遍历 input_handler_list 链表，通过 id_table 或 input_handler 的 match 方法进行匹配，匹配成功后两者之间会建立联系。同样对于 input_handler 的注册也是一样，当一个 input_handler 注册时会遍历 input_dev_list 链表，当两个结构体满足匹配关系时则建立联系</p>
+<li><p>input_handler:<br>  input_handler 用于表示一个 input 事件，用于上报 input 事件，系统中所有注册的 input_handler 也会挂载到一个全局链表 input_handler_list 中。input_handler 可以类比设备驱动模型中 driver 方法，用于驱动 device，这里 input_handler 用于处理 input_dev 设备产生的事件。input_dev 和 input_handler 之间也是通过一种匹配规则来进行匹配建立联系，当 input_dev 注册的时候会遍历 input_handler_list 链表，通过 id_table 或 input_handler 的 match 方法进行匹配，匹配成功后两者之间会建立联系。同样对于 input_handler 的注册也是一样，当一个 input_handler 注册时会遍历 input_dev_list 链表，当两个结构体满足匹配关系时则建立联系</p>
 </li>
-<li>
-<p>input_handle:<br>
-在上面的介绍中当 input_handler 和 input_dev 匹配成功后会建立联系，这个联系就是通过该结构体来建立的。当 input_dev 和 input_handler 匹配成功后会创建一个 evdev 结构体，evdev 结构体下有一个 input_handle 结构体，input_handle 结构体会指向匹配成功的 input_dev 和 input_handler，而且将自己挂载到 input_dev 和 input_handler 结构体中</p>
+<li><p>input_handle:<br>  在上面的介绍中当 input_handler 和 input_dev 匹配成功后会建立联系，这个联系就是通过该结构体来建立的。当 input_dev 和 input_handler 匹配成功后会创建一个 evdev 结构体，evdev 结构体下有一个 input_handle 结构体，input_handle 结构体会指向匹配成功的 input_dev 和 input_handler，而且将自己挂载到 input_dev 和 input_handler 结构体中</p>
 </li>
-<li>
-<p>evdev_client:<br>
-evdev_client 结构体表示一个 input 客户，也就是 app 用户会使用 input_dev，那么这个 app 用户就用 evdev_client 结构体来描述，可以看到，该结构体挂载在 evdev 结构体下，且是以链表的形式组织，也就说明一个 input 设备可以被多个 client 打开使用</p>
+<li><p>evdev_client:<br>  evdev_client 结构体表示一个 input 客户，也就是 app 用户会使用 input_dev，那么这个 app 用户就用 evdev_client 结构体来描述，可以看到，该结构体挂载在 evdev 结构体下，且是以链表的形式组织，也就说明一个 input 设备可以被多个 client 打开使用</p>
 </li>
-<li>
-<p>evdev:<br>
-通过对 input_handler 和 evdev_client 的介绍其实也就已经将 evdev 介绍完了，evdev_client 使用设备，那么需要知道使用的是哪个设备 input_dev 以及如何驱动这个设备 input_handler，这都是通过 input_handler 结构体完成的。evdev 是将 input 设备，input 设备的驱动方法和用户 client 联系起来的一个结构体</p>
+<li><p>evdev:<br>  通过对 input_handler 和 evdev_client 的介绍其实也就已经将 evdev 介绍完了，evdev_client 使用设备，那么需要知道使用的是哪个设备 input_dev 以及如何驱动这个设备 input_handler，这都是通过 input_handler 结构体完成的。evdev 是将 input 设备，input 设备的驱动方法和用户 client 联系起来的一个结构体</p>
 </li>
 </ul>
 <p>通过对 input 结构体的介绍，其实我们就已经大致了解了驱动的整体框架。其实跟设备模型中 device 和 device_driver 之间的关系很像，device 和 driver 之间有一个匹配规则，当匹配成功后，两者之间建立联系，完成驱动设备的功能。但是为什么这里不直接使用设备驱动模型呢，不理解。</p>
-<h1 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h1>
-<p>input 驱动的实现无非就是 input_dev、input_handler 的注册等流程，下面一个个看下具体相关流程吧：</p>
-<h2 id="input_dev-注册流程"><a class="markdownIt-Anchor" href="#input_dev-注册流程"></a> input_dev 注册流程</h2>
-<p>input_register_device 函数用于注册一个 input_dev 设备：</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>input 驱动的实现无非就是 input_dev、input_handler 的注册等流程，下面一个个看下具体相关流程吧：</p>
+<h2 id="input-dev-注册流程"><a href="#input-dev-注册流程" class="headerlink" title="input_dev 注册流程"></a>input_dev 注册流程</h2><p>input_register_device 函数用于注册一个 input_dev 设备：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">input_register_device</span><span class="params">(<span class="keyword">struct</span> input_dev *dev)</span></span><br></pre></td></tr></tbody></table></figure>
 <p>该函数主要完成以下工作：</p>
 <pre><code>1、为 input_dev 创建 struct device 类型的变量，并设置其所属的 class 为 input_class，并调用 device_add 完成 device 类型变量的注册，至此完成 strcut device 类型变量注册至 input_class 中，且完成了 input_dev 对应的 sysfs 属性文件的创建。 
 2、将该 input_device 注册至 input_dev_list。
 3、遍历 input_handler_list 链表，针对 input_handler_list 上每一个 input_handler，均与注册的 input_device 进行匹配检测，若匹配检测成功，则调用  input_handler-&gt;connect 接口，进行 input_handler 与 input_device 的绑定（通过调用 input_register_handle 实现，也可以理解为在 input_handler、input_device 上 完成 input_handler、input_device 的事件消息的订阅操作）。因 input_handler 和 input_device 可实现多对多的绑定，因此，会遍历 input_handler_list 链表上所有已注册的 input_handler，而不是检测到一个 input_handler 的匹配即返回。
-</code></pre>
-<h2 id="input_handler-的注册流程"><a class="markdownIt-Anchor" href="#input_handler-的注册流程"></a> input_handler 的注册流程</h2>
-<p>input_handler 的注册函数是 input_register_handler：</p>
+</code></pre><h2 id="input-handler-的注册流程"><a href="#input-handler-的注册流程" class="headerlink" title="input_handler 的注册流程"></a>input_handler 的注册流程</h2><p>input_handler 的注册函数是 input_register_handler：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">input_register_handler</span><span class="params">(<span class="keyword">struct</span> input_handler *handler)</span></span><br></pre></td></tr></tbody></table></figure>
 <p>该函数主要完成以下工作：</p>
 <pre><code>1、将该 input_device 注册至 input_handler_list      
 2、遍历 input_dev_list 链表，针对 input_dev_list 上每一个 input_dev，均与注册的 input_device 进行匹配检测，若匹配检测成功，则调用 input_handler-&gt;connect 接口，进行 input_handler 与 input_device 的绑定（通过调用 input_register_handle 实现，也可以理解为在 input_handler、input_device 上完成 input_handler、input_device 的事件消息的订阅操作）。因 input_handler 和 input_device 可实现多对多的绑定，因此，会遍历 input_dev_list 链表上所有已注册的 input_dev，而不是检测到一个 input_dev 的匹配即返回
-</code></pre>
-<h2 id="input_handle-的注册流程"><a class="markdownIt-Anchor" href="#input_handle-的注册流程"></a> input_handle 的注册流程</h2>
-<p>input_handle 的注册函数是 input_register_handle：</p>
+</code></pre><h2 id="input-handle-的注册流程"><a href="#input-handle-的注册流程" class="headerlink" title="input_handle 的注册流程"></a>input_handle 的注册流程</h2><p>input_handle 的注册函数是 input_register_handle：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">input_register_handle</span><span class="params">(<span class="keyword">struct</span> input_handle *handle)</span></span><br></pre></td></tr></tbody></table></figure>
 <p>该函数主要完成以下工作：</p>
 <pre><code>1、 完成 input_handle 与 input_handler 的关联
 2、完成 input_handle 与 input_dev 的关联
-</code></pre>
-<h1 id="一个完整的事件上报流程"><a class="markdownIt-Anchor" href="#一个完整的事件上报流程"></a> 一个完整的事件上报流程</h1>
-<h2 id="应用打开并读设备"><a class="markdownIt-Anchor" href="#应用打开并读设备"></a> 应用打开并读设备</h2>
-<p>当应用打开一个 input 设备时会通过 vfs 调用到驱动程序的 file_operations, 对于 input 设备就是 evdev.c 下的：</p>
+</code></pre><h1 id="一个完整的事件上报流程"><a href="#一个完整的事件上报流程" class="headerlink" title="一个完整的事件上报流程"></a>一个完整的事件上报流程</h1><h2 id="应用打开并读设备"><a href="#应用打开并读设备" class="headerlink" title="应用打开并读设备"></a>应用打开并读设备</h2><p>当应用打开一个 input 设备时会通过 vfs 调用到驱动程序的 file_operations, 对于 input 设备就是 evdev.c 下的：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">evdev_fops</span> =</span> {</span><br><span class="line">	.owner		= THIS_MODULE,</span><br><span class="line">	.read		= evdev_read,</span><br><span class="line">	.write		= evdev_write,</span><br><span class="line">	.poll		= evdev_poll,</span><br><span class="line">	.open		= evdev_open,</span><br><span class="line">	.release	= evdev_release,</span><br><span class="line">	.unlocked_ioctl	= evdev_ioctl,</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_COMPAT</span></span><br><span class="line">	.compat_ioctl	= evdev_ioctl_compat,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	.fasync		= evdev_fasync,</span><br><span class="line">	.llseek		= no_llseek,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>这个就是 input_dev 注册的时候会向系统注册的字符设备，该字符设备的注册时机是什么时候呢，先来看下 input_handle 的初始化。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">input_handler</span> <span class="title">evdev_handler</span> =</span> {</span><br><span class="line">	.event		= evdev_event,</span><br><span class="line">	.events		= evdev_events,</span><br><span class="line">	.connect	= evdev_connect,</span><br><span class="line">	.disconnect	= evdev_disconnect,</span><br><span class="line">	.legacy_minors	= <span class="literal">true</span>,</span><br><span class="line">	.minor		= EVDEV_MINOR_BASE,</span><br><span class="line">	.name		= <span class="string">"evdev"</span>,</span><br><span class="line">	.id_table	= evdev_ids,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">evdev_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> input_register_handler(&amp;evdev_handler);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">evdev_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	input_unregister_handler(&amp;evdev_handler);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<p>evdev_handler 里面的成员 connect 的指针指向 evdev_connect，当 input_dev 和 input_handler 匹配成功后就会调用 connect，函数，而 evdev_connect 里面会调用</p>
+<p>evdev_handler 里面的成员 connect 的指针指向 evdev_connect，当 input_dev 和 input_handler 匹配成功后就会调用 connect，函数，而 evdev_connect 里面会调用    </p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">cdev_init(&amp;evdev-&gt;cdev, &amp;evdev_fops);</span><br><span class="line"></span><br><span class="line">cdev_device_add(&amp;evdev-&gt;cdev, &amp;evdev-&gt;dev);</span><br><span class="line">...</span><br></pre></td></tr></tbody></table></figure>
-<p>evdev_fops 就是上面那个 file_operations。然后应用调用 open 就会调用驱动的 evdev_open 函数，应用调用 read 就会调用驱动的 evdev_read 函数，下面说明下 open 和 read 函数主要的工作：<br>
-evdev_open 的工作：</p>
+<p>evdev_fops 就是上面那个 file_operations。然后应用调用 open 就会调用驱动的 evdev_open 函数，应用调用 read 就会调用驱动的 evdev_read 函数，下面说明下 open 和 read 函数主要的工作：<br>evdev_open 的工作：</p>
 <pre><code>1、 创建并分配一个 evdev_client 结构体   
 2、 将 evdev_client 放入 evdev 的链表中   
-</code></pre>
-<p>evdev_read 的工作：</p>
+</code></pre><p>evdev_read 的工作：</p>
 <pre><code>如果没有数据等待休眠，调用 wait_event_interruptible 函数，将当前工作挂载在 evdev_client 的 wait 等待队列中
-</code></pre>
-<h2 id="事件产生上报数据"><a class="markdownIt-Anchor" href="#事件产生上报数据"></a> 事件产生上报数据</h2>
-<p>一般采用中断方式处理外部事件，当按键或其他输入事件发生时，产生中断，执行中断服务程序，中断服务程序一般主要就是干两件事，读取数据和上报数据，对于读取数据没什么好说的，下面看下上报数据流程：上报数据通过 input core 层提供的 input_event 函数完成，函数如下：</p>
+</code></pre><h2 id="事件产生上报数据"><a href="#事件产生上报数据" class="headerlink" title="事件产生上报数据"></a>事件产生上报数据</h2><p>一般采用中断方式处理外部事件，当按键或其他输入事件发生时，产生中断，执行中断服务程序，中断服务程序一般主要就是干两件事，读取数据和上报数据，对于读取数据没什么好说的，下面看下上报数据流程：上报数据通过 input core 层提供的 input_event 函数完成，函数如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">input_event</span><span class="params">(<span class="keyword">struct</span> input_dev *dev,</span></span><br><span class="line"><span class="params">		 <span class="type">unsigned</span> <span class="type">int</span> type, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> flags;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (is_event_supported(type, dev-&gt;evbit, EV_MAX)) {</span><br><span class="line"></span><br><span class="line">		spin_lock_irqsave(&amp;dev-&gt;event_lock, flags);</span><br><span class="line">		input_handle_event(dev, type, code, value);</span><br><span class="line">		spin_unlock_irqrestore(&amp;dev-&gt;event_lock, flags);</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>函数调用流程如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_event()</span><br><span class="line">    --&gt;input_handle_event()</span><br><span class="line">        --&gt;input_pass_values()</span><br><span class="line">            --&gt;input_to_handler()</span><br></pre></td></tr></tbody></table></figure>
@@ -401,10 +374,7 @@ evdev_open 的工作：</p>
 <p>以 evdev 为例，在上面的 evdev_handler 中提供了 events 函数 evdev_handler，该函数调用流程如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">evdev_events()</span><br><span class="line">    --&gt;evdev_pass_values()</span><br><span class="line">        --&gt;__pass_event()</span><br><span class="line">        --&gt;wake_up_interruptible_poll(&amp;client-&gt;wait,</span><br><span class="line">			EPOLLIN | EPOLLOUT | EPOLLRDNORM | EPOLLWRNORM);</span><br></pre></td></tr></tbody></table></figure>
 <p>__pass_event 函数将读取的事件传递给 client 结构体，wake_up_interruptible_poll 将应用程序唤醒（前面提到读取数据的时候如果没有数据就休眠）。</p>
-<h1 id="input-tools"><a class="markdownIt-Anchor" href="#input-tools"></a> Input Tools</h1>
-<h2 id="getevent-命令"><a class="markdownIt-Anchor" href="#getevent-命令"></a> getevent 命令</h2>
-<p>getevent 指令用于获取 input 输入事件，比如获取按键上报信息、获取触摸屏上报信息等。<br>
-getevent -h：查看 getevent 帮助信息：</p>
+<h1 id="Input-Tools"><a href="#Input-Tools" class="headerlink" title="Input Tools"></a>Input Tools</h1><h2 id="getevent-命令"><a href="#getevent-命令" class="headerlink" title="getevent 命令"></a>getevent 命令</h2><p>getevent 指令用于获取 input 输入事件，比如获取按键上报信息、获取触摸屏上报信息等。<br>getevent -h：查看 getevent 帮助信息：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@rk3288:/ <span class="comment"># getevent -h</span></span><br><span class="line">getevent -h</span><br><span class="line">Usage: getevent [-t] [-n] [-s switchmask] [-S] [-v [mask]] [-d] [-p] [-i] [-l] [-q] [-c count] [-r] [device]</span><br><span class="line">    -t: show time stamps</span><br><span class="line">    -n: don<span class="string">'t print newlines</span></span><br><span class="line"><span class="string">    -s: print switch states for given bits</span></span><br><span class="line"><span class="string">    -S: print all switch states</span></span><br><span class="line"><span class="string">    -v: verbosity mask (errs=1, dev=2, name=4, info=8, vers=16, pos. events=32, props=64)</span></span><br><span class="line"><span class="string">    -d: show HID descriptor, if available</span></span><br><span class="line"><span class="string">    -p: show possible events (errs, dev, name, pos. events)</span></span><br><span class="line"><span class="string">    -i: show all device info and possible events</span></span><br><span class="line"><span class="string">    -l: label event types and names in plain text</span></span><br><span class="line"><span class="string">    -q: quiet (clear verbosity mask)</span></span><br><span class="line"><span class="string">    -c: print given number of events then exit</span></span><br><span class="line"><span class="string">    -r: print rate events are received</span></span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>-t：显示时间戳</li>
@@ -420,12 +390,9 @@ getevent -h：查看 getevent 帮助信息：</p>
 </ul>
 <p>参数可以组合使用，一次性查看需要的触摸屏信息：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">root@rk3288:/ <span class="comment"># getevent -tlr /dev/input/event3</span></span><br><span class="line">getevent -tlr /dev/input/event3</span><br><span class="line">[    2514.550104] EV_ABS       ABS_MT_TRACKING_ID   0000001c</span><br><span class="line">[    2514.550104] EV_ABS       ABS_MT_POSITION_X    00002dac</span><br><span class="line">[    2514.550104] EV_ABS       ABS_MT_POSITION_Y    000018ca</span><br><span class="line">[    2514.550104] EV_KEY       BTN_TOUCH            DOWN</span><br><span class="line">[    2514.550104] EV_ABS       ABS_X                00002dac</span><br><span class="line">[    2514.550104] EV_ABS       ABS_Y                000018ca</span><br><span class="line">[    2514.550104] EV_SYN       SYN_REPORT           00000000             rate 0</span><br><span class="line">[    2514.638845] EV_ABS       ABS_MT_TRACKING_ID   ffffffff</span><br><span class="line">[    2514.638845] EV_KEY       BTN_TOUCH            UP</span><br><span class="line">[    2514.638845] EV_SYN       SYN_REPORT           00000000             rate 11</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="tslib-调试工具"><a class="markdownIt-Anchor" href="#tslib-调试工具"></a> tslib 调试工具</h2>
-<h3 id="配置-tslib"><a class="markdownIt-Anchor" href="#配置-tslib"></a> 配置 tslib</h3>
-<p>配置文件/etc/ts.conf。触摸模块从上到下加载。每一行指定一个模块及其参数，模块按顺序处理。在顶部使用一个 module_raw，访问您的设备，然后是过滤器模块的任意组合。</p>
+<h2 id="tslib-调试工具"><a href="#tslib-调试工具" class="headerlink" title="tslib 调试工具"></a>tslib 调试工具</h2><h3 id="配置-tslib"><a href="#配置-tslib" class="headerlink" title="配置 tslib"></a>配置 tslib</h3><p>配置文件/etc/ts.conf。触摸模块从上到下加载。每一行指定一个模块及其参数，模块按顺序处理。在顶部使用一个 module_raw，访问您的设备，然后是过滤器模块的任意组合。</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Uncomment if you wish to use the one-wire linux input layer S70/A70...</span></span><br><span class="line"><span class="comment"># module_raw one_wire_ts_input</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you wish to use the linux input layer event interface</span></span><br><span class="line">module_raw input</span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a Sharp Zaurus SL-5500/SL-5000d</span></span><br><span class="line"><span class="comment"># module_raw collie</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a Sharp Zaurus SL-C700/C750/C760/C860</span></span><br><span class="line"><span class="comment"># module_raw corgi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a device with a UCB1200/1300/1400 TS interface</span></span><br><span class="line"><span class="comment"># module_raw ucb1x00</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using an HP iPaq h3600 or similar</span></span><br><span class="line"><span class="comment"># module_raw h3600</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a Hitachi Webpad</span></span><br><span class="line"><span class="comment"># module_raw mk712</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using an IBM Arctic II</span></span><br><span class="line"><span class="comment"># module_raw arctic2</span></span><br><span class="line"></span><br><span class="line">module pthres pmin=1</span><br><span class="line">module variance delta=30</span><br><span class="line">module dejitter delta=100</span><br><span class="line">module linea</span><br></pre></td></tr></tbody></table></figure>
-<h3 id="插件"><a class="markdownIt-Anchor" href="#插件"></a> 插件</h3>
-<ul>
+<h3 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h3><ul>
 <li>pthres 压力阈值过滤器</li>
 <li>variance 方差过滤器。尽最大努力滤除来自触摸屏 ADC 的随机噪声</li>
 <li>dejitter 消除 X 和 Y 坐标上的抖动</li>
@@ -438,25 +405,17 @@ getevent -h：查看 getevent 帮助信息：</p>
 <li>iir 无限脉冲响应滤波器</li>
 <li>tslib 从触摸屏驱动采样到的设备坐标进行处理再提供给应用端的过程大体如下</li>
 </ul>
-<p>raw device --&gt; variance --&gt; dejitter --&gt; linear --&gt; application</p>
-<h3 id="ts_calibrate-触摸屏校准工具"><a class="markdownIt-Anchor" href="#ts_calibrate-触摸屏校准工具"></a> ts_calibrate 触摸屏校准工具</h3>
-<p>校准由 linear 插件完成，它使用自己的配置文件 /etc/pointercal。不要手动编辑此文件。它是由 ts_calibrate 程序创建的 ：</p>
+<p>raw device —&gt; variance —&gt; dejitter —&gt; linear —&gt; application</p>
+<h3 id="ts-calibrate-触摸屏校准工具"><a href="#ts-calibrate-触摸屏校准工具" class="headerlink" title="ts_calibrate 触摸屏校准工具"></a>ts_calibrate 触摸屏校准工具</h3><p>校准由 linear 插件完成，它使用自己的配置文件 /etc/pointercal。不要手动编辑此文件。它是由 ts_calibrate 程序创建的 ：</p>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxTS1.png" alt=""></p>
 <p>测试过滤后的输入行为。</p>
-<p>您可以使用以下命令快速测试由配置的过滤器产生的触摸行为 ts_test_mt：<br>
-ts_test_mt：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxTS2.png" alt=""></p>
-<h1 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h1>
-<ul>
-<li>应用 open 一个 input 设备，通过 vfs 调用到驱动字符设备的 open 函数，该函数创建构造一个 evdev_client 结构体并将该结构体放入打开的 input 设备的 evdev 结构体链表中</li>
-<li>应用 read 读取一个 input 设备，通过 vfs 调用到驱动的字符设备 read 函数，如果没有数据就休眠</li>
-<li>事件发生产生中断，在中断函数里读取数据并上报事件，上报事件流程是通过 input_dev 结构体找到驱动该结构体的 input_handler 结构体，然后调用 input_handler 结构体的 events 函数，在 events 函数里，主要干两件事，一是将外部事件传递给 evdev_client 结构体，二是将应用程序唤醒</li>
+<p>您可以使用以下命令快速测试由配置的过滤器产生的触摸行为 ts_test_mt：<br>ts_test_mt：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxTS2.png" alt=""></p>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li>应用 open 一个 input 设备，通过 vfs 调用到驱动字符设备的 open 函数，该函数创建构造一个 evdev_client 结构体并将该结构体放入打开的 input 设备的 evdev 结构体链表中   </li>
+<li>应用 read 读取一个 input 设备，通过 vfs 调用到驱动的字符设备 read 函数，如果没有数据就休眠   </li>
+<li>事件发生产生中断，在中断函数里读取数据并上报事件，上报事件流程是通过 input_dev 结构体找到驱动该结构体的 input_handler 结构体，然后调用 input_handler 结构体的 events 函数，在 events 函数里，主要干两件事，一是将外部事件传递给 evdev_client 结构体，二是将应用程序唤醒   </li>
 </ul>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly9sZDI0Ni5jb20vYXJ0aWNsZS8xNTk4MDkzMjM3MjM1">https://ld246.com/article/1598093237235<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vZGVuZy10YW8vcC82MDk0MDQ5Lmh0bWw=">https://www.cnblogs.com/deng-tao/p/6094049.html<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY0NDkxMDQ/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/106449104?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
-《韦东山老师相关课程和文档》</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><span class="exturl" data-url="aHR0cHM6Ly9sZDI0Ni5jb20vYXJ0aWNsZS8xNTk4MDkzMjM3MjM1">https://ld246.com/article/1598093237235<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vZGVuZy10YW8vcC82MDk0MDQ5Lmh0bWw=">https://www.cnblogs.com/deng-tao/p/6094049.html<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY0NDkxMDQ/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/106449104?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>《韦东山老师相关课程和文档》   </p>
 
     </div>
 
@@ -495,8 +454,8 @@ ts_test_mt：<br>
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
               <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
           </div>
 
         

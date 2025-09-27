@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="TrustZone   如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？ CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：">
+    <meta name="description" content="TrustZone 如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：">
 <meta property="og:type" content="website">
 <meta property="og:title" content="TEE 实现原理">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/Embedded/TEEImplementationPrinciple.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="TrustZone   如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？ CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：">
+<meta property="og:description" content="TrustZone 如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee1.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee2.png">
@@ -165,7 +165,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#trustzone"><span class="nav-text"> TrustZone</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%8C%BA%E5%88%86%E5%BD%93%E5%89%8D%E8%AE%BF%E9%97%AE%E7%8A%B6%E6%80%81%E6%98%AF%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%AE%BF%E9%97%AE%E8%BF%98%E6%98%AF%E9%9D%9E%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%AE%BF%E9%97%AE"><span class="nav-text"> 如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%88%92%E5%88%86%E5%AE%89%E5%85%A8%E5%8C%BA%E5%9F%9F%E5%92%8C%E9%9D%9E%E5%AE%89%E5%85%A8%E5%8C%BA%E5%9F%9F%E4%BB%A5%E5%8F%8A%E5%A6%82%E4%BD%95%E6%8B%A6%E6%88%AA%E9%9D%9E%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E5%AE%89%E5%85%A8%E5%9C%B0%E5%9D%80%E8%AE%BF%E9%97%AE"><span class="nav-text"> 如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ddrtzasc"><span class="nav-text"> DDR（TZASC）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sram%E5%92%8Cromtzma"><span class="nav-text"> SRAM和ROM（TZMA）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%96%E8%AE%BE%E5%9C%B0%E5%9D%80apb-to-axi%E6%A1%A5"><span class="nav-text"> 外设地址（APB-to-AXI桥）：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#axi-%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B"><span class="nav-text"> AXI 访问流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#atfarm-trusted-firmware"><span class="nav-text"> ATF（ARM Trusted Firmware）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#atf%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B"><span class="nav-text"> ATF启动流程：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#atf%E4%B8%BB%E8%A6%81%E5%AE%8C%E6%88%90%E7%9A%84%E5%8A%9F%E8%83%BD%E5%A6%82%E4%B8%8B"><span class="nav-text"> ATF主要完成的功能如下：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#op-tee"><span class="nav-text"> OP-TEE</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#tee-os%E5%8A%9F%E8%83%BD"><span class="nav-text"> TEE OS功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tee%E5%BA%94%E7%94%A8"><span class="nav-text"> TEE应用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#TrustZone"><span class="nav-text">TrustZone</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%8C%BA%E5%88%86%E5%BD%93%E5%89%8D%E8%AE%BF%E9%97%AE%E7%8A%B6%E6%80%81%E6%98%AF%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%AE%BF%E9%97%AE%E8%BF%98%E6%98%AF%E9%9D%9E%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%AE%BF%E9%97%AE%EF%BC%9F"><span class="nav-text">如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%88%92%E5%88%86%E5%AE%89%E5%85%A8%E5%8C%BA%E5%9F%9F%E5%92%8C%E9%9D%9E%E5%AE%89%E5%85%A8%E5%8C%BA%E5%9F%9F%E4%BB%A5%E5%8F%8A%E5%A6%82%E4%BD%95%E6%8B%A6%E6%88%AA%E9%9D%9E%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E5%AE%89%E5%85%A8%E5%9C%B0%E5%9D%80%E8%AE%BF%E9%97%AE%EF%BC%9F"><span class="nav-text">如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DDR%EF%BC%88TZASC%EF%BC%89%EF%BC%9A"><span class="nav-text">DDR（TZASC）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SRAM%E5%92%8CROM%EF%BC%88TZMA%EF%BC%89%EF%BC%9A"><span class="nav-text">SRAM和ROM（TZMA）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%96%E8%AE%BE%E5%9C%B0%E5%9D%80%EF%BC%88APB-to-AXI%E6%A1%A5%EF%BC%89%EF%BC%9A"><span class="nav-text">外设地址（APB-to-AXI桥）：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AXI-%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B"><span class="nav-text">AXI 访问流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ATF%EF%BC%88ARM-Trusted-Firmware%EF%BC%89"><span class="nav-text">ATF（ARM Trusted Firmware）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ATF%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B%EF%BC%9A"><span class="nav-text">ATF启动流程：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ATF%E4%B8%BB%E8%A6%81%E5%AE%8C%E6%88%90%E7%9A%84%E5%8A%9F%E8%83%BD%E5%A6%82%E4%B8%8B%EF%BC%9A"><span class="nav-text">ATF主要完成的功能如下：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#OP-TEE"><span class="nav-text">OP-TEE</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#TEE-OS%E5%8A%9F%E8%83%BD"><span class="nav-text">TEE OS功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TEE%E5%BA%94%E7%94%A8"><span class="nav-text">TEE应用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -253,42 +253,34 @@
       
       
       <div class="post-body">
-          <h1 id="trustzone"><a class="markdownIt-Anchor" href="#trustzone"></a> TrustZone</h1>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee1.png" alt=""></p>
-<h2 id="如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问"><a class="markdownIt-Anchor" href="#如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问"></a> 如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？</h2>
-<p>CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：</p>
+          <h1 id="TrustZone"><a href="#TrustZone" class="headerlink" title="TrustZone"></a>TrustZone</h1><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee1.png" alt=""></p>
+<h2 id="如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？"><a href="#如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？" class="headerlink" title="如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？"></a>如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？</h2><p>CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：</p>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee2.png" alt=""></p>
 <span id="more"></span>
 <p>这里的bit 5 NS bit（Non-secure bit）：用来指定访问的内存地址是安全映射的还是非安全映射的。</p>
 <p>只有当ARM核处于安全状态（NS bit=0）时发送到系统总线（AXI）上的读写操作才会被识别为安全读写操作，对应TEE侧的数据资源才能被访问。反之，当ARM核处于非安全状态（NS bit=1）时，ARM核发送到系统总线上的读写操作请求会被作为非安全读写操作，<strong>安全组件会根据对资源的访问权限配置来决定是否响应该访问请求</strong>。</p>
 <p>💡 NS bit的设置是通过SMC指令触发异常进入EL3安全监视器中设置的，即Normal World通过SMC调用进入Security World，将NS bit置0，Security World通过SMC指令进入Normal World，安全监视器将NS bit置1</p>
-<h2 id="如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问"><a class="markdownIt-Anchor" href="#如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问"></a> 如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？</h2>
-<h3 id="ddrtzasc"><a class="markdownIt-Anchor" href="#ddrtzasc"></a> DDR（TZASC）：</h3>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee3.png" alt=""></p>
+<h2 id="如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？"><a href="#如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？" class="headerlink" title="如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？"></a>如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？</h2><h3 id="DDR（TZASC）："><a href="#DDR（TZASC）：" class="headerlink" title="DDR（TZASC）："></a>DDR（TZASC）：</h3><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee3.png" alt=""></p>
 <p>TrustZone地址空间控制组件（TrustZone Address Space Controller，TZASC）是AXI总线上的一个主设备，<strong>TZASC能够将从设备全部的地址空间分割成一系列的不同地址范围</strong>。在安全状态下， 通过编程TZASC能够将这一系列分割后的地址区域设定成安全空间或者是非安全空间。被配置成安全属性的区域将会拒绝非安全的访问请求。</p>
 <p>使用TZASC主要是将一个AXI从设备分割成几个安全设备，例如off-Soc、DRAM等。ARM的动态内存控制器（Dynamic Memory Controller，DMC） 并不支持安全和非安全分区的功能。如果将DMC接到TZASC上，就能实现DRAM支持安全区域和非安全区域访问的功能。需要注意的是，<strong>TZASC组件只支持存储映射设备对安全和非安全区域的划分与扩展</strong>，但不支持对块设备（如EMMC、NAND flash 等）的安全和非安全区域的划分与扩展</p>
 <p>一个完整的系统必然会有片外RAM，对片外 RAM的隔离是通过TZASC组件实现的，ARM本身的DMC可以将DRAM分割成不同的区域，这些区域是没有安全和非安全分类。将DMC与TZASC相连 后再挂到总线上，通过对TZASC组件进行编程可以将DRAM划分成安全区域和非安全区域。当主设备 访问DRAM时，除需要提供物理地址之外，还会发送PROT信号。TZASC组件首先会判定主设备需要访问的DARM地址是属于安全区域还是非安全区域，然后再结合接收到的PROT信号来判定该次访问是否有效。如果PROT信号为非安全访问操作， 且访问的DRAM地址属于安全区域，则TZASC就不会响应这次访问操作，这样就能实现DRAM中安全区域和非安全区域的隔离。</p>
-<h3 id="sram和romtzma"><a class="markdownIt-Anchor" href="#sram和romtzma"></a> SRAM和ROM（TZMA）：</h3>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee4.png" alt=""></p>
+<h3 id="SRAM和ROM（TZMA）："><a href="#SRAM和ROM（TZMA）：" class="headerlink" title="SRAM和ROM（TZMA）："></a>SRAM和ROM（TZMA）：</h3><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee4.png" alt=""></p>
 <p>TrustZone内存适配器组件（TrustZone Memory Adapter，TZMA）允许对片上静态内存（on-SoC Static Memory）或者片上ROM进行安全区域和非安全区域的划分（仅有安全访问可以配置TZASC的寄存器）。TZMA支持最大2MB空间的片上静态RAM的划分，可以将2MB空间划分成两个部 分，高地址部分为非安全区域，低地址部分为安全区域，两个区域必须按照4KB进行对齐。分区的具体大小通过TZMA的输入信号R0SIZE来控制，该信号来自TZPC的输出信号TZPCR0SIZE。即通过编程TZPC可以动态地配置片上静态RAM或者ROM的大小。</p>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee5.png" alt=""></p>
-<h3 id="外设地址apb-to-axi桥"><a class="markdownIt-Anchor" href="#外设地址apb-to-axi桥"></a> 外设地址（APB-to-AXI桥）：</h3>
-<p>TrustZone同样能够保护外围设备的安全，例如：中断控制、时钟、I/O设备，因此Trust-Zone架构还 能用来解决更加广泛的安全问题。比如一个安全中断控制器和安全时钟允许一个非中断的安全任务来监控系统，能够为DRM提供可靠的时钟，能够为用户提供一个安全的输入设备从而保证用户密码数据不会被恶意软件窃取。</p>
+<h3 id="外设地址（APB-to-AXI桥）："><a href="#外设地址（APB-to-AXI桥）：" class="headerlink" title="外设地址（APB-to-AXI桥）："></a>外设地址（APB-to-AXI桥）：</h3><p>TrustZone同样能够保护外围设备的安全，例如：中断控制、时钟、I/O设备，因此Trust-Zone架构还 能用来解决更加广泛的安全问题。比如一个安全中断控制器和安全时钟允许一个非中断的安全任务来监控系统，能够为DRM提供可靠的时钟，能够为用户提供一个安全的输入设备从而保证用户密码数据不会被恶意软件窃取。</p>
 <p>AMBA3规范包含了一个低门数、低带宽的外设总线，被称作外设总线（Advanced Peripheral Bus，APB），APB通过AXI-to-APB桥连接到系统总线上。而APB总线并不具有安全状态位，<strong>为实现 APB外设与TrustZone技术相兼容，APB-to-AXI桥将负责管理APB总线上设备的安全</strong>。APB-to-AXI桥会拒绝不匹配的安全事务设置，并且不会将该事务请求发送给外设。</p>
 <p>TrustZone保护控制器组件（TrustZone Protection Controller，TZPC）是用来设定 TZPC DECPORT信号和TZPC R0SIZE等相关控制信号的。<strong>这些信号用来告知APB-to-AXI对应的外设是安全设备还是非安全设备，而TZPCR0SIZE信号用来控制TZMA对片上RAM或片上ROM安全区域大小的划分</strong>。</p>
 <p>TZPC包含三组通用寄存器 TZPCDECPROT[2：0]，每组通用寄存器可以产生8 种TZPCDECPROT信号，也就是TZPC最多可以将 24个外设设定成安全外设。TZPC组件还包含一个TZPCROSIZE寄存器，该寄存器用来为TZMA提供分区大小信息。TZPC组件的接口示意如图所示</p>
-<h2 id="axi-访问流程"><a class="markdownIt-Anchor" href="#axi-访问流程"></a> AXI 访问流程</h2>
-<p>cpu发出了虚拟地址访问，这个地址要经过AXI总线到达外设地址，但是这个地址访问仍然是没有安全状态的，<strong>TZASC或者TZMA或者APB-to-AXI桥</strong>是如何判断访问级别的呢？</p>
+<h2 id="AXI-访问流程"><a href="#AXI-访问流程" class="headerlink" title="AXI 访问流程"></a>AXI 访问流程</h2><p>cpu发出了虚拟地址访问，这个地址要经过AXI总线到达外设地址，但是这个地址访问仍然是没有安全状态的，<strong>TZASC或者TZMA或者APB-to-AXI桥</strong>是如何判断访问级别的呢？</p>
 <p>TrustZone技术通过对总线进行扩展增加安全位读写信号线来实现。除了对总线进行扩展还需要对MMU、Cache、TLB以及其他组件进行扩展都是增加了安全bit。</p>
 <p><strong>AXI总线上安全状态位的扩展</strong></p>
-<p>AXI写数据的过程如下图所示：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee6.png" alt=""></p>
+<p>AXI写数据的过程如下图所示：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee6.png" alt=""></p>
 <p>地址通道携带描述被传输数据性质的控制信息。</p>
-<p>读数据的过程如下图所示：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee7.png" alt=""></p>
+<p>读数据的过程如下图所示：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee7.png" alt=""></p>
 <p>每一个通道都拥有自己的VALID与READY信号用于实现握手，其中VALID信号表示通道的地址、数据或控制信息已经可用，而READY信号则表示接收方已准备好接收信息。</p>
 <p><strong>AXI信号描述</strong></p>
 <p>写地址通道信号：</p>
+<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -365,7 +357,9 @@
 </tr>
 </tbody>
 </table>
+</div>
 <p><strong>读地址通道信号：</strong></p>
+<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -442,6 +436,7 @@
 </tr>
 </tbody>
 </table>
+</div>
 <p>以上只列出了部分<strong>读地址通道信号和写地址通道信号。</strong></p>
 <p>而我们关心的是AWPROT和ARPROT信号。</p>
 <ul>
@@ -449,6 +444,7 @@
 <li>AWPROT[2:0]定义了写访问的访问权限。</li>
 </ul>
 <p>其中，信号定义如下：</p>
+<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -475,19 +471,15 @@
 </tr>
 </tbody>
 </table>
+</div>
 <p>这里又多了一个特权访问和非特权访问？官方手册是这么描述的：</p>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee8.png" alt=""></p>
 <p>AXI提供特权访问还是非特权访问的信息，但是具体怎么用，看各控制器的设计了。没有查到更多信息，暂时先不管这个特权访问了。</p>
-<p>详细可参考：<br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cubHpybm90ZS5jbi8yMDIxLzEwLzA4L2F4aSVFNiU4MCVCQiVFNyVCQSVCRiVFNiU4MCVCQiVFNyVCQiU5My8=">https://www.lzrnote.cn/2021/10/08/axi总线总结/<i class="fa fa-external-link-alt"></i></span></p>
+<p>详细可参考：<br><span class="exturl" data-url="aHR0cHM6Ly93d3cubHpybm90ZS5jbi8yMDIxLzEwLzA4L2F4aeaAu+e6v+aAu+e7ky8=">https://www.lzrnote.cn/2021/10/08/axi总线总结/<i class="fa fa-external-link-alt"></i></span></p>
 <p><span class="exturl" data-url="aHR0cDovL3d3dy5nc3RpdHQuZWNlLnVmbC5lZHUvY291cnNlcy9mYWxsMTUvZWVsNDcyMF81NzIxL2xhYnMvcmVmcy9BWEk0X3NwZWNpZmljYXRpb24ucGRm">http://www.gstitt.ece.ufl.edu/courses/fall15/eel4720_5721/labs/refs/AXI4_specification.pdf<i class="fa fa-external-link-alt"></i></span></p>
-<h1 id="atfarm-trusted-firmware"><a class="markdownIt-Anchor" href="#atfarm-trusted-firmware"></a> ATF（ARM Trusted Firmware）</h1>
-<p>该固件统一了ARM底层接口标准，如电源状态控制接口（Power Status Control Interface，PSCI）、安全启 动需求（Trusted Board Boot Requirements， TBBR）、安全世界状态（SWS）与正常世界状态 （NWS）切换的安全监控模式调用（secure monitor call，smc）操作等。ATF旨在将ARM底层的操作统一使代码能够重用和便于移植。</p>
-<h2 id="atf启动流程"><a class="markdownIt-Anchor" href="#atf启动流程"></a> ATF启动流程：</h2>
-<p>ATF的源代码共分为bl1、bl2、bl31、bl32、 bl33部分，其中bl1、bl2、bl31部分属于固定的固件，bl32和bl33分别用于加载TEE OS和REE侧的镜像。整个加载过程可配置成安全启动的方式，每一个镜像文件在被加载之前都会验证镜像文件的电子签名是否合法。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee9.png" alt=""></p>
-<h2 id="atf主要完成的功能如下"><a class="markdownIt-Anchor" href="#atf主要完成的功能如下"></a> ATF主要完成的功能如下：</h2>
-<ul>
+<h1 id="ATF（ARM-Trusted-Firmware）"><a href="#ATF（ARM-Trusted-Firmware）" class="headerlink" title="ATF（ARM Trusted Firmware）"></a>ATF（ARM Trusted Firmware）</h1><p>该固件统一了ARM底层接口标准，如电源状态控制接口（Power Status Control Interface，PSCI）、安全启 动需求（Trusted Board Boot Requirements， TBBR）、安全世界状态（SWS）与正常世界状态 （NWS）切换的安全监控模式调用（secure monitor call，smc）操作等。ATF旨在将ARM底层的操作统一使代码能够重用和便于移植。</p>
+<h2 id="ATF启动流程："><a href="#ATF启动流程：" class="headerlink" title="ATF启动流程："></a>ATF启动流程：</h2><p>ATF的源代码共分为bl1、bl2、bl31、bl32、 bl33部分，其中bl1、bl2、bl31部分属于固定的固件，bl32和bl33分别用于加载TEE OS和REE侧的镜像。整个加载过程可配置成安全启动的方式，每一个镜像文件在被加载之前都会验证镜像文件的电子签名是否合法。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee9.png" alt=""></p>
+<h2 id="ATF主要完成的功能如下："><a href="#ATF主要完成的功能如下：" class="headerlink" title="ATF主要完成的功能如下："></a>ATF主要完成的功能如下：</h2><ul>
 <li>初始化安全世界状态运行环境、异常向量、 控制寄存器、中断控制器、配置平台的中断。</li>
 <li>初始化ARM通用中断控制器（General Interrupt Controller，GIC）2.0版本和3.0版本的驱动初始化。</li>
 <li>执行ARM系统IP的标准初始化操作以及安全扩展组件的基本配置。</li>
@@ -495,18 +487,16 @@
 <li>实现可信板级引导功能，对引导过程中加载的镜像文件进行电子签名检查。</li>
 <li>支持自有固件的引导，开发者可根据具体需求将自有固件添加到ATF的引导流程中。</li>
 </ul>
-<p>Trusted Firmware提供了满足ARM安全规格的参考代码，包括TBBR(Trusted Board&nbsp; Boot Requirements)和SMCC。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee10.png" alt=""></p>
+<p>Trusted Firmware提供了满足ARM安全规格的参考代码，包括TBBR(Trusted Board  Boot Requirements)和SMCC。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee10.png" alt=""></p>
 <p>SMC Dispatcher：处理非安全世界的SMC请求，决定哪些SMC由Trusted Firmware在EL3处理，哪些转发给TEE进行处理。</p>
 <p>Trusted Firmware处理PSCI任务、或者SOC相关工作。一个典型的基于TrustZone系统软件调用栈关系图：</p>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee11.png" alt=""></p>
 <ul>
-<li>安全世界的Trusted OS提供一系列安全服务，比如key管理或DRM。非安全世界应用需要使用这些服务，但是又无法直接使用。通过使用一些库中API来获取这些能力，<span class="exturl" data-url="aHR0cDovL3huLS1saWJEUk0taGg0a2o0Mmouc28=">比如libDRM.so<i class="fa fa-external-link-alt"></i></span>。</li>
+<li>安全世界的Trusted OS提供一系列安全服务，比如key管理或DRM。非安全世界应用需要使用这些服务，但是又无法直接使用。通过使用一些库中API来获取这些能力，比如libDRM.so。</li>
 <li>这些库和Trusted service之间通信往往通过message queue或者Mailbox。他们之间通信所用内存往往被称为WSM(World Shared Memory)。这些内存必须能够被Trusted service和库访问，这就意味着这些内存是非安全内存。</li>
 <li>应用通过库发送一个请求到Mailbox或message queue，然后触发内核中TrustZone驱动。</li>
 <li>TrustZone驱动负责和TEE部分交互，包括为message queue申请内存和注册这些内存。由于安全和非安全运行在两个虚拟地址空间，所以无法通过虚拟地址进行通信。</li>
-<li>TrustZone驱动通过调用SMC进入安全状态，控制权通过EL3的Secure Monitor传递到TEE中的TEEOS。TEEOS从message queue内存中获取内容由Trusted service进行处理。
-<ul>
+<li>TrustZone驱动通过调用SMC进入安全状态，控制权通过EL3的Secure Monitor传递到TEE中的TEEOS。TEEOS从message queue内存中获取内容由Trusted service进行处理。<ul>
 <li><strong>Trusting the message</strong>：由于message是从非安全世界传递的，所以需要安全世界对这些内容进行一些认证。</li>
 <li><strong>Scheduling</strong>：对于PSCI类型快速处理并且不频繁请求，进入EL3处理完成后退出到非安全状态。对于一些需要TOS处理的任务，不能被非安全中断打断，避免造成安全服务不可用。</li>
 <li><strong>OP-TEE</strong>：OP-TEE内核运行在S.EL1，可信应用运行在S.EL0。</li>
@@ -514,27 +504,22 @@
 </li>
 </ul>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee12.png" alt=""></p>
-<h1 id="op-tee"><a class="markdownIt-Anchor" href="#op-tee"></a> OP-TEE</h1>
-<p>OP-TEE 是依靠 Arm TrustZone 技术作为底层硬件隔离机制而实现的一种TEE OS。</p>
-<h2 id="tee-os功能"><a class="markdownIt-Anchor" href="#tee-os功能"></a> TEE OS功能</h2>
-<ul>
+<h1 id="OP-TEE"><a href="#OP-TEE" class="headerlink" title="OP-TEE"></a>OP-TEE</h1><p>OP-TEE 是依靠 Arm TrustZone 技术作为底层硬件隔离机制而实现的一种TEE OS。</p>
+<h2 id="TEE-OS功能"><a href="#TEE-OS功能" class="headerlink" title="TEE OS功能"></a>TEE OS功能</h2><ul>
 <li>进程管理</li>
 <li>内存管理</li>
-<li>安全存储
-<ul>
+<li>安全存储<ul>
 <li>RPMB File System</li>
 <li>REE File System</li>
 </ul>
 </li>
-<li>加密引擎
-<ul>
+<li>加密引擎<ul>
 <li>对称加密（AES，DES）</li>
 <li>非对称加密（RSA，ECC）</li>
 <li>摘要（MD5，HASH，HMAC）</li>
 </ul>
 </li>
-<li>软件隔离
-<ul>
+<li>软件隔离<ul>
 <li>进程隔离</li>
 <li>内存隔离</li>
 <li>数据隔离</li>
@@ -545,17 +530,14 @@
 <li>硬件秘钥及派生</li>
 <li>…</li>
 </ul>
-<h2 id="tee应用"><a class="markdownIt-Anchor" href="#tee应用"></a> TEE应用</h2>
-<ul>
-<li>DRM
-<ul>
+<h2 id="TEE应用"><a href="#TEE应用" class="headerlink" title="TEE应用"></a>TEE应用</h2><ul>
+<li>DRM<ul>
 <li>Widevine</li>
 <li>PlayReady</li>
 <li>Netflix</li>
 </ul>
 </li>
-<li>CAS
-<ul>
+<li>CAS<ul>
 <li>Nagra</li>
 <li>Verimatrix</li>
 <li>Irdeto</li>
@@ -571,9 +553,7 @@
 <li>重置保护</li>
 <li>…</li>
 </ul>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmxvc2NuL2Jsb2cvYmxvYi9tYXN0ZXIvUkVBRE1FLm1k">https://github.com/carloscn/blog/blob/master/README.md<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cuc2VjcnNzLmNvbS9hcnRpY2xlcy8xNDE4Nw==">物联网终端应用TEE的一些思考<i class="fa fa-external-link-alt"></i></span></p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmxvc2NuL2Jsb2cvYmxvYi9tYXN0ZXIvUkVBRE1FLm1k">https://github.com/carloscn/blog/blob/master/README.md<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly93d3cuc2VjcnNzLmNvbS9hcnRpY2xlcy8xNDE4Nw==">物联网终端应用TEE的一些思考<i class="fa fa-external-link-alt"></i></span></p>
 
       </div>
       

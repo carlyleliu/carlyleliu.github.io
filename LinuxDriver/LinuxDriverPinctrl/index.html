@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="Pinctrl 概述 关于 pinctrl 主要可以归结为两类设置，其中一类是功能选择，即一组 gpio 是用于 iic 还是 uart 还是就作为普通 gpio 来用，另一类是 gpio 的特性配置，即上拉、下拉、驱动能力和速率的配置。而 pinctrl 主要负责这两类配置的管理工作。总结起来 pinctrl 主要完成以下三种功能：  引脚枚举与命名 (Enumerating and nami">
+    <meta name="description" content="Pinctrl 概述关于 pinctrl 主要可以归结为两类设置，其中一类是功能选择，即一组 gpio 是用于 iic 还是 uart 还是就作为普通 gpio 来用，另一类是 gpio 的特性配置，即上拉、下拉、驱动能力和速率的配置。而 pinctrl 主要负责这两类配置的管理工作。总结起来 pinctrl 主要完成以下三种功能：  引脚枚举与命名 (Enumerating and naming">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 驱动之 Pinctrl 子系统">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxDriverPinctrl/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="Pinctrl 概述 关于 pinctrl 主要可以归结为两类设置，其中一类是功能选择，即一组 gpio 是用于 iic 还是 uart 还是就作为普通 gpio 来用，另一类是 gpio 的特性配置，即上拉、下拉、驱动能力和速率的配置。而 pinctrl 主要负责这两类配置的管理工作。总结起来 pinctrl 主要完成以下三种功能：  引脚枚举与命名 (Enumerating and nami">
+<meta property="og:description" content="Pinctrl 概述关于 pinctrl 主要可以归结为两类设置，其中一类是功能选择，即一组 gpio 是用于 iic 还是 uart 还是就作为普通 gpio 来用，另一类是 gpio 的特性配置，即上拉、下拉、驱动能力和速率的配置。而 pinctrl 主要负责这两类配置的管理工作。总结起来 pinctrl 主要完成以下三种功能：  引脚枚举与命名 (Enumerating and naming">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/PinCtrlStruct.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/DeviceRegister.png">
@@ -39,8 +39,8 @@
 <meta property="article:published_time" content="2020-09-08T08:55:52.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.390Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Driver">
+<meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/PinCtrlStruct.png">
 
@@ -159,7 +159,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#pinctrl-%E6%A6%82%E8%BF%B0"><span class="nav-text"> Pinctrl 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dts-%E9%85%8D%E7%BD%AE"><span class="nav-text"> dts 配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pinctrl-%E9%87%8D%E8%A6%81%E6%A6%82%E5%BF%B5"><span class="nav-text"> Pinctrl 重要概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pin-controller"><span class="nav-text"> Pin Controller</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#client-device"><span class="nav-text"> Client Device</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pin-controller-%E7%9A%84%E6%B3%A8%E5%86%8C"><span class="nav-text"> Pin Controller 的注册</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pinctrl-map-%E6%B3%A8%E5%86%8C"><span class="nav-text"> Pinctrl Map 注册</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bing-%E8%BF%87%E7%A8%8B"><span class="nav-text"> Bing 过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8E-gpio-%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-text"> 与 gpio 的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pinctrl-%E5%92%8C-gpio-%E4%B9%8B%E9%97%B4%E7%9A%84%E5%BC%BA%E8%80%A6%E5%90%88%E5%AE%9E%E7%8E%B0"><span class="nav-text"> pinctrl 和 gpio 之间的强耦合实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Pinctrl-%E6%A6%82%E8%BF%B0"><span class="nav-text">Pinctrl 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dts-%E9%85%8D%E7%BD%AE"><span class="nav-text">dts 配置</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Pinctrl-%E9%87%8D%E8%A6%81%E6%A6%82%E5%BF%B5"><span class="nav-text">Pinctrl 重要概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Pin-Controller"><span class="nav-text">Pin Controller</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Client-Device"><span class="nav-text">Client Device</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Pin-Controller-%E7%9A%84%E6%B3%A8%E5%86%8C"><span class="nav-text">Pin Controller 的注册</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Pinctrl-Map-%E6%B3%A8%E5%86%8C"><span class="nav-text">Pinctrl Map 注册</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Bing-%E8%BF%87%E7%A8%8B"><span class="nav-text">Bing 过程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8E-gpio-%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-text">与 gpio 的关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#pinctrl-%E5%92%8C-gpio-%E4%B9%8B%E9%97%B4%E7%9A%84%E5%BC%BA%E8%80%A6%E5%90%88%E5%AE%9E%E7%8E%B0"><span class="nav-text">pinctrl 和 gpio 之间的强耦合实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -318,100 +318,64 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="pinctrl-概述"><a class="markdownIt-Anchor" href="#pinctrl-概述"></a> Pinctrl 概述</h1>
-<p>关于 pinctrl 主要可以归结为两类设置，其中一类是功能选择，即一组 gpio 是用于 iic 还是 uart 还是就作为普通 gpio 来用，另一类是 gpio 的特性配置，即上拉、下拉、驱动能力和速率的配置。而 pinctrl 主要负责这两类配置的管理工作。总结起来 pinctrl 主要完成以下三种功能：</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="Pinctrl-概述"><a href="#Pinctrl-概述" class="headerlink" title="Pinctrl 概述"></a>Pinctrl 概述</h1><p>关于 pinctrl 主要可以归结为两类设置，其中一类是功能选择，即一组 gpio 是用于 iic 还是 uart 还是就作为普通 gpio 来用，另一类是 gpio 的特性配置，即上拉、下拉、驱动能力和速率的配置。而 pinctrl 主要负责这两类配置的管理工作。总结起来 pinctrl 主要完成以下三种功能：</p>
 <ul>
 <li>引脚枚举与命名 (Enumerating and naming)</li>
 <li>引脚复用 (Multiplexing)：比如用作 GPIO、I2C 或其他功能</li>
 <li>引脚配置 (Configuration)：比如上拉、下来、open drain、驱动强度等</li>
 </ul>
 <span id="more"></span>
-<h1 id="dts-配置"><a class="markdownIt-Anchor" href="#dts-配置"></a> dts 配置</h1>
-<p>以全志平台的写法如下（虚构的）：</p>
+<h1 id="dts-配置"><a href="#dts-配置" class="headerlink" title="dts 配置"></a>dts 配置</h1><p>以全志平台的写法如下（虚构的）：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">uart0_pins: uart0-pins {</span><br><span class="line">    pins = "PA4", "PA5";</span><br><span class="line">    function = "uart0";</span><br><span class="line">};</span><br><span class="line">uart0_sleep_pins: uart0-pins {</span><br><span class="line">    pins = "PA4", "PA5";</span><br><span class="line">    function = "gpio";</span><br><span class="line">};</span><br><span class="line">...</span><br><span class="line">&amp;uart0 {</span><br><span class="line">    pinctrl-names = "default","sleep";</span><br><span class="line">    pinctrl-0 = &lt;&amp;uart0_pins&gt;;</span><br><span class="line">    pinctrl-1 = &lt;&amp;uart0_sleep_pins&gt;;</span><br><span class="line">    status = "okay";</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>pinctrl-0 对应的 pinctrl-names 的第 0 个名称 default，默认配置，也就是 uart0 在使用 pinctrl 的时候的默认配置，pinctrl-1 对应的是 pinctrl-names 的第一个名称 sleep，在系统进入休眠的时候会通过 pinctrl 将 uart0 的 pin 配置成 gpio 功能。</p>
-<h1 id="pinctrl-重要概念"><a class="markdownIt-Anchor" href="#pinctrl-重要概念"></a> Pinctrl 重要概念</h1>
-<p>在软件上将他们分为 pin controller 和 client device 两个设备，但是 pinctrl 一般是没有具体硬件的控制器的，就是 gpio 里的一些 config 和 data 寄存器，control 是软件抽象的概念。</p>
-<h2 id="pin-controller"><a class="markdownIt-Anchor" href="#pin-controller"></a> Pin Controller</h2>
-<p>pin controller 和 GPIO Controller 不是一回事，前者控制的引脚可用于 GPIO 功能、I2C 功能；后者只是把引脚配置为输入、输出等简单的功能。即先用 pin controller 把引脚配置为 GPIO，再用 GPIO Controler 把引脚配置为输入或输出。</p>
+<h1 id="Pinctrl-重要概念"><a href="#Pinctrl-重要概念" class="headerlink" title="Pinctrl 重要概念"></a>Pinctrl 重要概念</h1><p>在软件上将他们分为 pin controller 和 client device 两个设备，但是 pinctrl 一般是没有具体硬件的控制器的，就是 gpio 里的一些 config 和 data 寄存器，control 是软件抽象的概念。</p>
+<h2 id="Pin-Controller"><a href="#Pin-Controller" class="headerlink" title="Pin Controller"></a>Pin Controller</h2><p>pin controller 和 GPIO Controller 不是一回事，前者控制的引脚可用于 GPIO 功能、I2C 功能；后者只是把引脚配置为输入、输出等简单的功能。即先用 pin controller 把引脚配置为 GPIO，再用 GPIO Controler 把引脚配置为输入或输出。</p>
 <ul>
-<li>
-<p>Pin State<br>
-对于一个“client device”来说，比如对于一个 UART 设备，它有多个“状态”：default、sleep 等，那对应的引脚也有这些状态。比如默认状态下，UART 设备是工作的，那么所用的引脚就要复用为 UART 功能。在休眠状态下，为了省电，可以把这些引脚复用为 GPIO 功能；或者直接把它们配置输出高电平</p>
+<li><p>Pin State<br>  对于一个“client device”来说，比如对于一个 UART 设备，它有多个“状态”：default、sleep 等，那对应的引脚也有这些状态。比如默认状态下，UART 设备是工作的，那么所用的引脚就要复用为 UART 功能。在休眠状态下，为了省电，可以把这些引脚复用为 GPIO 功能；或者直接把它们配置输出高电平</p>
 </li>
-<li>
-<p>Groups 和 Function<br>
-一个设备会用到一个或多个引脚，这些引脚就可以归为一组 (group)。这些引脚可以复用为某个功能：function</p>
+<li><p>Groups 和 Function<br>  一个设备会用到一个或多个引脚，这些引脚就可以归为一组 (group)。这些引脚可以复用为某个功能：function</p>
 </li>
-<li>
-<p>Multiplexing node 和 Configuration node<br>
-可以用来描述复用信息：哪组 (group) 引脚复用为哪个功能 (function)<br>
-可以用来描述配置信息：哪组 (group) 引脚配置为哪个设置功能 (setting)，比如上拉、下拉等</p>
+<li><p>Multiplexing node 和 Configuration node<br>  可以用来描述复用信息：哪组 (group) 引脚复用为哪个功能 (function)<br>  可以用来描述配置信息：哪组 (group) 引脚配置为哪个设置功能 (setting)，比如上拉、下拉等</p>
 </li>
 </ul>
-<h2 id="client-device"><a class="markdownIt-Anchor" href="#client-device"></a> Client Device</h2>
-<p>具体到每个控制器一般都是要通过 pin 脚与外部连接的，这就需要使用 soc 的 pin 脚，那么这个控制器就是 pinctrl 的 client device，具体的 client device 会通过 pinctrl 来将 pin 设置为相应的功能及配置。</p>
-<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
-<p>pinctrl 的数据结构是比较复杂的，整体数据结构之间的关系如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjEzYjdiMzlmMzQ2ZmIwNzBiOThkYjdi">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/PinCtrlStruct.png" alt=""></p>
+<h2 id="Client-Device"><a href="#Client-Device" class="headerlink" title="Client Device"></a>Client Device</h2><p>具体到每个控制器一般都是要通过 pin 脚与外部连接的，这就需要使用 soc 的 pin 脚，那么这个控制器就是 pinctrl 的 client device，具体的 client device 会通过 pinctrl 来将 pin 设置为相应的功能及配置。</p>
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>pinctrl 的数据结构是比较复杂的，整体数据结构之间的关系如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjEzYjdiMzlmMzQ2ZmIwNzBiOThkYjdi">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/PinCtrlStruct.png" alt=""></p>
 <p>上图是数据结构的整体结构图，主要分为三部分，下面我将分别介绍每一部分：</p>
 <ul>
-<li>
-<p>pin controller:<br>
-pin controller 主要是描述该 soc 的所有引脚信息以及一系列操作函数集。该结构通过 pinctrl_dev 数据结构来描述，该结构体主要提供的功能是：将此引脚控制器的每个引脚描述符保存在 radix_tree 树中，通过 struct pin_desc 来描述该引脚控制器，pin_desc 里有控制器的每个引脚配置信息以及访问及设置该引脚控制器的方法，也就是 pctlops、pmxops 和 confops，分别是访问控制器下的 pin 和 group 的方法、设置复用功能和设置配置引脚的操作方法，这个一般由 soc 原厂来提供驱动</p>
+<li><p>pin controller:<br>  pin controller 主要是描述该 soc 的所有引脚信息以及一系列操作函数集。该结构通过 pinctrl_dev 数据结构来描述，该结构体主要提供的功能是：将此引脚控制器的每个引脚描述符保存在 radix_tree 树中，通过 struct pin_desc 来描述该引脚控制器，pin_desc 里有控制器的每个引脚配置信息以及访问及设置该引脚控制器的方法，也就是 pctlops、pmxops 和 confops，分别是访问控制器下的 pin 和 group 的方法、设置复用功能和设置配置引脚的操作方法，这个一般由 soc 原厂来提供驱动</p>
 </li>
-<li>
-<p>pinctrl_maps:<br>
-pinctrl_maps 主要是描述板级配置信息，对于一块单板会使用的 soc 的不同控制器及不同配置，对于同一 soc 的 iic0 控制器在不同单板上可以接在不同的 pin group 上，这就是 pin 的管脚复用功能。在 dts 中如下：</p>
+<li><p>pinctrl_maps:<br>  pinctrl_maps 主要是描述板级配置信息，对于一块单板会使用的 soc 的不同控制器及不同配置，对于同一 soc 的 iic0 控制器在不同单板上可以接在不同的 pin group 上，这就是 pin 的管脚复用功能。在 dts 中如下：</p>
   <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&amp;uart0 {</span><br><span class="line">    pinctrl-names = <span class="string">"default"</span>,<span class="string">"sleep"</span>;</span><br><span class="line">    pinctrl<span class="number">-0</span> = &lt;&amp;uart0_pins&gt;;</span><br><span class="line">    pinctrl<span class="number">-1</span> = &lt;&amp;uart0_sleep_pins&gt;;</span><br><span class="line">    status = <span class="string">"okay"</span>;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
-<p>pinctrl-0 和 pinctrl-1 等会被解析成一个个的 pinctrl_maps 然后通过 pinctrl_register_mappings 函数将每一个控制器用到的引脚信息这册到内核，实际上就是通过一个链表组织整个单板上控制器的引脚状态信息</p>
+<p>  pinctrl-0 和 pinctrl-1 等会被解析成一个个的 pinctrl_maps 然后通过 pinctrl_register_mappings 函数将每一个控制器用到的引脚信息这册到内核，实际上就是通过一个链表组织整个单板上控制器的引脚状态信息</p>
 </li>
-<li>
-<p>pinctrl:<br>
-pinctrl 主要是描述 client 设备管脚的状态和使用情况。例如对于 uart、iic、spi 等设备都需要通过 pin 与其他设备进行通信，那么就需要配置 pin 连接到对应的具体控制器以及配置 pin 的一些电器特性，例如上下拉，驱动能力速率等信息。该数据结构既然是 client 端的数据那么就需要挂入到设备驱动模型结构中，在上图可以看到该结构先是挂入到 dev_pin_info 结构，然后 dev_pin_info 又是 struct device 结构的成员，这是该结构的上半部分；下半部分是状态信息的描述了首先是挂接所有的状态例如 default、sleep 状态。然后每个状态下就是配置信息，这些配置信息来自上面介绍的 pinctrl_maps 结构体中的数据</p>
+<li><p>pinctrl:<br> pinctrl 主要是描述 client 设备管脚的状态和使用情况。例如对于 uart、iic、spi 等设备都需要通过 pin 与其他设备进行通信，那么就需要配置 pin 连接到对应的具体控制器以及配置 pin 的一些电器特性，例如上下拉，驱动能力速率等信息。该数据结构既然是 client 端的数据那么就需要挂入到设备驱动模型结构中，在上图可以看到该结构先是挂入到 dev_pin_info 结构，然后 dev_pin_info 又是 struct device 结构的成员，这是该结构的上半部分；下半部分是状态信息的描述了首先是挂接所有的状态例如 default、sleep 状态。然后每个状态下就是配置信息，这些配置信息来自上面介绍的 pinctrl_maps 结构体中的数据</p>
 </li>
 </ul>
-<h1 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h1>
-<h2 id="pin-controller-的注册"><a class="markdownIt-Anchor" href="#pin-controller-的注册"></a> Pin Controller 的注册</h2>
-<p>pin controller 的注册主要调用吧如下函数：</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><h2 id="Pin-Controller-的注册"><a href="#Pin-Controller-的注册" class="headerlink" title="Pin Controller 的注册"></a>Pin Controller 的注册</h2><p>pin controller 的注册主要调用吧如下函数：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> pinctrl_dev *<span class="title function_">pinctrl_register</span><span class="params">(<span class="keyword">struct</span> pinctrl_desc *pctldesc,</span></span><br><span class="line"><span class="params">				    <span class="keyword">struct</span> device *dev, <span class="type">void</span> *driver_data)</span></span><br></pre></td></tr></tbody></table></figure>
 <p>该函数需要提供一个 pinctrl_desc 结构体，并返回一个 pinctrl_dev 结构体。由于函数调用关系比较简单这里就不画流程图了。这里最关键的是 pinctrl_desc 结构体：该结构体用于描述一个 soc pin controller 的信息，包含所支持的 pin 引脚的描述（每一个引脚的名称与 index）、pin 复用操作的接口（主要是 struct pinmux_ops 类型的变量，包含引脚的申请与释放、gpio 引脚复用配置以及方向设置接口等）、pin 引脚或 group 相关的引脚配置接口（包含引脚配置接口、引脚当前配置参数获取接口、group 相关引脚的配置接口、debug 接口等）、group 相关的操作接口（获取 group 的个数、获取 group 的名称、获取 group 对应的引脚内容、从设备树设备节点中解析 board pin 描述信息并进行 pinctrl map 注册的接口 dt_node_to_map）。然后 pinctrl_register 函数就是创建一个 pinctrl_dev 结构体然后设置相关成员变量并对 pinctrl_desc 结构体中提供的一些函数操作做检查（必须提供函数实现），再将 pinctrl_dev 链入 pinctrldev_list 全局链表中即可。</p>
 <p>devm_pinctrl_register 是 pinctrl_register 的资源管理版本，也是调用 pinctrl_register 实现的：</p>
-<h2 id="pinctrl-map-注册"><a class="markdownIt-Anchor" href="#pinctrl-map-注册"></a> Pinctrl Map 注册</h2>
-<p>pinctrl map 的注册函数是 pinctrl_register_mappings，如下：</p>
+<h2 id="Pinctrl-Map-注册"><a href="#Pinctrl-Map-注册" class="headerlink" title="Pinctrl Map 注册"></a>Pinctrl Map 注册</h2><p>pinctrl map 的注册函数是 pinctrl_register_mappings，如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">pinctrl_register_mappings</span><span class="params">(<span class="type">const</span> <span class="keyword">struct</span> pinctrl_map *maps,</span></span><br><span class="line"><span class="params">			      <span class="type">unsigned</span> num_maps)</span></span><br></pre></td></tr></tbody></table></figure>
 <p>该函数也比较简单，需要提供一个需要注册到内核的 pinctrl_map 结构体，然后 pinctrl_register_mappings 函数就对该结构体进行 check，然后将其挂在 pinctrl_maps 链表上。</p>
-<h2 id="bing-过程"><a class="markdownIt-Anchor" href="#bing-过程"></a> Bing 过程</h2>
-<p>在前面提到了 client 里会通过设备树获得一个个的 pinctrl_maps 结构，而该结构是要根 pin controller 里的 pin 之间建立联系的，因为不同的 soc pin 脚的设计都是不一样的，其配置方法也不一样，而在控制器初始化阶段需要解析出该控制器所使用的 pin 脚然后与 controller 提供的 pin 脚建立联系通过 controller 的 pin 或 group 操作函数集来操作具体的 pin 配置为想要的功能。</p>
-<p>在前面介绍设备驱动模型的时候有一张 device 注册过程的流程图，其中有一个细节就是在 driver_probe_device 的时候会调用 really_probe 函数，而 really_probe 函数又会调用 pinctrl_bind_pins 函数用来处理 pinctrl 信息，如下：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxMTY4ODc1N2Q5YzA4MDZlNGFlZmUzOS5wbmc=">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/DeviceRegister.png" alt=""></p>
-<p>下面我们将其中的 pinctrl 处理过程补充完，pinctrl_bind_pins 函数如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU4ZTExZTA4NTMwNmQ3NDFhNjE3">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/PinCtrlBingPin.png" alt=""></p>
+<h2 id="Bing-过程"><a href="#Bing-过程" class="headerlink" title="Bing 过程"></a>Bing 过程</h2><p>在前面提到了 client 里会通过设备树获得一个个的 pinctrl_maps 结构，而该结构是要根 pin controller 里的 pin 之间建立联系的，因为不同的 soc pin 脚的设计都是不一样的，其配置方法也不一样，而在控制器初始化阶段需要解析出该控制器所使用的 pin 脚然后与 controller 提供的 pin 脚建立联系通过 controller 的 pin 或 group 操作函数集来操作具体的 pin 配置为想要的功能。</p>
+<p>在前面介绍设备驱动模型的时候有一张 device 注册过程的流程图，其中有一个细节就是在 driver_probe_device 的时候会调用 really_probe 函数，而 really_probe 函数又会调用 pinctrl_bind_pins 函数用来处理 pinctrl 信息，如下：<span class="exturl" data-url="aHR0cDovL2Fzc2V0cy5wcm9jZXNzb24uY29tL2NoYXJ0X2ltYWdlLzYxMTY4ODc1N2Q5YzA4MDZlNGFlZmUzOS5wbmc=">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/DeviceRegister.png" alt=""></p>
+<p>下面我们将其中的 pinctrl 处理过程补充完，pinctrl_bind_pins 函数如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU4ZTExZTA4NTMwNmQ3NDFhNjE3">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/PinCtrlBingPin.png" alt=""></p>
 <p>该函数主要完成以下工作：</p>
 <ul>
 <li>解析设备树，解析 client 设备的 pinctrl 状态信息，并创建相关结构</li>
 <li>通过设备树中的 pinctrl 的 phandle 找到 controller 配置中的 pin，并将设备树中的每一个状态转换为 map 结构，这里由于不同的 soc 关于 pinctrl 的设备树写法不一致因此这里通过 controller 提供的回调函数 dt_node_to_map 转换为 map 结构（具体的 soc 有自己的实现自然知道转换方法）并将一系列的 map 转换为一系列的与 map 对应的 setting 结构</li>
 <li>对每一个 map 结构进行 pinmux 和 pinconf 的设置，同样设置函数也是由具体的 controller 提供实现，然后通过函数指针调用具体的实现</li>
 </ul>
-<h1 id="与-gpio-的关系"><a class="markdownIt-Anchor" href="#与-gpio-的关系"></a> 与 gpio 的关系</h1>
-<p>原则上 gpio 子系统是 pinctrl 的 client 用户，gpio 和 iic、spi 这些一样会通过 pinctrl 来配置，但是实际上 gpio 和 pinctrl 之间有更为紧密的联系，如果通过 soc 的 datasheet 我们也可以了解到实际的 soc 中并没有具体的 pin controller 硬件，这个一般都在 gpio 的章节中介绍，与 gpio 的寄存器之间是密不可分的。这里关于 gpio 和 pinctrl 之间的关系可以参考 <span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvZ3Bpb19zdWJzeXN0ZW0vcGluY3RybC1hbmQtZ3Bpby5odG1s">窝窝科技<i class="fa fa-external-link-alt"></i></span> 的文章。</p>
-<h2 id="pinctrl-和-gpio-之间的强耦合实现"><a class="markdownIt-Anchor" href="#pinctrl-和-gpio-之间的强耦合实现"></a> pinctrl 和 gpio 之间的强耦合实现</h2>
-<p>首先还是看下相关数据结构，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5MWIwZTNlNzQwNmUyMDI0NjIz">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/GPIO2Pinctrl.png" alt=""></p>
+<h1 id="与-gpio-的关系"><a href="#与-gpio-的关系" class="headerlink" title="与 gpio 的关系"></a>与 gpio 的关系</h1><p>原则上 gpio 子系统是 pinctrl 的 client 用户，gpio 和 iic、spi 这些一样会通过 pinctrl 来配置，但是实际上 gpio 和 pinctrl 之间有更为紧密的联系，如果通过 soc 的 datasheet 我们也可以了解到实际的 soc 中并没有具体的 pin controller 硬件，这个一般都在 gpio 的章节中介绍，与 gpio 的寄存器之间是密不可分的。这里关于 gpio 和 pinctrl 之间的关系可以参考 <span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvZ3Bpb19zdWJzeXN0ZW0vcGluY3RybC1hbmQtZ3Bpby5odG1s">窝窝科技<i class="fa fa-external-link-alt"></i></span> 的文章。</p>
+<h2 id="pinctrl-和-gpio-之间的强耦合实现"><a href="#pinctrl-和-gpio-之间的强耦合实现" class="headerlink" title="pinctrl 和 gpio 之间的强耦合实现"></a>pinctrl 和 gpio 之间的强耦合实现</h2><p>首先还是看下相关数据结构，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5MWIwZTNlNzQwNmUyMDI0NjIz">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/GPIO2Pinctrl.png" alt=""></p>
 <p>gpio 和 pinctrl 通过 gpio_pin_range 建立映射关系，将 gpio 中的 pin 描述转换到 pinctrl 中的 pin 描述空间，从而将两者建立关联，这样 gpio 就可以不通过 pinctrl 提供的标准接口来设置 pin 的复用和配置了。gpio_pin_range 这个描述关系通过 dts 文件来描述，这样就可以不通过代码将他们建立联系，写法如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">qe_pio_e: gpio-controller@<span class="number">1460</span> {</span><br><span class="line">    <span class="meta">#gpio-cells = <span class="string">&lt;2&gt;</span>;</span></span><br><span class="line">    compatible = <span class="string">"fsl,qe-pario-bank-e"</span>, <span class="string">"fsl,qe-pario-bank"</span>;</span><br><span class="line">    gpio-controller;</span><br><span class="line">    gpio-ranges = &lt;&amp;pinctrl1 <span class="number">0</span> <span class="number">20</span> <span class="number">10</span>&gt;, &lt;&amp;pinctrl2 <span class="number">10</span> <span class="number">50</span> <span class="number">20</span>&gt;;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
-<p>上面 dts 节点中的 gpio-ranges 关键字指定了两个 gpio range：gpio controller(qe_pio_e) 中的 gpio0 ~ 9 和 pinctrl1 中的 pin20 ~ 29 对应；gpio controller(qe_pio_e) 中的 gpio10 ~ 29 和 pinctrl2 中的 pin50 ~ 69 对应。<br>
-而 dts 文件的解析过程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5M2NlNDAxZmQzYzI0OWUyZjQx">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/gpiochip_add_data.png" alt=""></p>
+<p>上面 dts 节点中的 gpio-ranges 关键字指定了两个 gpio range：gpio controller(qe_pio_e) 中的 gpio0 ~ 9 和 pinctrl1 中的 pin20 ~ 29 对应；gpio controller(qe_pio_e) 中的 gpio10 ~ 29 和 pinctrl2 中的 pin50 ~ 69 对应。<br>而 dts 文件的解析过程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5M2NlNDAxZmQzYzI0OWUyZjQx">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/gpiochip_add_data.png" alt=""></p>
 <p>以上过程将生成 pinctrl_dev 下由 gpio_ranges 组织成的链表。</p>
-<p>下面以 gpiod_get 函数为例看一下 gpio 中具体是如何使用 pinctrl 中的接口的，gpiod_get 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5NTZlNDAxZmQzYzI0OWUyZjVk">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/gpiod_get.png" alt=""></p>
+<p>下面以 gpiod_get 函数为例看一下 gpio 中具体是如何使用 pinctrl 中的接口的，gpiod_get 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5NTZlNDAxZmQzYzI0OWUyZjVk">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/gpiod_get.png" alt=""></p>
 <p>该函数就是将 gpio 中的 pin 描述转换到 pinctrl 中的描述，进而找到该管脚在 pinctrl 中的描述然后调用 pin controller 提供的函数来设置引脚复用功能和配置引脚。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY2Nzc3ODE=">https://blog.csdn.net/lickylin/article/details/106677781<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY2Nzc4NTE/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/106677851?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9ncGlvX3N1YnN5c3RlbQ==">窝窝科技 gpio 子系统相关文章<i class="fa fa-external-link-alt"></i></span><br>
-《韦东山老师的书籍和课程》</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY2Nzc3ODE=">https://blog.csdn.net/lickylin/article/details/106677781<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY2Nzc4NTE/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/106677851?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9ncGlvX3N1YnN5c3RlbQ==">窝窝科技 gpio 子系统相关文章<i class="fa fa-external-link-alt"></i></span><br>《韦东山老师的书籍和课程》</p>
 
     </div>
 
@@ -450,8 +414,8 @@ pinctrl 主要是描述 client 设备管脚的状态和使用情况。例如对�
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
               <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
           </div>
 
         

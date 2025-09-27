@@ -165,7 +165,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E8%83%BD-ksm"><span class="nav-text"> 使能 KSM</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ksm-%E5%9F%BA%E6%9C%AC%E5%AE%9E%E7%8E%B0"><span class="nav-text"> KSM 基本实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%AC-ksm-%E7%9A%84%E6%96%B0%E7%89%B9%E6%80%A7"><span class="nav-text"> 新版本 KSM 的新特性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-text"> 小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E8%83%BD-KSM"><span class="nav-text">使能 KSM</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#KSM-%E5%9F%BA%E6%9C%AC%E5%AE%9E%E7%8E%B0"><span class="nav-text">KSM 基本实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%B0%E7%89%88%E6%9C%AC-KSM-%E7%9A%84%E6%96%B0%E7%89%B9%E6%80%A7"><span class="nav-text">新版本 KSM 的新特性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%8F%E7%BB%93"><span class="nav-text">小结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -253,15 +253,10 @@
       
       
       <div class="post-body">
-          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryKSM.png" alt=""><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjUyOGYzNDZmYjA3MjVmYjQ1YmI=">原图<i class="fa fa-external-link-alt"></i></span></p>
+          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryKSM.png" alt=""><br><span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4NjUyOGYzNDZmYjA3MjVmYjQ1YmI=">原图<i class="fa fa-external-link-alt"></i></span></p>
 <span id="more"></span>
-<h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
-<p>KSM 指 Kernel SamePage Merging，即内核同页合并，用于合并内容相同的页面。KSM 的出现是为了优化虚拟化中产生的冗余页面。<br>
-KSM 允许合并同一个进程或不同进程之间内容相同的匿名页面，这对应用程序来说是不可见的。把这些相同的页面合并成一个只读的页面，从而释放出多余的物理页面，当应用程序需要改变页面内容时，会发生写时复制。</p>
-<h1 id="使能-ksm"><a class="markdownIt-Anchor" href="#使能-ksm"></a> 使能 KSM</h1>
-<p>KSM 只会处理通过 madvise 系统调用显式指定的用户进程地址空间，因此用户程序想使用这个功能就必须在分配地址空间时显式地调用 madvise（addr，length，MADV_MERGEA BLE）。如果用户想在 KSM 中取消某一个用户进程地址空间的合并功能，也需要显式地调用 madvise（addr，length,MADV_UNMERGEABLE)。<br>
-下面是测试 KSM 的 test.c 程序的代码片段，使用 mmap()：来创建一个文件的私有映射，并且调用 memset() 写入这些私有映射的内容缓存页面中。</p>
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>KSM 指 Kernel SamePage Merging，即内核同页合并，用于合并内容相同的页面。KSM 的出现是为了优化虚拟化中产生的冗余页面。<br>KSM 允许合并同一个进程或不同进程之间内容相同的匿名页面，这对应用程序来说是不可见的。把这些相同的页面合并成一个只读的页面，从而释放出多余的物理页面，当应用程序需要改变页面内容时，会发生写时复制。</p>
+<h1 id="使能-KSM"><a href="#使能-KSM" class="headerlink" title="使能 KSM"></a>使能 KSM</h1><p>KSM 只会处理通过 madvise 系统调用显式指定的用户进程地址空间，因此用户程序想使用这个功能就必须在分配地址空间时显式地调用 madvise（addr，length，MADV_MERGEA BLE）。如果用户想在 KSM 中取消某一个用户进程地址空间的合并功能，也需要显式地调用 madvise（addr，length,MADV_UNMERGEABLE)。<br>下面是测试 KSM 的 test.c 程序的代码片段，使用 mmap()：来创建一个文件的私有映射，并且调用 memset() 写入这些私有映射的内容缓存页面中。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">《测试 KSM 的 test.c 程序的代码片段》</span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc,<span class="type">char</span> *argv[])</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">char</span> *buf;</span><br><span class="line">    <span class="type">char</span> filename[<span class="number">64</span>]=<span class="string">""</span>;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">stat</span>;</span></span><br><span class="line">    <span class="type">int</span> size =<span class="number">100</span>*<span class="number">4096</span>;</span><br><span class="line">    <span class="type">int</span> fd =<span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">strcpy</span>(filename, argv[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line">    fd = open(filename,O_RDWR | O_CREAT,<span class="number">0664</span>);</span><br><span class="line"></span><br><span class="line">    fstat(fd, &amp;stat);</span><br><span class="line"></span><br><span class="line">    buf = mmap (<span class="literal">NULL</span>,stat.st_size,PROT_WRITE,MAP_PRIVATE,fd,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">memset</span>(buf,<span class="number">0x55</span>,stat.st_size);</span><br><span class="line"></span><br><span class="line">    madvise(buf,stat.st_size, MADV_MERGEABLE);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="number">1</span>)</span><br><span class="line">        sleep(<span class="number">1</span>);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>编译上述 test.c 程序。</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc test.c -o <span class="built_in">test</span></span><br></pre></td></tr></tbody></table></figure>
@@ -273,14 +268,9 @@ KSM 允许合并同一个进程或不同进程之间内容相同的匿名页面�
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#./test ksm.dat</span></span><br></pre></td></tr></tbody></table></figure>
 <p>过一段时间之后，查看系统有多少页面合并了。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">root@benshushu#cat /sys/kernel/mm/ksm/pages_sharing</span><br><span class="line">25500</span><br><span class="line">root@benshushu#cat /sys/kernel/mm/ksm/pages_shared</span><br><span class="line">100</span><br><span class="line">root@benshushu:/home#cat /sys/kernel/mm/ksm/pages_unshared</span><br><span class="line">0</span><br></pre></td></tr></tbody></table></figure>
-<p>可以看到 pages_shared 为 100 说明系统有 100 个共享的页面。若有 100 个页面的内同，它们可以合并成一个页面，这时 pages_shared 为 1。<br>
-pages_sharing 为 25500 说明有 25500 个页面合并了。<br>
-100MB 的内存可存放 25600 个页面。因此，我们可以看到，KSM 把这 25600 个页面分别合并成 1 共享的页面，每一个共享页面里共享了其他的 255 个页面，为什么会这样？我们稍后详细解析。<br>
-pages_unshared 表示当前未合并页面的数量。</p>
+<p>可以看到 pages_shared 为 100 说明系统有 100 个共享的页面。若有 100 个页面的内同，它们可以合并成一个页面，这时 pages_shared 为 1。<br>pages_sharing 为 25500 说明有 25500 个页面合并了。<br>100MB 的内存可存放 25600 个页面。因此，我们可以看到，KSM 把这 25600 个页面分别合并成 1 共享的页面，每一个共享页面里共享了其他的 255 个页面，为什么会这样？我们稍后详细解析。<br>pages_unshared 表示当前未合并页面的数量。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">rootebenshushut cat /sys/kernel/mn/ksm/stable_node_chains</span><br><span class="line">1</span><br><span class="line">rootebenshushut cat /sys/kernel/mm/ksm/stable_node_dups</span><br><span class="line">100</span><br></pre></td></tr></tbody></table></figure>
-<p>stable_node_chains 表示包含了链式的稳定节点的个数，当前系统中为 1，说明只有一个链式的稳定节点，但是这个稳定的节点里包含了链表。<br>
-stable_node_dups 表示稳定的节点所在的链表包含的元素总数。<br>
-KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述如下所示。</p>
+<p>stable_node_chains 表示包含了链式的稳定节点的个数，当前系统中为 1，说明只有一个链式的稳定节点，但是这个稳定的节点里包含了链表。<br>stable_node_dups 表示稳定的节点所在的链表包含的元素总数。<br>KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述如下所示。</p>
 <ul>
 <li>run：可以设置为 0~2。若设置 0，暂停 ksmd 内核线程；若设置 1，启动 ksmd 内核线程；若设置 2，取消所有已经合并好的页面</li>
 <li>full_scans: 完整扫描和合并区域的次数</li>
@@ -303,33 +293,25 @@ KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述�
 <p>ksm_scan_thread() 是 ksmd 内核线程的主干，它运行 ksm_do_scan() 函数，扫描和合并 100 个页面，见 ksm_thread_pages_to_scan 参数，然后等待 20ms，见 ksm_thread_sleep_millisecs 参数，这两个参数可以在/sys/kernel/mm/ksm 目录下设置和修改。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&lt;ksmd 内核线程&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">ksm_do_scan</span><span class="params">(unsignd <span class="type">int</span> scan_npages)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">while</span>(scan_npages-- &amp;&amp; likely(!freezing(current))) {</span><br><span class="line">        cond_resched();</span><br><span class="line">        rmap_item = scan_get_next_rmap_item(&amp;page);</span><br><span class="line">        <span class="keyword">if</span> (!rmap_item)</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        cmp_and_merge_page(page, rmap_item);</span><br><span class="line">        put_page(page)</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>ksm_do_scan() 函数在 while 循环中尝试合并 scan_npages 个页面， scan_get_next_rmap_item() 获取一个合适的匿名页面。 cmp_and_merge_page() 函数会让页面在 KSM 中稳定和不稳定的两棵红黑树中查找是否有可以合并的对象，并且尝试合并他们。</p>
-<h1 id="ksm-基本实现"><a class="markdownIt-Anchor" href="#ksm-基本实现"></a> KSM 基本实现</h1>
-<p>为了让读者先有一个初步的认识，本节先介绍 Lnux4.13 内核之前的 KSM 实现，后文会介绍 Linux5.0 内核中的实现。</p>
-<p>KSM 机制下采用两棵红黑树来管理扫描的页面和己经合并的页面。第一棵红黑树称为不稳定红黑树，里面存放了还没有合并的页面；第二棵红黑树称为稳定红黑树，已经合并的页面会生成一个节点，这个节点为稳定节点。如两个页面的内容是一样的，KSM 扫描并发现了它们，因此这两个页面就可以合并成一个页面。对于这个合并后的页面，会设置只读属性，其中一个页面会作为稳定的节点挂载到稳定的红黑树中之后，另外一个页面就会被释放了。但是这两个页面的 rmap_item 数据结构会被添如到稳定节点中的 hist 链表中，如下图所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm1.png" alt=""></p>
+<h1 id="KSM-基本实现"><a href="#KSM-基本实现" class="headerlink" title="KSM 基本实现"></a>KSM 基本实现</h1><p>为了让读者先有一个初步的认识，本节先介绍 Lnux4.13 内核之前的 KSM 实现，后文会介绍 Linux5.0 内核中的实现。</p>
+<p>KSM 机制下采用两棵红黑树来管理扫描的页面和己经合并的页面。第一棵红黑树称为不稳定红黑树，里面存放了还没有合并的页面；第二棵红黑树称为稳定红黑树，已经合并的页面会生成一个节点，这个节点为稳定节点。如两个页面的内容是一样的，KSM 扫描并发现了它们，因此这两个页面就可以合并成一个页面。对于这个合并后的页面，会设置只读属性，其中一个页面会作为稳定的节点挂载到稳定的红黑树中之后，另外一个页面就会被释放了。但是这两个页面的 rmap_item 数据结构会被添如到稳定节点中的 hist 链表中，如下图所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm1.png" alt=""></p>
 <p>我们假设有 3 个 VMA（表示进程地址空间，VMA 的大小正好是一个页面的大小，分别有 3 个页面映射这 3 个 VMA。这 3 个页面准备通过 KSM 来扫描和合并，这 3 个页面的内容是相同的。具体步骤如下。</p>
 <ul>
 <li>3 个页面会被添加到 KSM 中，第一轮扫描中分别给这 3 个页面分配 rmap_item 数据结构来描述它们，并且分别给它计算校验和，如图（a）所示</li>
 <li>第二轮扫描中，先扫描 page0，若当前稳定的红黑树没有成员，那么不能比较和加入稳定的红黑树。接着，第二次计算校验值，如果 page0 的校验值没有发生变化，那么把 page0 的 rmap_item() 添加到不稳定的红黑树中，如图（b）所示。如果此时校验值发生了变化，说明页面内容发生变化，这种页面不适合添加到不稳定的红黑树中</li>
 <li>扫描 page1，当前稳定的红黑树中没有成员，略过稳定的红黑树的搜索。搜索不稳定的红黑树，遍历红黑树中所有成员。 page1 发现自己的内容与不稳定的红黑树中的 rmap_item() 一致，因此尝试将 page0 和 page1 合并成一个稳定的节点，合并过程就是让 WMA0 对映的虚拟地址、vaddr0 映时到 page1 上。，并且把对应的 PTE 属性修改成只读展性。另外，VMA1 映射到 page1 的 PTE 属性也设置为只读属性。新创建一个稳定的节点，这个节点包含了 page1 的页帧号等信息，把这个稳定的节点添加到稳定的红黑树中。把代表 page0 的 map _item0 和 page1 的 rmap_item1 添加到这个稳定的节点的 hlist 链表中，最后释放 page0 页面，如图（c）所示</li>
-<li>扫描 page2。因为稳定的红黑树中有成员，因此，先和稳定的红黑树中的成员进行比较，检査是否可以合并。若发现 page2 的内容和稳定的节点内容一致，那么把 VMA2 中的 vaddr2 映射到稳定的节点对应的 page1 上，并且把 PTE 属性设置为只读属性。把代表 page2 的 rmap_item2 添加到稳定的节点的 hlist 链表中，最后释放 page2 页面，如图（d）所示<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm2.png" alt=""></li>
+<li>扫描 page2。因为稳定的红黑树中有成员，因此，先和稳定的红黑树中的成员进行比较，检査是否可以合并。若发现 page2 的内容和稳定的节点内容一致，那么把 VMA2 中的 vaddr2 映射到稳定的节点对应的 page1 上，并且把 PTE 属性设置为只读属性。把代表 page2 的 rmap_item2 添加到稳定的节点的 hlist 链表中，最后释放 page2 页面，如图（d）所示<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm2.png" alt=""></li>
 </ul>
 <p>上述步骤完成之后，VMAO~VMA2 这 3 个 VMA 对应的虚拟地址（vadr）都映射到 page1 上，并且映射的 3 个 PTE 属性都是只读属性，page1 生成一个稳定的节点并被添加到了稳定的红黑树中，page0 和 page2 被释放了。</p>
-<h1 id="新版本-ksm-的新特性"><a class="markdownIt-Anchor" href="#新版本-ksm-的新特性"></a> 新版本 KSM 的新特性</h1>
-<p>新版本的 KSM（如 Linux5.0 内核的 KSM）比 Linux4.0 内核的 KSM 新增了两项特性。</p>
+<h1 id="新版本-KSM-的新特性"><a href="#新版本-KSM-的新特性" class="headerlink" title="新版本 KSM 的新特性"></a>新版本 KSM 的新特性</h1><p>新版本的 KSM（如 Linux5.0 内核的 KSM）比 Linux4.0 内核的 KSM 新增了两项特性。</p>
 <ul>
 <li>对内容全是零的页面进行特殊处理</li>
 <li>对稳定的节点的 hlis 链表进行改造，以防止大量的相同的页面聚集在一个稳定的节点中，导致页面迁移、内存规整等机制长时间等待这个页面</li>
 </ul>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm3.png" alt=""></p>
-<p>新特性中，第一项实现起来比较简单，系统中己经存在了系统零页，我们可以对这个系统零页预先计算检査和。若在扫描页面时发现页面的检査和等于系统零页的检查和，那么直接修改这个页面的映射关系，让其映射到系统零页，这样可以释放这个页面。<br>
-第二项新特性实现起来就比较复杂了。主要原因是在一些大型的服务器中，会把大量的页面（如几百万个页面）合并到一个稳定的节点中。<br>
-页面迁移机制会调用 RMAP 机制来遍历这个稳定节点中所有的 rmap_item，如图所示。在 try_to_unmap_one() 函数解除页表映射关系时，需要调用 flush_tlb_page() 函数来刷新 TLB。CPU 内部发送 IPI 广播来通知其他 CPU 做了这个 TLB 刷新动作，这个页面的 PTE 已经被解除映射关系，大概需要 10pus 的时间。若需要遍历 1 万个页表项，那么将持续 100ms；若需要遍历几十万甚至几百万个页面，那么将持续更长时间。在调用 my_to_unmap() 函数之前需要申请这个页面的锁，但是其他进程有可能在等待这个页锁，那将会是一场“灾难”，足以让服务器宕机。具体流程如下：</p>
+<p>新特性中，第一项实现起来比较简单，系统中己经存在了系统零页，我们可以对这个系统零页预先计算检査和。若在扫描页面时发现页面的检査和等于系统零页的检查和，那么直接修改这个页面的映射关系，让其映射到系统零页，这样可以释放这个页面。<br>第二项新特性实现起来就比较复杂了。主要原因是在一些大型的服务器中，会把大量的页面（如几百万个页面）合并到一个稳定的节点中。<br>页面迁移机制会调用 RMAP 机制来遍历这个稳定节点中所有的 rmap_item，如图所示。在 try_to_unmap_one() 函数解除页表映射关系时，需要调用 flush_tlb_page() 函数来刷新 TLB。CPU 内部发送 IPI 广播来通知其他 CPU 做了这个 TLB 刷新动作，这个页面的 PTE 已经被解除映射关系，大概需要 10pus 的时间。若需要遍历 1 万个页表项，那么将持续 100ms；若需要遍历几十万甚至几百万个页面，那么将持续更长时间。在调用 my_to_unmap() 函数之前需要申请这个页面的锁，但是其他进程有可能在等待这个页锁，那将会是一场“灾难”，足以让服务器宕机。具体流程如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">grate_pages ()</span><br><span class="line">  -&gt;unmap_and_move()</span><br><span class="line">    -&gt;unmap_and_move()</span><br><span class="line">      -&gt;申请页锁</span><br><span class="line">        -&gt;try_to_unmap()</span><br><span class="line">          -&gt;rmap_walk()</span><br><span class="line">            -&gt;rmap_walk_ksm()</span><br><span class="line">            遍历稳定的节点的 hlist 链表中几百万个 rmap_items</span><br><span class="line">              -&gt;try_to_unmap_one()</span><br><span class="line">                -&gt;ptep_clear_flush()</span><br><span class="line">                  -&gt;flush_tlb_page()</span><br></pre></td></tr></tbody></table></figure>
-<p>在 Linux4.13 内核中， Red Hat 工程师 Andrea Arcangeli 对这个问题进行了修复。新办法是限制共享页面的数量在 256 以内，这样遍历 256 个页表项的时间将会限制在毫秒不会导致系统宕机。新的解决方案扩充了稳定节点的 hlist 链表结构， rmap_items 超过 256 个之后，扩展稳定的节点为链表。每个链表的成员都是一个稳定的节点，每个稳定的节点有一个链表，这个 hlist 链表中可以添加新的 rmap_items。另外，还需要把稳定的节点和链表的头在红黑树中做一个交换。<br>
-新版本的稳定的节点包含两个形态，而且它们同时存放在稳定的红黑树中，如图所示：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm4.png" alt=""></p>
+<p>在 Linux4.13 内核中， Red Hat 工程师 Andrea Arcangeli 对这个问题进行了修复。新办法是限制共享页面的数量在 256 以内，这样遍历 256 个页表项的时间将会限制在毫秒不会导致系统宕机。新的解决方案扩充了稳定节点的 hlist 链表结构， rmap_items 超过 256 个之后，扩展稳定的节点为链表。每个链表的成员都是一个稳定的节点，每个稳定的节点有一个链表，这个 hlist 链表中可以添加新的 rmap_items。另外，还需要把稳定的节点和链表的头在红黑树中做一个交换。<br>新版本的稳定的节点包含两个形态，而且它们同时存放在稳定的红黑树中，如图所示：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm4.png" alt=""></p>
 <ul>
 <li>传统的稳定的节点：兼容旧版本的稳定的节点格式。</li>
 <li>链式稳定的节点：新版本的链式节点格式。</li>
@@ -340,8 +322,7 @@ KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述�
 <p>第 2 次扫描中，先看第一个页面（编号为 page0，以此类推）的情况，它首先进入 cmp_and_merge_page() 函数。具体过程如下：</p>
 <ul>
 <li>cmp_and_merge_page() 函数会遍历稳定的红黑树中每个稳定的节点，并和 page0 进行比较，判断内容是否一致。若内容一致，则将页面合并到稳定的节点中。因为这时 stable 红黑树还是空的，所以跳过 stable_tree_searche() 函数</li>
-<li>如果页面校验值不变，则遍历 unstable 红黑树中的每一个 rmap_item 节点。这时，不稳定的红黑树也还是空的，因此直接把 rmap_item0 添加到不稳定的红黑树中，扫描第 i 个页面，如图所示<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm5.png" alt=""></li>
+<li>如果页面校验值不变，则遍历 unstable 红黑树中的每一个 rmap_item 节点。这时，不稳定的红黑树也还是空的，因此直接把 rmap_item0 添加到不稳定的红黑树中，扫描第 i 个页面，如图所示<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm5.png" alt=""></li>
 </ul>
 <p>部分代码如下。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> rmap_item * <span class="title function_">unstable_tree_search_insert</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    rmap_item-&gt;address |= UNSTABLE_FLAGA;</span><br><span class="line">    rmap_item-&gt;address |= (ksm_scan.seqnr &amp; SEONR_MASKD);</span><br><span class="line">    DO_NUMA(rmap_item-&gt;nid = nid);</span><br><span class="line">    rb_link_node(&amp;rmap_item-&gt;node, parent, new);</span><br><span class="line">    rb_insert_color(&amp;rmap_item-&gt;node, root);</span><br><span class="line">    ...</span><br></pre></td></tr></tbody></table></figure>
@@ -355,11 +336,10 @@ KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述�
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/ksm.c&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">void</span>  <span class="title function_">set_page_stable_node</span><span class="params">(<span class="keyword">struct</span> page page, <span class="keyword">struct</span> stable_node *stable_node)</span></span><br><span class="line">{</span><br><span class="line">    page-&gt;mapping =(<span class="type">void</span> *)((<span class="type">unsigned</span> <span class="type">long</span>)stable_node | PAGE_MAPPING_KSM);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>由于这时不需要为稳定的节点建立链表，因此第 1884 行代码的 need_chain 为 ifalse 最后直接把 stable_node_dup0 添加到稳定的红黑树中</li>
-<li>调用 stable_tree_append()，分别把 page0 对应的 rmap_item0 和 page1 对应的 rmap_item1 添加到 stable_node_dup0-&gt;hlist 链表中。增加 ksm_pages_ shared 和 ksm_pages_sharing 计数，这时 ksm_pages_sharing 为 1， ksm_pages_shared 为 1， stable_node_dup0-&gt;rmap_hlist_len 为 2</li>
+<li>调用 stable<em>tree_append()，分别把 page0 对应的 rmap_item0 和 page1 对应的 rmap_item1 添加到 stable_node_dup0-&gt;hlist 链表中。增加 ksm_pages</em> shared 和 ksm_pages_sharing 计数，这时 ksm_pages_sharing 为 1， ksm_pages_shared 为 1， stable_node_dup0-&gt;rmap_hlist_len 为 2</li>
 <li>释放 page0。</li>
 </ul>
-<p>合并过程如图所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm6.png" alt=""></p>
+<p>合并过程如图所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm6.png" alt=""></p>
 <p>接下来，扫描第 3 个页面（page2）。具体过程如下。</p>
 <ul>
 <li>遍历 stable 红黑树，见 stable_tree_search() 函数。通过 rb_entry() 取出稳定的红黑树节点这时，稳定的红黑树只有一个节点，那就是 stable_node_dup()</li>
@@ -377,13 +357,12 @@ KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述�
 <li>调用 ty_to_merge_with_ksm_page() 函数尝试合并 tree_page 和 pge2。若能合并，那么调用 stable_tree_append() 函数把 page2 对应的 rmap_item2 添加到 stable_node_dup0-&gt;hlist 链表中。增加 ksm_pages_sharing 的值，此时 ksm_pages_sharing 的值为 2。这时， stable_node_dup0-&gt;hlist_len 为 3</li>
 <li>释放 page2</li>
 </ul>
-<p>上述过程如图所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm7.png" alt=""></p>
+<p>上述过程如图所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm7.png" alt=""></p>
 <p>接下来，扫描第 4 个页面，一直到第 256 个页面。和扫描第 3 个页面一样，这些页面都会合并到 stable_node_dup0 对应的 tree_page 中，其对应的 rmap_item 都会被添加到 stable_node_dup0-&gt;hlist 链表中，这时 stable_node_dupO-&gt;rmap_hlist_len 的值为 256， ksm_pages_sharing 的值为 255.</p>
 <p>接下来，扫描第 257 个页面（p2ge256）。具体过程如下：</p>
 <ul>
 <li>遍历稳定的红黑树，见 stable_tree_search() 函数</li>
-<li>如果在 chain_prune-&gt;_<em>stable_node_chain()-&gt;is_page_sharing_candidate() 函数中发现 hlist 链表的成员个数已经到达最大值（ ksm_max_page</em> sharing），那么会返回 NULL，并且 stable_node_dup 参数也返回 NULL</li>
+<li>如果在 chain<em>prune-&gt;__stable_node_chain()-&gt;is_page_sharing_candidate() 函数中发现 hlist 链表的成员个数已经到达最大值（ ksm_max_page</em> sharing），那么会返回 NULL，并且 stable_node_dup 参数也返回 NULL</li>
 <li>stable_tree_search() 函数调用 stable_node_dup_any() 来获取稳定的节点，get_ksm_page() 获取这个稳定的节点对应的 tree_page。比较 tree_page 和 page256 的内容时发现二者是一致的，但是因为 stable_node_dup 参数为 NULL，所以在第 1653~1666 行里会返回 NULL。这里在注释里对代码做了解释，当我们发现被扫描页面的内容和稳定的节点的页面内容一致时，但是因为这时稳定的节点的 hlist 链表已经满了，所以我们必须从不稳定的红黑树中找到另外一个页面、进行合并，创建一个新的 KSM 共享页面</li>
 <li>因为 stable_tree_search() 函数返回 NULL，所以直接遍历不稳定的红黑树。此时，不稳定的红黑树没有成员，因此可以直接把 page256 对应的 map_item 添加到不稳定的红黑树中</li>
 </ul>
@@ -397,8 +376,7 @@ KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述�
 <li>在第 188 行中，稳定的红黑树的节点为 stable_node_dup0，它是传统的稳定的节点在第 1891 行中，调用 alloc_stable_node_chain() 函数重新创建一个链式稳定的节点。 chain-&gt;rmap_hlist_len 的值初始化为 STABLE_NODE_CHAN，表明该节点是链式稳定的节点。増加 ksm_stable_node_chains 计数</li>
 <li>把链式稳定的节点替換到稳定的红黑树上的 stable_node_dup0 节点，并且把 stable_node_dup0 节点添加到链式稳定的节点所在的 hlist 链表中，这样一个新的链式稳定的节点就创建成功了</li>
 <li>在第 1897 行中，把刚才新创建的 stable_node_dup1 节点也添加到链式稳定的节点的 hlist 链表中。此时，链式稳定的节点的 hlist 链表中有两个成员，一个是 stable_node_dup0 节点，另一个是 stable_node_dup1 节点。此时， ksm_stable_node_chain 为 1 ksm_stable_node_dups 为 2</li>
-<li>在第 2145~2147 行中，分别调用 stable_tree_append() 函数，把 rmap_item257 和 tree_rmap_item 添加到 table_node_dup1-&gt;hlist 链表中。此时， stable_nodde_dup1-&gt;rmap_hist_len 的值为 2， ksm_pages_shared 为 2， ksm_pages_sharing 为 256 整个过程如图所示<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm8.png" alt=""></li>
+<li>在第 2145~2147 行中，分别调用 stable_tree_append() 函数，把 rmap_item257 和 tree_rmap_item 添加到 table_node_dup1-&gt;hlist 链表中。此时， stable_nodde_dup1-&gt;rmap_hist_len 的值为 2， ksm_pages_shared 为 2， ksm_pages_sharing 为 256 整个过程如图所示<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm8.png" alt=""></li>
 </ul>
 <p>接下来，扫描第 259 个页面（page258）。具休过程如下。</p>
 <ul>
@@ -406,13 +384,10 @@ KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述�
 <li>调用 chain_prune()-&gt;__stable_node_chain() 函数，由于当前的节点是链式稳定的节点，因此直接调用 stabie_node_dup() 函数，详见 stable_node_dup() 函数</li>
 <li>在 stabie_node_dup() 函数中遍历稳定的节点所在的 hlist 链表中所有的 rmap_item，查找一个 hlist 链表中还有空间的 rmap_item。然后返回这个 rmap_item 对应的页面，另外 stabie_node_dup 指向 rmap_item. 此时，链式稳定的节点有两个 stable_nale_dup() 分别是 stabie_node_dup0 和 stabie_node_dup1，只有 stable_node_dup1 还有空间容纳 rmap_item, 因此返回 stabie_node_dup1 对应的页面。</li>
 <li>在 stable_tree_search() 函数中，发现第 259 个页面和 stabie_node_dup1 对应的页面内容相同，因此返回 stabie_node_dup1 对应的页面，它称为 tree_page</li>
-<li>调用 try_to_merge_with_ksm_page() 尝试合并 page258 到 tree_page 中。调用 stable_tree_append() 函数把 rmap_item258 添加到 stable_node_dup1 的 hlist 链表中， rmap_hlist_len 的值变成了 3，ksages_sharing 变成了 257 整个过程如图所示：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm9.png" alt=""></li>
+<li>调用 try_to_merge_with_ksm_page() 尝试合并 page258 到 tree_page 中。调用 stable_tree_append() 函数把 rmap_item258 添加到 stable_node_dup1 的 hlist 链表中， rmap_hlist_len 的值变成了 3，ksages_sharing 变成了 257 整个过程如图所示：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ksm9.png" alt=""></li>
 </ul>
 <p>接下来，扫描其他页面。具体过程如下。</p>
-<p>（1）继续扫描其他页面，直到 stable_node_dup1-&gt;hlist 链表满员为止。<br>
-（2）重复扫描第 257 个和第 258 个页面，新创建一个 node_dup2 节点，添加到链式稳定的节点的 hlist 链表中，新的 rmap_item 就可以继续添加到 node_dup2-&gt;hlist 链表中了。<br>
-综上所述，我们们发现新版本的 KSM 机制有：</p>
+<p>（1）继续扫描其他页面，直到 stable_node_dup1-&gt;hlist 链表满员为止。<br>（2）重复扫描第 257 个和第 258 个页面，新创建一个 node_dup2 节点，添加到链式稳定的节点的 hlist 链表中，新的 rmap_item 就可以继续添加到 node_dup2-&gt;hlist 链表中了。<br>综上所述，我们们发现新版本的 KSM 机制有：</p>
 <ul>
 <li>上述 1000 个相同页面会生成多个 KSM 页面，上图 9 所示的 page1 是第一个 KSM 页面，page257 是第二个 KSM 页面，以此类推。而在旧版本的 KSM 机制中，1000 个页面会生成一个 KSM 页面，另外的 999 个页面都会合并到这个 KSM 页面中。</li>
 <li>每个 KSM 页面最多把 256 个页面合并在一起，其中还包括 KSM 页面自己，即最多有 255 个其他的页面被合并。</li>
@@ -421,9 +396,7 @@ KSM 的 sysfs 节点在/sys/kernel/mm/ksm/目录下，其主要节点的描述�
 <blockquote>
 <p>malloc 函数分配的内存是不能被 KSM 扫描的，malloc() 函数分配的虚拟内存没办法保证一定是按照页面对齐的，但在 madvise 系统调用中，要求起始地址是按照页面对齐的。</p>
 </blockquote>
-<h1 id="小结"><a class="markdownIt-Anchor" href="#小结"></a> 小结</h1>
-<p>KSM 的核心设计思想基于写时复制机制，也就是内容相同的页面可以合并成一个只读页面，从而释放空闲页面。<br>
-KSM 最早是为了 KVM 虚拟机而设计的，KVM 虚拟机在宿主机上使用的页面大部分是匿名页面，并且它们在宿主机中存在大量的冗余内存。对于典型的应用程序，KSM 只考虑进程分配使用的匿名页面，暂时不考虑页面高速缓存的情况。一个典型的应用程序可以由以下 5 个内存部分组成</p>
+<h1 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h1><p>KSM 的核心设计思想基于写时复制机制，也就是内容相同的页面可以合并成一个只读页面，从而释放空闲页面。<br>KSM 最早是为了 KVM 虚拟机而设计的，KVM 虚拟机在宿主机上使用的页面大部分是匿名页面，并且它们在宿主机中存在大量的冗余内存。对于典型的应用程序，KSM 只考虑进程分配使用的匿名页面，暂时不考虑页面高速缓存的情况。一个典型的应用程序可以由以下 5 个内存部分组成</p>
 <ul>
 <li>可执行文件的内存映射（页面高速缓存）</li>
 <li>程序打开使用的匿名页面</li>
@@ -431,11 +404,8 @@ KSM 最早是为了 KVM 虚拟机而设计的，KVM 虚拟机在宿主机上使�
 <li>进程访问文件系统时产生的内容缓存</li>
 <li>进程访问内核产生时的内核缓冲器（如 slab）等</li>
 </ul>
-<p>设计的关键是如何寻找和比较两个相同的页面，如何让这个过程变得高效而且占用的系统资源最少，这就是一个好的设计人员应该思考的问题。首先不能用哈希算法来比较两个页面的专利问题。KSM 虽然使用了 memcmp 来比较，最糟糕的情况是两个页面最后的 4 字节不一样但是 KSM 使用红黑树来设计了两棵树，分别是稳定的红黑树和不稳定的红黑树，可以有效地避免最糟糕的情况。另外，KSM 也巧妙地利用页面的校验和来比较不稳定的红黑树的页面最近是否被修改过，从而避开了该专利的缺陷。<br>
-页面分为物理页面和虚拟页面，多个虚拟页面可以同时映射到一个物理页面，因此需要把映射到该页面的所有 PTE 都解除后，才是算真正释放（这里说的 PTE 是指用户进程地止空间的虚拟地址映射的该页面的 PTE，简称用户 PTE，因此 page-&gt;__mapcount 成员里描述的 PTE 数量不包含内核线性映射的 PTE）。目前有两种做法，一种做法是扫描每个进程中用户地址进程空间，由用户地址进程空间的虚拟地址查询 MMU 页表，找到对应的 page 数据结构，这样就找到了用户 PTE。然后对比 KSM 中的稳定树和不稳定树，如果找到页面内容相同的，就把该 PTE 设置成写时复制，映射到 KSM 页面中，从而释放出一个 PTE。注意，这里是释放出一个用户 PTE，而不是一个物理页面（如果该物理页面只有一个 PTE 映射，那就是释放该页）。另外一种做法是直接扫描系统中的物理页面，然后通过 RMAP 来解除该页面所有的用户 PTE，从而一次性地释放出物理页面。显然，目前内核的 KSM 是基于第一种做法。<br>
-KSM 的作者在他的论文中有实测数据，但作者依然覚得有一些情况下会比较糟糕。如在一个很大内存的服务器上，很多的匿名页面都同时映射了多个虚拟页面。假设每个匿名页面都映射了 1000 个虚拟页面，这些虚拟页面又同时分布在不同的子进程中，那么要释放一个物理页面，需要扫描完 1000 个虚拟页面所在的用户地址进程空间，每次都要利用 follow_page()&nbsp;查询页表，然后査询稳定树，还需要多次执行 memcmp 比较，合并 10000 次 PTE 也就意味着 memcmp 要执行 10000 次，这个过程会很漫长，在实际项目中，有很多人抱怨 KSM 的效率低，在很多项目是关闭该特性的。也有很多人在思考如何提高 KSM 的效率，包括利用新的软件算法或者利用硬件机制。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p>《奔跑吧 Linux 内核》</p>
+<p>设计的关键是如何寻找和比较两个相同的页面，如何让这个过程变得高效而且占用的系统资源最少，这就是一个好的设计人员应该思考的问题。首先不能用哈希算法来比较两个页面的专利问题。KSM 虽然使用了 memcmp 来比较，最糟糕的情况是两个页面最后的 4 字节不一样但是 KSM 使用红黑树来设计了两棵树，分别是稳定的红黑树和不稳定的红黑树，可以有效地避免最糟糕的情况。另外，KSM 也巧妙地利用页面的校验和来比较不稳定的红黑树的页面最近是否被修改过，从而避开了该专利的缺陷。<br>页面分为物理页面和虚拟页面，多个虚拟页面可以同时映射到一个物理页面，因此需要把映射到该页面的所有 PTE 都解除后，才是算真正释放（这里说的 PTE 是指用户进程地止空间的虚拟地址映射的该页面的 PTE，简称用户 PTE，因此 page-&gt;__mapcount 成员里描述的 PTE 数量不包含内核线性映射的 PTE）。目前有两种做法，一种做法是扫描每个进程中用户地址进程空间，由用户地址进程空间的虚拟地址查询 MMU 页表，找到对应的 page 数据结构，这样就找到了用户 PTE。然后对比 KSM 中的稳定树和不稳定树，如果找到页面内容相同的，就把该 PTE 设置成写时复制，映射到 KSM 页面中，从而释放出一个 PTE。注意，这里是释放出一个用户 PTE，而不是一个物理页面（如果该物理页面只有一个 PTE 映射，那就是释放该页）。另外一种做法是直接扫描系统中的物理页面，然后通过 RMAP 来解除该页面所有的用户 PTE，从而一次性地释放出物理页面。显然，目前内核的 KSM 是基于第一种做法。<br>KSM 的作者在他的论文中有实测数据，但作者依然覚得有一些情况下会比较糟糕。如在一个很大内存的服务器上，很多的匿名页面都同时映射了多个虚拟页面。假设每个匿名页面都映射了 1000 个虚拟页面，这些虚拟页面又同时分布在不同的子进程中，那么要释放一个物理页面，需要扫描完 1000 个虚拟页面所在的用户地址进程空间，每次都要利用 follow_page() 查询页表，然后査询稳定树，还需要多次执行 memcmp 比较，合并 10000 次 PTE 也就意味着 memcmp 要执行 10000 次，这个过程会很漫长，在实际项目中，有很多人抱怨 KSM 的效率低，在很多项目是关闭该特性的。也有很多人在思考如何提高 KSM 的效率，包括利用新的软件算法或者利用硬件机制。</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>《奔跑吧 Linux 内核》</p>
 
       </div>
       
