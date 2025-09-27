@@ -1,0 +1,169 @@
+---
+title: Linux驱动之TTY子系统
+categories: 
+- Linux
+- 驱动
+date: 2020-09-26 13:15:01
+tags: Linux驱动
+---
+
+# uart基础知识
+## uart概念
+通用异步收发传输器，通常称作UART，是一种异步收发传输器。是异步通信协议。特性：两根线，全双工，异步通信，速度较慢。也就是一根发送数据，一根接收数据，并且电平逻辑是时间的函数。发送和接收一个bit都有固定的宽度，也就是只有等于这个时间宽度时才认为是1bit。为了约定时间宽度，就诞生了比特率的概念：表示1s信号可以传输N bit的数据，单位bps=bit per second。比如，9600bps = 1s发送或接收9600 bit数据，那么1bit数据时间宽度也就是1/9600 s。
+
+## 物理层
+串口本身是一种串型数据收发协议，他的物理层有不同的表示逻辑电平的方式，常用的就是TTL, RS232, RS484:
+
+- TTL: 一般是直接从单片机或者芯片里面出来的电平,逻辑1为2.4V-5V逻辑0为0-0.5v(一般高电平位5V或者3.3V,低电平为0)。
+- RS232: 逻辑 1：-15V~-3V逻辑 0：+3V~+15V(低电平为-15V,高电平为15V峰值差别大,不以0为低电平,)。
+- RS-485：采用差分信号正逻辑，逻辑“1”以两线间的电压差为+（2~6）V表示；逻辑”0“以两线间的电压差为-（2~6）V表示。
+
+## 协议层
+![](/picture/linux_driver/tty/uart.png)
+
+一帧完整的数据帧由起始位、数据位、校验位和停止位构成。
+
+- 空闲位：当总线处于空闲状态时信号线的状态为‘1’即高电平，表示当前线路上没有数据传输。
+- 起始位:先发出一个逻辑”0”的信号，表示传输数据的开始。
+- 数据位：可以是5~8位逻辑”0”或”1”。如ASCII码（7位），扩展BCD码（8位）。小端传输。
+- 校验位：数据位加上这一位后，使得“1”的位数应为偶数(偶校验)或奇数(奇校验)，以此来校验数据传送的正确性。
+- 停止位：它是一个字符数据的结束标志。
+- 波特率：一般选波特率都会有9600,19200,115200等选项。其实意思就是每秒传输这么多个比特位数(bit)。
+
+<!--more-->
+
+# linux下uart驱动
+## 数据结构
+uart子系统的数据结构及其内部关系如下：[原图](https://www.processon.com/view/link/6153443a7d9c087fb0d8e47e)
+![](/picture/linux_driver/tty/UART_Struct.png)
+
+- uart_driver   
+    uart_driver表示一个串口控制器驱动的抽象，内部包含了tty_driver类型的成员变量，同时也包含了该串口控制器所支持的所有串口对应uart_state。该数据结构本身提供的功能不多，主要是一个其他数据结构的聚合。
+
+- uart_state   
+    该数据结构可以理解为串口的资源信息，如申请了一个环形缓冲区成员，用于存储待发送的数据；而port则为tty端口变量；uart_port则指向uart子系统定义的串口抽象数据结构。
+
+- uart_port   
+    该数据结构是对uart端口的抽象。包含读写该端口寄存器相关的i/o及内存地址，包含读写串口、设置串口termios的接口serial_in、seriall_out、set_termios，包含中断处理接口handle_irq。在上图中可以看到该数据下面是一个platform的相关结构，这部分实现是跟具体的uart控制器的实现有关，通过dts提供一个uart的信息，该信息通过platform总线来解析生成一个uart_port结构，该结构会注册到系统。
+
+- uart_ops   
+    该数据结构表示一个串口的操作接口，对于一款soc，里面都有自己的串口控制器，而串口的数据收发、配置和中断等操作都通过该数据接口来提供。这部分驱动一般由芯片原厂bsp工程师实现，一般驱动工程师可以直接使用这些接口实现上层应用来收发数据。
+
+## 流程分析
+/driver/tty/serial/serial_core.c文件提供了uart核心逻辑，其中最重要的是uart控制器的注册和uart设备的注册。其中控制器的注册注册接口是：
+```c
+int uart_register_driver(struct uart_driver *drv)
+```
+该函数主要完成以下工作：
+
+- 调用alloc_tty_driver申请tty_driver类型的内存，并设置tty_driver的各成员变量，同时设置其ops成员为uart_ops。
+- 根据串口的个数，为每一个串口申请对应的uart_state类型的内存空间（也就完成了对应tty_port的创建），用于存储每一个串口的资源相关的信息以及串口对应tty_port信息，并为tty_port设置其ops成员为uart_port_ops；我们知道tty_port中包含接收数据的缓存，但却没有发送数据的缓存，而uart_state中则包含了发送数据的缓存（即环形缓存区），因此借助uart_state、tty_port则实现了串口收发数据的缓存（在我们之前实现的虚拟串口中也定义了数据发送的buff，只不过是使用kfifo实现的）。
+
+下面看下uart设备的注册函数：
+```c
+int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+```
+该函数主要完成以下工作：
+
+- 完成uart_state与uart_port的互相关联。
+- 调用uart_configure_port，配置该串口（如mem、io资源的申请等）。
+- 调用tty_port_register_device_attr接口，完成tty_port与tty_driver的关联，并调用device_register完成tty_port对应device的注册，同时该动作也完成了tty_port对应device与tty_class的关联，同时也完成tty对应字符设备的创建（通过向应用层发送kobject add uevent，而udevd、mdev在接收到该uevent后，根据设备节点至，通过调用mknod接口完成设备文件inode的创建，也就完成了字符设备文件的创建），同时也为该tty端口对应的device创建了uart相关的属性信息（即tty_dev_attr_groups）。
+
+# tty相关概念
+## 设备节点名称
+/dev/ttyS0、/dev/ttySAC0、/dev/tty、/dev/tty0、/dev/tty1、/dev/console
+
+| 设备节点                            | 含义                                         |
+| ----------------------------------- | -------------------------------------------- |
+| /dev/ttyS0、/dev/ttySAC0            | 串口                                         |
+| /dev/tty1、/dev/tty2、/dev/tty3、…… | 虚拟终端设备节点                             |
+| /dev/tty0                           | 前台终端                                     |
+| /dev/tty                            | 程序自己的终端，可能是串口、也可能是虚拟终端 |
+| /dev/console                        | 控制台，由内核的cmdline参数确定              |
+
+## TTY/Terminal/Console/UART
+
+| 术语     | 含义                                                         |
+| -------- | ------------------------------------------------------------ |
+| TTY      | 来自teletype，最古老的输入输出设备，现在用来表示内核的一套驱动系统 |
+| Terminal | 终端，暗含远端之意，也是一个输入输出设备，可能是真实设备，也可能是虚拟设备 |
+| Console  | 控制台，含控制之意，也是一种Terminal，权限更大，可以查看内核打印信息 |
+| UART     | 串口，它的驱动程序包含在TTY驱动体系之内                      |
+
+## /dev/console
+可以通过内核的cmdline来指定，
+比如: console=ttyS0 console=tty
+
+console=ttyS0时：/dev/console就是ttyS0
+console=tty时：/dev/console就是前台程序的虚拟终端
+console=tty0时：/dev/console就是前台程序的虚拟终端
+console=ttyN时：/dev/console就是/dev/ttyN
+console有多个取值时，使用最后一个取值来判断
+
+## 行规程
+大多数用户都会在输入时犯错，所以退格键会很有用。这当然可以由应用程序本身来实现，但是根据UNIX设计“哲学”，应用程序应尽可能保持简单。为了方便起见，操作系统提供了一个编辑缓冲区和一些基本的编辑命令（退格，清除单个单词，清除行，重新打印），这些命令在行规范（line discipline）内默认启用。高级应用程序可以通过将行规范设置为原始模式（raw mode）而不是默认的成熟或准则模式（cooked and canonical）来禁用这些功能。大多数交互程序（编辑器，邮件客户端，shell，及所有依赖curses或readline的程序）均以原始模式运行，并自行处理所有的行编辑命令。行规范还包含字符回显和回车换行（译者注：\r\n 和 \n）间自动转换的选项。如果你喜欢，可以把它看作是一个原始的内核级sed(1)。另外，内核提供了几种不同的行规范。一次只能将其中一个连接到给定的串行设备。行规范的默认规则称为N_TTY（drivers/char/n_tty.c，如果你想继续探索的话）。其他的规则被用于其他目的，例如管理数据包交换（ppp，IrDA，串行鼠标）。
+
+# tty驱动
+## 数据结构
+tty数据结构的整体框架如下：[原图](https://www.processon.com/view/link/615344201e08533a03fb063a)
+![](/picture/linux_driver/tty/TTY_Struct.png)
+
+- tty_driver   
+    该数据结构即为tty控制器的抽象，该数据结构包含该tty控制器的访问接口（包括读、写等接口）。
+
+- tty_port   
+    针对每一个tty端口设备（也可称为tty端口），抽象为tty_port数据结构，该结构体包含了存储从tty端口中接收的数据以及每一个数据对应的flag信息，并包含对应的接口（包括数据载波监听是否启动判断、tty端口激活及关闭、dtr/rts启动、tty port释放等接口）。
+
+- tty_ldisc    
+    借助一个tty端口传输不同格式的协议数据，即可实现不同的协议传输，即针对一个tty端口可实现多个不同的协议，因此tty驱动模块针对协议数据传输抽象出行规程，现内核中实现了tty行规程、irda行规程、SLIP行规程、PPP行规程等。
+
+- tty_struct   
+    而针对linux tty子系统，为了将tty子模块与上层文件系统关联，实现tty设备文件，又抽象了tty_struct数据结构，该数据结构包含一个tty端口、tty端口对应的行规程、该tty端口所依附的tty控制器以及打开该tty端口的文件变量，即通过该数据结构，即可完成应用程序读写tty端口设备的功能。
+
+## 实现
+tty driver的注册函数是tty_register_driver:
+```c
+int tty_register_driver(struct tty_driver *driver)
+```
+该函数主要完成如下工作：
+
+- 根据tty_driver设置的主设备号、次设备号、tty端口个数，调用alloc_chrdev_region/register_chrdev_region进行字符设备号区间的申请。
+- 若该tty_driver动态创建字符设备，则在tty_register_driver中，仅创建次设备号范围为tty端口个数的字符设备。
+- 若该tty_driver静态创建字符设备，则在tty_register_driver中，针对每一个tty端口均创建一个对应的字符设备（次设备个数为1）。
+- 将该tty_driver添加至tty_drivers链表中。
+- 调用proc_tty_register_driver，在proc文件系统中，为该tty_driver创建对应的文件。
+
+tty device的注册函数是tty_register_device:
+```c
+struct device *tty_register_device(struct tty_driver *driver, unsigned index,
+				   struct device *device)
+```
+- 若该tty_driver没有设置TTY_DRIVER_DYNAMIC_ALLOC，则调用tty_cdev_add针对每一个tty端口均创建一个对应的字符设备（次设备个数为1）。
+- 申请struct device类型的内存空间，并将该device与tty_class关联，并调用device_register将该device注册至设备驱动子系统中，且该device中包含了字符设备的设备号，因此当将该设备注册至设备驱动子系统时，会通过netlink将设备注册的uevent信息发送给应用程序，而mdev或者udevd程序接收到该uevent信息后，则会根据注册信息，完成tty字符设备inode的创建，即可在/dev目录下创建相应的字符设备文件。
+
+行规程的注册函数tty_register_ldisc：
+```c
+int tty_register_ldisc(struct tty_ldisc_ops *new_ldisc)
+```
+行规程的注册很简单就是将新的行规程结构体加入到一个全局数组中，如下：
+```c
+static struct tty_ldisc_ops *tty_ldiscs[NR_LDISCS];
+```
+
+## tty子系统中接口间的关联
+tty子系统在系统中的位置如下：[原图](https://www.processon.com/view/link/61534b250e3e74663e9006c2)
+![](/picture/linux_driver/tty/TTY_Framework.png)
+
+- vfs的系统调用接口，通过字符设备操作接口，最终调用tty字符设备文件节点的操作函数的调用（即tty_open、tty_read、tty_write、tty_poll等接口）。
+- tty_open、tty_read、tty_write、tty_poll等接口，则借助tty_ldisc数据结构类型的变量，调用tty_ldisc_ops中对应的接口。
+- tty_ldisc_ops中的接口，则借助tty_driver数据结构类型的变量，调用tty_operations数据结构中各成员变量对应的函数指针。
+- 在tty_operations中的函数指针中，则针对一部分设备驱动，则会调用tty_port中的ops的接口。
+
+最后：TTY子系统是一个很复杂的子系统，这里也没有详细的分析里面具体的实现，而是主要将里面的数据结构列出来，在整体上对TTY子系统有一个认识。
+
+# 参考文献   
+[https://www.eefocus.com/communication/483725](https://www.eefocus.com/communication/483725)   
+[https://developer.aliyun.com/article/338009](https://developer.aliyun.com/article/338009)    
+[https://blog.csdn.net/lickylin/article/details/105850967?spm=1001.2014.3001.5501](https://blog.csdn.net/lickylin/article/details/105850967?spm=1001.2014.3001.5501)    
+[https://blog.csdn.net/lickylin/article/details/105850996?spm=1001.2014.3001.5501](https://blog.csdn.net/lickylin/article/details/105850996?spm=1001.2014.3001.5501)   
+

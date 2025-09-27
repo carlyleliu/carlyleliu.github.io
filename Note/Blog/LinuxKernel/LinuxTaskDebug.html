@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Linux 进程管理（五）进程调度的调试">
+<meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxKernel/LinuxTaskDebug.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskDebug.png">
+<meta property="article:published_time" content="2021-11-06T22:06:58.000Z">
+<meta property="article:modified_time" content="2025-09-27T03:40:43.589Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Kernel">
+<meta property="article:tag" content="Task">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskDebug.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/note/Blog/LinuxKernel/LinuxTaskDebug">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/note/Blog/LinuxKernel/LinuxTaskDebug.html","path":"note/Blog/LinuxKernel/LinuxTaskDebug.html","title":"Linux 进程管理（五）进程调度的调试"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 进程管理（五）进程调度的调试 | Matrix
+</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E4%B8%8E%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E7%9A%84%E8%B0%83%E5%BA%A6%E4%BF%A1%E6%81%AF"><span class="nav-text"> 查看与进程相关的调度信息</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B-cfs-%E7%9A%84%E4%BF%A1%E6%81%AF"><span class="nav-text"> 查看 CFS 的信息</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E8%B0%83%E5%BA%A6%E5%9F%9F%E4%BF%A1%E6%81%AF"><span class="nav-text"> 查看调度域信息</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8E%E8%B0%83%E5%BA%A6%E7%9B%B8%E5%85%B3%E7%9A%84%E8%B0%83%E8%AF%95%E8%8A%82%E7%82%B9"><span class="nav-text"> 与调度相关的调试节点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">207</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner page posts-expand">
+
+
+    
+    
+    
+    <div class="post-block" lang="zh-CN"><header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">Linux 进程管理（五）进程调度的调试
+</h1>
+
+<div class="post-meta-container">
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxKernel/">LINUXKERNEL</a></li>
+            <li>LINUXTASKDEBUG</li>
+  </ul>
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskDebug.png" alt=""><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2Y2ZlMzU2NTNiYjA3MWU3MDI5MDM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
+<p>Linux 内核为开发者提供了丰富的进程调度信息，这些调度信息都需要在内核配置时打开 CONFIG_SCHED_DEBUG 选项。</p>
+<h1 id="查看与进程相关的调度信息"><a class="markdownIt-Anchor" href="#查看与进程相关的调度信息"></a> 查看与进程相关的调度信息</h1>
+<p>有时候我们需要查看进程相关的调度信息，如进程的 nice 值、优先级、调度策略、vruntime 及量化计算能力等信息。在 Linux 的 proc 目录中，为每个进程提供一个独立的目录，该目录包含了与进程相关的信息，执行如下命令：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~<span class="comment"># cat /proc/1/sched</span></span><br></pre></td></tr></tbody></table></figure>
+<p>得到：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">systemd (1, <span class="comment">#threads: 1)</span></span><br><span class="line">-------------------------------------------------------------------</span><br><span class="line">se.exec_start                                :    5438471989.820758</span><br><span class="line">se.vruntime                                  :          3446.301246</span><br><span class="line">se.sum_exec_runtime                          :         66272.041453</span><br><span class="line">se.nr_migrations                             :                 4998</span><br><span class="line">nr_switches                                  :               172620</span><br><span class="line">nr_voluntary_switches                        :               169241</span><br><span class="line">nr_involuntary_switches                      :                 3379</span><br><span class="line">se.load.weight                               :              1048576</span><br><span class="line">se.runnable_weight                           :              1048576</span><br><span class="line">se.avg.load_sum                              :                  172</span><br><span class="line">se.avg.runnable_load_sum                     :                  172</span><br><span class="line">se.avg.util_sum                              :               176128</span><br><span class="line">se.avg.load_avg                              :                    0</span><br><span class="line">se.avg.runnable_load_avg                     :                    0</span><br><span class="line">se.avg.util_avg                              :                    0</span><br><span class="line">se.avg.last_update_time                      :     5438471989820416</span><br><span class="line">se.avg.util_est.ewma                         :                   10</span><br><span class="line">se.avg.util_est.enqueued                     :                    0</span><br><span class="line">policy                                       :                    0</span><br><span class="line">prio                                         :                  120</span><br><span class="line">clock-delta                                  :                  103</span><br><span class="line">mm-&gt;numa_scan_seq                            :                    0</span><br><span class="line">numa_pages_migrated                          :                    0</span><br><span class="line">numa_preferred_nid                           :                    0</span><br><span class="line">total_numa_faults                            :                  806</span><br><span class="line">current_node=0, numa_group_id=0</span><br><span class="line">numa_faults node=0 task_private=734 task_shared=72 group_private=0 group_shared=0</span><br><span class="line">numa_faults node=1 task_private=0 task_shared=0 group_private=0 group_shared=0</span><br></pre></td></tr></tbody></table></figure>
+<p>上面就是 ID 为 1 的进程的 proc 目录，在进程 proc 目录里，看到和进程调度相关的节点为 sched，读者可以使用 cat 命令来读取这个节点的信息，我们可以得到很多有用的信息，这些信息是在 proc_sched_show_task() 函数中输出的，该函数实现在 kerel/sched/debug.c 文件中。这些信息如下：</p>
+<ul>
+<li>进程的名称为 systemd，ID 是 1，线程有 1 个</li>
+<li>进程的优先级为 120</li>
+<li>进程的调度策略是 SCHED_NORMAL，使用的调度类是 CFS 调度类（fair_sched_class）</li>
+<li>当前进程的虚拟时间（vruntime）是 3446.301246ms。总运行时间为 66272.041453ms</li>
+<li>进程发生过 4998 次迁移，172620 次进程上下文切换，其中主动调度有 169241 次，被抢占调度有 3379&nbsp;次</li>
+<li>进程的权重 se.load.weight 和 se.runnable.weight 相等，都是 1048576。注意，这两个值均为原本的权重值乘以 1024。进程优先级为 120，nice 值为 0，它原本的权重值为 1024</li>
+<li>当前时刻，进程的 se.avg.load_sum 值和 se.avg.runnable_load_sum 相等，都是 172</li>
+<li>进程的 se.ave.load_avg 和 se.avg.runnable_load_avg 是相等的都是 0。对于该进和来说，它的量化负载的最大值就等于它的权重值，即 1024，这是在 100%占用 CPU 的情况下得到的</li>
+<li>进程的量化计算能力（se.avg.util_avg）为 0</li>
+</ul>
+<p>Linux 内核还提供一个与调度信息相关的数据结构 sched_statistics，其中包含了非常多和调度相关的统计信息。要查看这些统计信息，需要打开 CONFIG_SCHEDSTATS 配置选项。另外，还需要打开 sched_schedstats 节点。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt; /proc/sys/kernel/sched_schedstats</span><br></pre></td></tr></tbody></table></figure>
+<p>重新查看 ID 为 1 的进程调度信息，我们会发现里面多了很多统计信息</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><span class="line">root@liushuai:/proc/1<span class="comment"># cat sched</span></span><br><span class="line">systemd (1, <span class="comment">#threads: 1)</span></span><br><span class="line">-------------------------------------------------------------------</span><br><span class="line">se.exec_start                                :    5439456327.802850</span><br><span class="line">se.vruntime                                  :          3452.764216</span><br><span class="line">se.sum_exec_runtime                          :         66278.504423</span><br><span class="line">se.nr_migrations                             :                 4998</span><br><span class="line">se.statistics.sum_sleep_runtime              :             0.000000</span><br><span class="line">se.statistics.wait_start                     :             0.000000</span><br><span class="line">se.statistics.sleep_start                    :             0.000000</span><br><span class="line">se.statistics.block_start                    :             0.000000</span><br><span class="line">se.statistics.sleep_max                      :             0.000000</span><br><span class="line">se.statistics.block_max                      :             0.000000</span><br><span class="line">se.statistics.exec_max                       :             0.000000</span><br><span class="line">se.statistics.slice_max                      :             0.000000</span><br><span class="line">se.statistics.wait_max                       :             0.000000</span><br><span class="line">se.statistics.wait_sum                       :             0.000000</span><br><span class="line">se.statistics.wait_count                     :                    0</span><br><span class="line">se.statistics.iowait_sum                     :             0.000000</span><br><span class="line">se.statistics.iowait_count                   :                    0</span><br><span class="line">se.statistics.nr_migrations_cold             :                    0</span><br><span class="line">se.statistics.nr_failed_migrations_affine    :                    0</span><br><span class="line">se.statistics.nr_failed_migrations_running   :                    0</span><br><span class="line">se.statistics.nr_failed_migrations_hot       :                    0</span><br><span class="line">se.statistics.nr_forced_migrations           :                    0</span><br><span class="line">se.statistics.nr_wakeups                     :                    0</span><br><span class="line">se.statistics.nr_wakeups_sync                :                    0</span><br><span class="line">se.statistics.nr_wakeups_migrate             :                    0</span><br><span class="line">se.statistics.nr_wakeups_local               :                    0</span><br><span class="line">se.statistics.nr_wakeups_remote              :                    0</span><br><span class="line">se.statistics.nr_wakeups_affine              :                    0</span><br><span class="line">se.statistics.nr_wakeups_affine_attempts     :                    0</span><br><span class="line">se.statistics.nr_wakeups_passive             :                    0</span><br><span class="line">se.statistics.nr_wakeups_idle                :                    0</span><br><span class="line">avg_atom                                     :             0.383900</span><br><span class="line">avg_per_cpu                                  :            13.261005</span><br><span class="line">nr_switches                                  :               172645</span><br><span class="line">nr_voluntary_switches                        :               169266</span><br><span class="line">nr_involuntary_switches                      :                 3379</span><br><span class="line">se.load.weight                               :              1048576</span><br><span class="line">se.runnable_weight                           :              1048576</span><br><span class="line">se.avg.load_sum                              :                  286</span><br><span class="line">se.avg.runnable_load_sum                     :                  286</span><br><span class="line">se.avg.util_sum                              :               293807</span><br><span class="line">se.avg.load_avg                              :                    6</span><br><span class="line">se.avg.runnable_load_avg                     :                    6</span><br><span class="line">se.avg.util_avg                              :                    6</span><br><span class="line">se.avg.last_update_time                      :     5439456327801856</span><br><span class="line">se.avg.util_est.ewma                         :                   10</span><br><span class="line">se.avg.util_est.enqueued                     :                    0</span><br><span class="line">policy                                       :                    0</span><br><span class="line">prio                                         :                  120</span><br><span class="line">clock-delta                                  :                   56</span><br><span class="line">mm-&gt;numa_scan_seq                            :                    0</span><br><span class="line">numa_pages_migrated                          :                    0</span><br><span class="line">numa_preferred_nid                           :                    0</span><br><span class="line">total_numa_faults                            :                  806</span><br><span class="line">current_node=0, numa_group_id=0</span><br><span class="line">numa_faults node=0 task_private=734 task_shared=72 group_private=0 group_shared=0</span><br><span class="line">numa_faults node=1 task_private=0 task_shared=0 group_private=0 group_shared=0</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="查看-cfs-的信息"><a class="markdownIt-Anchor" href="#查看-cfs-的信息"></a> 查看 CFS 的信息</h1>
+<p>Linux 内核在调度方面实现了一些调试接口，为开发者提供窥探调度器内部信息的接口。 在 proc 目录下面有一个 sched_debug 节点，其信息如下所示。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">root@liushuai:/proc<span class="comment"># cat sched_debug</span></span><br><span class="line">Sched Debug Version: v0.11, 5.4.0-81-generic <span class="comment">#91-Ubuntu</span></span><br><span class="line">ktime                                   : 5439613876.757507</span><br><span class="line">sched_clk                               : 5439566740.450647</span><br><span class="line">cpu_clk                                 : 5439566596.040965</span><br><span class="line">jiffies                                 : 5654795694</span><br><span class="line">sched_clock_stable()                    : 1</span><br><span class="line"></span><br><span class="line">sysctl_sched</span><br><span class="line">  .sysctl_sched_latency                    : 24.000000</span><br><span class="line">  .sysctl_sched_min_granularity            : 3.000000</span><br><span class="line">  .sysctl_sched_wakeup_granularity         : 4.000000</span><br><span class="line">  .sysctl_sched_child_runs_first           : 0</span><br><span class="line">  .sysctl_sched_features                   : 2059067</span><br><span class="line">  .sysctl_sched_tunable_scaling            : 1 (logarithmic)</span><br><span class="line">...</span><br><span class="line">rt_rq[0]:</span><br><span class="line">  .rt_nr_running                 : 0</span><br><span class="line">  .rt_nr_migratory               : 0</span><br><span class="line">  .rt_throttled                  : 0</span><br><span class="line">  .rt_time                       : 0.000000</span><br><span class="line">  .rt_runtime                    : 950.000000</span><br><span class="line"></span><br><span class="line">dl_rq[0]:</span><br><span class="line">  .dl_nr_running                 : 0</span><br><span class="line">  .dl_nr_migratory               : 0</span><br><span class="line">  .dl_bw-&gt;bw                     : 996147</span><br><span class="line">  .dl_bw-&gt;total_bw               : 0</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>Sched 调试信息的版本号：v0.11</li>
+<li>Linux 内核版本号：5.4.0</li>
+<li>内核时间（ktime）的值 5439613876.757507</li>
+<li>sched_clock=5439566740.450647 和 cpu_clk=5439566596.040965 的值</li>
+<li>当前 jiffies 的值 5654795694</li>
+<li>和调度相关的 sysctl_sched 的值
+<ul>
+<li>调度周期 sysctl_sched_latency 为 24.000000ms</li>
+<li>调度最小粒度为 3.000000ms</li>
+<li>唤醒的最小粒度为 4.000000ms</li>
+<li>fork 调用完成之后禁止子进程先运行</li>
+<li>调度支持的特性</li>
+</ul>
+</li>
+</ul>
+<p>cpu 相关信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">cpu<span class="comment">#0, 2500.140 MHz</span></span><br><span class="line">  .nr_running                    : 0</span><br><span class="line">  .nr_switches                   : 57306500</span><br><span class="line">  .nr_load_updates               : 0</span><br><span class="line">  .nr_uninterruptible            : -2994</span><br><span class="line">  .next_balance                  : 5654.795676</span><br><span class="line">  .curr-&gt;pid                     : 0</span><br><span class="line">  .clock                         : 5439566591.813321</span><br><span class="line">  .clock_task                    : 5439566591.813321</span><br><span class="line">  .avg_idle                      : 1000000</span><br><span class="line">  .max_idle_balance_cost         : 500000</span><br><span class="line">  .yld_count                     : 1</span><br><span class="line">  .sched_count                   : 8189</span><br><span class="line">  .sched_goidle                  : 4044</span><br><span class="line">  .ttwu_count                    : 1273</span><br><span class="line">  .ttwu_local                    : 321</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>nr_running：有 0 个进程在就绪队列里</li>
+<li>nr_switches：就绪队列发生进程切换的次数 57306500 次</li>
+<li>nr_load_updates：就绪队列的 cpu_load[] 平滑负载更新的次数 0 次</li>
+<li>next_balance：下一次做负载均衡的时间 5654.795676</li>
+<li>curr-&gt;pid：正在运行状态的 PID</li>
+<li>clock 和 clock_task：当前系统采样的时刻</li>
+</ul>
+<p>cfs 就绪队列相关信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">cfs_rq[1]:/user.slice</span><br><span class="line">  .exec_clock                    : 12.379262</span><br><span class="line">  .MIN_vruntime                  : 0.000001</span><br><span class="line">  .min_vruntime                  : 2306434.555699</span><br><span class="line">  .max_vruntime                  : 0.000001</span><br><span class="line">  .spread                        : 0.000000</span><br><span class="line">  .spread0                       : -8049717.704115</span><br><span class="line">  .nr_spread_over                : 0</span><br><span class="line">  .nr_running                    : 1</span><br><span class="line">  .load                          : 1048576</span><br><span class="line">  .runnable_weight               : 1048576</span><br><span class="line">  .load_avg                      : 3</span><br><span class="line">  .runnable_load_avg             : 3</span><br><span class="line">  .util_avg                      : 3</span><br><span class="line">  .util_est_enqueued             : 0</span><br><span class="line">  .removed.load_avg              : 0</span><br><span class="line">  .removed.util_avg              : 0</span><br><span class="line">  .removed.runnable_sum          : 0</span><br><span class="line">  .tg_load_avg_contrib           : 3</span><br><span class="line">  .tg_load_avg                   : 1037</span><br><span class="line">  .throttled                     : 0</span><br><span class="line">  .throttle_count                : 0</span><br><span class="line">  .se-&gt;exec_start                : 5439566596.839807</span><br><span class="line">  .se-&gt;vruntime                  : 7544926.691548</span><br><span class="line">  .se-&gt;sum_exec_runtime          : 2240863.841914</span><br><span class="line">  .se-&gt;statistics.wait_start     : 0.000000</span><br><span class="line">  .se-&gt;statistics.sleep_start    : 0.000000</span><br><span class="line">  .se-&gt;statistics.block_start    : 0.000000</span><br><span class="line">  .se-&gt;statistics.sleep_max      : 0.000000</span><br><span class="line">  .se-&gt;statistics.block_max      : 0.000000</span><br><span class="line">  .se-&gt;statistics.exec_max       : 0.303114</span><br><span class="line">  .se-&gt;statistics.slice_max      : 0.000000</span><br><span class="line">  .se-&gt;statistics.wait_max       : 0.000000</span><br><span class="line">  .se-&gt;statistics.wait_sum       : 0.000000</span><br><span class="line">  .se-&gt;statistics.wait_count     : 143</span><br><span class="line">  .se-&gt;load.weight               : 521740</span><br><span class="line">  .se-&gt;runnable_weight           : 521740</span><br><span class="line">  .se-&gt;avg.load_avg              : 2</span><br><span class="line">  .se-&gt;avg.util_avg              : 3</span><br><span class="line">  .se-&gt;avg.runnable_load_avg     : 2</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>exec_clock：CFS 就绪队列的总运行时间</li>
+<li>MIN_vruntime：表示 CFS 就绪队列的红黑树中最左边节点的 vruntime 的值</li>
+<li>min_vruntime：CFS 就绪队列里 min_vruntime 的值</li>
+<li>max_vruntime: CFS 就绪队列的红黑树中最右边节点的 vruntime 的值</li>
+<li>nr_running：CFS 就绪队列中的进程数</li>
+<li>load：CFS 就绪队列的总权重</li>
+<li>runnable_weight.CFS 就绪队列中可运行状态的进程总权重</li>
+<li>load_avg: 调度队列中总的量化负载，这是 CFS 就绪队列中所有进程的量化负载之和</li>
+<li>runnable_load_avg：CFS 就绪队列里所有可运行状态下的进程总量化负载，可以看到它的值和 load_avg 相等</li>
+<li>util_avg：CFS 就绪队列当前的量化计算能力</li>
+</ul>
+<p>所有进程相关信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">runnable tasks:</span><br><span class="line"> S           task   PID         tree-key  switches  prio     wait-time             sum-exec        sum-sleep</span><br><span class="line">-----------------------------------------------------------------------------------------------------------</span><br><span class="line"> I         rcu_gp     3        13.968356         2   100         0.000000         0.003216         0.000000 0 0 /</span><br><span class="line"> I     rcu_par_gp     4        15.968978         2   100         0.000000         0.002189         0.000000 0 0 /</span><br><span class="line"> I   kworker/0:0H     6      4826.431210         4   100         0.000000         0.020363         0.000000 0 0 /</span><br><span class="line"> I   mm_percpu_wq    10        24.040288         2   100         0.000000         0.002587         0.000000 0 0 /</span><br><span class="line"> S    ksoftirqd/0    11  10356126.783742    181278   120         0.077741      3101.302842     18658.038816 0 0 /</span><br><span class="line"> S    migration/0    13         0.000000   1360506     0         0.000000     14628.664708         0.000000 0 0 /</span><br><span class="line"> S  idle_inject/0    14         0.000000         3    49         0.000000         0.005710         0.000000 0 0 /</span><br><span class="line"> S        cpuhp/0    15    298446.415933        21   120         0.000000         1.152329         0.000000 0 0 /</span><br><span class="line"> S      watchdogd   369        11.999994         2     0         0.000000         0.000000         0.000000 0 0 /</span><br><span class="line"> Secryptfs-kthrea   418      3181.658188         2   120         0.000000         0.007012         0.000000 0 0 /</span><br><span class="line"> I   kworker/0:1H   771  10354055.277526     23104   100         0.000000       515.468619         0.000000 0 0 /</span><br><span class="line"> S       rsyslogd  1230       100.894491      9129   120         0.000000       325.720995         0.000000 0 1230 /system.slice/rsyslog.service</span><br><span class="line"> S        dockerd 598258     31439.037574     27303   120         0.000000     28928.757364         0.000000 0 597670 /system.slice/snap.docker.dockerd.service</span><br><span class="line"> S     containerd 597865     31427.350714    113110   120         0.000000     13081.711696         0.030330 0 598167 /system.slice/snap.docker.dockerd.service</span><br><span class="line"> I    kworker/0:2 646991  10279557.062806    122739   120         0.000000      3114.131510         0.000000 0 0 /</span><br><span class="line"> I    kworker/0:0 649432  10356141.706616    369586   120         1.089386      9517.253921    103008.678000 0 0 /</span><br><span class="line"> S           smbd 651779   1641474.345475    460050   120        11.539434    246732.864126     64471.275817 0 651779 /system.slice/smbd.service</span><br><span class="line"> S           node 652105   3528667.050423      1354   120         0.000000      2331.451911         0.000000 0 652102 /user.slice</span><br><span class="line"> S       cpptools 652144   3527016.422624         6   120         0.000000         0.203793         0.000000 0 0 /user.slice</span><br><span class="line"> S       cpptools 652162   3527016.384935         6   120         0.000000         0.146937         0.000000 0 0 /user.slice</span><br><span class="line"> S       cpptools 652182   3527016.373736         6   120         0.000000         0.115269         0.000000 0 0 /user.slice</span><br><span class="line"> S       cpptools 652296   3527040.380268         1   120         0.000000         0.047959         0.000000 0 0 /user.slice</span><br><span class="line"> S   cpptools-srv 652246   3527028.332316         1   120         0.000000         0.076723         0.000000 0 0 /user.slice</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>第 1 列显示进程的状态。R 表示可运行状态，也就是在 CFS 就绪队列中的进程；S 表示睡眠状态的进程</li>
+<li>第 2 列显示进程的名称</li>
+<li>第 3 列显示 PID</li>
+<li>第 4 列显示进程在 CFS 就绪队列的红黑树中的键值</li>
+<li>第 5 列显示进程切换的次数</li>
+<li>第 6 列显示进程的优先级</li>
+<li>第 7 列显示进程等待时间</li>
+<li>第 8 列显示进程运行的总时间</li>
+<li>第 9 列显示进程休眠的总时间</li>
+</ul>
+<h1 id="查看调度域信息"><a class="markdownIt-Anchor" href="#查看调度域信息"></a> 查看调度域信息</h1>
+<p>在理解 SMP 负载均衡机制的过程中，CPU 的拓扑关系是一个难点。Linux 内核新增了一个调试节点来帮助开发者理解（详见 kernel/sched/topology.c 文件）。在编译内核时，不仅需要打开 CONFIG_SCHED_DEBUG 选项，还需要在内核启动参数里传递 sched_debug 参数。<br>
+在内核启动之后，可以通过 dmesg 命令来得到 CPU 拓扑关系，如下所示。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[0.224258] CPUO attaching sched-domain(s)</span><br><span class="line">[0.224422]    domain-0: span=0-3 level=MC</span><br><span class="line">[0.224780]        <span class="built_in">groups</span>: O:{ span=0 },1:{span=1},2:{span=2},3:{span=3}</span><br><span class="line">[0.227045] CPU1 attaching sched-domain(s):</span><br><span class="line">[0.227111]    domain-0: span=0-3 level=MC</span><br><span class="line">[0.227179]        <span class="built_in">groups</span>: 1:{span=1},2:{span=2 },3:{span=3 }, 0:{ span=0}</span><br><span class="line">[0.227347] CPU2 attaching sched-domain(s):</span><br><span class="line">[0.227407]    domain-0: span=0-3 level=MC</span><br><span class="line">[0.227471]        <span class="built_in">groups</span>: 2:{span=2},3:{span=3},0:{span=0},1:{span=1}</span><br><span class="line">[0.228416] CPU3 attaching <span class="built_in">sched</span>- domain(s):</span><br><span class="line">[0.228485]    domain-0: span=0-3 level=MC</span><br><span class="line">[02285530]         <span class="built_in">groups</span>: 3:{span=3 }, 0:{span=0 }, 1:{span=1},2:{span=2}</span><br><span class="line">[0.228757] root domain span: O-3 (max cpucapacity = 1024)</span><br></pre></td></tr></tbody></table></figure>
+<p>可以看出，该系统只有 MC 层级，从 CPU0 角度看，它对应的调度域是 domain-0，管辖的范围是 CPU[0~3]，调度层级是 MC。同理，可以得出 CPU1、CPU2 以及 CPU3 的 CPU 拓扑关系。</p>
+<h1 id="与调度相关的调试节点"><a class="markdownIt-Anchor" href="#与调度相关的调试节点"></a> 与调度相关的调试节点</h1>
+<p>和调度相关的调试节点在/proc/sys/kernel 目录下，下面来简单介绍一下。</p>
+<ul>
+<li>sched_cfs_bandwidth_slice_us：用于设置 CFS 的带宽限制，默认值为 5ms</li>
+<li>sched_child_runs_first：通过 fork 调用创建进程之后，sched_child_runs_first 可以用于控制是父进程还是子进程先运行；若该值为 1，表示子进程先运行；默认值为 0</li>
+<li>sched_domain：与调度域相关的目录</li>
+<li>sched_latency_ns：设置 CFS 就绪队列调度的总时间片 sysctl_sched_latency，默认值为 6ms。 sched_latency_ns 表示一个运行队列中所有进程运行一次的时间片，它与运行队列的进程数有关。如果进程数超过 sched_nr_latency（默认是 8），那么调度周期就是 sched_min_granularity_ns 乘以运行队列里的进程数量；否则，就是 sysctl_sched_latency</li>
+<li>sched_migration_cost_ns：判断一个进程是否可以利用高速缓存的热度。如果进程的运行时间（now-p-&gt;se.exec_start）小于它，那么内核认为它的数据还在高速缓存里，所以该进程可以利用高速缓存的热度，在迁移的时候就不会考虑它</li>
+<li>sched_min_granularity_ns：设置 CPU 密集型进程最小的调度时间片，也就是进程最短运行时间，用于防止频繁切换。默认值为 0.75ms</li>
+<li>sched_nr_migrate：设置在 SMP 负载均衡机制里每次最多可以从目标 CPU 迁移多少个进程到源 CPU 里。在迁移的过程中关闭了中断，包括软中断机制，因此增大该值会导致中断延迟，同时也增大了实时进程的延迟。该值默认设置为 32</li>
+<li>sched_schedstats：用于打开调度统计信息</li>
+<li>sched_wakeup_granularity_ns：待唤醒进程会检查是否需要抢占当前进程，若待唤醒进程的睡眠时间短于 sched_wakeup_granularity_ns，那么不会抢占当前进程。增加该值会减小待唤醒进程的抢占概率。若减小该值，那么发生抢占的概率就越大。默认值为 1ms</li>
+</ul>
+<p>另外，在/sys/kermel/debug/目录下也有几个和调度相关的节点。</p>
+<ul>
+<li>sched_features：表示调度器支持的特性，如 START_DEBIT（新进程尽量早调度），WAKEUP_PREEMPT（唤醒的进程是否可以抢占当前运行的进程）等。所有的特性详见 kerel/sched/sech_features.h 文件的定义</li>
+<li>osched_debug：调度器的调试信息的开关。注意，该值仅仅控制 sched_debug_enabled，并不会控制/proc/sched_debug 节点<br>
+关于 sched_debug_enabled 的示例代码如下，</li>
+</ul>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">sched_debug_setup</span><span class="params">(<span class="type">char</span> *str)</span></span><br><span class="line">{</span><br><span class="line">    sched_debug_enabled = <span class="literal">true</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line">early_param(<span class="string">"sched_debug"</span>, sched_debug_setup);</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>《奔跑吧 Linux 内核》<br>
+《Linux 内核设计与实现》</p>
+
+      </div>
+      
+      
+      
+    </div>
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxKernel/">LINUXKERNEL</a></li>
+            <li>LINUXTASKDEBUG</li>
+  </ul>
+
+    
+    
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">488k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">29:35</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/note/Blog/LinuxKernel/LinuxTaskDebug.html"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

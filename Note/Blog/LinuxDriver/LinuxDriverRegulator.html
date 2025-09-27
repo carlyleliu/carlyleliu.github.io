@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="概述 该框架旨在提供标准内核接口来控制电压和电流 Regulator。其目的是允许系统动态控制 Regulator 功率输出，以节省功率并延长电池寿命。 这适用于电压 Regulator（电压输出可控）和电流 Regulator（电流限制可控）。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Linux 驱动之 Regulator 子系统">
+<meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxDriverRegulator.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="概述 该框架旨在提供标准内核接口来控制电压和电流 Regulator。其目的是允许系统动态控制 Regulator 功率输出，以节省功率并延长电池寿命。 这适用于电压 Regulator（电压输出可控）和电流 Regulator（电流限制可控）。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regulator_Struct.png">
+<meta property="article:published_time" content="2020-10-12T05:07:44.000Z">
+<meta property="article:modified_time" content="2025-09-27T03:40:43.585Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Driver">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regulator_Struct.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxDriverRegulator">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxDriverRegulator.html","path":"note/Blog/LinuxDriver/LinuxDriverRegulator.html","title":"Linux 驱动之 Regulator 子系统"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 驱动之 Regulator 子系统 | Matrix
+</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%91%BD%E5%90%8D%E6%B3%95"><span class="nav-text"> 命名法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#design"><span class="nav-text"> Design</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#regulator-consumer-driver-interface"><span class="nav-text"> Regulator Consumer Driver Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#consumer-regulator-access-static-dynamic-drivers"><span class="nav-text"> Consumer Regulator Access (static &amp; dynamic drivers)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-output-enable-disable-static-dynamic-drivers"><span class="nav-text"> Regulator Output Enable &amp; Disable (static &amp; dynamic drivers)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-voltage-control-status-dynamic-drivers"><span class="nav-text"> Regulator Voltage Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-current-limit-control-status-dynamic-drivers"><span class="nav-text"> Regulator Current Limit Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-operating-mode-control-status-dynamic-drivers"><span class="nav-text"> Regulator Operating Mode Control &amp; Status (dynamic drivers)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-events"><span class="nav-text"> Regulator Events</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-direct-register-access"><span class="nav-text"> Regulator Direct Register Access</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#regulator-driver-interface"><span class="nav-text"> Regulator Driver Interface</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#registration"><span class="nav-text"> Registration</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regulator-events-2"><span class="nav-text"> Regulator Events</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#regulator-api-design-notes"><span class="nav-text"> Regulator API design notes</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#safety"><span class="nav-text"> Safety</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#consumer-use-cases"><span class="nav-text"> Consumer use cases</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#regulator-machine-driver-interface"><span class="nav-text"> Regulator Machine Driver Interface</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">207</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner page posts-expand">
+
+
+    
+    
+    
+    <div class="post-block" lang="zh-CN"><header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">Linux 驱动之 Regulator 子系统
+</h1>
+
+<div class="post-meta-container">
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxDriver/">LINUXDRIVER</a></li>
+            <li>LINUXDRIVERREGULATOR</li>
+  </ul>
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
+<p>该框架旨在提供标准内核接口来控制电压和电流 Regulator。其目的是允许系统动态控制 Regulator 功率输出，以节省功率并延长电池寿命。 这适用于电压 Regulator（电压输出可控）和电流 Regulator（电流限制可控）。</p>
+<span id="more"></span>
+<h2 id="命名法"><a class="markdownIt-Anchor" href="#命名法"></a> 命名法</h2>
+<ul>
+<li>
+<p>Regulator:<br>
+为其他设备供电的电子设备。大多数稳压器可以启用和禁用其输出，而有些可以控制其输出电压和/或电流。输入电压 -&gt; 稳压器 -&gt; 输出电压</p>
+</li>
+<li>
+<p>PMIC:<br>
+电源管理 IC。 包含多个稳压器且通常包含其他子系统的 IC</p>
+</li>
+<li>
+<p>Consumer:<br>
+由稳压器供电的电子设备。 消费者可分为两类：</p>
+<p>静态：消费者不会改变其电源电压或电流限制。 它只需要启用或禁用其电源。 其电源电压由硬件、引导加载程序、固件或内核板初始化代码设置<br>
+动态：消费者需要改变其电源电压或电流限制以满足操作需求</p>
+</li>
+<li>
+<p>Power Domain:<br>
+由稳压器、开关或其他电源域的输出电源提供其输入电源的电子电路。电源 Regulator 可能位于一个或多个开关后面，例如：</p>
+<pre><code>  Regulator -+-&gt; Switch-1 -+-&gt; Switch-2 --&gt; [Consumer A]
+             |             |
+             |             +-&gt; [Consumer B], [Consumer C]
+             |
+             +-&gt; [Consumer D], [Consumer E]
+</code></pre>
+<p>这是一个稳压器和三个电源域：</p>
+<pre><code>  Domain 1: Switch-1, Consumers D &amp; E.
+  Domain 2: Switch-2, Consumers B &amp; C.
+  Domain 3: Consumer A.
+</code></pre>
+<p>这代表了一种"supplies"关系：</p>
+<pre><code>  Domain-1 --&gt; Domain-2 --&gt; Domain-3.
+</code></pre>
+</li>
+<li>
+<p>Constraints:<br>
+约束用于定义性能和硬件保护的功率级别。约束存在于三个层面：<br>
+1、稳压器级别：这由稳压器硬件操作参数定义，并在稳压器数据表中指定，例如：</p>
+<pre><code>  电压输出范围为 800mV -&gt; 3500mV
+  稳压器电流输出限制为 20mA @ 5V，但为 10mA @ 10V
+</code></pre>
+<p>2、功率域级别：这是由内核级板初始化代码在软件中定义的。 它用于将功率域限制在特定的功率范围内，例如：</p>
+<pre><code>  Domain-1 电压为 3300mV
+  Domain-2 电压为 1400mV -&gt; 1600mV
+  Domain-3 电流限制为 0mA -&gt; 20mA
+</code></pre>
+<p>3、Consumer 级别：这是由 Consumer 驱动程序动态设置电压或电流限制级别定义的。例如 消费类背光驱动器要求将电流从 5mA 增加到 10mA，以增加 LCD 亮度。 这将通过以下级别：</p>
+<pre><code>  Consumer：需要增加 LCD 亮度。 在亮度表中查找并请求下一个当前 mA 值（Consumer 驱动程序可用于基于相同参考设备的多个不同个性）
+  电源域：是此域和系统状态（例如电池电源、USB 电源）的域操作限制内的新电流限制
+  稳压器域：是输入/输出电压的稳压器操作参数内的新电流限制。
+</code></pre>
+<p>如果 Regulator 请求通过所有约束测试，则应用新的 Regulator 值</p>
+</li>
+</ul>
+<h2 id="design"><a class="markdownIt-Anchor" href="#design"></a> Design</h2>
+<p>Regulator 框架专为基于 SoC 的设备而设计，但也可能与非 SoC 设备相关，并分为以下四个接口：</p>
+<ul>
+<li>
+<p>Consumer driver interface:<br>
+这使用与内核时钟接口类似的 API，因为 Consumer 驱动程序可以获取和放置一个 Regulator（就像他们可以使用时钟 atm）并获取/设置电压、电流限制、启用和禁用。 这应该允许 Consumer 完全控制他们的电源电压和电流限制</p>
+</li>
+<li>
+<p>Regulator driver interface:<br>
+这允许 Regulator 驱动程序注册其 Regulator 并向内核提供操作。 它还具有用于向客户端传播事件的通知程序调用链</p>
+</li>
+<li>
+<p>Machine interface:<br>
+此接口用于机器特定代码，并允许为每个稳压器创建电压/电流域（带约束）。 它可以提供稳压器约束，以防止由于有缺陷的客户端驱动程序引起的过压或过流而损坏设备。 它还允许创建 regulators 树，其中一些 regulators 由其他 regulators 提供（类似于时钟树）</p>
+</li>
+<li>
+<p>Userspace ABI:<br>
+该框架还通过 sysfs 将许多有用的电压/电流/操作模式数据导出到用户空间。 这可用于帮助监控设备功耗和状态</p>
+</li>
+</ul>
+<h1 id="regulator-consumer-driver-interface"><a class="markdownIt-Anchor" href="#regulator-consumer-driver-interface"></a> Regulator Consumer Driver Interface</h1>
+<p>本节描述了消费类设备驱动程序的调节器接口。</p>
+<h2 id="consumer-regulator-access-static-dynamic-drivers"><a class="markdownIt-Anchor" href="#consumer-regulator-access-static-dynamic-drivers"></a> Consumer Regulator Access (static &amp; dynamic drivers)</h2>
+<p>消费者驱动程序可以通过调用 regulator_get 访问其供应调节器：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">regulator = regulator_get(dev, <span class="string">"Vcc"</span>);</span><br></pre></td></tr></tbody></table></figure>
+<p>消费者传入其结构设备指针和电源 ID。 然后内核通过查询特定于机器的查找表找到正确的调节器。 如果查找成功，则此调用将返回一个指向提供此使用者的结构调节器的指针。</p>
+<p>要释放调节器，消费者驱动程序应调用：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">regulator_put(regulator);</span><br></pre></td></tr></tbody></table></figure>
+<p>消费者可以由多个调节器供电，例如 具有模拟和数字电源的编解码器消费者：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">digital = regulator_get(dev, <span class="string">"Vcc"</span>);  <span class="comment">/* digital core */</span></span><br><span class="line">analog = regulator_get(dev, <span class="string">"Avdd"</span>);  <span class="comment">/* analog */</span></span><br></pre></td></tr></tbody></table></figure>
+<p>调节器访问函数 regulator_get() 和 regulator_put() 通常会分别在您的设备驱动程序 probe() 和 remove() 中调用。</p>
+<h2 id="regulator-output-enable-disable-static-dynamic-drivers"><a class="markdownIt-Anchor" href="#regulator-output-enable-disable-static-dynamic-drivers"></a> Regulator Output Enable &amp; Disable (static &amp; dynamic drivers)</h2>
+<p>消费者可以通过调用 regulator_enable 启用调节器：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_enable</span><span class="params">(regulator)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<blockquote>
+<p>在调用 regulator_enabled() 之前，电源可能已经启用。 如果消费者共享调节器或调节器先前已由引导加载程序或内核板初始化代码启用，则可能会发生这种情况。</p>
+</blockquote>
+<p>消费者可以通过调用 regulator_is_enabled 判断是否启用了调节器：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_is_enabled</span><span class="params">(regulator)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>当调节器启用时，这将返回大于零。</p>
+<p>消费者可以在不再需要时通过调用禁用其供应：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_disable</span><span class="params">(regulator)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<blockquote>
+<p>如果它与其他消费者共享，这可能不会禁用供应。 仅当启用的参考计数为零时，才会禁用调节器。</p>
+</blockquote>
+<p>最后，在紧急情况下可以强制禁用调节器：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_force_disable</span><span class="params">(regulator)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<blockquote>
+<p>这将立即强制关闭稳压器输出。 所有消费者都将断电。</p>
+</blockquote>
+<h2 id="regulator-voltage-control-status-dynamic-drivers"><a class="markdownIt-Anchor" href="#regulator-voltage-control-status-dynamic-drivers"></a> Regulator Voltage Control &amp; Status (dynamic drivers)</h2>
+<p>一些消费类驱动器需要能够动态改变其电源电压以匹配系统工作点。 例如 CPUfreq 驱动程序可以随频率调整电压以节省电量，SD 驱动程序可能需要选择正确的卡电压等。</p>
+<p>消费者可以通过调用来控制他们的电源电压：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_set_voltage</span><span class="params">(regulator, min_uV, max_uV)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>其中 min_uV 和 max_uV 是以微伏为单位的最小和最大可接受电压。</p>
+<blockquote>
+<p>这可以在调节器启用或禁用时调用。如果在已启用 regulator 时调用，则电压会立即更改，否则电压配置会更改，并且在下一次启用稳压器时会物理设置电压。</p>
+</blockquote>
+<p>调节器配置的电压输出可以通过调用找到：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_get_voltage</span><span class="params">(regulator)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<blockquote>
+<p>无论调节器是启用还是禁用，get_voltage() 都将返回配置的输出电压，并且不应用于确定调节器输出状态。 然而，这可以与 is_enabled() 结合使用来确定稳压器物理输出电压。</p>
+</blockquote>
+<h2 id="regulator-current-limit-control-status-dynamic-drivers"><a class="markdownIt-Anchor" href="#regulator-current-limit-control-status-dynamic-drivers"></a> Regulator Current Limit Control &amp; Status (dynamic drivers)</h2>
+<p>一些消费类驱动程序需要能够动态更改其电源电流限制以匹配系统工作点。 例如 LCD 背光驱动程序可以更改电流限制以改变背光亮度，USB 驱动程序可能希望在供电时将限制设置为 500mA。</p>
+<p>消费者可以通过调用来控制他们的电源电流限制：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_set_current_limit</span><span class="params">(regulator, min_uA, max_uA)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>其中 min_uA 和 max_uA 是以微安为单位的最小和最大可接受电流限制。</p>
+<blockquote>
+<p>这可以在调节器启用或禁用时调用。如果在已启用电流限制时调用，则电流限制会立即更改，否则电流限制配置会更改，并且在下一次启用调节器时会设置电流限制。</p>
+</blockquote>
+<p>通过调用可以找到调节器电流限制：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_get_current_limit</span><span class="params">(regulator)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<blockquote>
+<p>无论调节器是启用还是禁用，get_current_limit() 都将返回电流限制，并且不应用于确定调节器电流负载。</p>
+</blockquote>
+<h2 id="regulator-operating-mode-control-status-dynamic-drivers"><a class="markdownIt-Anchor" href="#regulator-operating-mode-control-status-dynamic-drivers"></a> Regulator Operating Mode Control &amp; Status (dynamic drivers)</h2>
+<p>一些消费者可以通过改变其电源调节器的工作模式来进一步节省系统功率，以便在消费者工作状态发生变化时提高效率。 例如 消费者驱动程序空闲，随后消耗较少的电流。调节器操作模式可以间接或直接改变。</p>
+<ul>
+<li>
+<p>间接操作模式控制：<br>
+消费者驱动程序可以通过以下调用请求更改其电源调节器操作模式：</p>
+<pre><code>  int regulator_set_load(struct regulator *regulator, int load_uA);
+</code></pre>
+<p>这将导致 core 重新计算调节器上的总负载（基于其所有消费者）并更改操作模式（如果必要和允许）以最佳匹配当前操作负载。load_uA 值可以从消费者的数据表中确定。 例如 大多数数据表都有表格显示在某些情况下消耗的最大电流。大多数消费者将使用间接操作模式控制，因为他们不了解调节器或调节器是否与其他消费者共享</p>
+</li>
+<li>
+<p>直接操作模式控制：<br>
+定制或紧密耦合的驱动器可能希望根据其工作点直接控制调节器的工作模式，这可以通过调用：</p>
+<pre><code>  int regulator_set_mode(struct regulator *regulator, unsigned int mode);
+  unsigned int regulator_get_mode(struct regulator *regulator);
+</code></pre>
+<p>直接模式将仅由<em>了解</em>有关调节器且不与其他消费者共享调节器的消费者使用</p>
+</li>
+</ul>
+<h2 id="regulator-events"><a class="markdownIt-Anchor" href="#regulator-events"></a> Regulator Events</h2>
+<p>监管机构可以将外部事件通知消费者，在监管机构压力或故障条件下，消费者可能会收到事件。</p>
+<p>消费者调用以下接口注册感兴趣的事件：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_register_notifier</span><span class="params">(<span class="keyword">struct</span> regulator *regulator,</span></span><br><span class="line"><span class="params">				<span class="keyword">struct</span> notifier_block *nb)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>消费者调用以下接口反注册感兴趣的事件：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_unregister_notifier</span><span class="params">(<span class="keyword">struct</span> regulator *regulator,</span></span><br><span class="line"><span class="params">				<span class="keyword">struct</span> notifier_block *nb)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>监管机构使用内核通知程序框架向感兴趣的消费者发送事件。</p>
+<h2 id="regulator-direct-register-access"><a class="markdownIt-Anchor" href="#regulator-direct-register-access"></a> Regulator Direct Register Access</h2>
+<p>某些类型的电源管理硬件或固件被设计为需要对调节器进行低级硬件访问，而无需内核参与，此类设备的示例有：</p>
+<ul>
+<li>带有压控振荡器和控制逻辑的时钟源，可通过 I2C 改变电源电压，以实现所需的输出时钟速率。</li>
+<li>热管理固件，可发出任意 I2C 事务以在过热条件下执行系统断电。</li>
+</ul>
+<p>要设置这样的设备/固件，需要为其配置各种参数，例如调节器的 I2C 地址、各种调节器寄存器的地址等。 监管者框架提供了以下查询这些详细信息的帮助程序。</p>
+<p>特定于总线的详细信息，例如 I2C 地址或传输速率，由 regmap 框架处理。 要获取监管机构的 regmap（如果支持），请使用：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> regmap *<span class="title function_">regulator_get_regmap</span><span class="params">(<span class="keyword">struct</span> regulator *regulator)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>要获取稳压器电压选择器寄存器的硬件寄存器偏移量和位掩码，请使用：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_get_hardware_vsel_register</span><span class="params">(<span class="keyword">struct</span> regulator *regulator,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> *vsel_reg,</span></span><br><span class="line"><span class="params">					<span class="type">unsigned</span> *vsel_mask)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>要将调节器框架电压选择器代码（由调节器列表电压使用）转换为可直接写入电压选择器寄存器的特定于硬件的电压选择器，请使用：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_list_hardware_vsel</span><span class="params">(<span class="keyword">struct</span> regulator *regulator,</span></span><br><span class="line"><span class="params">				<span class="type">unsigned</span> selector)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="regulator-driver-interface"><a class="markdownIt-Anchor" href="#regulator-driver-interface"></a> Regulator Driver Interface</h1>
+<h2 id="registration"><a class="markdownIt-Anchor" href="#registration"></a> Registration</h2>
+<p>驱动程序可以通过调用以下接口注册 Regulator：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> regulator_dev *<span class="title function_">regulator_register</span><span class="params">(<span class="keyword">struct</span> regulator_desc *regulator_desc,</span></span><br><span class="line"><span class="params">					<span class="type">const</span> <span class="keyword">struct</span> regulator_config *config)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<p>这会将 regulator 的能力和操作注册到 regulator 核心。</p>
+<p>注销接口如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">regulator_unregister</span><span class="params">(<span class="keyword">struct</span> regulator_dev *rdev)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="regulator-events-2"><a class="markdownIt-Anchor" href="#regulator-events-2"></a> Regulator Events</h2>
+<p>调节器可以通过调用以下方式向消费者驱动程序发送事件（例如过热、欠压等）：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">regulator_notifier_call_chain</span><span class="params">(<span class="keyword">struct</span> regulator_dev *rdev,</span></span><br><span class="line"><span class="params">				<span class="type">unsigned</span> <span class="type">long</span> event, <span class="type">void</span> *data)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="regulator-api-design-notes"><a class="markdownIt-Anchor" href="#regulator-api-design-notes"></a> Regulator API design notes</h1>
+<p>本节对影响调节器 API 设计的一些设计注意事项进行了简要的、部分结构化的概述。</p>
+<h2 id="safety"><a class="markdownIt-Anchor" href="#safety"></a> Safety</h2>
+<ul>
+<li>调节器配置中的错误会对系统产生非常严重的后果，可能包括持久的硬件损坏。</li>
+<li>无法自动确定系统的电源配置 - 同一芯片的软件等效变体可能具有不同的电源要求，并且并非所有具有电源要求的组件对软件都是可见的。</li>
+</ul>
+<blockquote>
+<p>API 不应更改硬件状态，除非它知道在此特定系统上执行这些更改是安全的。</p>
+</blockquote>
+<h2 id="consumer-use-cases"><a class="markdownIt-Anchor" href="#consumer-use-cases"></a> Consumer use cases</h2>
+<ul>
+<li>系统中的绝大多数设备除了能够打开或关闭电源外，不需要对其电源进行任何运行时配置。</li>
+<li>系统中的许多电源将在许多不同的消费者之间共享。</li>
+</ul>
+<blockquote>
+<p>消费者 API 的结构应使这些用例非常易于处理，并且消费者无需任何额外工作即可使用共享的 supplies。</p>
+</blockquote>
+<h1 id="regulator-machine-driver-interface"><a class="markdownIt-Anchor" href="#regulator-machine-driver-interface"></a> Regulator Machine Driver Interface</h1>
+<p>调节器机器驱动程序接口用于板/机器特定的初始化代码以配置调节器子系统。</p>
+<pre><code>Regulator-1 -+-&gt; Regulator-2 --&gt; [Consumer A @ 1.8 - 2.0V]
+             |
+             +-&gt; [Consumer B @ 3.3V]
+</code></pre>
+<p>消费者 A 和 B 的驱动器必须映射到正确的调节器，以控制它们的电源。 这种映射可以在机器初始化代码中通过为每个调节器创建一个结构体 regulator_consumer_supply 来实现：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> {</span></span><br><span class="line">    <span class="type">const</span> <span class="type">char</span> *dev_name;	<span class="comment">/* consumer dev_name() */</span></span><br><span class="line">	<span class="type">const</span> <span class="type">char</span> *supply;	<span class="comment">/* consumer supply - e.g. "vcc" */</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>对于上面的电源：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> <span class="title">regulator1_consumers</span>[] =</span> {</span><br><span class="line">	REGULATOR_SUPPLY(<span class="string">"Vcc"</span>, <span class="string">"consumer B"</span>),</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_consumer_supply</span> <span class="title">regulator2_consumers</span>[] =</span> {</span><br><span class="line">	REGULATOR_SUPPLY(<span class="string">"Vcc"</span>, <span class="string">"consumer A"</span>),</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>这将 Regulator-1 映射到消费者 B 的“Vcc”电源，并将 Regulator-2 映射到消费者 A 的“Vcc”电源。</p>
+<p>现在可以通过为每个稳压器电源域定义一个结构体 regulator_init_data 来注册。这种结构还将消费者映射到他们的 supply regulators：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_init_data</span> <span class="title">regulator1_data</span> =</span> {</span><br><span class="line">	.constraints = {</span><br><span class="line">		.name = <span class="string">"Regulator-1"</span>,</span><br><span class="line">		.min_uV = <span class="number">3300000</span>,</span><br><span class="line">		.max_uV = <span class="number">3300000</span>,</span><br><span class="line">		.valid_modes_mask = REGULATOR_MODE_NORMAL,</span><br><span class="line">	},</span><br><span class="line">	.num_consumer_supplies = ARRAY_SIZE(regulator1_consumers),</span><br><span class="line">	.consumer_supplies = regulator1_consumers,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>名称字段应设置为对电路板有用的描述，以便为其他调节器配置电源以及用于日志记录和其他诊断输出。 通常，原理图中用于 supply rail 的名称是一个不错的选择。 如果未提供名称，则子系统将自动选择一个。</p>
+<p>Regulator-1 为 Regulator-2 供电。 这种关系必须在核心中注册，以便在消费者 A 启用其供应 (Regulator-2) 时也启用 Regulator-1。 电源调节器由下面的 supply_regulator 字段设置：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">regulator_init_data</span> <span class="title">regulator2_data</span> =</span> {</span><br><span class="line">	.supply_regulator = <span class="string">"Regulator-1"</span>,</span><br><span class="line">	.constraints = {</span><br><span class="line">		.min_uV = <span class="number">1800000</span>,</span><br><span class="line">		.max_uV = <span class="number">2000000</span>,</span><br><span class="line">		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE,</span><br><span class="line">		.valid_modes_mask = REGULATOR_MODE_NORMAL,</span><br><span class="line">	},</span><br><span class="line">	.num_consumer_supplies = ARRAY_SIZE(regulator2_consumers),</span><br><span class="line">	.consumer_supplies = regulator2_consumers,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>最后，必须以通常的方式注册调节器设备：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">platform_device</span> <span class="title">regulator_devices</span>[] =</span> {</span><br><span class="line">	{</span><br><span class="line">		.name = <span class="string">"regulator"</span>,</span><br><span class="line">		.id = DCDC_1,</span><br><span class="line">		.dev = {</span><br><span class="line">			.platform_data = &amp;regulator1_data,</span><br><span class="line">		},</span><br><span class="line">	},</span><br><span class="line">	{</span><br><span class="line">		.name = <span class="string">"regulator"</span>,</span><br><span class="line">		.id = DCDC_2,</span><br><span class="line">		.dev = {</span><br><span class="line">			.platform_data = &amp;regulator2_data,</span><br><span class="line">		},</span><br><span class="line">	},</span><br><span class="line">};</span><br><span class="line"><span class="comment">/* register regulator 1 device */</span></span><br><span class="line">platform_device_register(&amp;regulator_devices[<span class="number">0</span>]);</span><br><span class="line"></span><br><span class="line"><span class="comment">/* register regulator 2 device */</span></span><br><span class="line">platform_device_register(&amp;regulator_devices[<span class="number">1</span>]);</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
+<p>上文中已经将 Regulator、PMIC、Consumer、Power Domain 等概念进行了介绍，同时也将相关接口进行了介绍。在这一章中将介绍 regulator 的内部实现。整体的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2ODNmYzg1NjUzYmIxMzM2ZGY2YmYx">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regulator_Struct.png" alt=""></p>
+<ul>
+<li>
+<p>regulator_map:<br>
+组织一个系统内所有的 pmic 设备。将他们挂载到一个全局链表中</p>
+</li>
+<li>
+<p>regulator_dev:<br>
+struct regulator_dev 是 regulator 设备的抽象，当 driver 以 struct regulator_desc、struct regulator_config 两个类型的参数，调用 regulator_register 将 regulator 注册到 kernel 之后，regulator 就会分配一个 struct regulator_dev 变量，后续所有的 regulator 操作，都将以该变量为对象</p>
+</li>
+<li>
+<p>regulator_desc:<br>
+regulator_desc 用于描述一个调节器（dcdc、ldo 等）。<br>
+在注册 regulator 的时候，需要使用 struct regulator_desc 结构提供该 regulator 的静态描述。所谓的静态，是指这些描述不会在运行时改变，代表了设备的一种属性。regulator_desc 描述该 regulator device 的类型（电压、电流、电流和电压）、中断 id、支持的输出电压个数、操作类型（可改变电压等）、输出模式（fast、normal、idle、standby 等）；若该 regulator device 在注册的时候支持通过 regmap 进行配置（如该 regulator device 可通过 spi、iic 接口访问，则可以通过 spi/iic 对应的 regmap 接口访问该 regulator device 的寄存器，进行配置操作），则需要定义 enable_reg、enable_mask、apply_reg 等参数的信息，以便通过 regmap 进行配置</p>
+</li>
+<li>
+<p>regulator_ops:<br>
+这个数据结构是描述调节器的操作函数集的数据结构。对于 pmic 里的每一个调节器都需要有自己的操作方法，该数据结构提供对调节器的操作函数集</p>
+</li>
+<li>
+<p>regulator_config:<br>
+regulator_config 保存了 regulator 的动态信息，所谓的动态信息，是指那些会在 driver 运行过程中改变、或者 driver 运行后才会确定的信息</p>
+</li>
+<li>
+<p>regulation_constraints:<br>
+该数据结构描述 regulator device 的约束信息，包括输出电压范围、输出电流范围、regulator device 支持的模式（fast、normal、idle、standby 等）、regulator device 支持的操作模式，包括 change volt、change current、change bypass mode 等、regulator device 支持的 suspend 状态下的输出控制（如在 suspend to disk 状态下的输出控制等）</p>
+</li>
+<li>
+<p>regulator:<br>
+该数据结构表示一个 regulator device 的使用者，包括是否一直使能、是否使用 bypass 模式（bypass 模式指 regulator device 输入电压直接作为输出，不做限制）、电压范围、电流值、设备属性信息、该 regulator 对应的 supply 名称等</p>
+</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL3JlZ3VsYXRvcl9kcml2ZXIuaHRtbA==">http://www.wowotech.net/pm_subsystem/regulator_driver.html<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDcxMjg4MTg/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107128818?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDcxMjg4NTc/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107128857?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
+《Linux 内核文档》</p>
+
+      </div>
+      
+      
+      
+    </div>
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxDriver/">LINUXDRIVER</a></li>
+            <li>LINUXDRIVERREGULATOR</li>
+  </ul>
+
+    
+    
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">488k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">29:35</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/note/Blog/LinuxDriver/LinuxDriverRegulator.html"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

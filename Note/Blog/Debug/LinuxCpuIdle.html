@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="cpu idle实现原理 通过wfi或wfe指令进入low-power-state。在low-power-state下cpu core保持上电状态，但其大部分时钟停止或者进入时钟门限。这意味着core的绝大部分都处于static state，唯一消耗的功率是用于寻找中断唤醒条件的泄漏电流和少量逻辑时钟。进入low-power-state后将暂停当前的工作直到某个中断或event事件发生会退出lo">
+<meta property="og:type" content="website">
+<meta property="og:title" content="CPUIdle">
+<meta property="og:url" content="https://carlyleliu.github.io/note/Blog/Debug/LinuxCpuIdle.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="cpu idle实现原理 通过wfi或wfe指令进入low-power-state。在low-power-state下cpu core保持上电状态，但其大部分时钟停止或者进入时钟门限。这意味着core的绝大部分都处于static state，唯一消耗的功率是用于寻找中断唤醒条件的泄漏电流和少量逻辑时钟。进入low-power-state后将暂停当前的工作直到某个中断或event事件发生会退出lo">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d340abd8310.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d340d3ac355.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d3410fd3e5d.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d3414c8ed42.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d341981433b.png">
+<meta property="article:published_time" content="2024-08-30T11:44:15.000Z">
+<meta property="article:modified_time" content="2025-09-27T03:40:43.581Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Programming">
+<meta property="article:tag" content="Debug">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d340abd8310.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/note/Blog/Debug/LinuxCpuIdle">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/note/Blog/Debug/LinuxCpuIdle.html","path":"note/Blog/Debug/LinuxCpuIdle.html","title":"CPUIdle"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>CPUIdle | Matrix
+</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#cpu-idle%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-text"> cpu idle实现原理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cpu-idle%E4%BB%A3%E4%BB%B7"><span class="nav-text"> cpu idle代价</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux-cpuidle%E5%AD%90%E7%B3%BB%E7%BB%9F"><span class="nav-text"> Linux cpuidle子系统</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6"><span class="nav-text"> 框架</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cpu-idle%E7%AD%96%E7%95%A5"><span class="nav-text"> CPU Idle策略</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pm-qos"><span class="nav-text"> PM QoS</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pm-qos%E6%9C%89%E5%93%AA%E4%BA%9B%E6%8C%87%E6%A0%87"><span class="nav-text"> PM QoS有哪些指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%99%E4%BA%9B%E6%8C%87%E6%A0%87%E8%AF%A5%E5%A6%82%E4%BD%95%E5%8E%BB%E6%BB%A1%E8%B6%B3%E5%91%A2"><span class="nav-text"> 这些指标该如何去满足呢</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E"><span class="nav-text"> 相关参数说明</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dts%E9%87%8C%E7%9A%84%E5%8F%82%E6%95%B0"><span class="nav-text"> dts里的参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sysfs%E6%96%87%E4%BB%B6%E8%8A%82%E7%82%B9"><span class="nav-text"> sysfs文件节点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">207</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner page posts-expand">
+
+
+    
+    
+    
+    <div class="post-block" lang="zh-CN"><header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">CPUIdle
+</h1>
+
+<div class="post-meta-container">
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/Debug/">DEBUG</a></li>
+            <li>LINUXCPUIDLE</li>
+  </ul>
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <h1 id="cpu-idle实现原理"><a class="markdownIt-Anchor" href="#cpu-idle实现原理"></a> cpu idle实现原理</h1>
+<p>通过wfi或wfe指令进入low-power-state。在low-power-state下cpu core保持上电状态，但其大部分时钟停止或者进入时钟门限。这意味着core的绝大部分都处于static state，唯一消耗的功率是用于寻找中断唤醒条件的泄漏电流和少量逻辑时钟。进入low-power-state后将暂停当前的工作直到某个中断或event事件发生会退出low-power-state进入正常运行state。</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d340abd8310.png" alt="cpuidle1.png"></p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d340d3ac355.png" alt="cpuidle2.png"></p>
+<p>其唤醒wfi或wfe的interrupt或者event请参考《The AArch64 System Level Programmers’ Model 》D1.6 Mechanisms for entering a low-power state</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d3410fd3e5d.png" alt=""></p>
+<span id="more"></span>
+<h1 id="cpu-idle代价"><a class="markdownIt-Anchor" href="#cpu-idle代价"></a> cpu idle代价</h1>
+<p>cpu的状态被称为C状态，不同的C状态功耗不同，其中C0是normal state，正常运行状态就是C0状态，其他各state退出到C0状态所需的时间也不同，以下是一个笔记本的CPU各C状态的功耗和退出latency。</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>C1</th>
+<th>C2</th>
+<th>C3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Exit latency (µs)</td>
+<td>1</td>
+<td>1</td>
+<td>57</td>
+</tr>
+<tr>
+<td>Power consumption (mW)</td>
+<td>1000</td>
+<td>500</td>
+<td>100</td>
+</tr>
+</tbody>
+</table>
+<p>cpu idle的设计目的是降低功耗，但是进入cpu idle是有代价的，这里面会涉及entry_latency以及对应的能量消耗，退出low-power-state也需要时间exit_latency以及对应的能量消耗，如果cpu待在low_power_state的时间很短那么可能进入和退出的能量消耗比cpu空转都高，而且这期间还导致cpu无法处理其他事情，导致系统性能下降。</p>
+<p>这里的代价主要是两个指标：</p>
+<ul>
+<li>功耗</li>
+<li>latency</li>
+</ul>
+<p>要求功耗越低那么就需要idle深度越深（关闭的额模块越多）那么从low_power_state到nomal state所花的时间就越久，也就是功耗和latency是互相矛盾的。</p>
+<p>在Linux系统中，cpuidle 子系统提供了多种策略来平衡功耗和延迟的选择，我们在使用中只要关注这些策略的倾向以及参数设计即可。</p>
+<h1 id="linux-cpuidle子系统"><a class="markdownIt-Anchor" href="#linux-cpuidle子系统"></a> Linux cpuidle子系统</h1>
+<h2 id="框架"><a class="markdownIt-Anchor" href="#框架"></a> 框架</h2>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d3414c8ed42.png" alt=""></p>
+<ul>
+<li>scheduler模块：位于kernel\sched\idle.c中，负责实现idle状态的选择、idle的进入等等</li>
+<li>cpuidle core模块：cpuidle core抽象出cpuidle device、cpuidle driver、cpuidle governor三个实体
+<ul>
+<li>以<span class="exturl" data-url="aHR0cHM6Ly96aGlkYS56aGlodS5jb20vc2VhcmNoP3E9JUU1JTg3JUJEJUU2JTk1JUIwJUU4JUIwJTgzJUU3JTk0JUE4JnpoaWRhX3NvdXJjZT1lbnRpdHkmaXNfcHJldmlldz0x">函数调用<i class="fa fa-external-link-alt"></i></span>的形式，向上层sched模块提供接口</li>
+<li>以sysfs的形式，向用户空间提供接口</li>
+<li>向下层的cpuidle drivers模块，提供统一的driver注册和管理接口</li>
+<li>向下层的cpuidle governors模块，提供统一的governor注册和管理接口</li>
+</ul>
+</li>
+<li>puidle governors模块：提供多种idle的策略，比如menu/ladder/teo/haltpoll。位于governors/目录下</li>
+<li>cpuidle drivers模块：负责idle机制的实现，即：如何进入idle状态，什么条件下会退出</li>
+</ul>
+<h2 id="cpu-idle策略"><a class="markdownIt-Anchor" href="#cpu-idle策略"></a> CPU Idle策略</h2>
+<p>其实idle策略的基本原则很简单就是在系统容忍的最大latency内选择休眠最深的即可，但是实际上这是很难准确评估的，系统中大量的中断、event、timer各种不确定的事件随时可能到来，接下来cpu要进入idle状态多长时间很难评估出来。</p>
+<p>governors模块提供了四种策略，分别是menu、ladder、teo和haltpoll。</p>
+<ul>
+<li>
+<p>menu</p>
+<ul>
+<li>
+<p>任务1，menu governor从如下几个方面去达成：</p>
+<p>menu governor用于tickless system，简化处理，menu将“距离下一个tick来临的时间（由next timer event测量，简称next_timer_us）”作为基础的predicted_us。</p>
+<p>当然，这个基础的predicted_us是不准确的，因为在这段时间内，随时都可能产生除next timer event之外的其它wakeup event。为了使预测更准确，有必要加入一个校正因子（correction factor），该校正因子基于过去的实际predicted_us和next_timer_us之间的比率，例如，如果wakeup event都是在预测的next timer event时间的一半时产生，则factor为0.5。另外，为了更精确，menu使用动态平均的factor。</p>
+<p>另外，对不同范围的next_timer_us，correction factor的影响程度是不一样的。例如期望50ms和500ms的next timer event时，都是在10ms时产生了wakeup event，显然对500ms的影响比较大。如果计算平均值时将它们混在一起，就会对预测的准确性产生影响，所以计算correction factor的数据时，需要区分不同级别的next_timer_us。同时，系统是否存在io wait，对factor的敏感度也不同。基于这些考虑，menu使用了一组factor（12个），分别用于不同next_timer_us、不同io wait的场景下的的校正。</p>
+<p>最后，在有些场合下，next_timer_us的预测是完全不正确的，如存在固定周期的中断时（音频等）。这时menu采用另一种不同的预测方式：统计过去8次停留时间的标准差（stand deviation），如果小于一定的门限值，则使用这8个停留时间的平均值，作为预测值。</p>
+</li>
+<li>
+<p>任务2，延迟容忍度（latency_req）的估算，menu综合考虑了两种因素，如下：</p>
+<p>由pm qos获得的，系统期望的CPU和DMA的延迟需求。这是一个硬性指标。</p>
+<p>基于这样一个经验法则：越忙的系统，对系统延迟的要求越高，结合任务1中预测到的停留时间（predicted_us），以及当前系统的CPU平均负荷和iowaiters的个数（get_iowait_load函数获得），算出另一个延迟容忍度，计算公式（这是一个经验公式）为：<br>
+predicted_us / (1 + 2 * loadavg +10 * iowaiters)<br>
+这个公式反映的是退出延迟和预期停留时间之间的比例，loadavg和iowaiters越大，对退出延迟的要求就越高奥。</p>
+<p>最后，latency_req的值取上面两个估值的最小值。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>TEO（Timer Events Oriented）</p>
+<p>面向计时器事件 (TEO) 的governor 是tickless systems的替代governor ，它遵循与menu调度器相同的基本策略：始终尝试找到适合当前条件的最深空闲状态。然而，它采用了一种不同的方法来解决这个问题。</p>
+<p>首先，它不使用睡眠时间修正因子，而是尝试将观察到的空闲持续时间值与可用的空闲状态进行关联，并利用这些信息选择最有可能“匹配”即将到来的CPU空闲间隔的空闲状态。其次，它完全不考虑过去在给定CPU上运行的任务，这些任务现在正在等待一些I/O操作完成（没有保证它们在重新变为可运行状态时会在同一CPU上运行），而且其中的模式检测代码避免了计时器唤醒的影响。它还仅使用小于当前时间与最近计时器（不包括调度器滴答）之间的时间间隔的空闲持续时间值。</p>
+<p>具体算法比较复杂请参考《<span class="exturl" data-url="aHR0cHM6Ly9kb2NzLmtlcm5lbC5vcmcvYWRtaW4tZ3VpZGUvcG0vY3B1aWRsZS5odG1sJUUzJTgwJThCJUVGJUJDJThDJUVGJUJDJThDJUVGJUJDJThDJUU3JTk1JUE1">https://docs.kernel.org/admin-guide/pm/cpuidle.html》，，，略<i class="fa fa-external-link-alt"></i></span></p>
+</li>
+<li>
+<p>haltpoll</p>
+<p>适用于虚拟机系统，略</p>
+</li>
+<li>
+<p>ladder</p>
+<p>是一种更为简单的调度策略，它通过一个类似阶梯的机制来选择 CPU 的空闲状态。CPU 会按顺序尝试不同的空闲状态，从最浅的状态到最深的状态。</p>
+</li>
+</ul>
+<h2 id="pm-qos"><a class="markdownIt-Anchor" href="#pm-qos"></a> PM QoS</h2>
+<h3 id="pm-qos有哪些指标"><a class="markdownIt-Anchor" href="#pm-qos有哪些指标"></a> PM QoS有哪些指标</h3>
+<p>针对这个指标PM QoS有一个专门的名词：constraint(约束)，其实也比较好理解，可以看做其他模块对PM的诉求和限制，目前PM QoS针对这些指标分为两类：一类是系统级的，包括：cpu&amp;dma latency、network latency、network throughput和memory bandwidth，定义在kernel/power/qos.c中（在最新的kernel-5.4版本中，这一类constraint从4个缩减到只有cpu&amp;dma latency这一个，同时增加了一类cpufreq的constraint）</p>
+<h3 id="这些指标该如何去满足呢"><a class="markdownIt-Anchor" href="#这些指标该如何去满足呢"></a> 这些指标该如何去满足呢</h3>
+<ul>
+<li>需求方：如进程、drivers等，它们根据自身的特性提出一系列需求（如cpu&amp;dma latency等）</li>
+<li>框架层：PM QoS framework对这些需求进行汇总，根据实际情况，计算出来极值（比如cpu&amp;dma的latency不能小于xx等）</li>
+<li>执行方：执行方需要确保自身的行为可以满足这些需求，这里的执行方很容易想到都是电源管理相关的，比如cpuidle，需要确保cpuidle等级满足cpu&amp;dma latency的最低要求等等，可以参考下第三章的实例</li>
+</ul>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d341981433b.png" alt=""></p>
+<h1 id="相关参数说明"><a class="markdownIt-Anchor" href="#相关参数说明"></a> 相关参数说明</h1>
+<p>先确认当前系统采用的governors：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /sys/devices/system/cpu</span><br><span class="line"><span class="comment"># cat cpuidle/current_driver</span></span><br><span class="line">psci_idle</span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># cat cpuidle/current_governor_ro</span></span><br><span class="line">menu</span><br><span class="line"><span class="comment">#</span></span><br></pre></td></tr></tbody></table></figure>
+<p>当前采用的governors是menu调度。</p>
+<h2 id="dts里的参数"><a class="markdownIt-Anchor" href="#dts里的参数"></a> dts里的参数</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">idle-states {</span><br><span class="line">	entry-method = <span class="string">"arm,psci-0.2"</span>;</span><br><span class="line">	CPU_SLEEP_0: cpu-sleep-0 {</span><br><span class="line">			compatible = <span class="string">"arm,idle-state"</span>;</span><br><span class="line">			arm,psci-suspend-param = &lt;0x0010000&gt;;</span><br><span class="line">			local-timer-stop;</span><br><span class="line">			entry-latency-us = &lt;5000&gt;;</span><br><span class="line">			exit-latency-us = &lt;5000&gt;;</span><br><span class="line">			min-residency-us = &lt;15000&gt;;</span><br><span class="line">	};</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>entry-latency-us是进入cpuidle需要的时间</li>
+<li>exit-latency-us是离开cpuidle所需的时间</li>
+<li>min-residency-us：这个是idle指定cpu进入idle的最小时间，当小于这个时间则不划算，linux cpuidle子系统的menu、teo等算法要参考此参数来决定cpu要不要进入idle状态的。</li>
+<li>local-timer-stop：指示在进入cpuidle时是否关闭本地timer</li>
+<li>psci-suspend-param：PSCI传递参数，存储了power_state信息，对于cpuidle来说bit24用于区分哪种掉电方式</li>
+</ul>
+<p>cpu进入idle后需要不定期通过tick进行唤醒，但是如果在idle-state节点中定义了local-timer-stop属性就会导致cpu本地的timer被关闭，出现没有外部中断来临就无法退出中断的情况，这种情况下就需要将一个timer变为broadcast-timer，用来一段时间后让cpu退出idle状态。</p>
+<h2 id="sysfs文件节点"><a class="markdownIt-Anchor" href="#sysfs文件节点"></a> sysfs文件节点</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/</span></span><br><span class="line">driver/  state0/  state1/</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/</span></span><br><span class="line">above      desc       latency    power      s2idle/    usage</span><br><span class="line">below      <span class="built_in">disable</span>    name       residency  time</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/above</span></span><br><span class="line">43482</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/below</span></span><br><span class="line">0</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/desc</span></span><br><span class="line">cpu-sleep-0</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/disable</span></span><br><span class="line">0</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/latency</span></span><br><span class="line">10000</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/name</span></span><br><span class="line">cpu-sleep-0</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/power</span></span><br><span class="line">0</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/residency</span></span><br><span class="line">25000</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/time</span></span><br><span class="line">61705105</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/usage</span></span><br><span class="line">48089</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/usage</span></span><br><span class="line">48415</span><br><span class="line"><span class="comment"># cat sys/devices/system/cpu/cpu0/cpuidle/state1/usage</span></span><br><span class="line">48643</span><br><span class="line"><span class="comment">#</span></span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>above, below ：cpuidle未满足期望休眠的次数，如提前唤醒</li>
+<li>desc, name：cpuidle的名称</li>
+<li>latency : 进入和退出idle的总时间，由DTS中 entry-latency-us和exit-latency-us相加得来</li>
+<li>residency ：最小驻留时间， 由DTS中的min-residency-us解析而来</li>
+<li>time：停留cpuidle state中的累计时间</li>
+<li>usage：停留在cpuidle state中的累计次数</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2NwdWlkbGVfb3ZlcnZpZXcuaHRtbA==">http://www.wowotech.net/pm_subsystem/cpuidle_overview.html<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2NwdWlkbGVfY29yZS5odG1s">http://www.wowotech.net/pm_subsystem/cpuidle_core.html<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2NwdWlkbGVfYXJtNjQuaHRtbA==">http://www.wowotech.net/pm_subsystem/cpuidle_arm64.html<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2NwdWlkbGVfbWVudV9nb3Zlcm5vci5odG1s">http://www.wowotech.net/pm_subsystem/cpuidle_menu_governor.html<i class="fa fa-external-link-alt"></i></span></p>
+
+      </div>
+      
+      
+      
+    </div>
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/Debug/">DEBUG</a></li>
+            <li>LINUXCPUIDLE</li>
+  </ul>
+
+    
+    
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">488k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">29:35</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/note/Blog/Debug/LinuxCpuIdle.html"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

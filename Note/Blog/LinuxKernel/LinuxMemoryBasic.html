@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Linux 内存管理（三）物理地址管理">
+<meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxKernel/LinuxMemoryBasic.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Memorybasic1.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Dynamic_partition.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ELF.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/test_process.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/UMA.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/NUMA.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mem_struct.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mem_map.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/framebuffer.jpg">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemoryStartKernelMemblock.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemoryBlockStruct.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemorySectionStruct.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemorySectionStruct2.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/pglistOrigin.png">
+<meta property="article:published_time" content="2021-11-14T08:05:15.000Z">
+<meta property="article:modified_time" content="2025-09-27T03:40:43.587Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Kernel">
+<meta property="article:tag" content="Memory">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Memorybasic1.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/note/Blog/LinuxKernel/LinuxMemoryBasic">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/note/Blog/LinuxKernel/LinuxMemoryBasic.html","path":"note/Blog/LinuxKernel/LinuxMemoryBasic.html","title":"Linux 内存管理（三）物理地址管理"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 内存管理（三）物理地址管理 | Matrix
+</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8F%91%E5%B1%95%E5%8F%B2"><span class="nav-text"> 内存管理发展史</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E7%9A%84%E8%BF%9C%E5%8F%A4%E6%97%B6%E4%BB%A3"><span class="nav-text"> 内存管理的“远古时代”</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%AE%B5%E6%9C%BA%E5%88%B6"><span class="nav-text"> 分段机制</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E9%A1%B5%E6%9C%BA%E5%88%B6"><span class="nav-text"> 分页机制</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E8%BF%9B%E7%A8%8B%E7%9A%84%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text"> 从进程的角度看内存管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E4%B9%8B%E9%A2%84%E5%A4%87%E7%9F%A5%E8%AF%86"><span class="nav-text"> 物理内存管理之预备知识</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%9E%B6%E6%9E%84%E4%B9%8B-uma-%E5%92%8C-numa"><span class="nav-text"> 内存架构之 UMA 和 NUMA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-text"> 基本概念</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#memblock"><span class="nav-text"> Memblock</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B"><span class="nav-text"> 初始化流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#memblock_alloc%E6%8E%A5%E5%8F%A3"><span class="nav-text"> memblock_alloc接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#memblock%E8%B0%83%E8%AF%95"><span class="nav-text"> memblock调试</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#node-zone-pagelinux%E6%8E%8C%E7%AE%A1%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E7%9A%84%E7%A5%9E"><span class="nav-text"> Node-Zone-Page（Linux掌管物理内存的神）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B"><span class="nav-text"> 内存模型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#flatmem"><span class="nav-text"> FLATMEM</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sparsemem"><span class="nav-text"> SPARSEMEM</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#mem_section%E7%BB%84%E7%BB%87%E4%B8%8B%E7%9A%84%E5%86%85%E5%AD%98"><span class="nav-text"> mem_section组织下的内存</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#section%E7%9B%B8%E5%85%B3%E5%AE%8F%E5%AE%9A%E4%B9%89"><span class="nav-text"> Section相关宏定义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F%E6%A6%82%E8%A7%88"><span class="nav-text"> 数据结构与组织形式概览</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84-2"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E7%BB%87%E5%BD%A2%E5%BC%8F"><span class="nav-text"> 组织形式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E8%AF%95"><span class="nav-text"> 调试</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">207</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner page posts-expand">
+
+
+    
+    
+    
+    <div class="post-block" lang="zh-CN"><header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">Linux 内存管理（三）物理地址管理
+</h1>
+
+<div class="post-meta-container">
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxKernel/">LINUXKERNEL</a></li>
+            <li>LINUXMEMORYBASIC</li>
+  </ul>
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Memorybasic1.png" alt=""><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MjRjNTU2NTNiYjA3MWU3MGVjMmY=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h1 id="内存管理发展史"><a class="markdownIt-Anchor" href="#内存管理发展史"></a> 内存管理发展史</h1>
+<h2 id="内存管理的远古时代"><a class="markdownIt-Anchor" href="#内存管理的远古时代"></a> 内存管理的“远古时代”</h2>
+<p>在分页机制出现之前，操作系统有很多不同的内存管理机制，如动态分区法。如图（a）所示。剩余的 4MB 内存不足以装载进程 D，如图（b）所示，因为进程 D 需要 5MB 内存，这个内存末尾就成了第一个空洞（内存碎片）。假设某个时刻，操作系统需要运行进程 D，因为系统中没有足够的内存，所以需要选择一个进程来换出，为进程 D 腾出足够的空间。假设操作系统选择进程 B 来换出，这样进程 D 就装载到了原来进程 B 的地址空间里，于是产生了第二个空洞，如图（c）所示。假设操作系统某个时刻需要运行进程 B，也需要选择一个进程来换出，假设进程 A 被换出，那么操作系统中又产生了第三个空洞，如图（d）所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Dynamic_partition.png" alt=""></p>
+<p>这种动态分区法在开始时是很好的，但是随着时间的推移会出现很多内存空洞，内存的利用率随之下降，这些内存空洞便是我们常说的内存碎片，动态分区法依然存在以下问题。</p>
+<ul>
+<li>进程地址空间保护问题。所有的进程都可以访问全部的物理内存，所以恶意的程序可以修改其他程序的内存数据，这使进程一直处于危险的状态下。</li>
+<li>内存使用效率低。如果即将运行的进程所需要的内存空间不足，就需要选择一个进程以进行整体换出，这种机制导致大量的数据需要换出和换入，效率非常低下。</li>
+<li>程序运行地址重定位问题。从上图中看到，进程在每次换出、换入时使用的地址都是不固定的，这给程序的编写带来一定的麻烦，因为访问数据和指令跳转时的目标地址通常是固定的，这就需要重定位技术。</li>
+</ul>
+<p>因此产生了分段机制和分页机制。</p>
+<h2 id="分段机制"><a class="markdownIt-Anchor" href="#分段机制"></a> 分段机制</h2>
+<ul>
+<li>把程序所需的内存空间的虚拟地址映射到某个物理地址空间中，解决地址空间保护问题。</li>
+<li>分段机制把进程分成若干段（代码段、数据段栈段与堆段等），每个段的大小是不固定的，有点类似于动态分区法，这些段的物理地址可以不连续这样可以一定程度上解决内存碎片问题。</li>
+</ul>
+<p>分段机制是一个比较明显的改进，但是它的内存使用效率依然比较低。分段机制对虚拟内存到物理内存的映射依然以进程为单位。进程在运行时，根据局部性原理，只有一部分数据是一直在使用的，若把那些不常用的数据交换出磁盘，就可以节省很多系统带宽。</p>
+<h2 id="分页机制"><a class="markdownIt-Anchor" href="#分页机制"></a> 分页机制</h2>
+<p>分页机制把分段机制的单位继续细分成固定大小的页面（page），进程的虚拟地址空间也按照页面来分割，这样常用的数据和代码就可以以页面为单位驻留在内存中，而那些不常用的页面可以交换到磁盘中。物理内存也以页面为单位来管理，这些物理内存称为物理页面（physical page）或者页帧（page frame）。进程的虚拟地址空间中的页面称为虚拟页面（virtualpage）。操作系统为了管理这些页帧需要按照物理地址给每个页帧编号，这个编号称为页帧号（Page Frame Number，PFN）。</p>
+<h1 id="从进程的角度看内存管理"><a class="markdownIt-Anchor" href="#从进程的角度看内存管理"></a> 从进程的角度看内存管理</h1>
+<p>在 Linux 系统中，应用程序常用的可执行文件格式是可执行与可链接格式（Executable Linkable Format，ELF）。ELF 最开始的部分是 ELF 文件头（ELF Header），它包含了描述整个文件的基本属性，如 ELF 文件版本、目标计算机型号、程序入口地址等信息。ELF 文件头后面是程序的各个段，包括代码段、数据段、未初始化数据段等。后面是段头表，用于描述 ELF 文件中包含的所有段的信息，如每个段的名字、段的长度、在文件中的偏移量、读写权限以及段的其他属性等，后面紧跟着是字符串表和符号表等。ELF 结构如下图所示：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ELF.png" alt=""></p>
+<p>下面介绍常见的几个段，这些段与内核映像中的段也是基本类似的。</p>
+<ul>
+<li>代码段：存放程序源代码编译后的机器指令。</li>
+<li>数据段：存放已初始化的全局变量和已初始化的局部静态变量。</li>
+<li>未初始化数据段：存放未初始化的全局变量以及未初始化的局部静态变量。下面编写一个简单的 C 程序。</li>
+</ul>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SIZE (100*1024)</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">char</span> * buf = <span class="built_in">malloc</span>(SIZE);</span><br><span class="line">    <span class="built_in">memset</span>(buf, <span class="number">0x58</span>, SIZE);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">"malloc buffer 0x%p\n"</span>, buf);</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">        sleep(<span class="number">100</span>);</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>这个 C 程序很简单，首先通过 malloc() 函数来分配 100KB 的内存，然后通过 memset() 函写入这块内存，最后用 while 循环是为了不让这个程序退出。我们通过如下命令来把它编成 ELF 文件。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ aarch64-linux-gnu-gcc-static test.c -o test.elf</span><br></pre></td></tr></tbody></table></figure>
+<p>可以使用 objdump 或者 readelf 工具来查看 ELF 文件包含哪些段。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ aarch64-linux-gnu-readelf -S test.elf</span><br><span class="line">There are 29 section headers, starting at offset 0x92548:</span><br><span class="line"></span><br><span class="line">Section Headers:</span><br><span class="line">  [Nr] Name              Type             Address           Offset</span><br><span class="line">       Size              EntSize          Flags  Link  Info  Align</span><br><span class="line">  [ 0]                   NULL             0000000000000000  00000000</span><br><span class="line">       0000000000000000  0000000000000000           0     0     0</span><br><span class="line">  [ 1] .note.gnu.build-i NOTE             0000000000400190  00000190</span><br><span class="line">       0000000000000024  0000000000000000   A       0     0     4</span><br><span class="line">  [ 2] .note.ABI-tag     NOTE             00000000004001b4  000001b4</span><br><span class="line">       0000000000000020  0000000000000000   A       0     0     4</span><br><span class="line">  [ 3] .rela.plt         RELA             00000000004001d8  000001d8</span><br><span class="line">       00000000000000a8  0000000000000018  AI       0    21     8</span><br><span class="line">  [ 4] .init             PROGBITS         0000000000400280  00000280</span><br><span class="line">       0000000000000014  0000000000000000  AX       0     0     4</span><br><span class="line">  [ 5] .plt              PROGBITS         00000000004002a0  000002a0</span><br><span class="line">       0000000000000070  0000000000000000  AX       0     0     16</span><br><span class="line">  [ 6] .text             PROGBITS         0000000000400340  00000340</span><br><span class="line">       00000000000516ac  0000000000000000  AX       0     0     64</span><br><span class="line">  [ 7] __libc_freeres_fn PROGBITS         00000000004519f0  000519f0</span><br><span class="line">       0000000000000b44  0000000000000000  AX       0     0     8</span><br><span class="line">  [ 8] .fini             PROGBITS         0000000000452534  00052534</span><br><span class="line">       0000000000000010  0000000000000000  AX       0     0     4</span><br><span class="line">  [ 9] .rodata           PROGBITS         0000000000452550  00052550</span><br><span class="line">       000000000001be28  0000000000000000   A       0     0     16</span><br><span class="line">  [10] __libc_subfreeres PROGBITS         000000000046e378  0006e378</span><br><span class="line">       0000000000000048  0000000000000000   A       0     0     8</span><br><span class="line">  [11] __libc_IO_vtables PROGBITS         000000000046e3c0  0006e3c0</span><br><span class="line">       00000000000005e8  0000000000000000   A       0     0     8</span><br><span class="line">  [12] __libc_atexit     PROGBITS         000000000046e9a8  0006e9a8</span><br><span class="line">       0000000000000008  0000000000000000   A       0     0     8</span><br><span class="line">  [13] .eh_frame         PROGBITS         000000000046e9b0  0006e9b0</span><br><span class="line">       000000000000a158  0000000000000000   A       0     0     8</span><br><span class="line">  [14] .gcc_except_table PROGBITS         0000000000478b08  00078b08</span><br><span class="line">       000000000000009e  0000000000000000   A       0     0     1</span><br><span class="line">  [15] .tdata            PROGBITS         0000000000489978  00079978</span><br><span class="line">       0000000000000020  0000000000000000 WAT       0     0     8</span><br><span class="line">  [16] .tbss             NOBITS           0000000000489998  00079998</span><br><span class="line">       0000000000000040  0000000000000000 WAT       0     0     8</span><br><span class="line">  [17] .init_array       INIT_ARRAY       0000000000489998  00079998</span><br><span class="line">       0000000000000008  0000000000000008  WA       0     0     8</span><br><span class="line">  [18] .fini_array       FINI_ARRAY       00000000004899a0  000799a0</span><br><span class="line">       0000000000000010  0000000000000008  WA       0     0     8</span><br><span class="line">  [19] .data.rel.ro      PROGBITS         00000000004899b0  000799b0</span><br><span class="line">       0000000000000594  0000000000000000  WA       0     0     8</span><br><span class="line">  [20] .got              PROGBITS         0000000000489f48  00079f48</span><br><span class="line">       00000000000000a0  0000000000000008  WA       0     0     8</span><br><span class="line">  [21] .got.plt          PROGBITS         0000000000489fe8  00079fe8</span><br><span class="line">       0000000000000050  0000000000000008  WA       0     0     8</span><br><span class="line">  [22] .data             PROGBITS         000000000048a038  0007a038</span><br><span class="line">       0000000000001950  0000000000000000  WA       0     0     8</span><br><span class="line">  [23] .bss              NOBITS           000000000048b988  0007b988</span><br><span class="line">       00000000000015d0  0000000000000000  WA       0     0     8</span><br><span class="line">  [24] __libc_freeres_pt NOBITS           000000000048cf58  0007b988</span><br><span class="line">       0000000000000028  0000000000000000  WA       0     0     8</span><br><span class="line">  [25] .comment          PROGBITS         0000000000000000  0007b988</span><br><span class="line">       000000000000002a  0000000000000001  MS       0     0     1</span><br><span class="line">  [26] .symtab           SYMTAB           0000000000000000  0007b9b8</span><br><span class="line">       0000000000010110  0000000000000018          27   1726     8</span><br><span class="line">  [27] .strtab           STRTAB           0000000000000000  0008bac8</span><br><span class="line">       0000000000006954  0000000000000000           0     0     1</span><br><span class="line">  [28] .shstrtab         STRTAB           0000000000000000  0009241c</span><br><span class="line">       0000000000000128  0000000000000000           0     0     1</span><br></pre></td></tr></tbody></table></figure>
+<p>可以看到刚才编译的 test.elf 文件一共有 28 个段，除了常见的代码段、数据段之外，还有一些其他的段，这些段在进程加载时起辅助作用，暂时先不用关注它们。程序在编译、链接时会尽量把相同权限属性的段分配在同一个空间里，如把可读、可执行的段放在一起，包括代码段、init 段等；把可读、可写的段放在一起，包括数据段和未初始化数据段等。ELF 把这些属性相似并且链接在一起的段叫作分段（segment），进程在加载时是按照这些分段来映射可执行文件的。描述这些分段的结构叫作程序头（program header），它描述了 ELF 文件是如何映射到进程地址空间的，这是我们比较关心的。我们可以通过 readelf -l 命今来查看这些程序头。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ aarch64-linux-gnu-readelf -l test.elf</span><br><span class="line"></span><br><span class="line">Elf file <span class="built_in">type</span> is EXEC (Executable file)</span><br><span class="line">Entry point 0x400558</span><br><span class="line">There are 6 program headers, starting at offset 64</span><br><span class="line"></span><br><span class="line">Program Headers:</span><br><span class="line">  Type           Offset             VirtAddr           PhysAddr</span><br><span class="line">                 FileSiz            MemSiz              Flags  Align</span><br><span class="line">  LOAD           0x0000000000000000 0x0000000000400000 0x0000000000400000</span><br><span class="line">                 0x0000000000078ba6 0x0000000000078ba6  R E    0x10000</span><br><span class="line">  LOAD           0x0000000000079978 0x0000000000489978 0x0000000000489978</span><br><span class="line">                 0x0000000000002010 0x0000000000003608  RW     0x10000</span><br><span class="line">  NOTE           0x0000000000000190 0x0000000000400190 0x0000000000400190</span><br><span class="line">                 0x0000000000000044 0x0000000000000044  R      0x4</span><br><span class="line">  TLS            0x0000000000079978 0x0000000000489978 0x0000000000489978</span><br><span class="line">                 0x0000000000000020 0x0000000000000060  R      0x8</span><br><span class="line">  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000</span><br><span class="line">                 0x0000000000000000 0x0000000000000000  RW     0x10</span><br><span class="line">  GNU_RELRO      0x0000000000079978 0x0000000000489978 0x0000000000489978</span><br><span class="line">                 0x0000000000000688 0x0000000000000688  R      0x1</span><br><span class="line"></span><br><span class="line"> Section to Segment mapping:</span><br><span class="line">  Segment Sections...</span><br><span class="line">   00     .note.gnu.build-id .note.ABI-tag .rela.plt .init .plt .text __libc_freeres_fn .fini .rodata __libc_subfreeres __libc_IO_vtables __libc_atexit .eh_frame .gcc_except_table</span><br><span class="line">   01     .tdata .init_array .fini_array .data.rel.ro .got .got.plt .data .bss __libc_freeres_ptrs</span><br><span class="line">   02     .note.gnu.build-id .note.ABI-tag</span><br><span class="line">   03     .tdata .tbss</span><br><span class="line">   04</span><br><span class="line">   05     .tdata .init_array .fini_array .data.rel.ro .got</span><br></pre></td></tr></tbody></table></figure>
+<p>从上面可以看到之前的 28 个段被分成了 6 个分段，我们只关注其中两个 LOAD 类型的分段。因为在加载时需要映射它，其他的分段在加载时起辅助作用。<br>
+先看第一个 LOAD 类型的分段，它是具有只读和可执行的权限，包含。init 段、代码段、只读数据段等常见的段，它映射的虚拟地址是 0x400000，长度是 0x78ba6。<br>
+第二个 LOAD 类型的分段具有可读和可写的权限，包含数据段和未初始化数据段等常见的段，它映射的虚拟地址是 0x489978，长度是 0x3608<br>
+上面从静态的角度来看进程的内存管理，我们还可以从动态的角度来看。Linux 操作系统提供了“proc”文件系统来窥探 Linux 内核的执行情况，每个进程执行之后，在/proc/pid/maps 节点会列出当前进程的地址映射情况。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"># cat /proc/721/maps</span><br><span class="line">00400000-0046000 r-xp 00000000 00:26 52559883   test.elf</span><br><span class="line">0047e000-00481000 rw-p 0006e000 00:26 52559883  test.elf</span><br><span class="line">272dd000-272ff000 rw-p 00000000 00:00 0         [heap]</span><br><span class="line">ffffa97ea000-ffffa97eb000 r--p 00000000 00:00 0 [vvar]</span><br><span class="line">ffffa97eb000-ffffa97ec000 r-xp 00000000 00:00 0 [vdso]</span><br><span class="line">ffffcb6c6000-ffffcb6e7000 rw-p 00000000 00:00 0 [stack]</span><br></pre></td></tr></tbody></table></figure>
+<p>第 1 行显示了地址 0x400000~0x46f000，这段进程地址空间的属性是只读和可执行的，由此我们知道它是代码段，也就是之前看到的代码段的程序头。<br>
+第 2 行显示了地址 0x47e000~0x48100，这段进程地址空间的属性是可读和可写的，也就是我们之前看到的数据段的程序头。<br>
+第 3 行显示了地址 0x272dd00~0x272ff000，这段进程地址空间叫作堆（heap）空间，也就是通常使用 malloc() 分配的内存，大小是 140KB。test 进程主要使用 malloc() 分配 100KB 的内存，这里看到 Linux 内核会分配比 100KB 稍微大一点的内存空间。<br>
+第 4 行显示了名为 vvar 的特殊映射。<br>
+第 5 行显示了名为 vdso 的特殊映射，VDSO 指 Virtual Dynamic Shared Object，用于解决内核和 libc 之间的版本问题。<br>
+第 6 行显示了 test 进程的栈（stack）空间。<br>
+对于这里的进程地址空间，在 Linux 内核中使用一个叫作 VMA 的术语来描述它，它是 vm_area_struct 数据结构的简称。<br>
+另外，/proc/pid/smaps 节点会提供更多地址映射的细节。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/test_process.png" alt=""></p>
+<h1 id="物理内存管理之预备知识"><a class="markdownIt-Anchor" href="#物理内存管理之预备知识"></a> 物理内存管理之预备知识</h1>
+<h2 id="内存架构之-uma-和-numa"><a class="markdownIt-Anchor" href="#内存架构之-uma-和-numa"></a> 内存架构之 UMA 和 NUMA</h2>
+<ul>
+<li>
+<p>UMA 统一内存访问架构：内存有统一的结构并且可以统一寻址。目前大部分嵌入式系统、手机操作系统以及台式机操作系统等采用 UMA 架构<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/UMA.png" alt=""></p>
+</li>
+<li>
+<p>NUMA 非统一内存访问架构：系统中有多个内存节点和多个 CPU 簇，CPU 访问本地内存节点的速度最快，访问远端的内存节点的速度要慢一点<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/NUMA.png" alt=""></p>
+</li>
+</ul>
+<h2 id="基本概念"><a class="markdownIt-Anchor" href="#基本概念"></a> 基本概念</h2>
+<p>从 Linux 内核的角度来看，DDR 存储设备其实就是一段物理内存空间。在 Linux 内核中，和内存硬件物理特性相关的一些数据结构主要集中在 MMU（如页表、高速缓存/TLB 操作等）中。因此大部分的 Linux 内核中关于内存管理的相关数据结构是软件层面的概念，如 mm、VMA、内存管理区（zone）、页面、pg_data 等。Linux 内核内存管理中的数据结构错综复杂，如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mem_struct.png" alt=""></p>
+<p>和物理内存管理相关的数据结构有内存节点（pglist data）、内存管理区、物理页面（page）、mem_map[] 数组、页表项（PTE）、页帧号（PFN）、物理地址（paddress）。</p>
+<p>其中，pglist data 数据结构用来描述一个内存节点的所有资源。在 UMA 架构中，只有一个内存节点，即系统有一个全局的变量 contig_page_data 来描述这个内存节点。在 NUMA 架构中，整个系统的内存由一个 pglist_data *的指针数组 node_data[] 来管理，在系统初始化枚举 BIOS 固件（ACPI）来完成。</p>
+<p>Linux 内核用内存管理区来划分物理内存是有以下历史原因的。</p>
+<ul>
+<li>由于地址数据线位宽的限制，32 位处理器通常最多支持 4GB 的物理内存，如果打开了 LPAE 特性，可以支持更大的物理内存。在 4Gb 的地址空间中，通常内核空间只有 1GB 大小，因此对于大小为 4GB 的物理内存是无法进行–线性映射的。Linux 内核的做法是把物理内存分成两部分，其中一部分是线性映射的。如果用一个内存管理区来描述它，那就是 ZONE_NORMAL。剩余的部分叫从高端内存（high memory）同样使用一个内存管理区来描述它，称为 ZONE_HIGHMEM。</li>
+<li>内存管理区的分布和架构相关，如在 x86 架构中，ISA 设备只能访问物理内存的前 16MB，所以在 x86 架构中会有一个名为 ZONE_DMA 的管理区域。在 x86_64 架构中，由于有足够大的内核空间可以线性映射物理内存，因此就不需要 ZONE_HIGHMEM 这个管理区域了。</li>
+</ul>
+<p>在 Linux 操作系统中常见的内存管理区可以分为以下几种：</p>
+<ul>
+<li>ZONE_DMA：用于 ISA 设备的 DMA 操作，范围是 0~16MB，只适用于 Intel x86 架构，ARM 架构没有这个内存管理区。</li>
+<li>ZONE_DMA32：用于最低 4GB 的内存访问的设备，如只支持 32 位的 DMA 设备。</li>
+<li>ZONE_NORMAL：4GB 以后的物理内存，用于线性映射物理内存。若系统内存小于 4GB，则没有这个内存管理区。</li>
+<li>ZONE_HIGHMEM：用于管理高端内存，这些高端内存是不能线性映射到内核地址空间的。注意，在 64 位 Linux 操作系统中没有这个内存管理区。</li>
+</ul>
+<p>Linux 内核中使用一个 page 数据结构来描述一个物理页面。Linux 内核为每个物理页面都分配了一个 page 数据结构，采用 mem_map[] 数组来存放这些 page 数据结构，并且它们和物理页面是一对一的映射关系，如下图所示<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mem_map.png" alt=""></p>
+<p>每个 node 由一个或多个 zone 组成，每个 zone 又由若干 page frames 组成（一般 page frame 都是指物理页面）。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/framebuffer.jpg" alt=""></p>
+<h1 id="memblock"><a class="markdownIt-Anchor" href="#memblock"></a> Memblock</h1>
+<p>Linux内核使用伙伴系统管理内存，在伙伴系统之前，内核通过memblock来管理内存。在系统启动阶段，使用memblock记录理内存的使用情况，可以分成好几块。</p>
+<ul>
+<li>永久分配给系统内核：内核镜像占用的部分，如代码、数据段、设备树DTB等。</li>
+<li>预留给外设的连续内存：如GPU/Camera/多核共享等需要预留大量连续内存。</li>
+<li>其他部分：以上的剩余部分内存，需要进行内存管理。</li>
+</ul>
+<h2 id="初始化流程"><a class="markdownIt-Anchor" href="#初始化流程"></a> 初始化流程</h2>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemoryStartKernelMemblock.png" alt=""></p>
+<ul>
+<li>解析设备树二进制文件 /memory 节点, 将所有物理内存纳入到 memblock 分配器管理之下。</li>
+<li>将kernel、dtb以及memory节点下的reserved内存组织为reserved内存，提供申请和释放内存的接口，避免使用到reserved内存。</li>
+</ul>
+<h2 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h2>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemoryBlockStruct.png" alt=""><br>
+struct memblock结构体通过struct memblock_type管理mem和reserved内存，memblock_type里通过struct memblock_regions指针分别指向系统的可以内存和reserver内存。如上图Memblock将Secmon、DSP、dtb和kernel的内存组织位reserver，其他内存为mem。</p>
+<h2 id="memblock_alloc接口"><a class="markdownIt-Anchor" href="#memblock_alloc接口"></a> memblock_alloc接口</h2>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">memblock_alloc</span><br><span class="line">	- memblock_alloc_try_nid</span><br><span class="line">		- memblock_alloc_internal</span><br><span class="line">			- kzalloc_node (exec it <span class="keyword">if</span> slab is enable and then <span class="keyword">return</span>)</span><br><span class="line">			- memblock_alloc_range_nid</span><br><span class="line">				- memblock_find_in_range_node</span><br><span class="line">			- phys_to_virt</span><br></pre></td></tr></tbody></table></figure>
+<p>可见&nbsp;memblock_alloc&nbsp;函数和&nbsp;memblock_phy_alloc&nbsp;函数均是调用&nbsp;memblock_find_in_range_node&nbsp;实现物理内存的分配，不同的是&nbsp;memblock_alloc&nbsp;会在分配后调用了&nbsp;phys_to_virt&nbsp;函数将物理地址转换成虚拟地址。这里有个疑问phys_to_virt&nbsp;是转为线性映射区，此时线性映射区以及映射好了？</p>
+<blockquote>
+<p>对于Paging_init之前应该是不能直接调用phys_to_virt&nbsp;的因为这个时候线性映射还没完成，这个时候应该是利用fixedmap映射区的fix_{pud、pmd、pte}页表完成映射，在paging_init之后因为完成了线性映射，这个ddr（除了no map外）都在线性映射范围内，这个时候是可以直接调用phys_to_virt&nbsp;将Memblock分配的物理内存转为虚拟地址供内核使用的.</p>
+</blockquote>
+<p>另外，调用&nbsp;memblock_alloc_range_nid&nbsp;之前会检查是否启用了 slab 分配器，如果已启用，说明&nbsp;memblock&nbsp;已将管理权移交给伙伴系统。这时会直接调用&nbsp;kzalloc_node&nbsp;从 slab 分配器分配内存。</p>
+<h2 id="memblock调试"><a class="markdownIt-Anchor" href="#memblock调试"></a> memblock调试</h2>
+<p>在内核启动bootargs，可以加入"memblock=debug"，会打开memblock的dbg打印，通过打印可以看出memblock的预留、分配等操作。<br>
+在内核编译时使能了内核debug功能后，还可以通过以下操作查看memblock信息。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/memblock/memory </span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/memblock/reserved</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="node-zone-pagelinux掌管物理内存的神"><a class="markdownIt-Anchor" href="#node-zone-pagelinux掌管物理内存的神"></a> Node-Zone-Page（Linux掌管物理内存的神）</h1>
+<p>为什么有了Memblock后还要设计Node-Zone来管理内存呢，Memblock管理内存太粗糙了，没有对内存的访问权限划分，以及内存属性等进行管理。为了对物理内存进行更精细的划分管理于是有了Node-Zone，在多cpu阵列中不同cpu对相同内存或相同cpu对不同内存的访问权限速度可能不同，这个时候需要对内存进行划分管理，设备DMA可能不能访问所有内存空间，只能访问部分空间这个时候DMA访问的地址空间需要划分出来管理，对于支持内存插拔的场景也需要一套机制来管理而这些是Memblock做不到的。</p>
+<h2 id="内存模型"><a class="markdownIt-Anchor" href="#内存模型"></a> 内存模型</h2>
+<p>Linux使用两种内存模型FLATMEM和SPARSEM。所有的内存模型都使用排列在一个或多个数组中的 struct page 来跟踪物理页帧的状态。<br>
+无论选择哪种内存模型，物理页框号（PFN）和相应的 struct page 之间都存在一对一的映射关系。<br>
+每个内存模型都定义了 pfn_to_page 和 page_to_pfn helper函数，允许从PFN到 struct page 的转换，反之亦然。</p>
+<h3 id="flatmem"><a class="markdownIt-Anchor" href="#flatmem"></a> FLATMEM</h3>
+<p>在FLATMEM内存模型中，有一个全局的 mem_map 数组来映射整个物理内存。对于大多数架构，孔隙在 mem_map 数组中都有条目。与孔洞相对应的 struct page对象从未被完全初始化。</p>
+<h3 id="sparsemem"><a class="markdownIt-Anchor" href="#sparsemem"></a> SPARSEMEM</h3>
+<p>SPARSEMEM是Linux中最通用的内存模型，它是唯一支持若干高级功能的内存模型，如物理内存的热插拔、非易失性内存设备的替代内存图和较大系统的内存图的延迟初始化。</p>
+<p>SPARSEMEM模型将物理内存显示为一个部分的集合。一个区段用mem_section结构体表示，它包含 section_mem_map ，从逻辑上讲，它是一个指向 struct page阵列的指针。然而，它被存储在一些其他的magic中，以帮助分区管理。区段的大小<br>
+和最大区段数是使用 SECTION_SIZE_BITS 和 MAX_PHYSMEM_BITS 常量来指定的，这两个常量是由每个支持SPARSEMEM的架构定义的。 MAX_PHYSMEM_BITS是一个架构所支持的物理地址的实际宽度，而 SECTION_SIZE_BITS 是一个任意的值。</p>
+<p>mem_section 对象被安排在一个叫做 mem_sections 的二维数组中。这个数组的大小和位置取决于 CONFIG_SPARSEM_EXTREME 和可能的最大段数:</p>
+<ul>
+<li>当 CONFIG_SPARSEMEM_EXTREME 被禁用时， mem_sections 数组是静态的，有NR_MEM_SECTIONS 行。每一行持有一个 mem_section 对象。</li>
+<li>当 CONFIG_SPARSEMEM_EXTREME 被启用时， mem_sections 数组被动态分配。每一行包含价值 PAGE_SIZE 的 mem_section 对象，行数的计算是为了适应所有的内存区。</li>
+</ul>
+<p>架构设置代码应该调用sparse_init()来初始化内存区和内存映射。</p>
+<p>通过SPARSEMEM，有两种可能的方式将PFN转换为相应的 struct page --“classic sparse"和"sparse vmemmap”。选择是在构建时进行的，它由 CONFIG_SPARSEMEM_VMEMMAP 的值决定。</p>
+<p>Classic sparse在page-&gt;flags中编码了一个页面的段号，并使用PFN的高位来访问映射该页框的段。在一个区段内，PFN是指向页数组的索引。</p>
+<p>Sparse vmemmapvmemmap使用虚拟映射的内存映射来优化pfn_to_page和page_to_pfn操作。有一个全局的 struct page *vmemmap 指针，指向一个虚拟连续的 struct page对象阵列。PFN是该数组的一个索引，struct page 从 vmemmap 的偏移量是该页的PFN。</p>
+<p>为了使用vmemmap，一个架构必须保留一个虚拟地址的范围，以映射包含内存映射的物理页，并确保 vmemmap指向该范围。此外，架构应该实现 vmemmap_populate 方法，它将分配物理内存并为虚拟内存映射创建页表。如果一个架构对vmemmap映射没有任何特殊要求，它可以使用通用内存管理提供的默认 vmemmap_populate_basepages。</p>
+<h2 id="mem_section组织下的内存"><a class="markdownIt-Anchor" href="#mem_section组织下的内存"></a> mem_section组织下的内存</h2>
+<h3 id="section相关宏定义"><a class="markdownIt-Anchor" href="#section相关宏定义"></a> Section相关宏定义</h3>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> SECTIONS_PER_ROOT       (PAGE_SIZE / sizeof (struct mem_section)) <span class="comment">// sizeof (struct mem_section) = 16  SECTIONS_PER_ROOT = 4096 / 16 = 256</span></span></span><br><span class="line"></span><br><span class="line">CONFIG_ARM64_PA_BITS=<span class="number">48</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTION_SIZE_BITS 27</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MAX_PHYSMEM_BITS	CONFIG_ARM64_PA_BITS</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTIONS_SHIFT	(MAX_PHYSMEM_BITS - SECTION_SIZE_BITS) <span class="comment">// 48 - 27 = 21</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NR_MEM_SECTIONS		(1UL &lt;&lt; SECTIONS_SHIFT)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> NR_SECTION_ROOTS	DIV_ROUND_UP(NR_MEM_SECTIONS, SECTIONS_PER_ROOT) <span class="comment">// NR_SECTION_ROOTS = 2^21 / 256 = 8192</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SECTION_NR_TO_ROOT(sec)	((sec) / SECTIONS_PER_ROOT)</span></span><br></pre></td></tr></tbody></table></figure>
+<p>SECTION_SIZE_BITS 为什么要定义成27呢，我们知道我们的PAGE_SIZE是4096，而2^27 / 4096 = 32768，这刚好是一个s16类型能表示的范围这个是section_to_node_table的数据类型。</p>
+<p>每一个mem_section可以用来描述SECTION_SIZE_BITS个bit位的地址，也就是2^27 = 32768 * 4k = 128M<br>
+用一个page来表示SECTIONS_PER_ROOT，每个SECTIONS_PER_ROOT里面有256个struct mem_section结构体，每个struct mem_section结构体可以描述一个128M，则SECTIONS_PER_ROOT能描述的地址空间是256 * 128M = 32G</p>
+<p>32 * 8192 = 262144G = 256T = 2^48</p>
+<h3 id="数据结构与组织形式概览"><a class="markdownIt-Anchor" href="#数据结构与组织形式概览"></a> 数据结构与组织形式概览</h3>
+<p>先来一张整体图，表示mem_section是怎么组织内存的。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemorySectionStruct.png" alt=""></p>
+<p>通过一个struct mem_section指针数组来表示所有PA范围，当然实际内存没有那么多，那么会浪费掉一些指针占用的空间，而这个浪费相对而言就比较小了。mem_section指针数组的每一项都指向一个mem_section结构体，一个mem_section结构体管理128MByte内存。mem_section通过一定的编码方式可以找到对于的struct page结构体，而每一个struct page对应着一块物理内存，而struct page结构体的虚拟地址空间在vmemmap映射区域，struct page的物理地址可能不连续，但是虚拟地址连续，这样可以方便将page与pfn进行快速转换。</p>
+<h2 id="数据结构-2"><a class="markdownIt-Anchor" href="#数据结构-2"></a> 数据结构</h2>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/MemorySectionStruct2.png" alt=""></p>
+<h2 id="组织形式"><a class="markdownIt-Anchor" href="#组织形式"></a> 组织形式</h2>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/pglistOrigin.png" alt=""></p>
+<p>pglist_data就是node节点，对于UMA内存来讲就是一个node，node下管理数个zone，在我的ARM64设备上实际就一个zone就是Zone DMA（ARM64下没有ZONE HIGHT，因为虚拟内存足够大，不需要）ZONE DMA按照2^order次方组织page，有MAX_ORDER-1个数组，每个数组下又根据page是否可移动、是否可回收等权限分MIGRATE_MAX个链表来组织page，这为伙伴系统提供了page的组织和管理形式。</p>
+<h2 id="调试"><a class="markdownIt-Anchor" href="#调试"></a> 调试</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/zoneinfo</span><br><span class="line"><span class="built_in">cat</span> /proc/pagetypeinfo</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82ODQ2NTk1Mg==">https://zhuanlan.zhihu.com/p/68465952<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC82ODQ3MzQyOA==">https://zhuanlan.zhihu.com/p/68473428<i class="fa fa-external-link-alt"></i></span><br>
+《奔跑吧 Linux 内核》</p>
+
+      </div>
+      
+      
+      
+    </div>
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxKernel/">LINUXKERNEL</a></li>
+            <li>LINUXMEMORYBASIC</li>
+  </ul>
+
+    
+    
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">488k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">29:35</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/note/Blog/LinuxKernel/LinuxMemoryBasic.html"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

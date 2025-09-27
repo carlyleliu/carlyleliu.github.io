@@ -1,0 +1,195 @@
+---
+title: Linux驱动之MTD子系统（二）实现分析
+categories: 
+- Linux
+- 驱动
+date: 2020-10-07 10:55:47
+tags: Linux驱动
+---
+
+# 概述
+mtd驱动模型则通过对nor flash、nandflash等闪存设备进行抽象，对上层模块抽象成统一成设备模型（mtd_info），对下则通过mtd_info完成与具体闪存设备驱动的绑定，从而完成对闪存设备的访问操作。此处mtd的抽象，就和vfs抽象类似。[原图](https://www.processon.com/view/link/615d9a321e08533a03038351)
+![](/picture/linux_driver/mtd/MTD_Framework.png)
+
+其中mtd block、mtd char均属于mtd驱动模型的部分，而FTL、NFTL则不属于mtd驱动模型部分 ，由具体的文件系统来实现，如ubi文件系统挂载时，则是通过设备文件/dev/ubiX_Y进行挂载；而针对yaffs2文件系统，其可以直接使用/dev/mtdblockX进行挂载（当然其也可以不借助mtdblock）。
+
+其中mtd char当我们想在文件系统下实现对bootloader、kernel、文件系统镜像的升级操作时，则可以通过读写/dev/mtdX（mtd 字符设备），实现针对bootloader、kernel、filesystem的升级操作。
+
+而mtd_info则代表一个flash芯片或一个flash芯片的分区，当flash设备（nandflash设备、nor flash设备）的驱动初始化时，则会根据分区划分，创建对应的mtd_info，并完成mtd_info与该芯片驱动的绑定操作。而在mtd_info的创建过程中，则会创建对应的mtd char、mtd block，从而完成与vfs的关联。
+
+<!--more-->
+
+# MTD字符设备（linux/drivers/mtd/mtdchar.c）
+入口函数是init_mtdchar，如下：
+```c
+int __init init_mtdchar(void)
+{
+	int ret;
+
+	ret = __register_chrdev(MTD_CHAR_MAJOR, 0, 1 << MINORBITS,
+				   "mtd", &mtd_fops);
+	return ret;
+}
+...
+#define MTD_CHAR_MAJOR		90
+```
+该函数就注册了一个字符设备驱动程序(主设备号是 90)，file_operation结构体中实现了操作MTD设备的打开、读、写等函数。mtd_fops定义如下：
+```c
+static const struct file_operations mtd_fops = {
+	.owner		= THIS_MODULE,
+	.llseek		= mtdchar_lseek,
+	.read		= mtdchar_read,
+	.write		= mtdchar_write,
+	.unlocked_ioctl	= mtdchar_unlocked_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl	= mtdchar_compat_ioctl,
+#endif
+	.open		= mtdchar_open,
+	.release	= mtdchar_close,
+	.mmap		= mtdchar_mmap,
+#ifndef CONFIG_MMU
+	.get_unmapped_area = mtdchar_get_unmapped_area,
+	.mmap_capabilities = mtdchar_mmap_capabilities,
+#endif
+};
+```
+
+看下mtdchar_open的实现：
+```c
+static int mtdchar_open(struct inode *inode, struct file *file)
+{
+	int minor = iminor(inode);
+	int devnum = minor >> 1;
+	int ret = 0;
+	struct mtd_info *mtd;
+	struct mtd_file_info *mfi;
+
+	pr_debug("MTD_open\n");
+
+	/* You can't open the RO devices RW */
+	if ((file->f_mode & FMODE_WRITE) && (minor & 1))
+		return -EACCES;
+
+    /* 1. 根据设备节点找到mtd_info结构体 */
+	mtd = get_mtd_device(NULL, devnum);
+
+	if (IS_ERR(mtd))
+		return PTR_ERR(mtd);
+
+	if (mtd->type == MTD_ABSENT) {
+		ret = -ENODEV;
+		goto out1;
+	}
+
+	/* You can't open it RW if it's not a writeable device */
+	if ((file->f_mode & FMODE_WRITE) && !(mtd->flags & MTD_WRITEABLE)) {
+		ret = -EACCES;
+		goto out1;
+	}
+
+    /* 2. 分配mtd_file_info结构体 */
+	mfi = kzalloc(sizeof(*mfi), GFP_KERNEL);
+	if (!mfi) {
+		ret = -ENOMEM;
+		goto out1;
+	}
+	mfi->mtd = mtd;
+    /* 3. file结构体的私有数据指针指向mtd_file_info结构体 */
+	file->private_data = mfi;
+	return 0;
+
+out1:
+	put_mtd_device(mtd);
+	return ret;
+} /* mtdchar_open */
+```
+该函数主要分配了一个mtd_file_info结构体，该结构体的mtd成员指向mtd_info，然后file结构体的私有数据指针private_data指向mtd_file_info结构体。
+
+对于read和write的流程基本上是一致的，这里以read为例列出函数调用流程，如下：[原图](https://www.processon.com/view/link/615eb390e401fd06aaa562f6)
+![](/picture/linux_driver/mtd/mtdchar_read.png)
+
+可以看到函数最后调用mtd_info的_read_oob或者_read。这就涉及到mtd_info的注册及实现流程了，后续会给出其流程，这里先不过多讲解。
+
+# MTD块设备（linux/drivers/mtd/mtdblock.c）
+## 数据结构
+MTD子系统是非常复杂的系统，里面涉及的数据结构和算法也非常多，这里首先必须要把各数据结构之间的关系理清楚，否则一头扎进去阅读源代码就出不来了，理清数据结构之间的关系和含义是理解代码的最重要的步骤，这里将mtd子系统涉及到的重要数据结构和各数据结构之间的关系列出一张表来，如下：[原图](https://www.processon.com/view/link/615efa2b63768909207944f0) 
+![](/picture/linux_driver/mtd/MTD_Struct.png)
+
+这个数据结构非常庞大，需要点击原图查看高清图片，下面对各数据结构做简要说明：
+
+mtd子系统主要是负责驱动nand flash或nor flash，这些都是块设备驱动程序，注册块设备驱动程序最基本的就是分配、设置注册一个gendisk结构体，该结构体是块设备驱动程序最基础的结构体。这里简单说明下块设备驱动程序和字符设备驱动程序最根本的区别在于，对块设备的读写操作不是立即执行的而是进行调整顺序优化后执行的，原因在于块设备的读写速率较慢（相较于内存等）尤其在频繁的读写的时候效率就会很低，为此块设备驱动程序将对flash的读写操作工作先提交到工作队列然后采用电梯算法对一系列的读写操作进行重新排序和优化后再执行（flash操作慢其中操作定位就是很慢通过对读写的重新排序减少磁盘的定位次数就可以大大加速读写速率）。在上图中左侧部分就是gendisk结构体相关部分，详细如下：
+
+- gendisk代表了一个通用硬盘（generic hard disk）对象，它存储了一个硬盘的信息，包括请求队列、分区链表和块设备操作函数集等。块设备驱动程序分配结构gendisk实例，装载分区表，分配请求队列并填充结构的其他域。
+- request_queue用于组织request结构。对于一些磁盘设备而言请求的速度很慢，这时候内核就提供一种队列的机制把这些I/O请求添加到队列中（即：请求队列），在驱动中用request_queue结构体描述。在向块设备提交这些请求前内核会先执行请求的合并和排序预操作，以提高访问的效率，然后再由内核中的I/O调度程序子系统来负责提交 I/O 请求， 调度程序将磁盘资源分配给系统中所有挂起的块 I/O 请求，其工作是管理块设备的请求队列，决定队列中的请求的排列顺序以及什么时候派发请求到设备。
+- request代表了挂起的I/O请求，每个请求用一个结构request实例描述，存放在请求队列链表中，由电梯算法进行排序，每个请求包含1个或多个结构bio实例。
+- bio是内核中块I/O操作的基本容器，定义 在<linux/bio.h>中，该结构体代表了正在现场的（活动的）以片段（segment）链表形式组织的块I/O操作。一个片段是一小 块连续的内存缓冲区。这样的好处就是不需要保证单个缓冲区一定要连续。所以通过片段来描述缓冲区，即使一个缓冲区分散在内存的多个位置上，bio结构体也 能对内核保证I/O操作的执行，这样的就叫做聚散I/O。bio为通用层的主要数据结构，既描述了磁盘的位置，又描述了内存的位置，是上层内核vfs与下层驱动的连接纽带。
+- block_device代表一个块设备对象，如：整个硬盘或特定分区。如果该结构代表一个分区，则其成员bd_part指向设备的分区结构。如果该结构代表设备，则其成员bd_disk指向设备的通用硬盘结构gendisk。
+- block_device_operations可以类比于字符设备驱动程序中的file_operations，该结构体是块设备的操作函数集。
+- disk_events用于描述磁盘事件，例如插拔等。
+- badblocks用于描述flash的坏块，由于flash会出现坏块，不能使用的情况，使用该结构来标识坏快。
+
+在结构体右侧就是mtd子系统中关于mtd系统实现部分，该部分主要实现对flash各个分区的设置和管理。同时下面我们会看到，该部分的实现会同时完成上面的gendisk结构体的设置和注册工作，这样对于普通的驱动开发人员而言就不需要手动设置注册gendisk结构体了。mtd子系统提供了更为简洁方便的接口给开发人员，实际上现在的驱动开发人员基本上都不需要怎么编写flash设备驱动程序了，而是通过dts设备树就可以完成对一个flash的适配工作。mtd子系统最重要的数据结构是 mtd_info，也就是上图的右半部分，准确来讲这部分才是mtd子系统的内容。该部分结构体内容如下：
+
+- struct mtd_partition用于进行闪存芯片的分区定义，针对不支持设备树的内核，则一般在开发板对应的板级文件中定义该结构体类型变量的定义，用于说明本芯片的分区情况；针对支持设备树的内核，一般在设备树文件中定义分区信息，然后在芯片对应的驱动文件中解析该分区定义。
+- struct mtd_part，主要由mtd设备驱动模型内部使用的分区信息，该结构体中包括本分区对应的struct mtd_info类型的变量以及指向master mtd_info的指针。系统中所有已注册的struct mtd_part变量。一般针对闪存芯片的操作接口（如mtd_info->_erase/_read/_write等），均在master mtd_info中定义。而在mtd_erase、mtd_read、mtd_write等对上层的接口中，根据传递的struct mtd_info类型变量，获取到对应的struct mtd_part类型变量，从而调用master mtd_info中对应的_erase、_read、_write等接口。
+- struct mtd_info，该结构体是mtd设备驱动模型最主要的数据结构，通过该数据结构，对上完成与mtd接口层的关联；对下完成与具体类型闪存芯片驱动的关联（如针对nand flash controller driver，则通过mtd_info->priv=nand_chip，完成与nandflash controller driver的关联；针对nor flash，则同样通过mtd_info->priv=map_info完成关联；而针对其他类型的芯片，则同样是通过mtd_info->priv的关联），通过该结构体中的_erase、_read、_write等函数指针，完成针对下层设备驱动操作接口的抽象，完成对下层设备驱动接口的抽象模型的建立。
+
+上面讲了两个独立的数据结构系统，而将这两个数据结构联系起来的数据结构是mtd_blktrans_dev，该数据结构将mtd_info和gendisk联系起来，对于mtd驱动开发而言是不需要关心左侧部分的，右侧结构提供了简单易用的注册函数接口。
+
+## 实现逻辑
+入口是module_mtd_blktrans(mtdblock_tr);详细过程如下：
+```c
+#define module_mtd_blktrans(__mtd_blktrans) \
+	module_driver(__mtd_blktrans, register_mtd_blktrans, \
+					deregister_mtd_blktrans)
+```
+module_driver的定义如下：
+```c
+#define module_driver(__driver, __register, __unregister, ...) \
+static int __init __driver##_init(void) \
+{ \
+	return __register(&(__driver) , ##__VA_ARGS__); \
+} \
+module_init(__driver##_init); \
+static void __exit __driver##_exit(void) \
+{ \
+	__unregister(&(__driver) , ##__VA_ARGS__); \
+} \
+module_exit(__driver##_exit);
+```
+展开后得到：
+```c
+static int __init mtdblock_tr_init(void) 
+{ 
+	return register_mtd_blktrans(&mtdblock_tr); 
+} 
+module_init(mtdblock_tr_init); 
+
+static void __exit mtdblock_tr_exit(void) 
+{ 
+	deregister_mtd_blktrans(&mtdblock_tr); 
+} 
+module_exit(mtdblock_tr_exit);
+```
+
+一通展开后得到入口函数是register_mtd_blktrans(&mtdblock_tr);该函数的调用栈非常复杂，主要函数流程如下：[原图](https://www.processon.com/view/link/615eca7c07912929804b7875)
+![](/picture/linux_driver/mtd/register_mtd_blktrans.png)
+
+这个函数的流程很复杂，其中比较重要的工作有以下几点：
+
+- 注册一个mtd_user，register_mtd_user将blktrans_notifier添加到最终调用到mtd_notifiers为头部链表，并调用到blktrans_notifier中的add成员函数。此处的add函数最终会调用到mtdblock_tr结构体的add_mtd指针指向函数
+- 注册一个块设备（register_blkdev）
+- 分配并设置gendisk结构体，这个就是块设备驱动程序最重要的结构体。
+- 设置工作队列相关任务。
+
+关于函数详细的流程这里还没有分析清楚，这个后续有机会再看吧。
+
+# 参考文献   
+[https://zhuanlan.zhihu.com/p/136792245](https://zhuanlan.zhihu.com/p/136792245)   
+[https://blog.csdn.net/lickylin/article/details/104718561](https://blog.csdn.net/lickylin/article/details/104718561)    
+[https://www.cnblogs.com/053179hu/p/13966199.html](https://www.cnblogs.com/053179hu/p/13966199.html) 
+[Linux Block IO: Introducing Multi-queue SSD Access on Multi-core Systems](http://kernel.dk/blk-mq.pdf)   
+[NOOP scheduler](https://en.wikipedia.org/wiki/Noop_scheduler)   
+[Null block device driver](https://www.kernel.org/doc/html/latest/block/null_blk.html)   
+《linux内核文档》   
+

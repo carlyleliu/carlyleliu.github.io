@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="USB sof统计方法  打时间戳方式  ktime_get_raw_ns() Linux标准接口。 meson_timestamp() Amlogic实现的硬件定时器接口。   sof打时间戳的时机  直接在SOF中断handle里打时间戳，然后将其保存到一个fifo里。 通过一个hrtimer，主动查询SOF中断寄存器查看是否有SOF包，如果有SOF包则打上时间戳保存到fifo里。   so">
+<meta property="og:type" content="website">
+<meta property="og:title" content="UAC（八）PPM 评估">
+<meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxUSBUACASYNCPPM.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="USB sof统计方法  打时间戳方式  ktime_get_raw_ns() Linux标准接口。 meson_timestamp() Amlogic实现的硬件定时器接口。   sof打时间戳的时机  直接在SOF中断handle里打时间戳，然后将其保存到一个fifo里。 通过一个hrtimer，主动查询SOF中断寄存器查看是否有SOF包，如果有SOF包则打上时间戳保存到fifo里。   so">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof1.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof2.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof3.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof4.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof5.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof6.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof7.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof8.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof9.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof10.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof11.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof13.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof14.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof15.png">
+<meta property="article:published_time" content="2024-06-28T05:15:01.000Z">
+<meta property="article:modified_time" content="2025-09-27T03:40:43.585Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="USB">
+<meta property="article:tag" content="UAC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof1.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxUSBUACASYNCPPM">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":false,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxUSBUACASYNCPPM.html","path":"note/Blog/LinuxDriver/LinuxUSBUACASYNCPPM.html","title":"UAC（八）PPM 评估"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>UAC（八）PPM 评估 | Matrix
+</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#usb-sof%E7%BB%9F%E8%AE%A1%E6%96%B9%E6%B3%95"><span class="nav-text"> USB sof统计方法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%93%E6%97%B6%E9%97%B4%E6%88%B3%E6%96%B9%E5%BC%8F"><span class="nav-text"> 打时间戳方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sof%E6%89%93%E6%97%B6%E9%97%B4%E6%88%B3%E7%9A%84%E6%97%B6%E6%9C%BA"><span class="nav-text"> sof打时间戳的时机</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sof%E6%97%B6%E9%97%B4%E6%88%B3%E5%AF%BC%E5%87%BA%E5%88%B0%E5%BA%94%E7%94%A8%E5%B1%82"><span class="nav-text"> sof时间戳导出到应用层</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#usb-sof%E7%BB%9F%E8%AE%A1%E6%95%B0%E6%8D%AE%E6%96%B9%E6%A1%88%E9%AA%8C%E8%AF%81"><span class="nav-text"> USB sof统计数据方案验证</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%ADhandle%E9%87%8C%E7%94%A8ktime_get_raw_ns%E6%89%93%E6%97%B6%E9%97%B4%E6%88%B3%E7%BB%9F%E8%AE%A1%E6%95%B0%E6%8D%AE"><span class="nav-text"> 中断handle里用ktime_get_raw_ns()打时间戳统计数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%ADhandle%E9%87%8C%E7%94%A8meson_timestamp%E6%89%93%E6%97%B6%E9%97%B4%E6%88%B3%E7%BB%9F%E8%AE%A1%E6%95%B0%E6%8D%AE"><span class="nav-text"> 中断handle里用meson_timestamp()打时间戳统计数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-text"> 结论</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%BB%A4%E6%B3%A2"><span class="nav-text"> 滤波</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#issue"><span class="nav-text"> Issue</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#iso%E4%B8%AD%E6%96%AD%E7%BB%9F%E8%AE%A1"><span class="nav-text"> ISO中断统计</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E7%BB%88%E7%9A%84%E7%AE%97%E6%B3%95"><span class="nav-text"> 最终的算法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E9%AA%8C%E8%AF%81"><span class="nav-text"> 数据验证</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E5%90%8E"><span class="nav-text"> 最后</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#tips"><span class="nav-text"> Tips</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">207</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">28</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">42</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner page posts-expand">
+
+
+    
+    
+    
+    <div class="post-block" lang="zh-CN"><header class="post-header">
+
+<h1 class="post-title" itemprop="name headline">UAC（八）PPM 评估
+</h1>
+
+<div class="post-meta-container">
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxDriver/">LINUXDRIVER</a></li>
+            <li>LINUXUSBUACASYNCPPM</li>
+  </ul>
+</div>
+
+</header>
+
+      
+      
+      
+      <div class="post-body">
+          <h1 id="usb-sof统计方法"><a class="markdownIt-Anchor" href="#usb-sof统计方法"></a> USB sof统计方法</h1>
+<h2 id="打时间戳方式"><a class="markdownIt-Anchor" href="#打时间戳方式"></a> 打时间戳方式</h2>
+<ol>
+<li><strong>ktime_get_raw_ns()</strong> Linux标准接口。</li>
+<li><strong>meson_timestamp()</strong> Amlogic实现的硬件定时器接口。</li>
+</ol>
+<h2 id="sof打时间戳的时机"><a class="markdownIt-Anchor" href="#sof打时间戳的时机"></a> sof打时间戳的时机</h2>
+<ol>
+<li>直接在SOF中断handle里打时间戳，然后将其保存到一个fifo里。</li>
+<li>通过一个hrtimer，主动查询SOF中断寄存器查看是否有SOF包，如果有SOF包则打上时间戳保存到fifo里。</li>
+</ol>
+<h2 id="sof时间戳导出到应用层"><a class="markdownIt-Anchor" href="#sof时间戳导出到应用层"></a> sof时间戳导出到应用层</h2>
+<p>通过seq file创建一个proc（/proc/sof_ts）文件，应用通过读取该文件来获取sof时间戳。</p>
+<span id="more"></span>
+<h1 id="usb-sof统计数据方案验证"><a class="markdownIt-Anchor" href="#usb-sof统计数据方案验证"></a> USB sof统计数据方案验证</h1>
+<h2 id="中断handle里用ktime_get_raw_ns打时间戳统计数据"><a class="markdownIt-Anchor" href="#中断handle里用ktime_get_raw_ns打时间戳统计数据"></a> 中断handle里用ktime_get_raw_ns()打时间戳统计数据</h2>
+<p><strong>数据：</strong></p>
+<table>
+<thead>
+<tr>
+<th>样本数量</th>
+<th>平均值（ns）</th>
+<th>最小值（ns）</th>
+<th>最大值（ns）</th>
+<th>方差</th>
+<th>标准差</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8192</td>
+<td>125001.0327</td>
+<td>94125</td>
+<td>156125</td>
+<td>2281694.791</td>
+<td>1510.5279</td>
+</tr>
+</tbody>
+</table>
+<p><strong>sof间隔图表：</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof1.png" alt=""></p>
+<p><strong>统计直方图(124-126us)：</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof2.png" alt=""></p>
+<p>上图在124us-126us之间的概率分布，两头分别是低于124us和高于126us的概率。低于124us的概率为3.0%，高于126us的概率为2.8%.</p>
+<p><strong>统计直方图(120-130us)：</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof3.png" alt=""></p>
+<p>上图将直方图统计口径放大到120us-130us，那么低于120us的概率为1.1%，高于130us的概率为1.2%.</p>
+<p>通过以上数据来看，没有使用hrtimer捕获sof的必要，直接在中断handler里捕获得到的数据精度完全足够评估ppm了，整体数据分布符合高斯噪声分布曲线，可以配合一定的消除高斯噪声的滤波算法得到更为稳定的数据。</p>
+<h2 id="中断handle里用meson_timestamp打时间戳统计数据"><a class="markdownIt-Anchor" href="#中断handle里用meson_timestamp打时间戳统计数据"></a> 中断handle里用meson_timestamp()打时间戳统计数据</h2>
+<p><strong>数据：</strong></p>
+<table>
+<thead>
+<tr>
+<th>样本数量</th>
+<th>平均值（ns）</th>
+<th>最小值（ns）</th>
+<th>最大值（ns）</th>
+<th>方差</th>
+<th>标准差</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8192</td>
+<td>125000.8546</td>
+<td>111000</td>
+<td>141000</td>
+<td>1501036.994</td>
+<td>1225.168</td>
+</tr>
+</tbody>
+</table>
+<p><strong>sof间隔图表</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof4.png" alt=""></p>
+<p><strong>sof直方图：</strong></p>
+<p>由于meson_timestamp的精度只到us，因此只统计120us-130us之间的概率：如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof5.png" alt=""></p>
+<p>其中低于120us的概率为1.2%，高于130us的概率为0.78%。</p>
+<h2 id="结论"><a class="markdownIt-Anchor" href="#结论"></a> 结论</h2>
+<ul>
+<li>统计方式可以直接在中断handle里打印时间戳</li>
+<li>获取时间戳接口meson_timestamp()数据更稳定一些，但差别不大，这里直接采用Linux标准函数ktime_get_raw_ns()获取时间戳</li>
+</ul>
+<h1 id="滤波"><a class="markdownIt-Anchor" href="#滤波"></a> 滤波</h1>
+<p>前面确定了在sof中断handle里通过ktime_get_raw_ns()获取sof时间戳，然后将其保存到fifo里，应用层通过/proc/sof_ts文件读取fifo里的时间戳。下面是对数据进行处理的方法：</p>
+<p><strong>实验一：无中值滤波，卡尔曼滤波器err_integral与kalman_filter_err_integral对比，kalman参数Q=0.01，R=1</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof6.png" alt=""></p>
+<p><strong>放大细节</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof7.png" alt=""></p>
+<p>滤波后数据仍然存在较大的波动，这个波动主要是由一些突变很大的值引入的，想要得到更加平滑的数据，可以先用中值滤波器将这些极值率除掉。</p>
+<p><strong>实验二：加入中值滤波器（err_integral与kalman_filter_err_integral和kalman_filter_err_integral对比，中值滤波窗口大小100个sample，kalman参数Q=0.01，R=1）</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof8.png" alt=""></p>
+<p><strong>放大看细节</strong><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof9.png" alt=""></p>
+<p>可以看到经过中值滤波器后毛刺基本上都去掉了，但是数据还是不够平滑，再加入karman滤波器后数据就很平滑了.</p>
+<p>如下图所示是经过kalman滤波后得到的ppm值：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof10.png" alt=""></p>
+<p>范围在7.56-7.64ppm，在经过一定的时间后kalman系数基本收敛完毕，数据量也累计到一定程度后ppm基本稳定在7.6-7.62ppm之间。</p>
+<h1 id="issue"><a class="markdownIt-Anchor" href="#issue"></a> Issue</h1>
+<p>测试中发现一个问题，我们的USB一般跑在高速模式下，在高速模式下是每125us一个sof中断，也就是在开启sof中断后arm core会每秒多接收8000次usb控制器发来的中断，这个中断是非常频繁的，会频繁触发usb中断过于频繁的check的。<br>
+可以尝试在ISO传输的数据中断中打印时间戳，理论上这种方式存在更大的波动性，需要验证数据是否可用。</p>
+<h1 id="iso中断统计"><a class="markdownIt-Anchor" href="#iso中断统计"></a> ISO中断统计</h1>
+<p>下图是以1ms为基准统计的iso中断累计误差：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof11.png" alt=""></p>
+<p>下图是通过上图的kalman滤波曲线计算的ppm曲线：范围在6.1-6.5之间，其中波动最大的在于有一段连续时间的偏差游走，但是经过滤波后造成ppm的偏差也在0.5pp以内。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof13.png" alt=""></p>
+<p>滤波和未滤波ppm值对比：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof14.png" alt=""></p>
+<p>其实在这里可以看到，将统计时长拉到足够长，不采用滤波也是可以的，比如将统计时长拉长到10分钟以上，误差也基本上不会很大。采用滤波的算法的好处是基本上2分钟以内就可以得到很高精度的值了。</p>
+<p><strong>结论</strong><br>
+在sof中断里获取时间戳pipeline更短，引入的误差更小，精度更高，但是开启sof中断后usb的中断会过于频繁，不利于usb的稳定性。作为对比，直接统计usb iso传输中断不会带来额外的中断开销，牺牲的是ppm评估精度。对于我们的公版来讲基本上都是采用±20ppm的晶振，波动在1个ppm以内基本上是可用接受的。</p>
+<h1 id="最终的算法"><a class="markdownIt-Anchor" href="#最终的算法"></a> 最终的算法</h1>
+<ol>
+<li>通过proc文件系统获取sof的timestamp</li>
+<li>计算两个时间戳之间的间隔，期望是1ms</li>
+<li>将该时间戳与1ms做差，进行积分，得到累计误差err_integral</li>
+<li>对累计误差进行中值滤波得到median_filter_err_integral中值滤波后的累计误差</li>
+<li>对中值滤波的结果进行kalman滤波得到kalman_filter_err_integral</li>
+</ol>
+<h1 id="数据验证"><a class="markdownIt-Anchor" href="#数据验证"></a> 数据验证</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/sof15.png" alt=""></p>
+<p>我们可用通过示波器或者频谱仪来测量晶振的真实ppm值，但是我们上面算法评估出的不是设备的真实ppm值，而是以pc的时钟为基准，device的时钟相对于pc时钟的ppm值。我们想要验证算法的精度就需要同时测量pc和device各自的ppm，然后再计算得到device相对于pc的相对ppm值。<br>
+由于pc的ppm我们不太好获取，因此这里通过测量两台device的ppm值，然后用我们的额算法评估出两个device的相对于pc的ppm值，看两则之间的差值是否相同来验证算法的准确性。这里通过频谱仪测量得到的两台设备的ppm值分别是：</p>
+<p>DeviceA：24.000135Mhz，ppm=（24.000135 - 24）/24 * 1000000 = 5.62ppm<br>
+DeviceB：23.999953Mhz，ppm = （23.999953 - 24）/24 * 1000000 = -1.9ppm</p>
+<p>两个设备的ppm差值为：5.62+1.9 = 7.52ppm<br>
+我们算法评估得到的DeviceA相对于pc的ppm为7.7ppm。DeviceB相对于pc的ppm为1.6ppm，两者之间的差值为6.1ppm。<br>
+这里算法得到的ppm相较于频谱仪得到的数据差有1.42ppm。<br>
+我们把算法的时间线拉长DeviceA相对于pc的ppm基本在7.4-8.4之间来回震荡，DeviceB相对于pc的ppm在1.2-1.9之间来回震荡，而且ppm值会受温度随着时间的推移也会在一个小范围内来回震荡，因此评估的数据可以认为精度在2ppm以内。</p>
+<h1 id="最后"><a class="markdownIt-Anchor" href="#最后"></a> 最后</h1>
+<p>如果Device相对于pc的ppm在10以上是可以采取一定的补偿措施的，如果Device相对于pc的ppm在5以内，补偿的意义就不大了，客户软件可以通过评估ppm大小判断下范围，如果评估出来在10以上可以采取一些措施来补偿ppm，比如调节clk或者调节fifo。<br>
+对于A1，由于时钟分频导致的采样率不是整数，这个可以通过async机制来解决，ppm相对于clk的分频不准确性就太小了，没必要进行ppm评估。A4、A5分频得到的ppm是整数，可以用ppm estimate来评估并做一定的补偿。当然直接用async也可以。但是A4、A5用的CRG的usb控制器，端点数量只有3对，uac+FU+Async Feedback就把3对用完了，其他usb功能都得关闭了。需要根据需求来决定采用哪种方案了。</p>
+<h1 id="tips"><a class="markdownIt-Anchor" href="#tips"></a> Tips</h1>
+<p>excel中方差函数：VARPA()<br>
+excel中标准差函数：STDEVPA()</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>《USB2.0 协议规范》<br>
+《UAC2 协议规范》</p>
+
+      </div>
+      
+      
+      
+    </div>
+  <ul class="breadcrumb">
+            <li><a href="/note/">NOTE</a></li>
+            <li><a href="/note/Blog/">BLOG</a></li>
+            <li><a href="/note/Blog/LinuxDriver/">LINUXDRIVER</a></li>
+            <li>LINUXUSBUACASYNCPPM</li>
+  </ul>
+
+    
+    
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">488k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">29:35</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/note/Blog/LinuxDriver/LinuxUSBUACASYNCPPM.html"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>
