@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="实验 测试发现period_size&#x3D;512或者256时均不发生丢包，于是做以下实验：            sampling rate channel bit depth period_size package size 是否丢包     48k 2 16bit 1024 4096Byte 丢包   48k 1 16bit 1024 2048Byte 丢包   48k 2 16bit 512 2">
+    <meta name="description" content="实验 测试发现period_size&#x3D;512或者256时均不发生丢包，于是做以下实验：    sampling rate channel bit depth period_size package size 是否丢包     48k 2 16bit 1024 4096Byte 丢包   48k 1 16bit 1024 2048Byte 丢包   48k 2 16bit 512 2048Byte">
 <meta property="og:type" content="article">
 <meta property="og:title" content="记录一次UAC 丢包问题分析过程">
 <meta property="og:url" content="https://carlyleliu.github.io/Debug/LinuxperfdebugExample/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="实验 测试发现period_size&#x3D;512或者256时均不发生丢包，于是做以下实验：            sampling rate channel bit depth period_size package size 是否丢包     48k 2 16bit 1024 4096Byte 丢包   48k 1 16bit 1024 2048Byte 丢包   48k 2 16bit 512 2">
+<meta property="og:description" content="实验 测试发现period_size&#x3D;512或者256时均不发生丢包，于是做以下实验：    sampling rate channel bit depth period_size package size 是否丢包     48k 2 16bit 1024 4096Byte 丢包   48k 1 16bit 1024 2048Byte 丢包   48k 2 16bit 512 2048Byte">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/08/31/66d33d376e043.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/i/2024/09/01/66d33e3f4374a.png">
@@ -40,8 +40,8 @@
 <meta property="article:published_time" content="2024-08-28T11:44:15.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.396Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Programming">
 <meta property="article:tag" content="Debug">
+<meta property="article:tag" content="Programming">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://lsky.carlyleliu.vip/i/2024/08/31/66d33d376e043.png">
 
@@ -160,7 +160,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-text">实验</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87perf-top%E5%88%86%E6%9E%90"><span class="nav-text">通过perf top分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E7%81%AB%E7%84%B0%E5%9B%BE%E5%88%86%E6%9E%90"><span class="nav-text">通过火焰图分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8function_graph%E5%8A%9F%E8%83%BD"><span class="nav-text">使用function_graph功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%81%AB%E7%84%B0%E5%9B%BE%E5%88%86%E6%9E%90"><span class="nav-text">使用火焰图分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E6%89%93%E5%8D%B0%E6%97%B6%E9%97%B4%E6%88%B3%E5%88%86%E6%9E%90"><span class="nav-text">通过打印时间戳分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cpuidle"><span class="nav-text">cpuidle</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%97%ADcpuidle"><span class="nav-text">关闭cpuidle</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9cpuidle%E5%8F%82%E6%95%B0"><span class="nav-text">修改cpuidle参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pm-qos"><span class="nav-text">pm qos</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-text"> 实验</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87perf-top%E5%88%86%E6%9E%90"><span class="nav-text"> 通过perf top分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E7%81%AB%E7%84%B0%E5%9B%BE%E5%88%86%E6%9E%90"><span class="nav-text"> 通过火焰图分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8function_graph%E5%8A%9F%E8%83%BD"><span class="nav-text"> 使用function_graph功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8%E7%81%AB%E7%84%B0%E5%9B%BE%E5%88%86%E6%9E%90"><span class="nav-text"> 使用火焰图分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E8%BF%87%E6%89%93%E5%8D%B0%E6%97%B6%E9%97%B4%E6%88%B3%E5%88%86%E6%9E%90"><span class="nav-text"> 通过打印时间戳分析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#cpuidle"><span class="nav-text"> cpuidle</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B3%E9%97%ADcpuidle"><span class="nav-text"> 关闭cpuidle</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%AE%E6%94%B9cpuidle%E5%8F%82%E6%95%B0"><span class="nav-text"> 修改cpuidle参数</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pm-qos"><span class="nav-text"> pm qos</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -319,17 +319,9 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="实验">实验</h1>
+    <div class="post-body" itemprop="articleBody"><h1 id="实验"><a class="markdownIt-Anchor" href="#实验"></a> 实验</h1>
 <p>测试发现period_size=512或者256时均不发生丢包，于是做以下实验：</p>
-<table style="width:100%;">
-<colgroup>
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-<col style="width: 16%">
-</colgroup>
+<table>
 <thead>
 <tr>
 <th>sampling rate</th>
@@ -377,77 +369,53 @@
 </table>
 <p>通过实验发现，丢包与period_size相关与package size无关。</p>
 <span id="more"></span>
-<h1 id="通过perf-top分析">通过perf top分析</h1>
+<h1 id="通过perf-top分析"><a class="markdownIt-Anchor" href="#通过perf-top分析"></a> 通过perf top分析</h1>
 <p>通过perf top查看系统和aplay中哪些函数占比高:</p>
-<p><img src="https://lsky.carlyleliu.vip/i/2024/08/31/66d33d376e043.png"></p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/08/31/66d33d376e043.png" alt=""></p>
 <p>这里可以看到有大量的spin_lock函数占用比较高的cpu时间。猜测系统哪里可能有自旋锁使用不当。但是这里无法看到函数调用栈，不知道哪里调用的spinlock占用cpu资源多。</p>
-<h1 id="通过火焰图分析">通过火焰图分析</h1>
-<p>查看ftrace </p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mount -t debugfs none /sys/kernel/debug/</span><br><span class="line"><span class="built_in">cd</span> /sys/kernel/debug/tracing/</span><br><span class="line"><span class="built_in">echo</span> 0 &gt; tracing_on</span><br><span class="line"> </span><br><span class="line"><span class="built_in">echo</span> _raw_spin_unlock_irq &gt; set_ftrace_filter</span><br><span class="line"><span class="built_in">echo</span> <span class="keyword">function</span> &gt; current_tracer </span><br><span class="line"> </span><br><span class="line"><span class="built_in">echo</span> 1 &gt; options/func_stack_trace</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 过滤下pid, 因为调用_raw_spin_unlock_irq 的线程比较多</span></span><br><span class="line"><span class="built_in">echo</span> &lt;pid&gt; &gt; set_ftrace_pid</span><br><span class="line"> </span><br><span class="line">&gt; trace <span class="comment">#清除 trace 内容</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; tracing_on &amp;&amp; <span class="built_in">sleep</span> 1 &amp;&amp; <span class="built_in">echo</span> 0 &gt; tracing_on</span><br><span class="line"><span class="built_in">cat</span> trace</span><br></pre></td></tr></tbody></table></figure><p></p>
-<h2 id="使用function_graph功能">使用function_graph功能</h2>
-<p>需要内核开启FUNCYTION_PROFILER选项。 </p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt;  ./function_profile_enabled</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 等过2分钟再查看统计 </span></span><br><span class="line"><span class="built_in">cat</span> ./trace_stat/function0 | <span class="built_in">head</span> -100</span><br></pre></td></tr></tbody></table></figure><p></p>
-<h2 id="使用火焰图分析">使用火焰图分析</h2>
+<h1 id="通过火焰图分析"><a class="markdownIt-Anchor" href="#通过火焰图分析"></a> 通过火焰图分析</h1>
+<p>查看ftrace</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mount -t debugfs none /sys/kernel/debug/</span><br><span class="line"><span class="built_in">cd</span> /sys/kernel/debug/tracing/</span><br><span class="line"><span class="built_in">echo</span> 0 &gt; tracing_on</span><br><span class="line"> </span><br><span class="line"><span class="built_in">echo</span> _raw_spin_unlock_irq &gt; set_ftrace_filter</span><br><span class="line"><span class="built_in">echo</span> <span class="keyword">function</span> &gt; current_tracer </span><br><span class="line"> </span><br><span class="line"><span class="built_in">echo</span> 1 &gt; options/func_stack_trace</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 过滤下pid, 因为调用_raw_spin_unlock_irq 的线程比较多</span></span><br><span class="line"><span class="built_in">echo</span> &lt;pid&gt; &gt; set_ftrace_pid</span><br><span class="line"> </span><br><span class="line">&gt; trace <span class="comment">#清除 trace 内容</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; tracing_on &amp;&amp; <span class="built_in">sleep</span> 1 &amp;&amp; <span class="built_in">echo</span> 0 &gt; tracing_on</span><br><span class="line"><span class="built_in">cat</span> trace</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="使用function_graph功能"><a class="markdownIt-Anchor" href="#使用function_graph功能"></a> 使用function_graph功能</h2>
+<p>需要内核开启FUNCYTION_PROFILER选项。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt;  ./function_profile_enabled</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 等过2分钟再查看统计 </span></span><br><span class="line"><span class="built_in">cat</span> ./trace_stat/function0 | <span class="built_in">head</span> -100</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="使用火焰图分析"><a class="markdownIt-Anchor" href="#使用火焰图分析"></a> 使用火焰图分析</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">perf record -F 5000 -p &lt;pid&gt; -g -- <span class="built_in">sleep</span> 60</span><br><span class="line"></span><br><span class="line">record：表示采集系统事件，没有采用 -e 执行采集事件，则默认采集 cycles（即 CPU clock 周期）。</span><br><span class="line"> </span><br><span class="line">-F 5000：指定采样频率为 5000Hz（每秒5000次），如果 5000次都返回同一个函数名, 那就说明 CPU 这一秒钟都在执行同一个函数，可能存在性能问题。</span><br><span class="line"> </span><br><span class="line">-p &lt;pid&gt;：指定进程号，对某一个进程分析。</span><br><span class="line"> </span><br><span class="line">-g：表示记录调用栈。</span><br><span class="line"> </span><br><span class="line"><span class="built_in">sleep</span> 60：表示持续 60 秒</span><br><span class="line"></span><br><span class="line"><span class="comment"># 可以使用下面命令来简单查看 perf.data内容</span></span><br><span class="line">perf report -n --stdio</span><br></pre></td></tr></tbody></table></figure>
 <p>生成火焰图：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">git <span class="built_in">clone</span> https://github.com/brendangregg/FlameGraph.git</span><br><span class="line"></span><br><span class="line"><span class="comment"># 生成折叠后的调用栈</span></span><br><span class="line">perf script -i perf.data &amp;&gt; perf.unfold</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 将perf.unfold 用adb pull出来，在服务器上生成火焰图</span></span><br><span class="line"><span class="comment"># 生成火焰图</span></span><br><span class="line">./FlameGraph/stackcollapse-perf.pl perf.unfold &amp;&gt; perf.folded</span><br><span class="line"> </span><br><span class="line"><span class="comment"># 生成svg</span></span><br><span class="line">./FlameGraph/flamegraph.pl perf.folded &gt; perf.svg</span><br></pre></td></tr></tbody></table></figure>
-<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33e3f4374a.png"></p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33e3f4374a.png" alt=""></p>
 <p>这里可以看到__snd_pcm_lib_xfer这个函数里的spinlock占用比较高的cpu资源。</p>
-<h2 id="通过打印时间戳分析">通过打印时间戳分析</h2>
+<h2 id="通过打印时间戳分析"><a class="markdownIt-Anchor" href="#通过打印时间戳分析"></a> 通过打印时间戳分析</h2>
 <p>前面发现__snd_pcm_lib_xfer这个函数耗时很久于是打印这个函数的耗时信息：</p>
-<figure>
-<img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33ee199eea.png" alt="perf3.png">
-<figcaption aria-hidden="true">perf3.png</figcaption>
-</figure>
-<p>蓝色为period_size=1024时__snd_pcm_lib_xfer函数运行时间单位为ns，平均下来就是一个period_size间隔时间为1024
-* 1000 / 48000 = 21ms</p>
-<p>橙色为period_size=512时__snd_pcm_lib_xfer函数运行时间单位为ns，平均下来就是一个period_size间隔时间为512*
-1000 / 48000 = 11ms</p>
-<p>__snd_pcm_lib_xfer这个函数里有多段自旋锁，逐个打印看是否有不合理的值，最终发现大部分sleep都在schedule_timeout这个函数里，schedule_timeout的sleep的时间计算方式有问题，对比kernel6.6已经修复了sleep时间的计算方式，但是这里也不会导致丢包因为schedule_timeout函数的sleep会被各种event打断，这里代码中是sleep
-10s，但是实际sleep
-20ms（对于period_size=1024情况下）就被uac里的signal打断返回而提前结束。</p>
-<figure>
-<img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f2d34516.png" alt="perf4.png">
-<figcaption aria-hidden="true">perf4.png</figcaption>
-</figure>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33ee199eea.png" alt="perf3.png"></p>
+<p>蓝色为period_size=1024时__snd_pcm_lib_xfer函数运行时间单位为ns，平均下来就是一个period_size间隔时间为1024 * 1000 / 48000 = 21ms</p>
+<p>橙色为period_size=512时__snd_pcm_lib_xfer函数运行时间单位为ns，平均下来就是一个period_size间隔时间为512* 1000 / 48000 = 11ms</p>
+<p>__snd_pcm_lib_xfer这个函数里有多段自旋锁，逐个打印看是否有不合理的值，最终发现大部分sleep都在schedule_timeout这个函数里，schedule_timeout的sleep的时间计算方式有问题，对比kernel6.6已经修复了sleep时间的计算方式，但是这里也不会导致丢包因为schedule_timeout函数的sleep会被各种event打断，这里代码中是sleep 10s，但是实际sleep 20ms（对于period_size=1024情况下）就被uac里的signal打断返回而提前结束。</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f2d34516.png" alt="perf4.png"></p>
 <p>schedule_timeout函数运行时间为：</p>
-<figure>
-<img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f75357dd.png" alt="perf5.png">
-<figcaption aria-hidden="true">perf5.png</figcaption>
-</figure>
-<p>__snd_pcm_lib_xfer函数执行时间21ms其中20多ms都在schedule_timeout（没有在自旋锁内）里。到这里基本上看不出spinlock有什么问题。对比period_size=512差别只是schedule_timeout中sleep的时间长短不一致。同时根据perf
-top中的耗时函数看，耗时最长的是cpuidle_enter_state这个函数，怀疑是跟cpuidle相关。</p>
-<h1 id="cpuidle">cpuidle</h1>
-<h2 id="关闭cpuidle">关闭cpuidle</h2>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33f75357dd.png" alt="perf5.png"></p>
+<p>__snd_pcm_lib_xfer函数执行时间21ms其中20多ms都在schedule_timeout（没有在自旋锁内）里。到这里基本上看不出spinlock有什么问题。对比period_size=512差别只是schedule_timeout中sleep的时间长短不一致。同时根据perf top中的耗时函数看，耗时最长的是cpuidle_enter_state这个函数，怀疑是跟cpuidle相关。</p>
+<h1 id="cpuidle"><a class="markdownIt-Anchor" href="#cpuidle"></a> cpuidle</h1>
+<h2 id="关闭cpuidle"><a class="markdownIt-Anchor" href="#关闭cpuidle"></a> 关闭cpuidle</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu0/cpuidle/state1/disable</span><br><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu1/cpuidle/state1/disable</span><br><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu2/cpuidle/state1/disable</span><br><span class="line"><span class="built_in">echo</span> 1 &gt;  /sys/devices/system/cpu/cpu3/cpuidle/state1/disable</span><br></pre></td></tr></tbody></table></figure>
 <p>测试发现period_size=1024也不丢包了。</p>
-<h2 id="修改cpuidle参数">修改cpuidle参数</h2>
+<h2 id="修改cpuidle参数"><a class="markdownIt-Anchor" href="#修改cpuidle参数"></a> 修改cpuidle参数</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">idle-states {</span><br><span class="line">	entry-method = <span class="string">"arm,psci-0.2"</span>;</span><br><span class="line">	CPU_SLEEP_0: cpu-sleep-0 {</span><br><span class="line">			compatible = <span class="string">"arm,idle-state"</span>;</span><br><span class="line">			arm,psci-suspend-param = &lt;0x0010000&gt;;</span><br><span class="line">			local-timer-stop;</span><br><span class="line">			entry-latency-us = &lt;5000&gt;;</span><br><span class="line">			exit-latency-us = &lt;5000&gt;;</span><br><span class="line">			min-residency-us = &lt;15000&gt;;</span><br><span class="line">	};</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>entry-latency-us为进入cpuidle需要耗时的时间，axg上写的是5ms，这个值一看就不对，不可能耗时这么久，这个值要根据实际测试值来填写的</li>
 <li>exit-latency-us为退出cpuidle需要耗时的时间，同样这里也是5ms，这个值肯定不是真实的值</li>
 <li>min-residency-us为cpu至少要保持cpuidle状态的时间，也就是至少保持15ms，进入cpuidle才划算</li>
 </ul>
-<p>我们period_size=1024的时候会sleep20多ms那么这期间就大概率会触发cpuidle进入休眠，尝试将其改成30ms，发现丢包率降低，但还是会丢包（实际查看发现cpu仍然在进入cpuidle状态）。查询cpuidle相关实现<a href="http"></a>这些值是算法中的一个参数，详细的算法没去研究比较复杂，但是大致知道里面有一些权重因子，驱动不会严格按照min-residency-us来决定是否进入cpuidle而是会作用到一个权重因子，同时参考其他信息，有pm
-qos、以及中断、timer等相关信息来决定是否进入cpuidle状态。</p>
+<p>我们period_size=1024的时候会sleep20多ms那么这期间就大概率会触发cpuidle进入休眠，尝试将其改成30ms，发现丢包率降低，但还是会丢包（实际查看发现cpu仍然在进入cpuidle状态）。查询cpuidle相关实现<a href="http"></a>这些值是算法中的一个参数，详细的算法没去研究比较复杂，但是大致知道里面有一些权重因子，驱动不会严格按照min-residency-us来决定是否进入cpuidle而是会作用到一个权重因子，同时参考其他信息，有pm qos、以及中断、timer等相关信息来决定是否进入cpuidle状态。</p>
 <p>这里将min-residency-us改成一个远大于period_size的值发现usb不丢包了。</p>
 <p>反向验证下，为什么period_size=256或者512不丢包呢，查看cpuidle状态可以看到period_size=256或者512时不会进入cpuidle状态。</p>
-<figure>
-<img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33fe0f2988.png" alt="perf6.png">
-<figcaption aria-hidden="true">perf6.png</figcaption>
-</figure>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d33fe0f2988.png" alt="perf6.png"></p>
 <p>schedule_timeout这里sleep的时间短，不足以触发进入cpuidle的条件。</p>
-<h2 id="pm-qos">pm qos</h2>
-<p>前面直接通过关闭cpuidle或者修改min-residency-us都是不合理的，min-residency-us参数正确的计算方法是cpu进入cpuidle和退出cpuidle是需要额外功耗的，那么就必须保证待在cpuidle里的时间要足够久至少为min-residency-us才能保证进入cpuidle是划算的（如果进入cpuidle后立马退出那么功耗不仅不能降低还会增加，期间还disabled
-cpu irq）。</p>
-<p>更合理的做法是各driver对cpuidle模块提出要求，比如这里的uac，要通过pm
-qos对cpuidle提出要求我的传输包间隔是period
-size间隔时间，期间你不能进入休眠。追查代码发现实际上我们系统里有调用pm
-qos接口：</p>
-<figure>
-<img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d3402a4c773.png" alt="perf7.png">
-<figcaption aria-hidden="true">perf7.png</figcaption>
-</figure>
-<p>但是实际测试发现cpu仍然不停的进入cpuidle，可能是多核smp导致的，跑arecord
-aplay的cpu核可以满足条件，但是其他核还是可以休眠，如果关闭其他核，cpu0就不进入cpuidle了，当前也不好做验证。</p>
+<h2 id="pm-qos"><a class="markdownIt-Anchor" href="#pm-qos"></a> pm qos</h2>
+<p>前面直接通过关闭cpuidle或者修改min-residency-us都是不合理的，min-residency-us参数正确的计算方法是cpu进入cpuidle和退出cpuidle是需要额外功耗的，那么就必须保证待在cpuidle里的时间要足够久至少为min-residency-us才能保证进入cpuidle是划算的（如果进入cpuidle后立马退出那么功耗不仅不能降低还会增加，期间还disabled cpu irq）。</p>
+<p>更合理的做法是各driver对cpuidle模块提出要求，比如这里的uac，要通过pm qos对cpuidle提出要求我的传输包间隔是period size间隔时间，期间你不能进入休眠。追查代码发现实际上我们系统里有调用pm qos接口：</p>
+<p><img src="https://lsky.carlyleliu.vip/i/2024/09/01/66d3402a4c773.png" alt="perf7.png"></p>
+<p>但是实际测试发现cpu仍然不停的进入cpuidle，可能是多核smp导致的，跑arecord aplay的cpu核可以满足条件，但是其他核还是可以休眠，如果关闭其他核，cpu0就不进入cpuidle了，当前也不好做验证。</p>
 
     </div>
 
@@ -486,8 +454,8 @@ aplay的cpu核可以满足条件，但是其他核还是可以休眠，如果关
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
               <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
+              <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
           </div>
 
         

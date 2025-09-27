@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="概述 CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：  如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对 c">
+    <meta name="description" content="概述 CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：  如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Linux 驱动之 CCF 子系统">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxDriverCCF.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="概述 CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：  如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对 c">
+<meta property="og:description" content="概述 CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：  如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png">
@@ -159,7 +159,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#apiconsumer"><span class="nav-text">API（consumer）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E8%8E%B7%E5%8F%96%E6%9C%89%E5%85%B3%E7%9A%84-api"><span class="nav-text">clock 获取有关的 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E6%8E%A7%E5%88%B6%E6%9C%89%E5%85%B3%E7%9A%84-api"><span class="nav-text">clock 控制有关的 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E6%8E%A5%E5%8F%A3"><span class="nav-text">其它接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E7%94%A8-api-%E7%9A%84%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E"><span class="nav-text">通用 API 的使用说明</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84provider"><span class="nav-text">数据结构（provider）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E5%88%86%E7%B1%BB%E5%8F%8A-register"><span class="nav-text">clock 分类及 register</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E9%9D%A2%E8%BF%99%E4%BA%9B%E6%B3%A8%E5%86%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="nav-text">上面这些注册接口的实现逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E9%98%B6%E6%AE%B5%E5%AF%B9%E8%AE%BE%E5%A4%87%E6%A0%91%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-text">系统启动阶段对设备树的处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#apiconsumer"><span class="nav-text"> API（consumer）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E8%8E%B7%E5%8F%96%E6%9C%89%E5%85%B3%E7%9A%84-api"><span class="nav-text"> clock 获取有关的 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E6%8E%A7%E5%88%B6%E6%9C%89%E5%85%B3%E7%9A%84-api"><span class="nav-text"> clock 控制有关的 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E6%8E%A5%E5%8F%A3"><span class="nav-text"> 其它接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E7%94%A8-api-%E7%9A%84%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E"><span class="nav-text"> 通用 API 的使用说明</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84provider"><span class="nav-text"> 数据结构（provider）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E5%88%86%E7%B1%BB%E5%8F%8A-register"><span class="nav-text"> clock 分类及 register</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E9%9D%A2%E8%BF%99%E4%BA%9B%E6%B3%A8%E5%86%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="nav-text"> 上面这些注册接口的实现逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E9%98%B6%E6%AE%B5%E5%AF%B9%E8%AE%BE%E5%A4%87%E6%A0%91%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-text"> 系统启动阶段对设备树的处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -247,8 +247,9 @@
       
       
       <div class="post-body">
-          <h1 id="概述">概述</h1>
-<p>CCF 主要用于系统 clock 的管理等操作。clk 的种类说明： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png"></p>
+          <h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
+<p>CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png" alt=""></p>
 <p>如上图所示，时钟源大概可分为如下几种：</p>
 <ul>
 <li>提供基础时钟源的晶振（可分为有源晶振、无源晶振两种）</li>
@@ -257,27 +258,19 @@
 <li>用于多路时钟源选择的 mux</li>
 <li>用于时钟使能的与门电路等</li>
 </ul>
-<p>而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5
-种类型的时钟也提供了单独的时钟注册函数（也就是对 clk_register
-函数的封装，并针对不同的时钟类型定义了不同的结构体）。</p>
-<p>在 CCF 子系统中，针对硬件时钟的操作接口，也抽象了对应的结构体 struct
-clk_ops，包含时钟的使能接口、时钟频率的修改接口等等。而针对上述所说的不同种类的时钟源，其并不需要实现所有
-struct clk_ops 中定义的接口。针对“时钟使能的与门电路”而言，仅需要实现
-enabel、disable、is_enable 接口即可；针对多路时钟源选择的 mux
-而言，则需要实现父时钟源的设置及获取的接口 set_parent、get_parent
-等；对于倍频、分频而言，则需要实现时钟频率相关的接口
-set_rate、recalc_rate 等。</p>
+<p>而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对 clk_register 函数的封装，并针对不同的时钟类型定义了不同的结构体）。</p>
+<p>在 CCF 子系统中，针对硬件时钟的操作接口，也抽象了对应的结构体 struct clk_ops，包含时钟的使能接口、时钟频率的修改接口等等。而针对上述所说的不同种类的时钟源，其并不需要实现所有 struct clk_ops 中定义的接口。针对“时钟使能的与门电路”而言，仅需要实现 enabel、disable、is_enable 接口即可；针对多路时钟源选择的 mux 而言，则需要实现父时钟源的设置及获取的接口 set_parent、get_parent 等；对于倍频、分频而言，则需要实现时钟频率相关的接口 set_rate、recalc_rate 等。</p>
 <span id="more"></span>
-<h1 id="apiconsumer">API（consumer）</h1>
-<h2 id="clock-获取有关的-api">clock 获取有关的 API</h2>
+<h1 id="apiconsumer"><a class="markdownIt-Anchor" href="#apiconsumer"></a> API（consumer）</h1>
+<h2 id="clock-获取有关的-api"><a class="markdownIt-Anchor" href="#clock-获取有关的-api"></a> clock 获取有关的 API</h2>
 <ul>
-<li>以 device 指针或者 id 字符串（可以看作 name）为参数，查找
-clock。devm_clk_get 使用了 device resource management，可以自动释放</li>
+<li>以 device 指针或者 id 字符串（可以看作 name）为参数，查找 clock。devm_clk_get 使用了 device resource management，可以自动释放</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_get</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *id)</span>;</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">devm_clk_get</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *id)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <pre><code>dev 和 id 的任意一个可以为空。如果 id 为空，则必须有 device tree 的支持才能获得 device 对应的 clk；
 根据具体的平台实现，id 可以是一个简单的名称，也可以 是一个预先定义的、唯一的标识（一般在平台提供的头文件中定义，如 mach/clk.h）；
-不可以在中断上下文调用</code></pre>
+不可以在中断上下文调用
+</code></pre>
 <ul>
 <li>get 的反向操作，一般和对应的 get API 成对调用</li>
 </ul>
@@ -287,11 +280,10 @@ clock。devm_clk_get 使用了 device resource management，可以自动释放</
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_get_sys</span><span class="params">(<span class="type">const</span> <span class="type">char</span> *dev_id, <span class="type">const</span> <span class="type">char</span> *con_id)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>device tree 相关的接口，直接从相应的 DTS node 中，以 index、name
-等为索引，获取 clk</li>
+<li>device tree 相关的接口，直接从相应的 DTS node 中，以 index、name 等为索引，获取 clk</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">of_clk_get</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="type">int</span> index)</span>;</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">of_clk_get_by_name</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="type">const</span> <span class="type">char</span> *name)</span>;</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">of_clk_get_from_provider</span><span class="params">(<span class="keyword">struct</span> of_phandle_args *clkspec)</span>;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="clock-控制有关的-api">clock 控制有关的 API</h2>
+<h2 id="clock-控制有关的-api"><a class="markdownIt-Anchor" href="#clock-控制有关的-api"></a> clock 控制有关的 API</h2>
 <ul>
 <li>启动/停止 clock。不会睡眠</li>
 </ul>
@@ -301,9 +293,7 @@ clock。devm_clk_get 使用了 device resource management，可以自动释放</
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">clk_prepare</span><span class="params">(<span class="keyword">struct</span> clk *clk)</span></span><br><span class="line"><span class="keyword">inline</span> <span class="type">void</span> <span class="title function_">clk_unprepare</span><span class="params">(<span class="keyword">struct</span> clk *clk)</span></span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>clock 频率的获取和设置，其中 clk_set_rate
-可能会不成功（例如没有对应的分频比），此时会返回错误。如果要确保设置成功，则需要先调用
-clk_round_rate 接口，得到和需要设置的 rate 比较接近的那个值</li>
+<li>clock 频率的获取和设置，其中 clk_set_rate 可能会不成功（例如没有对应的分频比），此时会返回错误。如果要确保设置成功，则需要先调用 clk_round_rate 接口，得到和需要设置的 rate 比较接近的那个值</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">unsigned</span> <span class="type">long</span> <span class="title function_">clk_get_rate</span><span class="params">(<span class="keyword">struct</span> clk *clk)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">clk_set_rate</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="type">unsigned</span> <span class="type">long</span> rate)</span></span><br><span class="line"><span class="type">long</span> <span class="title function_">clk_round_rate</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="type">unsigned</span> <span class="type">long</span> rate)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
@@ -319,158 +309,112 @@ clk_round_rate 接口，得到和需要设置的 rate 比较接近的那个值</
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">clk_disable_unprepare</span><span class="params">(<span class="keyword">struct</span> clk *clk)</span></span><br></pre></td></tr></tbody></table></figure>
 <p><strong>prepare/unprepare，enable/disable 的说明</strong></p>
-<p>这两套 API 的本质，是把 clock 的启动/停止分为 atomic 和 non-atomic
-两个阶段，以方便实现和调用。因此上面所说的“不会睡眠/可能会睡眠”，有两个角度的含义：一是告诉底层的
-clock driver，请把可能引起睡眠的操作，放到 prepare/unprepare
-中实现，一定不能放到 enable/disable 中；二是提醒上层使用 clock 的
-driver，调用 prepare/unprepare 接口时可能会睡眠哦，千万不能在 atomic
-上下文（例如中断处理中）调用哦，而调用 enable/disable 接口则可放心。</p>
-<p>另外，clock 的开关为什么需要睡眠呢？这里举个例子，例如 enable PLL
-clk，在启动 PLL 后，需要等待它稳定。而 PLL
-的稳定时间是很长的，这段时间要把 CPU 交出（进程睡眠），不然就会浪费
-CPU。</p>
-<p>最后，为什么会有合在一起的 clk_prepare_enable/clk_disable_unprepare
-接口呢？如果调用者能确保是在 non-atomic 上下文中调用，就可以顺序调用
-prepare/enable、disable/unprepared，为了简单，framework
-就帮忙封装了这两个接口。</p>
-<h2 id="其它接口">其它接口</h2>
+<p>这两套 API 的本质，是把 clock 的启动/停止分为 atomic 和 non-atomic 两个阶段，以方便实现和调用。因此上面所说的“不会睡眠/可能会睡眠”，有两个角度的含义：一是告诉底层的 clock driver，请把可能引起睡眠的操作，放到 prepare/unprepare 中实现，一定不能放到 enable/disable 中；二是提醒上层使用 clock 的 driver，调用 prepare/unprepare 接口时可能会睡眠哦，千万不能在 atomic 上下文（例如中断处理中）调用哦，而调用 enable/disable 接口则可放心。</p>
+<p>另外，clock 的开关为什么需要睡眠呢？这里举个例子，例如 enable PLL clk，在启动 PLL 后，需要等待它稳定。而 PLL 的稳定时间是很长的，这段时间要把 CPU 交出（进程睡眠），不然就会浪费 CPU。</p>
+<p>最后，为什么会有合在一起的 clk_prepare_enable/clk_disable_unprepare 接口呢？如果调用者能确保是在 non-atomic 上下文中调用，就可以顺序调用 prepare/enable、disable/unprepared，为了简单，framework 就帮忙封装了这两个接口。</p>
+<h2 id="其它接口"><a class="markdownIt-Anchor" href="#其它接口"></a> 其它接口</h2>
 <ul>
-<li>注册/注销 clock rate 改变的通知。例如某个 driver 关心某个
-clock，期望这个 clock 的 rate 改变时，通知到自己，就可以注册一个 notify
-<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_register</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_unregister</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br></pre></td></tr></tbody></table></figure></li>
+<li>注册/注销 clock rate 改变的通知。例如某个 driver 关心某个 clock，期望这个 clock 的 rate 改变时，通知到自己，就可以注册一个 notify</li>
 </ul>
-<h2 id="通用-api-的使用说明">通用 API 的使用说明</h2>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_register</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_unregister</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="通用-api-的使用说明"><a class="markdownIt-Anchor" href="#通用-api-的使用说明"></a> 通用 API 的使用说明</h2>
 <ul>
-<li><p>首先，在 DTS（device tree source）中，指定 device 需要使用的
-clock，如下： </p><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/* DTS */</span><br><span class="line">device {</span><br><span class="line">    clocks = &lt;&amp;osc 1&gt;, &lt;&amp;ref 0&gt;;</span><br><span class="line">    clock-names = "baud", "register";</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure><p></p>
-<p>该 DTS 的含义是：</p>
-<p>device 需要使用两个 clock，“baud”和“regitser”，由 clock-names
-关键字指定；</p>
-<p>baud 取自“osc”的输出 1，register 取自“ref”的输出 0，由 clocks
-关键字指定。</p></li>
-<li><p>系统启动后，device tree 会解析 clock
-有关的关键字，并将解析后的信息放在 platform_device 相关的字段中</p></li>
-<li><p>具体的 driver 可以在 probe 时，以 clock
-的名称（不提供也行）为参数，调用 clk get 接口，获取 clock
-的句柄，然后利用该句柄，可直接进行 enable、set rate
-等操作，如下：</p></li>
+<li>首先，在 DTS（device tree source）中，指定 device 需要使用的 clock，如下：</li>
+</ul>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/* DTS */</span><br><span class="line">device {</span><br><span class="line">    clocks = &lt;&amp;osc 1&gt;, &lt;&amp;ref 0&gt;;</span><br><span class="line">    clock-names = "baud", "register";</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<pre><code>该 DTS 的含义是：
+
+device 需要使用两个 clock，“baud”和“regitser”，由 clock-names 关键字指定；
+
+baud 取自“osc”的输出 1，register 取自“ref”的输出 0，由 clocks 关键字指定。
+</code></pre>
+<ul>
+<li>
+<p>系统启动后，device tree 会解析 clock 有关的关键字，并将解析后的信息放在 platform_device 相关的字段中</p>
+</li>
+<li>
+<p>具体的 driver 可以在 probe 时，以 clock 的名称（不提供也行）为参数，调用 clk get 接口，获取 clock 的句柄，然后利用该句柄，可直接进行 enable、set rate 等操作，如下：</p>
+</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* driver */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">xxx_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">clk</span> *<span class="title">baud_clk</span>;</span></span><br><span class="line">    <span class="type">int</span> ret; </span><br><span class="line"></span><br><span class="line">    baud_clk = devm_clk_get(&amp;pdev-&gt;dev, “baud”);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(clk)) {</span><br><span class="line">            …</span><br><span class="line">    } </span><br><span class="line"></span><br><span class="line">    ret = clk_prepare_enable(baud_clk);</span><br><span class="line">    <span class="keyword">if</span> (ret) {</span><br><span class="line">            …</span><br><span class="line">    } </span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<h1 id="数据结构provider">数据结构（provider）</h1>
-<p>CCF 实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDEyYzgwNzkxMjk1NzEwYjY2NzQ4">原图<i class="fa fa-external-link-alt"></i></span>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png"></p>
+<h1 id="数据结构provider"><a class="markdownIt-Anchor" href="#数据结构provider"></a> 数据结构（provider）</h1>
+<p>CCF 实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDEyYzgwNzkxMjk1NzEwYjY2NzQ4">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png" alt=""></p>
 <ul>
-<li><p>clk_hw： 为硬件时钟源的逻辑抽象可以理解为 clk provider</p></li>
-<li><p>clk_core： 可以理解为 clk provider 的 driver，包含了 clk provider
-的访问方法、时钟频率设定、支持的时钟频率、父时钟源的个数以及父时钟源的名称等内容</p></li>
-<li><p>clk： 可以理解 clk consumer，包含了指向 clk provider
-的指针、使用者的设备名称、使用者所定义的时钟别名（con_id）</p></li>
-<li><p>clk_ops： 主要是 clk provider 的操作接口，包含 prepare 与
-unprepare 操作接口（这两个接口执行时允许
-sleep，主要是用的互斥锁）、enable 与 disable
-接口（这两个接口执行时不允许
-sleep，里面使用了自旋锁），也包含了速率设置接口、重新计算速率接口、parent
-设置与获取接口等等，通过这些接口可实现时钟频率的修改、父时钟源的选择、时钟的使能与否等功能</p></li>
-<li><p>clk_init_data： 描述该 clock 的静态数据，clock provider
-负责把系统中每个 clock 的静态数据准备好，然后交给 clock framework
-的核心逻辑，剩下的事情，clock provider 就不用操心了。这个过程，就是
-clock driver 的编写过程</p></li>
+<li>
+<p>clk_hw：<br>
+为硬件时钟源的逻辑抽象可以理解为 clk  provider</p>
+</li>
+<li>
+<p>clk_core：<br>
+可以理解为 clk provider 的 driver，包含了 clk provider 的访问方法、时钟频率设定、支持的时钟频率、父时钟源的个数以及父时钟源的名称等内容</p>
+</li>
+<li>
+<p>clk：<br>
+可以理解 clk  consumer，包含了指向 clk provider 的指针、使用者的设备名称、使用者所定义的时钟别名（con_id）</p>
+</li>
+<li>
+<p>clk_ops：<br>
+主要是 clk provider 的操作接口，包含 prepare 与 unprepare 操作接口（这两个接口执行时允许 sleep，主要是用的互斥锁）、enable 与 disable 接口（这两个接口执行时不允许 sleep，里面使用了自旋锁），也包含了速率设置接口、重新计算速率接口、parent 设置与获取接口等等，通过这些接口可实现时钟频率的修改、父时钟源的选择、时钟的使能与否等功能</p>
+</li>
+<li>
+<p>clk_init_data：<br>
+描述该 clock 的静态数据，clock provider 负责把系统中每个 clock 的静态数据准备好，然后交给 clock framework 的核心逻辑，剩下的事情，clock provider 就不用操心了。这个过程，就是 clock driver 的编写过程</p>
+</li>
 </ul>
-<p>ccf 的驱动框架也是与设备驱动模型类似的结构，clk_core
-用于抽象设备树驱动的方法类似于 device_driver 而 clk 则更像是一个
-device，在 soc
-内部有很多控制器，这些控制器都挂载在时钟树下面，这些控制器就是
-consumer，他们会用到 clk
-数据结构用于使能失能时钟，以及设置时钟频率等操作。而 clk_core
-结构体则抽象了时钟树中的每一个节点组织成树状结构来描述整个时钟树。下面看下
-clk_core 在内核中的组织关系结构图，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDI0NjYxZTA4NTMzYTAzMDJmZWRh">原图<i class="fa fa-external-link-alt"></i></span>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CLK_Core_List.png"></p>
-<h1 id="实现">实现</h1>
-<h2 id="clock-分类及-register">clock 分类及 register</h2>
-<p>根据 clock 的特点，clock framework 将 clock 分为 fixed
-rate、gate、devider、mux、fixed factor、composite 六类，每一类 clock
-都有相似的功能、相似的控制方式，因而可以使用相同的逻辑
-s，统一处理，这充分体现了面向对象的思想。</p>
+<p>ccf 的驱动框架也是与设备驱动模型类似的结构，clk_core 用于抽象设备树驱动的方法类似于 device_driver 而 clk 则更像是一个 device，在 soc 内部有很多控制器，这些控制器都挂载在时钟树下面，这些控制器就是 consumer，他们会用到 clk 数据结构用于使能失能时钟，以及设置时钟频率等操作。而 clk_core 结构体则抽象了时钟树中的每一个节点组织成树状结构来描述整个时钟树。下面看下 clk_core 在内核中的组织关系结构图，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDI0NjYxZTA4NTMzYTAzMDJmZWRh">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CLK_Core_List.png" alt=""></p>
+<h1 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h1>
+<h2 id="clock-分类及-register"><a class="markdownIt-Anchor" href="#clock-分类及-register"></a> clock 分类及 register</h2>
+<p>根据 clock 的特点，clock framework 将 clock 分为 fixed rate、gate、devider、mux、fixed factor、composite 六类，每一类 clock 都有相似的功能、相似的控制方式，因而可以使用相同的逻辑 s，统一处理，这充分体现了面向对象的思想。</p>
 <ul>
-<li>fixed rate cloc： 这一类 clock
-具有固定的频率，不能开关、不能调整频率、不能选择
-parent、不需要提供任何的 clk_ops 回调函数，是最简单的一类 clock。
-可以直接通过 DTS 配置的方式支持，clock framework core 能直接从 DTS
-中解出 clock 信息，并自动注册到 kernel，不需要任何 driver 支持。 clock
-framework 使用 struct clk_fixed_rate 结构抽象这一类
-clock，另外提供了一个接口，可以直接注册 fixed rate clock，如下：</li>
+<li>fixed rate cloc：<br>
+这一类 clock 具有固定的频率，不能开关、不能调整频率、不能选择 parent、不需要提供任何的 clk_ops 回调函数，是最简单的一类 clock。<br>
+可以直接通过 DTS 配置的方式支持，clock framework core 能直接从 DTS 中解出 clock 信息，并自动注册到 kernel，不需要任何 driver 支持。<br>
+clock framework 使用 struct clk_fixed_rate 结构抽象这一类 clock，另外提供了一个接口，可以直接注册 fixed rate clock，如下：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">clk_fixed_rate</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span>		<span class="title">clk_hw</span> <span class="title">hw</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>	fixed_rate;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>	fixed_accuracy;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>	flags;</span><br><span class="line">};</span><br><span class="line">...</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_fixed_rate</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> *parent_name, <span class="type">unsigned</span> <span class="type">long</span> flags,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> fixed_rate)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>gate clock<br>
-这一类 clock 只可开关（会提供。enable/.disable
-回调），可使用下面接口注册：</li>
+这一类 clock 只可开关（会提供。enable/.disable 回调），可使用下面接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_gate</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> *parent_name, <span class="type">unsigned</span> <span class="type">long</span> flags,</span></span><br><span class="line"><span class="params">		<span class="type">void</span> __iomem *reg, u8 bit_idx,</span></span><br><span class="line"><span class="params">		u8 clk_gate_flags, <span class="type">spinlock_t</span> *lock)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>divider clock<br>
-这一类 clock
-可以设置分频值（因而会提供。recalc_rate/.set_rate/.round_rate
-回调），可通过下面两个接口注册：</li>
+这一类 clock 可以设置分频值（因而会提供。recalc_rate/.set_rate/.round_rate 回调），可通过下面两个接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> clk_register_divider(dev, name, parent_name, flags, reg, shift, width, \</span></span><br><span class="line"><span class="meta">			     clk_divider_flags, lock)			       \</span></span><br><span class="line"><span class="meta">	clk_register_divider_table((dev), (name), (parent_name), (flags),      \</span></span><br><span class="line"><span class="meta">				   (reg), (shift), (width),		       \</span></span><br><span class="line"><span class="meta">				   (clk_divider_flags), NULL, (lock))</span></span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>mux clock<br>
-这一类 clock 可以选择多个
-parent，因为会实现。get_parent/.set_parent/.recalc_rate
-回调，可通过下面两个接口注册：</li>
+这一类 clock 可以选择多个 parent，因为会实现。get_parent/.set_parent/.recalc_rate 回调，可通过下面两个接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> clk_register_mux(dev, name, parent_names, num_parents, flags, reg,    \</span></span><br><span class="line"><span class="meta">			 shift, width, clk_mux_flags, lock)		      \</span></span><br><span class="line"><span class="meta">	clk_register_mux_table((dev), (name), (parent_names), (num_parents),  \</span></span><br><span class="line"><span class="meta">			       (flags), (reg), (shift), BIT((width)) - 1,     \</span></span><br><span class="line"><span class="meta">			       (clk_mux_flags), NULL, (lock))</span></span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>fixed factor clock<br>
-这一类 clock 具有固定的 factor（即 multiplier 和 divider），clock
-的频率是由 parent clock 的频率，乘以 mul，除以
-div，多用于一些具有固定分频系数的 clock。由于 parent clock
-的频率可以改变，因而 fix factor clock
-也可该改变频率，因此也会提供。recalc_rate/.set_rate/.round_rate
-等回调。</li>
+这一类 clock 具有固定的 factor（即 multiplier 和 divider），clock 的频率是由 parent clock 的频率，乘以 mul，除以 div，多用于一些具有固定分频系数的 clock。由于 parent clock 的频率可以改变，因而 fix factor clock 也可该改变频率，因此也会提供。recalc_rate/.set_rate/.round_rate 等回调。</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_fixed_factor</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> *parent_name, <span class="type">unsigned</span> <span class="type">long</span> flags,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">int</span> mult, <span class="type">unsigned</span> <span class="type">int</span> div)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>composite clock<br>
-顾名思义，就是 mux、divider、gate 等 clock
-的组合，可通过下面接口注册：</li>
+顾名思义，就是 mux、divider、gate 等 clock 的组合，可通过下面接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_composite</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> * <span class="type">const</span> *parent_names, <span class="type">int</span> num_parents,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *mux_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *mux_ops,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *rate_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *rate_ops,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *gate_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *gate_ops,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> flags)</span>;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="上面这些注册接口的实现逻辑">上面这些注册接口的实现逻辑</h2>
-<p>clk 注册流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDNiNWE1NjUzYmI2NzkxZTRhZWZh">原图<i class="fa fa-external-link-alt"></i></span>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_register.png"></p>
-<p>驱动针对不同类型的 clock
-节点提供了几种不同的注册函数，驱动开发人员一般不需要自己编写对应的驱动而是尽可能调用系统提供的接口，而对于系统而言也是尽可能的复用函数，这些注册函数都是通过调用
-clk_hw_register 函数来实现自己的功能。</p>
-<p>这里有一个 map 映射没有涉及，ccf 子系统提供了 clk provider 的
-map，这种 map 机制可以理解为定义了 clk consumer 与 clk_provider
-的映射关系，即该 clk provider 可以给哪些 clk consumer
-提供时钟（如针对非设备树模式，则定义了 clk consumer 的设备名称、clk
-consumer 的时钟使用名称）。</p>
-<h2 id="系统启动阶段对设备树的处理">系统启动阶段对设备树的处理</h2>
-<p>clk 初始化流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDQwYmZlNDAxZmQ2YmUwN2YyZGRl">原图<i class="fa fa-external-link-alt"></i></span>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_init.png"></p>
-<p>上面介绍了 clk
-的注册流程，在上图中展示了系统启动过程中，解析设备树按照默认配置来设置系统时钟树的流程，下面给出详细说明：</p>
+<h2 id="上面这些注册接口的实现逻辑"><a class="markdownIt-Anchor" href="#上面这些注册接口的实现逻辑"></a> 上面这些注册接口的实现逻辑</h2>
+<p>clk 注册流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDNiNWE1NjUzYmI2NzkxZTRhZWZh">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_register.png" alt=""></p>
+<p>驱动针对不同类型的 clock 节点提供了几种不同的注册函数，驱动开发人员一般不需要自己编写对应的驱动而是尽可能调用系统提供的接口，而对于系统而言也是尽可能的复用函数，这些注册函数都是通过调用 clk_hw_register 函数来实现自己的功能。</p>
+<p>这里有一个 map 映射没有涉及，ccf 子系统提供了 clk provider 的 map，这种 map 机制可以理解为定义了 clk consumer 与 clk_provider 的映射关系，即该 clk provider 可以给哪些 clk consumer 提供时钟（如针对非设备树模式，则定义了 clk consumer 的设备名称、clk consumer 的时钟使用名称）。</p>
+<h2 id="系统启动阶段对设备树的处理"><a class="markdownIt-Anchor" href="#系统启动阶段对设备树的处理"></a> 系统启动阶段对设备树的处理</h2>
+<p>clk 初始化流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDQwYmZlNDAxZmQ2YmUwN2YyZGRl">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_init.png" alt=""></p>
+<p>上面介绍了 clk 的注册流程，在上图中展示了系统启动过程中，解析设备树按照默认配置来设置系统时钟树的流程，下面给出详细说明：</p>
 <ul>
-<li>通常在 Clock 驱动中会有一个 CLK_OF_DECLARE 宏，该宏用于声明一个
-struct of_device_id
-数据结构，并且最终在链接的时候会将数据结构链接在一个叫做__of_clk_table
-的段中，这个段的定义位于 vmlinux.lds.h 文件中。</li>
-<li>在内核启动过程中，最终会调用到 of_clk_init
-函数，在该函数中会去访问__of_clk_table
-段中的内容，由于此时内核已经调用了 unflatten_device_tree() 接口，完成了
-Device Tree 的解析过程，在 of_clk_init 函数中，会根据 struct
-of_device_id 中的内容去匹配 Device Node。</li>
-<li>最终调用__of_clk_table 中匹配上的 struct of_device_id
-中的函数，也就是 Clock
-驱动的入口函数了，此时顺着这个入口函数，可以完成一系列的操作，比如
-clk_ops 中的函数实现，注册进 CCF 框架等。</li>
-<li>当驱动完成注册之后，Consumer Driver 的 Device Node 和 Clock Provider
-建立了联系，Consumer Driver 便可通过 CCF 接口来操作时钟了。</li>
+<li>通常在 Clock 驱动中会有一个 CLK_OF_DECLARE 宏，该宏用于声明一个 struct of_device_id 数据结构，并且最终在链接的时候会将数据结构链接在一个叫做__of_clk_table 的段中，这个段的定义位于 vmlinux.lds.h 文件中。</li>
+<li>在内核启动过程中，最终会调用到 of_clk_init 函数，在该函数中会去访问__of_clk_table 段中的内容，由于此时内核已经调用了 unflatten_device_tree() 接口，完成了 Device Tree 的解析过程，在 of_clk_init 函数中，会根据 struct of_device_id 中的内容去匹配 Device Node。</li>
+<li>最终调用__of_clk_table 中匹配上的 struct of_device_id 中的函数，也就是 Clock 驱动的入口函数了，此时顺着这个入口函数，可以完成一系列的操作，比如 clk_ops 中的函数实现，注册进 CCF 框架等。</li>
+<li>当驱动完成注册之后，Consumer Driver 的 Device Node 和 Clock Provider 建立了联系，Consumer Driver 便可通过 CCF 接口来操作时钟了。</li>
 </ul>
-<h1 id="参考文献">参考文献</h1>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
 <p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2Nsa19vdmVydmlldy5odG1s">http://www.wowotech.net/pm_subsystem/clk_overview.html<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2Nsb2NrX3Byb3ZpZGVyLmh0bWw=">http://www.wowotech.net/pm_subsystem/clock_provider.html<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2Nsb2NrX2ZyYW1ld29ya19jb3JlLmh0bWw=">http://www.wowotech.net/pm_subsystem/clock_framework_core.html<i class="fa fa-external-link-alt"></i></span><br>

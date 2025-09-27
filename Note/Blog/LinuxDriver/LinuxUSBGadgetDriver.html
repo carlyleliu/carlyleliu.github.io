@@ -158,7 +158,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#busdevicedriver%E6%A8%A1%E5%9E%8B"><span class="nav-text">Bus&#x2F;Device&#x2F;Driver模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E9%80%BB%E8%BE%91"><span class="nav-text">代码逻辑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#busdevicedriver%E6%A8%A1%E5%9E%8B"><span class="nav-text"> Bus&#x2F;Device&#x2F;Driver模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%A3%E7%A0%81%E9%80%BB%E8%BE%91"><span class="nav-text"> 代码逻辑</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -246,46 +246,45 @@
       
       
       <div class="post-body">
-          <p>USB 控制器可以呈现出两种不同的状态。USB 控制器作为 Host 时，称为 USB
-主机控制器，使用 USB 主机控制器驱动。USB 控制器作为 Device 时，称为 USB
-设备控制器，使用 UDC（usb device controller）驱动。</p>
-<p>USB 控制器作为 Device 时，最上层的是 Gadget Function
-驱动，代表了具体设备的驱动，如 U 盘、USB 串口、USB 虚拟网卡、UAC
-驱动。Composite
-层是一个可选的中间层，可通过一种配置或多种配置高效的支持多种功能的设备，简化了
-USB 复合设备驱动的开发。目前最流行的是使用基于 Composite 和 configfs
-实现的 USB gadget configfs，可在用户空间灵活的配置 USB 设备。UDC
-驱动直接访问硬件，控制 USB 设备与 USB 主机之间的通信。</p>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB-Framework.png"></p>
+          <p>USB 控制器可以呈现出两种不同的状态。USB 控制器作为 Host 时，称为 USB 主机控制器，使用 USB 主机控制器驱动。USB 控制器作为 Device 时，称为 USB 设备控制器，使用 UDC（usb device controller）驱动。</p>
+<p>USB 控制器作为 Device 时，最上层的是 Gadget Function 驱动，代表了具体设备的驱动，如 U 盘、USB 串口、USB 虚拟网卡、UAC 驱动。Composite 层是一个可选的中间层，可通过一种配置或多种配置高效的支持多种功能的设备，简化了 USB 复合设备驱动的开发。目前最流行的是使用基于 Composite 和 configfs 实现的 USB gadget configfs，可在用户空间灵活的配置 USB 设备。UDC 驱动直接访问硬件，控制 USB 设备与 USB 主机之间的通信。</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB-Framework.png" alt=""></p>
 <span id="more"></span>
-<h1 id="busdevicedriver模型">Bus/Device/Driver模型</h1>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/usbDriver.png"></p>
+<h1 id="busdevicedriver模型"><a class="markdownIt-Anchor" href="#busdevicedriver模型"></a> Bus/Device/Driver模型</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/usbDriver.png" alt=""></p>
 <ul>
-<li>“USB接口”是逻辑上的USB设备，我们编写的usb_driver驱动程序，支持的是”USB接口”：
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/usbDriver1.png"></li>
+<li>“USB接口"是逻辑上的USB设备，我们编写的usb_driver驱动程序，支持的是"USB接口”：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/usbDriver1.png" alt=""></li>
 <li>USB控制器或Hub识别出USB设备后，会创建、注册usb_deive</li>
-<li>usb_device被”drivers.c”驱动认领后，会选择、设置某个配置</li>
+<li>usb_device被"drivers\usb\core\generic.c"驱动认领后，会选择、设置某个配置</li>
 <li>这个配置下面的接口，都会分配、设置、注册一个usb_interface</li>
 <li>左边的usb_driver和右边的usb_interface如果匹配，则调用usb_driver.probe</li>
 </ul>
-<h1 id="数据结构">数据结构</h1>
-<p>以 UAC 为例来说明： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC-Struct.png"></p>
+<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
+<p>以 UAC 为例来说明：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC-Struct.png" alt=""></p>
 <ul>
-<li><p>usb_configuration： 代表一个 gadget 配置</p></li>
-<li><p>usb_composite_dev： 它里面汇集有各类描述符，内嵌 gadget
-对象，以及 usb 设备的一些配置和请求，有一个 usb_funciton
-链表（实现数据传输），主要用于初始化。</p></li>
-<li><p>usb_composite_driver：
-设备驱动的入口，用来管理设备配置信息，保存设备描述符。</p></li>
-<li><p>usb_gadget_driver： 提供一个通用的 usb gadget driver
-模板，向下注册到 udc, 向上给 functions driver 提供 bind
-回调等。</p></li>
+<li>
+<p>usb_configuration：<br>
+代表一个 gadget 配置</p>
+</li>
+<li>
+<p>usb_composite_dev：<br>
+它里面汇集有各类描述符，内嵌 gadget 对象，以及 usb 设备的一些配置和请求，有一个 usb_funciton 链表（实现数据传输），主要用于初始化。</p>
+</li>
+<li>
+<p>usb_composite_driver：<br>
+设备驱动的入口，用来管理设备配置信息，保存设备描述符。</p>
+</li>
+<li>
+<p>usb_gadget_driver：<br>
+提供一个通用的 usb gadget driver 模板，向下注册到 udc, 向上给 functions driver 提供 bind 回调等。</p>
+</li>
 </ul>
-<h1 id="代码逻辑">代码逻辑</h1>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC-Driver.png"></p>
-<p>UAC
-驱动框架如上图所示，主要各入口函数以及各层相关函数流程都列出来了，感兴趣的可以自己追踪代码查看。</p>
-<h1 id="参考文献">参考文献</h1>
+<h1 id="代码逻辑"><a class="markdownIt-Anchor" href="#代码逻辑"></a> 代码逻辑</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC-Driver.png" alt=""></p>
+<p>UAC 驱动框架如上图所示，主要各入口函数以及各层相关函数流程都列出来了，感兴趣的可以自己追踪代码查看。</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly93d3cuZWV0LWNoaW5hLmNvbS9tcC9hNTUzMTAuaHRtbA==">https://www.eet-china.com/mp/a55310.html<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTEwMzc1OTMvYXJ0aWNsZS9kZXRhaWxzLzEyMDMzODk2OT9zcG09MTAwMS4yMDE0LjMwMDEuNTUwMg==">https://blog.csdn.net/u011037593/article/details/120338969?spm=1001.2014.3001.5502<i class="fa fa-external-link-alt"></i></span><br>
 《韦东山老师相关课程》<br>

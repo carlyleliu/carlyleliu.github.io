@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="ASOC ALSA 是为桌面计算机而设计的，没有考虑嵌入式设备的限制，在处理嵌入式设备时会产生很多问题，包括但不限于如下：  编解码器和 CPU 之间的耦合太强，导致代码移植困难。 没有处理用户音频相关行为通知的标准方法，在移动场景中，用户的相关音频操作很频繁。 在最初的 ALSA 设置中没有考虑 PM 机制。  ASOC 就是为了解决以上问题而产生的。ALSA（ALSA system on ch">
+    <meta name="description" content="ASOC ALSA 是为桌面计算机而设计的，没有考虑嵌入式设备的限制，在处理嵌入式设备时会产生很多问题，包括但不限于如下：  编解码器和 CPU 之间的耦合太强，导致代码移植困难。 没有处理用户音频相关行为通知的标准方法，在移动场景中，用户的相关音频操作很频繁。 在最初的 ALSA 设置中没有考虑 PM 机制。  ASOC 就是为了解决以上问题而产生的。ALSA（ALSA system on c">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Linux 驱动之 ALSA（一）概述">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/LinuxDriver/LinuxAudioALSASummer.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="ASOC ALSA 是为桌面计算机而设计的，没有考虑嵌入式设备的限制，在处理嵌入式设备时会产生很多问题，包括但不限于如下：  编解码器和 CPU 之间的耦合太强，导致代码移植困难。 没有处理用户音频相关行为通知的标准方法，在移动场景中，用户的相关音频操作很频繁。 在最初的 ALSA 设置中没有考虑 PM 机制。  ASOC 就是为了解决以上问题而产生的。ALSA（ALSA system on ch">
+<meta property="og:description" content="ASOC ALSA 是为桌面计算机而设计的，没有考虑嵌入式设备的限制，在处理嵌入式设备时会产生很多问题，包括但不限于如下：  编解码器和 CPU 之间的耦合太强，导致代码移植困难。 没有处理用户音频相关行为通知的标准方法，在移动场景中，用户的相关音频操作很频繁。 在最初的 ALSA 设置中没有考虑 PM 机制。  ASOC 就是为了解决以上问题而产生的。ALSA（ALSA system on c">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/iis.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/iis_format.png">
@@ -161,9 +161,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc"><span class="nav-text">ASOC</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc-%E6%95%B0%E5%AD%97%E9%9F%B3%E9%A2%91%E6%8E%A5%E5%8F%A3"><span class="nav-text">ASoC 数字音频接口</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#i2s"><span class="nav-text">I2S</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pcmtdm"><span class="nav-text">PCM&#x2F;TDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pdm"><span class="nav-text">PDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spdif"><span class="nav-text">S&#x2F;PDIF</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc-%E5%AD%90%E5%85%83%E7%B4%A0"><span class="nav-text">ASOC 子元素</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6"><span class="nav-text">框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#debug"><span class="nav-text">Debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#procfs-filesystem"><span class="nav-text">Procfs filesystem</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debugfs-filesystem"><span class="nav-text">Debugfs filesystem</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#how-to-trace"><span class="nav-text">How to trace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dynamic-traces"><span class="nav-text">Dynamic traces</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tracing-filesystem"><span class="nav-text">Tracing filesystem</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-dapm-traces"><span class="nav-text">Activate DAPM traces</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-pcm-hardware-parameter-traces"><span class="nav-text">Activate PCM hardware
-parameter traces</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-pcm-buffer-state-traces"><span class="nav-text">Activate PCM buffer state
-traces</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc"><span class="nav-text"> ASOC</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc-%E6%95%B0%E5%AD%97%E9%9F%B3%E9%A2%91%E6%8E%A5%E5%8F%A3"><span class="nav-text"> ASoC 数字音频接口</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#i2s"><span class="nav-text"> I2S</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pcmtdm"><span class="nav-text"> PCM&#x2F;TDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pdm"><span class="nav-text"> PDM</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#spdif"><span class="nav-text"> S&#x2F;PDIF</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#asoc-%E5%AD%90%E5%85%83%E7%B4%A0"><span class="nav-text"> ASOC 子元素</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A1%86%E6%9E%B6"><span class="nav-text"> 框架</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#debug"><span class="nav-text"> Debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#procfs-filesystem"><span class="nav-text"> Procfs filesystem</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#debugfs-filesystem"><span class="nav-text"> Debugfs filesystem</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#how-to-trace"><span class="nav-text"> How to trace</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#dynamic-traces"><span class="nav-text"> Dynamic traces</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tracing-filesystem"><span class="nav-text"> Tracing filesystem</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-dapm-traces"><span class="nav-text"> Activate DAPM traces</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-pcm-hardware-parameter-traces"><span class="nav-text"> Activate PCM hardware parameter traces</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#activate-pcm-buffer-state-traces"><span class="nav-text"> Activate PCM buffer state traces</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -251,163 +249,133 @@ traces</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-leve
       
       
       <div class="post-body">
-          <h1 id="asoc">ASOC</h1>
-<p>ALSA
-是为桌面计算机而设计的，没有考虑嵌入式设备的限制，在处理嵌入式设备时会产生很多问题，包括但不限于如下：</p>
+          <h1 id="asoc"><a class="markdownIt-Anchor" href="#asoc"></a> ASOC</h1>
+<p>ALSA 是为桌面计算机而设计的，没有考虑嵌入式设备的限制，在处理嵌入式设备时会产生很多问题，包括但不限于如下：</p>
 <ul>
 <li>编解码器和 CPU 之间的耦合太强，导致代码移植困难。</li>
 <li>没有处理用户音频相关行为通知的标准方法，在移动场景中，用户的相关音频操作很频繁。</li>
 <li>在最初的 ALSA 设置中没有考虑 PM 机制。</li>
 </ul>
-<p>ASOC 就是为了解决以上问题而产生的。ALSA（ALSA system on chip，
-ASOC）层的目的是为嵌入式处理器和各种编解码器提供更好的 ALSA 支持。ASOC
-具有以下优势：</p>
+<p>ASOC 就是为了解决以上问题而产生的。ALSA（ALSA system on chip， ASOC）层的目的是为嵌入式处理器和各种编解码器提供更好的 ALSA 支持。ASOC 具有以下优势：</p>
 <ul>
 <li>独立的编解码器驱动程序。</li>
-<li>更方便的配置 CPU 和编解码器动态音频电源管理（dynamic audio power
-management， DAPM）之间的音频数据接口。</li>
+<li>更方便的配置 CPU 和编解码器动态音频电源管理（dynamic audio power management， DAPM）之间的音频数据接口。</li>
 <li>减少弹出和点击操作，并增加与平台相关的控件。</li>
 </ul>
 <span id="more"></span>
-<p>为了实现上述功能，ASoC 将嵌入式音频系统划分为 3
-个可重用的组件驱动程序，即机器类（machine class）、平台类（platform
-class）和编解码器类（codec）。其中，平台类和编解码器类是跨平台（cross-platform）的，而机器类是板级的（board-specific）。</p>
-<h1 id="asoc-数字音频接口">ASoC 数字音频接口</h1>
-<p>数字音频接口（digital audio
-interface，DAI）是一种总线控制器，它可以将音频数据从一端（如
-SoC）传送到另一端（编解码器）。ASoC 当前支持 SoC
-控制器和便携式音频编解码器上的大多数 DAI，如 AC97、I2S、PCM、S/PDIF 和
-TDM。</p>
-<h2 id="i2s">I2S</h2>
-<p>I2S 全称 Inter-IC Sond Bus，是飞利浦在 1986 年定义 (1996
-年修订）的数字音频传输标准，用于数字音频数据在系统内部器件之间传输，例如编解码器
-Codec、DSP、数字输入/输出接口、ADC、DAC 和数字滤波器等。 对于 I2S
-的数字接口定义也比较简单，没有从地址或者从设备的概念，在 I2S
-总线上，只能同时存在一个主设备和发送设备。在 I2S
-系统中，提供时钟（SCK）的设备为主设备，其常见的系统框图如下： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/iis.png"></p>
-<p>在 I2S 传输协议中，数据信号、时钟信号以及控制信号是分开传输的。I2S
-协议只定义三根信号线：时钟信号 SCK、数据信号 SD 和左右声道选择信号
-WS。</p>
+<p>为了实现上述功能，ASoC 将嵌入式音频系统划分为 3 个可重用的组件驱动程序，即机器类（machine class）、平台类（platform class）和编解码器类（codec）。其中，平台类和编解码器类是跨平台（cross-platform）的，而机器类是板级的（board-specific）。</p>
+<h1 id="asoc-数字音频接口"><a class="markdownIt-Anchor" href="#asoc-数字音频接口"></a> ASoC 数字音频接口</h1>
+<p>数字音频接口（digital audio interface，DAI）是一种总线控制器，它可以将音频数据从一端（如 SoC）传送到另一端（编解码器）。ASoC 当前支持 SoC 控制器和便携式音频编解码器上的大多数 DAI，如 AC97、I2S、PCM、S/PDIF 和 TDM。</p>
+<h2 id="i2s"><a class="markdownIt-Anchor" href="#i2s"></a> I2S</h2>
+<p>I2S 全称 Inter-IC Sond Bus，是飞利浦在 1986 年定义 (1996 年修订）的数字音频传输标准，用于数字音频数据在系统内部器件之间传输，例如编解码器 Codec、DSP、数字输入/输出接口、ADC、DAC 和数字滤波器等。<br>
+对于 I2S 的数字接口定义也比较简单，没有从地址或者从设备的概念，在 I2S 总线上，只能同时存在一个主设备和发送设备。在 I2S 系统中，提供时钟（SCK）的设备为主设备，其常见的系统框图如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/iis.png" alt=""></p>
+<p>在 I2S 传输协议中，数据信号、时钟信号以及控制信号是分开传输的。I2S 协议只定义三根信号线：时钟信号 SCK、数据信号 SD 和左右声道选择信号 WS。</p>
 <ul>
-<li><p>SCLK：<br>
-时钟信号：模块内的同步信号，主模式时由模块内部自己产生，从模式由外部提供</p></li>
-<li><p>SD：<br>
-数据信号：在 WS 变化后的第一个 SCK 脉冲，先传输最高位（MSB, Most
-Significant Bit）。先传送 MSB
-是因为发送设备和接收设备的字长可能不同</p></li>
-<li><p>WS：<br>
-左右声道选择信号 Word
-Select:WS＝0，表示选择左声道；WS＝1，表示选择右声道。WS 也称帧时钟，即
-LRCLK/Left Right Clock。WS 频率等于声音的采样率</p></li>
+<li>
+<p>SCLK：<br>
+时钟信号：模块内的同步信号，主模式时由模块内部自己产生，从模式由外部提供</p>
+</li>
+<li>
+<p>SD：<br>
+数据信号：在 WS 变化后的第一个 SCK 脉冲，先传输最高位（MSB, Most Significant Bit）。先传送 MSB 是因为发送设备和接收设备的字长可能不同</p>
+</li>
+<li>
+<p>WS：<br>
+左右声道选择信号 Word Select:WS＝0，表示选择左声道；WS＝1，表示选择右声道。WS 也称帧时钟，即 LRCLK/Left Right Clock。WS 频率等于声音的采样率</p>
+</li>
 </ul>
 <!--more-->
-<p>其数据传输的方式如下图： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/iis_format.png"></p>
-<h2 id="pcmtdm">PCM/TDM</h2>
-<p>PCM = Pulse Code Modulation
-是通过等时间隔（即采样率时钟周期）采样将模拟信号数字化的方法。下图是
-4bit 采样速率的 PCM 数据量化示意图： <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/pcm.png"></p>
-<p>PCM 接口常用于板级音频数字信号的传输，与 I2S 类似，其实 I2S 也是 PCM
-的一种特例接口，只不过，I2S 的速率会更高，比较适用于传音乐。而 PCM
-通常用于 AP 处理器与通信 MODEM
-之间的语言数据传输（就是双向打电话数据），对于 I2S 只能传 2
-个声道的数据，而 PCM 可以传多达 16 路数据，采用时分复用的方式，也就是
-TDM。其接口与 I2S 类似，电路信号为：</p>
+<p>其数据传输的方式如下图：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/iis_format.png" alt=""></p>
+<h2 id="pcmtdm"><a class="markdownIt-Anchor" href="#pcmtdm"></a> PCM/TDM</h2>
+<p>PCM = Pulse Code Modulation 是通过等时间隔（即采样率时钟周期）采样将模拟信号数字化的方法。下图是 4bit 采样速率的 PCM 数据量化示意图：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/pcm.png" alt=""></p>
+<p>PCM 接口常用于板级音频数字信号的传输，与 I2S 类似，其实 I2S 也是 PCM 的一种特例接口，只不过，I2S 的速率会更高，比较适用于传音乐。而 PCM 通常用于 AP 处理器与通信 MODEM 之间的语言数据传输（就是双向打电话数据），对于 I2S 只能传 2 个声道的数据，而 PCM 可以传多达 16 路数据，采用时分复用的方式，也就是 TDM。其接口与 I2S 类似，电路信号为：</p>
 <ul>
 <li>PCM_CLK 数据时钟信号</li>
 <li>PCM_SYNC 帧同步时钟信号</li>
 <li>PCM_IN 接收数据信号</li>
 <li>PCM_OUT 发送数据信号</li>
 </ul>
-<h2 id="pdm">PDM</h2>
-<p>PDM(Pulse Density Modulation)
-是一种数字信号表示模拟信号的调制方法，声音通过传感器获得模拟信号，经过
-AD，得到音频数字信号，然后经过 PDM 脉冲转换成数字信号。PDM 使用远高于
-PCM 采样率的时钟采用调制模拟分量，只有 1 位输出，要么是 0，要么是 1。
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/pdm.png"></p>
-<p>PDM
-方式的逻辑相对复杂，但只需要两根线，时钟和数据。对于下图，主设备为两个从设备提供时钟，分别在时钟的上升沿和下降沿触发选择
-Source 1/2 作为数据输入。 <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/pdm_source.png"></p>
-<p>PDM
-在诸如手机和平板等对于空间限制严格的场合有着广泛的应用前景。在数字麦克风领域，应用最广的就是
-PDM 接口，其次为 I2S 接口。</p>
-<h2 id="spdif">S/PDIF</h2>
-<p>S/PDIF 的全称是 Sony/Philips Digital Interface
-Format，由于被广泛采用，它成为事实上的民用数字音频格式标准，大量的消费类音频数字产品如民用
-CD 机、DAT、MD 机、计算机声卡数字口等都支持
-S/PDIF，在不少专业设备上也有该标准的接口。就传输方式而言，SPDIF
-分为输出（SPDIF OUT）和输入（SPDIF IN）两种。</p>
-<h1 id="asoc-子元素">ASOC 子元素</h1>
+<h2 id="pdm"><a class="markdownIt-Anchor" href="#pdm"></a> PDM</h2>
+<p>PDM(Pulse Density Modulation) 是一种数字信号表示模拟信号的调制方法，声音通过传感器获得模拟信号，经过 AD，得到音频数字信号，然后经过 PDM 脉冲转换成数字信号。PDM 使用远高于 PCM 采样率的时钟采用调制模拟分量，只有 1 位输出，要么是 0，要么是 1。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/pdm.png" alt=""></p>
+<p>PDM 方式的逻辑相对复杂，但只需要两根线，时钟和数据。对于下图，主设备为两个从设备提供时钟，分别在时钟的上升沿和下降沿触发选择 Source 1/2 作为数据输入。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/pdm_source.png" alt=""></p>
+<p>PDM 在诸如手机和平板等对于空间限制严格的场合有着广泛的应用前景。在数字麦克风领域，应用最广的就是 PDM 接口，其次为 I2S 接口。</p>
+<h2 id="spdif"><a class="markdownIt-Anchor" href="#spdif"></a> S/PDIF</h2>
+<p>S/PDIF 的全称是 Sony/Philips Digital Interface Format，由于被广泛采用，它成为事实上的民用数字音频格式标准，大量的消费类音频数字产品如民用 CD 机、DAT、MD 机、计算机声卡数字口等都支持 S/PDIF，在不少专业设备上也有该标准的接口。就传输方式而言，SPDIF 分为输出（SPDIF OUT）和输入（SPDIF IN）两种。</p>
+<h1 id="asoc-子元素"><a class="markdownIt-Anchor" href="#asoc-子元素"></a> ASOC 子元素</h1>
 <ul>
-<li><p>平台（platform）：这是指 SoC 的音频 DMA 引擎，如 i.MX、Rockchip
-和 STM32。平台类驱动程序可以细分为两部分，如下所述：</p>
+<li>
+<p>平台（platform）：这是指 SoC 的音频 DMA 引擎，如 <span class="exturl" data-url="aHR0cDovL2kuTVg=">i.MX<i class="fa fa-external-link-alt"></i></span>、Rockchip 和 STM32。平台类驱动程序可以细分为两部分，如下所述：</p>
 <ul>
-<li>CPU DAI 驱动程序：在嵌入式系统中，它通常是指 CPU
-的音频总线控制器，如、I2S、S/PDIF、AC97 和 PCM
-总线控制器，有时可能会集成到一个更大的模块中，即串行音频接口（serialaudiointerface，SA）</li>
-<li>PCM DMA 驱动程序：PCM 驱动程序与平台无关，仅与 SOCDMA 引擎上游 API
-交互</li>
-</ul></li>
-<li><p>编解码器（codec）：除了编解码功能外还包括
-AIF、DAC、ADC、Mixer、PGA、Lin-in、Lin-out。一些高端芯片还具有回声消除、噪声抑制和其他组件。</p></li>
-<li><p>机器（machine）：系统级表示，链接两个音频接口（cpu_dai 和 codec
-dai），该链接在内核通过 struct snd_soc_dai_link 实例抽象出来。</p></li>
+<li>CPU DAI 驱动程序：在嵌入式系统中，它通常是指 CPU 的音频总线控制器，如、I2S、S/PDIF、AC97 和 PCM 总线控制器，有时可能会集成到一个更大的模块中，即串行音频接口（serialaudiointerface，SA）</li>
+<li>PCM DMA 驱动程序：PCM 驱动程序与平台无关，仅与 SOCDMA 引擎上游 API 交互</li>
 </ul>
-<h1 id="框架">框架</h1>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/ALSA_Framework1.png"></p>
+</li>
+<li>
+<p>编解码器（codec）：除了编解码功能外还包括 AIF、DAC、ADC、Mixer、PGA、Lin-in、Lin-out。一些高端芯片还具有回声消除、噪声抑制和其他组件。</p>
+</li>
+<li>
+<p>机器（machine）：系统级表示，链接两个音频接口（cpu_dai 和 codec dai），该链接在内核通过 struct snd_soc_dai_link 实例抽象出来。</p>
+</li>
+</ul>
+<h1 id="框架"><a class="markdownIt-Anchor" href="#框架"></a> 框架</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/ALSA_Framework1.png" alt=""></p>
 <ul>
-<li><p>alsa-utils（用户空间） ALSA 实用程序包由 Linux 社区提供，包含
-ALSA 项目的命令行实用程序（aplay、arecord、amixer、alsamixer
-…）。</p></li>
-<li><p>alsa-lib（用户空间） ALSA 库包含需要访问 ALSA
-声音接口的程序（例如 alsa-utils 程序）使用的 ALSA 库。ALSA
-库在内核模块提供的音频设备上提供了一定程度的抽象，例如 PCM 和控制抽象
-。</p></li>
-<li><p>ALSA Framework（内核空间） ALSA 核心提供了一个 API
-来实现音频驱动程序和 PCM/控制接口，以在用户空间上公开音频设备。PCM
-接口处理数据流和控制。该界面管理 ALSA
-驱动程序导出的控件（音频路径、音量。..）。</p></li>
-<li><p>ASoC Framework（内核空间） ALSA 片上系统 ( ASoC ) 层的目标是改进
-ALSA 对嵌入式片上系统处理器和音频编解码器的支持。ASoC 框架提供了一个 DMA
-引擎，它与 DMA 框架连接以处理音频样本的传输。ASoC 还通过 DAPM
-驱动程序支持音频路径的动态电源管理。ASoC 充当 ALSA
-驱动程序，它将嵌入式音频系统分为三种类型的独立于平台的驱动程序：CPU
-DAI、编解码器和机器驱动程序。</p></li>
-<li><p>ASoC driver（内核空间） ASoC 驱动程序允许为 ASoC
-驱动程序类实现硬件相关代码 ：</p>
+<li>
+<p>alsa-utils（用户空间）<br>
+ALSA 实用程序包由 Linux 社区提供，包含 ALSA 项目的命令行实用程序（aplay、arecord、amixer、alsamixer …）。</p>
+</li>
+<li>
+<p>alsa-lib（用户空间）<br>
+ALSA 库包含需要访问 ALSA 声音接口的程序（例如 alsa-utils 程序）使用的 ALSA 库。ALSA 库在内核模块提供的音频设备上提供了一定程度的抽象，例如 PCM 和控制抽象 。</p>
+</li>
+<li>
+<p>ALSA Framework（内核空间）<br>
+ALSA 核心提供了一个 API 来实现音频驱动程序和 PCM/控制接口，以在用户空间上公开音频设备。PCM 接口处理数据流和控制。该界面管理 ALSA 驱动程序导出的控件（音频路径、音量。…）。</p>
+</li>
+<li>
+<p>ASoC Framework（内核空间）<br>
+ALSA 片上系统 ( ASoC ) 层的目标是改进 ALSA 对嵌入式片上系统处理器和音频编解码器的支持。ASoC 框架提供了一个 DMA 引擎，它与 DMA 框架连接以处理音频样本的传输。ASoC 还通过 DAPM 驱动程序支持音频路径的动态电源管理。ASoC 充当 ALSA 驱动程序，它将嵌入式音频系统分为三种类型的独立于平台的驱动程序：CPU DAI、编解码器和机器驱动程序。</p>
+</li>
+<li>
+<p>ASoC driver（内核空间）<br>
+ASoC 驱动程序允许为 ASoC 驱动程序类实现硬件相关代码 ：</p>
 <ul>
 <li>编解码器驱动程序</li>
 <li>CPU DAI 驱动程序</li>
 <li>机器驱动程序</li>
-</ul></li>
 </ul>
-<h1 id="debug">Debug</h1>
-<h2 id="procfs-filesystem">Procfs filesystem</h2>
+</li>
+</ul>
+<h1 id="debug"><a class="markdownIt-Anchor" href="#debug"></a> Debug</h1>
+<h2 id="procfs-filesystem"><a class="markdownIt-Anchor" href="#procfs-filesystem"></a> Procfs filesystem</h2>
 <ul>
 <li>List PCM audio devices:</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /proc/asound/pcm</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>Get hardware parameters of a PCM audio device (device “0” of card
-“0” here):</li>
+<li>Get hardware parameters of a PCM audio device (device “0” of card “0” here):</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /proc/asound/card0/pcm0p/sub0/hw_params</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="debugfs-filesystem">Debugfs filesystem</h2>
+<h2 id="debugfs-filesystem"><a class="markdownIt-Anchor" href="#debugfs-filesystem"></a> Debugfs filesystem</h2>
 <ul>
 <li>List DAIs</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/kernel/debug/asoc/dais</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>List DAPMs of “xxx.audio-controller” CPU DAI of “STM32MP1-EV”
-soundcard</li>
+<li>List DAPMs of “xxx.audio-controller” CPU DAI of “STM32MP1-EV” soundcard</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">ls</span> /sys/kernel/debug/asoc/STM32MP1-EV/xxx.audio-controller/dapm</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="how-to-trace">How to trace</h2>
-<h3 id="dynamic-traces">Dynamic traces</h3>
-<p>ALSA framework and driver debug traces can be added to the kernel
-logs by using the dynamic debug mechanism.</p>
+<h2 id="how-to-trace"><a class="markdownIt-Anchor" href="#how-to-trace"></a> How to trace</h2>
+<h3 id="dynamic-traces"><a class="markdownIt-Anchor" href="#dynamic-traces"></a> Dynamic traces</h3>
+<p>ALSA framework and driver debug traces can be added to the kernel logs by using the dynamic debug mechanism.</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">echo</span> -n <span class="string">'file stm32_sai.c +p; file stm32_sai_sub.c +p'</span> &gt; /sys/kernel/debug/dynamic_debug/control; </span><br><span class="line">$ dmesg -n8;</span><br></pre></td></tr></tbody></table></figure>
-<h3 id="tracing-filesystem">Tracing filesystem</h3>
-<h4 id="activate-dapm-traces">Activate DAPM traces</h4>
+<h3 id="tracing-filesystem"><a class="markdownIt-Anchor" href="#tracing-filesystem"></a> Tracing filesystem</h3>
+<h4 id="activate-dapm-traces"><a class="markdownIt-Anchor" href="#activate-dapm-traces"></a> Activate DAPM traces</h4>
 <ul>
 <li>Enable trace</li>
 </ul>
@@ -416,8 +384,7 @@ logs by using the dynamic debug mechanism.</p>
 <li>Check log</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></tbody></table></figure>
-<h4 id="activate-pcm-hardware-parameter-traces">Activate PCM hardware
-parameter traces</h4>
+<h4 id="activate-pcm-hardware-parameter-traces"><a class="markdownIt-Anchor" href="#activate-pcm-hardware-parameter-traces"></a> Activate PCM hardware parameter traces</h4>
 <ul>
 <li>Enable trace</li>
 </ul>
@@ -426,11 +393,8 @@ parameter traces</h4>
 <li>Check log</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></tbody></table></figure>
-<h4 id="activate-pcm-buffer-state-traces">Activate PCM buffer state
-traces</h4>
-<p>Prerequisite: the CONFIG_FUNCTION_TRACER, CONFIG_SND_DEBUG,
-CONFIG_SND_DEBUG_VERBOSE and SND_PCM_XRUN_DEBUG configurations must
-first be enabled in the Linux kernel configuration</p>
+<h4 id="activate-pcm-buffer-state-traces"><a class="markdownIt-Anchor" href="#activate-pcm-buffer-state-traces"></a> Activate PCM buffer state traces</h4>
+<p>Prerequisite: the CONFIG_FUNCTION_TRACER, CONFIG_SND_DEBUG, CONFIG_SND_DEBUG_VERBOSE and SND_PCM_XRUN_DEBUG configurations must first be enabled in the Linux kernel configuration</p>
 <ul>
 <li>Set XRUN trace verbosity</li>
 </ul>
@@ -443,7 +407,7 @@ first be enabled in the Linux kernel configuration</p>
 <li>Check log</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br></pre></td></tr></tbody></table></figure>
-<h1 id="参考文献">参考文献</h1>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
 <p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTI0ODkyMzYvYXJ0aWNsZS9kZXRhaWxzLzk4MDQwOTg1P3NwbT0xMDAxLjIwMTQuMzAwMS41NTAx">https://blog.csdn.net/u012489236/article/details/98040985?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTI0ODkyMzYvYXJ0aWNsZS9kZXRhaWxzLzk4MDY4MTIyP3NwbT0xMDAxLjIwMTQuMzAwMS41NTAx">https://blog.csdn.net/u012489236/article/details/98068122?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
 <span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3UwMTI0ODkyMzYvYXJ0aWNsZS9kZXRhaWxzLzk4MDc5MTc2P3NwbT0xMDAxLjIwMTQuMzAwMS41NTAx">https://blog.csdn.net/u012489236/article/details/98079176?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>

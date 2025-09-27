@@ -156,8 +156,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#vm-%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E"><span class="nav-text">vm 参数说明</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E8%BF%9B%E7%A8%8B%E5%9B%A0%E4%B8%BA%E5%9B%9E%E5%86%99%E6%95%B0%E6%8D%AE%E5%AF%BC%E8%87%B4%E8%BF%90%E8%A1%8C%E5%8D%A1%E9%A1%BF"><span class="nav-text">用户进程因为回写数据导致运行卡顿</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-drop_caches-%E5%90%8E-cache-%E5%80%BC%E5%B9%B6%E6%9C%AA%E5%87%8F%E5%B0%91"><span class="nav-text">为什么 drop_caches 后
-cache 值并未减少</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#vm-%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E"><span class="nav-text"> vm 参数说明</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E8%BF%9B%E7%A8%8B%E5%9B%A0%E4%B8%BA%E5%9B%9E%E5%86%99%E6%95%B0%E6%8D%AE%E5%AF%BC%E8%87%B4%E8%BF%90%E8%A1%8C%E5%8D%A1%E9%A1%BF"><span class="nav-text"> 用户进程因为回写数据导致运行卡顿</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-drop_caches-%E5%90%8E-cache-%E5%80%BC%E5%B9%B6%E6%9C%AA%E5%87%8F%E5%B0%91"><span class="nav-text"> 为什么 drop_caches 后 cache 值并未减少</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -245,226 +244,228 @@ cache 值并未减少</span></a></li><li class="nav-item nav-level-1"><a class="
       
       
       <div class="post-body">
-          <h1 id="vm-参数说明">vm 参数说明</h1>
-<p>Currently, these files are in /proc/sys/vm: <img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/vm.png"></p>
+          <h1 id="vm-参数说明"><a class="markdownIt-Anchor" href="#vm-参数说明"></a> vm 参数说明</h1>
+<p>Currently, these files are in /proc/sys/vm:<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/vm.png" alt=""></p>
 <span id="more"></span>
 <ul>
-<li><p>admin_reserve_kbytes：<strong>系统中应为用户保留的可用内存量</strong>。</p>
-<p>默认 (3% of free pages, 8MB)。这应该足以让 admin
-登录并终止进程。这个值的设置，最好保证系统足够运行 sshd or login + bash
-(or some other shell) + top (or ps, kill, etc.)</p></li>
-<li><p>block_dump：<strong>当设置为非零值时，block_dump 启用块 I/O
-调试</strong>。</p></li>
-<li><p>compact_memory：压缩内存。</p>
-<p>仅当设置 CONFIG_COMPACTION 时可用。 当写入 1
-时，所有区域都会被压缩，以便可以更好的提供连续内存。
-这在分配大页面时可能很重要，尽管进程也会根据需要直接压缩内存。</p></li>
-<li><p>compact_unevictable_allowed：压缩时检查 lru。</p></li>
-<li><p>dirty_background_bytes：如果 dirty
-页大于这个值，内核后台线程开始工作，将 dirty 内存写回到 flash。</p></li>
-<li><p>dirty_background_ratio：dirty_background_bytes 是
-dirty_background_ratio 的对应项，
-一次只能指定其中之一。dirty_background_ratio
-是按照总可用内存的百分比（空闲页和可回收页的总可用内存的百分比）来设置的，总可用内存不等于总系统内存。</p></li>
-<li><p>dirty_bytes：系统 dirty 内存超过该值时，写文件的 process
-会开始回写 dirty 内存到 flash。dirty_bytes
-允许的最小值是两页（以字节为单位）；
-任何低于此限制的值都将被忽略，旧的配置将被保留。</p></li>
-<li><p>dirty_ratio：dirty_bytes 是 dirty_ratio
-的对应项，一次只能指定其中之一。按照空闲页和可回收页的总可用内存的百分比来设置。</p></li>
-<li><p>dirty_expire_centisecs：此参数定义 dirty page 多久必须刷入
-flash，他以百分之一秒来表示，如下所示表示 30s，如果 dirty page 超过 30s
-没有被写入 flash，那么下次 flusher thread 被调度的时候该页将回写到
-flash。</p></li>
+<li>
+<p>admin_reserve_kbytes：<strong>系统中应为用户保留的可用内存量</strong>。</p>
+<p>默认 (3% of free pages, 8MB)。这应该足以让 admin 登录并终止进程。这个值的设置，最好保证系统足够运行 sshd or login + bash (or some other shell) + top (or ps, kill, etc.)</p>
+</li>
+<li>
+<p>block_dump：<strong>当设置为非零值时，block_dump 启用块 I/O 调试</strong>。</p>
+</li>
+<li>
+<p>compact_memory：压缩内存。</p>
+<p>仅当设置 CONFIG_COMPACTION 时可用。 当写入 1 时，所有区域都会被压缩，以便可以更好的提供连续内存。 这在分配大页面时可能很重要，尽管进程也会根据需要直接压缩内存。</p>
+</li>
+<li>
+<p>compact_unevictable_allowed：压缩时检查 lru。</p>
+</li>
+<li>
+<p>dirty_background_bytes：如果 dirty 页大于这个值，内核后台线程开始工作，将 dirty 内存写回到 flash。</p>
+</li>
+<li>
+<p>dirty_background_ratio：dirty_background_bytes 是 dirty_background_ratio 的对应项， 一次只能指定其中之一。dirty_background_ratio 是按照总可用内存的百分比（空闲页和可回收页的总可用内存的百分比）来设置的，总可用内存不等于总系统内存。</p>
+</li>
+<li>
+<p>dirty_bytes：系统 dirty 内存超过该值时，写文件的 process 会开始回写 dirty 内存到 flash。dirty_bytes 允许的最小值是两页（以字节为单位）； 任何低于此限制的值都将被忽略，旧的配置将被保留。</p>
+</li>
+<li>
+<p>dirty_ratio：dirty_bytes 是 dirty_ratio 的对应项，一次只能指定其中之一。按照空闲页和可回收页的总可用内存的百分比来设置。</p>
+</li>
+<li>
+<p>dirty_expire_centisecs：此参数定义 dirty page 多久必须刷入 flash，他以百分之一秒来表示，如下所示表示 30s，如果 dirty page 超过 30s 没有被写入 flash，那么下次 flusher thread 被调度的时候该页将回写到 flash。</p>
+</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/proc/sys/vm <span class="comment"># cat dirty_expire_centisecs</span></span><br><span class="line">3000</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>dirtytime_expire_seconds：此可调参数用于定义 dirty inode 何时足够
-dirty，超过这个值内核 flusher thread 进行写回。</li>
-<li>dirty_writeback_centisecs：是用来表示内核检查 dirty page
-的运行间隔，单位是秒的百分之一，与&nbsp;<code>dirty_expire_centisecs</code>&nbsp;配合起来使用。</li>
+<li>dirtytime_expire_seconds：此可调参数用于定义 dirty inode 何时足够 dirty，超过这个值内核 flusher thread 进行写回。</li>
+<li>dirty_writeback_centisecs：是用来表示内核检查 dirty page 的运行间隔，单位是秒的百分之一，与&nbsp;<code>dirty_expire_centisecs</code>&nbsp;配合起来使用。</li>
 </ul>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/proc/sys/vm <span class="comment"># cat dirty_writeback_centisecs</span></span><br><span class="line">500</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li><p>drop_caches:</p>
-<p>Writing to this will cause the kernel to drop clean caches, as well
-as reclaimable slab objects like dentries and inodes. Once dropped,
-their memory becomes free</p>
+<li>
+<p>drop_caches:</p>
+<p>Writing to this will cause the kernel to drop clean caches, as well as reclaimable slab objects like dentries and inodes.  Once dropped, their memory becomes free</p>
 <ul>
 <li>To free pagecache::</li>
 </ul>
-<p></p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt; /proc/sys/vm/drop_caches</span><br></pre></td></tr></tbody></table></figure><p></p>
-<p>pagecache
-是已经和外部磁盘同步过的部分，既然已经同步过了，直接丢弃即可，下次要用再从磁盘上拷贝回来就可以了，如果要
-clean 更多需要先执行 sync</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 1 &gt; /proc/sys/vm/drop_caches</span><br></pre></td></tr></tbody></table></figure>
+<p>pagecache 是已经和外部磁盘同步过的部分，既然已经同步过了，直接丢弃即可，下次要用再从磁盘上拷贝回来就可以了，如果要 clean 更多需要先执行 sync</p>
 <ul>
-<li>To free reclaimable slab objects (includes dentries and
-inodes)::</li>
+<li>To free reclaimable slab objects (includes dentries and inodes)::</li>
 </ul>
-<p></p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 2 &gt; /proc/sys/vm/drop_caches</span><br></pre></td></tr></tbody></table></figure><p></p>
-<p>slab objects 包括 includes dentries and
-inodes。对于磁盘文件系统，内存 inode 存在 flash 中，因此同 page cache
-一样，较易在内存中重建，释放的代价较低。dentry
-虽然在磁盘上没有直接对应的结构，但也可根据文件系统中目录 inode
-的信息进行重建</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 2 &gt; /proc/sys/vm/drop_caches</span><br></pre></td></tr></tbody></table></figure>
+<p>slab objects 包括 includes dentries and inodes。对于磁盘文件系统，内存 inode 存在 flash 中，因此同 page cache 一样，较易在内存中重建，释放的代价较低。dentry 虽然在磁盘上没有直接对应的结构，但也可根据文件系统中目录 inode 的信息进行重建</p>
 <ul>
 <li>To free slab objects and pagecache::</li>
 </ul>
-<p></p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 3 &gt; /proc/sys/vm/drop_caches</span><br></pre></td></tr></tbody></table></figure><p></p>
-<p>这是一个非破坏性操作，不会释放任何 dirty objects。
-要增加此操作释放的对象数量，用户可以在写入 /proc/sys/vm/drop_caches
-之前运行“sync”。
-这将最大限度地减少系统上脏对象的数量，并创建更多要删除的候选对象。</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">echo</span> 3 &gt; /proc/sys/vm/drop_caches</span><br></pre></td></tr></tbody></table></figure>
+<p>这是一个非破坏性操作，不会释放任何 dirty objects。 要增加此操作释放的对象数量，用户可以在写入 /proc/sys/vm/drop_caches 之前运行“sync”。 这将最大限度地减少系统上脏对象的数量，并创建更多要删除的候选对象。</p>
 <p>该文件不是控制各种内核缓存（索引节点、目录项、页面缓存等）增长的手段。当系统上的其他地方需要内存时，这些对象会由内核自动回收。</p>
-<p>使用此文件可能会导致性能问题。
-由于它会丢弃缓存的对象，因此可能会花费大量 I/O 和 CPU
-来重新创建删除的对象，尤其是在大量使用它们的情况下。
-因此，不建议在测试或调试环境之外使用。</p>
-<p>To disable them, echo 4 (bit 2) into drop_caches.</p></li>
-<li><p>extfrag_threshold：该参数影响内核是否压缩内存或直接回收以满足高阶分配，该值设置得越小，越倾向于进行内存整理，默认值
-500</p></li>
-<li><p>highmem_is_dirtyable：该参数控制是否考虑对高端内存进行 dirty
-写入限制。默认为 0，即在计算 dirty_ratio 和 dirty_background_ratio
-的时候只考虑 low mem。当打开之后才会将 highmem 也计算在内</p></li>
-<li><p>hugetlb_shm_group：包含允许使用 hugetlb 页表创建 SysV
-共享内存段的组 ID</p></li>
-<li><p>laptop_mode：笔记本电脑模式</p></li>
-<li><p>legacy_va_layout：</p></li>
-<li><p>lowmem_reserve_ratio：lowmem_reserve_ratio 是防止 highmem
-内存在不充裕情况下，过度借用低端内存。lowmem_reserve_ratio 决定了每个
-zone 保留多少数目的页面。lowmem_reserve_ratio 中定义了不同 zone
-的预留比例，值越大保留比例越小。如，DMA 为 1/256，NORMAL 为 1/32。</p>
-<p></p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/proc/sys/vm <span class="comment"># cat /proc/sys/vm/lowmem_reserve_ratio</span></span><br><span class="line">256     32      0</span><br></pre></td></tr></tbody></table></figure><p></p>
+<p>使用此文件可能会导致性能问题。 由于它会丢弃缓存的对象，因此可能会花费大量 I/O 和 CPU 来重新创建删除的对象，尤其是在大量使用它们的情况下。 因此，不建议在测试或调试环境之外使用。</p>
+<p>To disable them, echo 4 (bit 2) into drop_caches.</p>
+</li>
+<li>
+<p>extfrag_threshold：该参数影响内核是否压缩内存或直接回收以满足高阶分配，该值设置得越小，越倾向于进行内存整理，默认值 500</p>
+</li>
+<li>
+<p>highmem_is_dirtyable：该参数控制是否考虑对高端内存进行 dirty 写入限制。默认为 0，即在计算 dirty_ratio 和 dirty_background_ratio 的时候只考虑 low mem。当打开之后才会将 highmem 也计算在内</p>
+</li>
+<li>
+<p>hugetlb_shm_group：包含允许使用 hugetlb 页表创建 SysV 共享内存段的组 ID</p>
+</li>
+<li>
+<p>laptop_mode：笔记本电脑模式</p>
+</li>
+<li>
+<p>legacy_va_layout：</p>
+</li>
+<li>
+<p>lowmem_reserve_ratio：lowmem_reserve_ratio 是防止 highmem 内存在不充裕情况下，过度借用低端内存。lowmem_reserve_ratio 决定了每个 zone 保留多少数目的页面。lowmem_reserve_ratio 中定义了不同 zone 的预留比例，值越大保留比例越小。如，DMA 为 1/256，NORMAL 为 1/32。</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/proc/sys/vm <span class="comment"># cat /proc/sys/vm/lowmem_reserve_ratio</span></span><br><span class="line">256     32      0</span><br></pre></td></tr></tbody></table></figure>
 <ul>
 <li>第一个是 normal zone 的保护率，会保护该 zone 的 1/256 的内存</li>
 <li>第二个是 dma zone 或 dma32 zone 的保护率， 1/32</li>
 <li>第三个是其他 0</li>
-</ul></li>
-<li><p>max_map_count: 包含限制一个进程可以拥有的 VMA 的数量，默认
-65530</p></li>
-<li><p>memory_failure_early_kill:
-控制当发生内核无法处理的内存错误时，该如何终止进程</p>
+</ul>
+</li>
+<li>
+<p>max_map_count: 包含限制一个进程可以拥有的 VMA 的数量，默认 65530</p>
+</li>
+<li>
+<p>memory_failure_early_kill: 控制当发生内核无法处理的内存错误时，该如何终止进程</p>
 <ul>
 <li>1：一旦检测到损坏，杀死所有损坏的进程和不可重新加载页面的所属进程。请注意，某些类型的页面不支持此功能，例如内核内部分配的数据或交换缓存，但适用于大多数用户页面</li>
 <li>0：从所有进程中取消损坏页的映射，只杀死一个试图访问它的进程</li>
-</ul></li>
-<li><p>memory_failure_recovery：启用内存故障恢复</p>
+</ul>
+</li>
+<li>
+<p>memory_failure_recovery：启用内存故障恢复</p>
 <ul>
 <li>1: Attempt recovery</li>
 <li>0: Always panic on a memory failure</li>
-</ul></li>
-<li><p>min_free_kbytes：最少保留的字节数，用于计算 zone 的低水位值</p>
-<p>这用于强制 Linux VM 保持最少的可用字节数。 VM
-使用此数字来计算系统中每个 lowmem 区域的 watermark [WMARK_MIN] 值。每个
-lowmem 区域根据其大小按比例获取一些保留的空闲页面</p>
-<p></p><figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/proc/sys/vm <span class="comment"># cat min_free_kbytes</span></span><br><span class="line">3987</span><br></pre></td></tr></tbody></table></figure><p></p>
-<p>如果您将其设置为低于
-1024KB，在高负载下容易出现死锁。设置得太高会导致机器容易 OOM。</p></li>
-<li><p>min_slab_ratio：This is available only on NUMA kernels.</p>
-<p>每个区域中总页数的百分比，如果超过该百分比的 page
-都是可回收的，则回收该 zone，默认值 5</p></li>
-<li><p>min_unmapped_ratio：This is available only on NUMA kernels.</p>
-<p>仅当超过此百分比的页面处于 zone_reclaim_mode
-允许回收的状态时，才会发生区域回收。默认值 1</p></li>
-<li><p>mmap_min_addr：控制着用户进程 mmap
-能够映射的最低内存地址</p></li>
-<li><p>mmap_rnd_bits：</p>
-<p>该值可用于选择用于确定 vma
-区域基地址的随机偏移量的位数，这些偏移量是由支持调整地址空间随机化的架构上的
-mmap 分配产生的。 该值将受到架构支持的最小和最大值的限制。</p></li>
-<li><p>mmap_rnd_compat_bits<strong>：</strong></p>
-<p>该值可用于选择位数，用于确定 vma
-区域基地址的随机偏移量，这些偏移量是在支持调整地址空间随机化的体系结构上以兼容模式运行的应用程序的
-mmap 分配产生的。该值将受到架构支持的最小和最大值的限制</p></li>
-<li><p>nr_hugepages<strong>：</strong>Change the minimum size of the
-hugepage pool.</p></li>
-<li><p>nr_overcommit_hugepages&nbsp;<strong>：</strong>可以过量使用的大页，最大值=nr_hugepages
-+ nr_overcommit_hugepages</p></li>
-<li><p>nr_trim_pages：仅适用于 NOMMU 内核</p></li>
-<li><p>numa_zonelist_order：已废弃</p></li>
-<li><p>oom_dump_tasks：允许在内核执行 OOM 终止时生成系统范围的 Task
-转储（不包括内核线程），并包括 pid、uid、tgid、vm
-大小、rss、pgtables_bytes、swapents、oom_score_adj
-分数和名称等信息</p></li>
-<li><p>oom_kill_allocating_task：</p>
+</ul>
+</li>
+<li>
+<p>min_free_kbytes：最少保留的字节数，用于计算 zone 的低水位值</p>
+<p>这用于强制 Linux VM 保持最少的可用字节数。 VM 使用此数字来计算系统中每个 lowmem 区域的 watermark [WMARK_MIN] 值。每个 lowmem 区域根据其大小按比例获取一些保留的空闲页面</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/proc/sys/vm <span class="comment"># cat min_free_kbytes</span></span><br><span class="line">3987</span><br></pre></td></tr></tbody></table></figure>
+<p>如果您将其设置为低于 1024KB，在高负载下容易出现死锁。设置得太高会导致机器容易 OOM。</p>
+</li>
+<li>
+<p>min_slab_ratio：This is available only on NUMA kernels.</p>
+<p>每个区域中总页数的百分比，如果超过该百分比的 page 都是可回收的，则回收该 zone，默认值 5</p>
+</li>
+<li>
+<p>min_unmapped_ratio：This is available only on NUMA kernels.</p>
+<p>仅当超过此百分比的页面处于 zone_reclaim_mode 允许回收的状态时，才会发生区域回收。默认值 1</p>
+</li>
+<li>
+<p>mmap_min_addr：控制着用户进程 mmap 能够映射的最低内存地址</p>
+</li>
+<li>
+<p>mmap_rnd_bits：</p>
+<p>该值可用于选择用于确定 vma 区域基地址的随机偏移量的位数，这些偏移量是由支持调整地址空间随机化的架构上的 mmap 分配产生的。 该值将受到架构支持的最小和最大值的限制。</p>
+</li>
+<li>
+<p>mmap_rnd_compat_bits**：**</p>
+<p>该值可用于选择位数，用于确定 vma 区域基地址的随机偏移量，这些偏移量是在支持调整地址空间随机化的体系结构上以兼容模式运行的应用程序的 mmap 分配产生的。该值将受到架构支持的最小和最大值的限制</p>
+</li>
+<li>
+<p>nr_hugepages**：**Change the minimum size of the hugepage pool.</p>
+</li>
+<li>
+<p>nr_overcommit_hugepages&nbsp;**：**可以过量使用的大页，最大值=nr_hugepages + nr_overcommit_hugepages</p>
+</li>
+<li>
+<p>nr_trim_pages：仅适用于 NOMMU 内核</p>
+</li>
+<li>
+<p>numa_zonelist_order：已废弃</p>
+</li>
+<li>
+<p>oom_dump_tasks：允许在内核执行 OOM 终止时生成系统范围的 Task 转储（不包括内核线程），并包括 pid、uid、tgid、vm 大小、rss、pgtables_bytes、swapents、oom_score_adj 分数和名称等信息</p>
+</li>
+<li>
+<p>oom_kill_allocating_task：</p>
 <ul>
-<li>非 0：&nbsp;OOM
-只会终止触发内存不足的任务。这避免了昂贵的任务列表扫描</li>
-<li>0：OOM 将扫描整个任务列表并根据 heuristics kill
-task。这通常会选择一个流氓内存占用任务，该任务在被杀死时会释放大量内存</li>
-</ul></li>
-<li><p>overcommit_kbytes：overcommit_kbytes 是 overcommit_ratio
-的对应项，一次只能指定其中之一，这里是配置允许申请多少 K 超出的内存</p>
-<p>当 overcommit_memory 设置为 2 时，提交的地址空间不允许超过 swap
-加上此物理 RAM 量</p></li>
-<li><p>overcommit_memory：是否允许申请过度可用内存的内存</p>
+<li>非 0：&nbsp;OOM 只会终止触发内存不足的任务。这避免了昂贵的任务列表扫描</li>
+<li>0：OOM 将扫描整个任务列表并根据 heuristics kill task。这通常会选择一个流氓内存占用任务，该任务在被杀死时会释放大量内存</li>
+</ul>
+</li>
+<li>
+<p>overcommit_kbytes：overcommit_kbytes 是 overcommit_ratio 的对应项，一次只能指定其中之一，这里是配置允许申请多少 K 超出的内存</p>
+<p>当 overcommit_memory 设置为 2 时，提交的地址空间不允许超过 swap 加上此物理 RAM 量</p>
+</li>
+<li>
+<p>overcommit_memory：是否允许申请过度可用内存的内存</p>
 <ul>
-<li>当此标志为 0
-时，内核会将用户空间内存请求大小与总内存加上交换分区大小进行比较，并拒绝明显的过度使用</li>
+<li>当此标志为 0 时，内核会将用户空间内存请求大小与总内存加上交换分区大小进行比较，并拒绝明显的过度使用</li>
 <li>当此标志为 1 时，内核假装始终有足够的内存，直到实际耗尽为止</li>
-<li>当此标志为 2 时，内核使用“never
-overcommit”策略来尝试防止任何内存过度使用，请注意，user_reserve_kbytes
-会影响此策略。</li>
-</ul></li>
-<li><p>overcommit_ratio：当 overcommit_memory 设置为 2
-时，提交的地址空间不允许超过 swap 加上物理 RAM 的此百分比</p></li>
-<li><p>page-cluster：从 swap 单次读入的连续页（与 page cache readahead
-互斥）</p></li>
-<li><p>panic_on_oom：用或禁用内存不足功能的 panic</p>
+<li>当此标志为 2 时，内核使用“never overcommit”策略来尝试防止任何内存过度使用，请注意，user_reserve_kbytes 会影响此策略。</li>
+</ul>
+</li>
+<li>
+<p>overcommit_ratio：当 overcommit_memory 设置为 2 时，提交的地址空间不允许超过 swap 加上物理 RAM 的此百分比</p>
+</li>
+<li>
+<p>page-cluster：从 swap 单次读入的连续页（与 page cache readahead 互斥）</p>
+</li>
+<li>
+<p>panic_on_oom：用或禁用内存不足功能的 panic</p>
 <ul>
-<li>0，内核将杀死一些恶意进程，称为 oom_killer。通常，oom_killer
-可以杀死恶意进程，系统将继续存在</li>
-<li>1，则当发生内存不足时内核会发生 Panic。然而，如果某个进程通过
-mempolicy/cpusets
-限制使用节点，并且这些节点变成内存耗尽状态，则该进程可能会被 oom-killer
-杀死。在这种情况下不会发生恐慌。因为其他节点的内存可能是空闲的。这意味着系统总体状态可能还不是致命的</li>
+<li>0，内核将杀死一些恶意进程，称为 oom_killer。通常，oom_killer 可以杀死恶意进程，系统将继续存在</li>
+<li>1，则当发生内存不足时内核会发生 Panic。然而，如果某个进程通过 mempolicy/cpusets 限制使用节点，并且这些节点变成内存耗尽状态，则该进程可能会被 oom-killer 杀死。在这种情况下不会发生恐慌。因为其他节点的内存可能是空闲的。这意味着系统总体状态可能还不是致命的</li>
 <li>2，即使出现上述情况，内核也会强制发生 Panic</li>
-</ul></li>
-<li><p>percpu_pagelist_fraction：这是每个区域中可以存储到每个 cpu
-页面列表中的页面比例。它是根据在线 CPU 数量划分的上限。最小值为
-8，这意味着我们不允许每个区域中超过 1/8 的页面存储在每个 cpu
-页面列表中</p></li>
-<li><p>stat_interval：多少 s 更新一次 vm 信息，默认是 1</p></li>
-<li><p>stat_refresh：任何读写该文件，都会导致 vm 信息立刻更新</p></li>
-<li><p>numa_stat：允许运行时配置 numa 统计信息</p></li>
-<li><p>swappiness：io 和文件 cache 的权重，范围在 0-200，当=100
-时表示等额，值越小表示 IO 代价越昂贵，内核更倾向于文件 cache，默认值
-60</p></li>
-<li><p>unprivileged_userfaultfd&nbsp;：控制用户是否可以使用 userfaultfd
-系统调用。将其设置为 1 以允许非特权用户不受任何限制地使用 userfaultfd
-系统调用。将其设置为 0
-以限制非特权用户仅在用户模式下处理页面错误</p></li>
-<li><p>user_reserve_kbytes：overcommit_memory = 2
-的时，用户进程预留多少空闲内存。默认
-3%。如果将其减少到零，则用户将被允许使用单个进程分配所有可用内存，减去
-admin_reserve_kbytes。任何后续尝试执行命令都将导致“fork: Cannot allocate
-memory”</p></li>
-<li><p>vfs_cache_pressure：控制内核回收 cache 和 inode 的趋势，默认是
-100，内核以公平的速率回收 cache 和 inode；=0，即内核从不回收 cache 和
-inode；&gt;100，内核更倾向回收 cache 和 inode</p></li>
-<li><p>watermark_boost_factor：控制内存碎片时的回收级别，分母是
-10000，默认值是 15000，即回收 150%的高水位线的页</p></li>
-<li><p>watermark_scale_factor：swap 线程被唤醒后要释放多少内存，分母是
-10000，最小值是 10，最大值是 3000。即每次被唤醒都会释放系统可用内存的
-0.1%-30%</p></li>
-<li><p>zone_reclaim_mode：zone 的会回收模式，默认关闭</p>
+</ul>
+</li>
+<li>
+<p>percpu_pagelist_fraction：这是每个区域中可以存储到每个 cpu 页面列表中的页面比例。它是根据在线 CPU 数量划分的上限。最小值为 8，这意味着我们不允许每个区域中超过 1/8 的页面存储在每个 cpu 页面列表中</p>
+</li>
+<li>
+<p>stat_interval：多少 s 更新一次 vm 信息，默认是 1</p>
+</li>
+<li>
+<p>stat_refresh：任何读写该文件，都会导致 vm 信息立刻更新</p>
+</li>
+<li>
+<p>numa_stat：允许运行时配置 numa 统计信息</p>
+</li>
+<li>
+<p>swappiness：io 和文件 cache 的权重，范围在 0-200，当=100 时表示等额，值越小表示 IO 代价越昂贵，内核更倾向于文件 cache，默认值 60</p>
+</li>
+<li>
+<p>unprivileged_userfaultfd&nbsp;：控制用户是否可以使用 userfaultfd 系统调用。将其设置为 1 以允许非特权用户不受任何限制地使用 userfaultfd 系统调用。将其设置为 0 以限制非特权用户仅在用户模式下处理页面错误</p>
+</li>
+<li>
+<p>user_reserve_kbytes：overcommit_memory = 2 的时，用户进程预留多少空闲内存。默认 3%。如果将其减少到零，则用户将被允许使用单个进程分配所有可用内存，减去 admin_reserve_kbytes。任何后续尝试执行命令都将导致“fork: Cannot allocate memory”</p>
+</li>
+<li>
+<p>vfs_cache_pressure：控制内核回收 cache 和 inode 的趋势，默认是 100，内核以公平的速率回收 cache 和 inode；=0，即内核从不回收 cache 和 inode；&gt;100，内核更倾向回收 cache 和 inode</p>
+</li>
+<li>
+<p>watermark_boost_factor：控制内存碎片时的回收级别，分母是 10000，默认值是 15000，即回收 150%的高水位线的页</p>
+</li>
+<li>
+<p>watermark_scale_factor：swap 线程被唤醒后要释放多少内存，分母是 10000，最小值是 10，最大值是 3000。即每次被唤醒都会释放系统可用内存的 0.1%-30%</p>
+</li>
+<li>
+<p>zone_reclaim_mode：zone 的会回收模式，默认关闭</p>
 <ul>
 <li>0：不在 zone 回收，从其他 zone 回收内存</li>
 <li>1：打开 zone 回收</li>
 <li>2：将脏页换出</li>
 <li>4：回收交换页</li>
-</ul></li>
 </ul>
-<h1 id="用户进程因为回写数据导致运行卡顿">用户进程因为回写数据导致运行卡顿</h1>
-<p>我们知道刷 dirty 数据有两种方式，一种是 linux 内核线程异步刷 dirty
-数据，另一种是由写数据的线程自己刷（用户线程自己刷 dirty
-数据的时候就干不了其他事情导致线程卡顿）。对于 video 或者 audio
-应用都会比较常遇到这个问题，这里简单起见，以一个 audio 例子来说明：</p>
-<p>对于 48k、8channel、32bit 的采样参数来说明，则每秒采样的数据量为
-48000<em>8</em>4=1536000/1024/1024=1.46M</p>
-<p>由于数据量是可以精确计算的，这里主要调节
-dirty_background_bytes、dirty_bytes 和 dirty_expire_centisecs
-这三个参数。</p>
+</li>
+</ul>
+<h1 id="用户进程因为回写数据导致运行卡顿"><a class="markdownIt-Anchor" href="#用户进程因为回写数据导致运行卡顿"></a> 用户进程因为回写数据导致运行卡顿</h1>
+<p>我们知道刷 dirty 数据有两种方式，一种是 linux 内核线程异步刷 dirty 数据，另一种是由写数据的线程自己刷（用户线程自己刷 dirty 数据的时候就干不了其他事情导致线程卡顿）。对于 video 或者 audio 应用都会比较常遇到这个问题，这里简单起见，以一个 audio 例子来说明：</p>
+<p>对于 48k、8channel、32bit 的采样参数来说明，则每秒采样的数据量为 48000<em>8</em>4=1536000/1024/1024=1.46M</p>
+<p>由于数据量是可以精确计算的，这里主要调节 dirty_background_bytes、dirty_bytes 和 dirty_expire_centisecs 这三个参数。</p>
 <p>调参数原则如下：</p>
 <ul>
 <li>尽可能的触发 dirty_background_bytes 阈值而不触发 dirty_bytes</li>
@@ -474,29 +475,14 @@ dirty_background_bytes、dirty_bytes 和 dirty_expire_centisecs
 <p>查看当前 dirty 相关参数</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">/ <span class="comment"># sysctl -a | grep "dirty"</span></span><br><span class="line">kernel.osrelease = 5.4.242-09263-g35630c03e7d6-dirty</span><br><span class="line">vm.dirty_background_bytes = 0</span><br><span class="line">vm.dirty_background_ratio = 10</span><br><span class="line">vm.dirty_bytes = 0</span><br><span class="line">vm.dirty_expire_centisecs = 3000</span><br><span class="line">vm.dirty_ratio = 20</span><br><span class="line">vm.dirty_writeback_centisecs = 500</span><br><span class="line">vm.dirtytime_expire_seconds = 43200</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>dirty_expire_centisecs 默认值为
-3000，是按照百分之一秒来表示的，也就是 30s，代表 30s 会检查一次看 dirty
-数据是否超过相关阈值，如果超过则执行刷 dirty
-数据操作，这个值不要设置太小，可以先保持不变</li>
-<li>dirty_background_bytes：代表 dirty
-数据超过这个值就会唤醒内核线程回写 dirty page，30s 内会生成
-1536000*30=46080000 字节数据，那么保险起见 dirty_background_bytes
-可以小于 46080000 1-2M</li>
-<li>dirty_bytes：代表 dirty
-数据超过这个值，用户线程将停下正在干的事情去回写 dirty
-page，这样就导致用户线程卡顿，那么解决办法就是不要让用户线程主动回写
-dirty 数据，该值应该设置为大于 46080000，这样永远先触发内核线程刷 dirty
-数据，用户线程就不需要主动回写 dirty 数据了</li>
-<li>当然如果内存紧张，这个时候要考虑降低 dirty_expire_centisecs
-了，提高内核回写线程运行频率</li>
+<li>dirty_expire_centisecs 默认值为 3000，是按照百分之一秒来表示的，也就是 30s，代表 30s 会检查一次看 dirty 数据是否超过相关阈值，如果超过则执行刷 dirty 数据操作，这个值不要设置太小，可以先保持不变</li>
+<li>dirty_background_bytes：代表 dirty 数据超过这个值就会唤醒内核线程回写 dirty page，30s 内会生成 1536000*30=46080000 字节数据，那么保险起见 dirty_background_bytes 可以小于 46080000 1-2M</li>
+<li>dirty_bytes：代表 dirty 数据超过这个值，用户线程将停下正在干的事情去回写 dirty page，这样就导致用户线程卡顿，那么解决办法就是不要让用户线程主动回写 dirty 数据，该值应该设置为大于 46080000，这样永远先触发内核线程刷 dirty 数据，用户线程就不需要主动回写 dirty 数据了</li>
+<li>当然如果内存紧张，这个时候要考虑降低 dirty_expire_centisecs 了，提高内核回写线程运行频率</li>
 </ul>
-<h1 id="为什么-drop_caches-后-cache-值并未减少">为什么 drop_caches 后
-cache 值并未减少</h1>
-<p>因为这种方式只能清空 page cache
-中”clean”的部分，也就是已经和外部磁盘同步过的部分。而针对匿名页，内存没有与之对应的文件，如果想要回收这部分内存就需要添加
-swap 分区，如果系统中有大量的使用匿名页的情况想要回收更多的内存应该添加
-swap 分区。</p>
-<h1 id="参考文献">参考文献</h1>
+<h1 id="为什么-drop_caches-后-cache-值并未减少"><a class="markdownIt-Anchor" href="#为什么-drop_caches-后-cache-值并未减少"></a> 为什么 drop_caches 后 cache 值并未减少</h1>
+<p>因为这种方式只能清空 page cache 中"clean"的部分，也就是已经和外部磁盘同步过的部分。而针对匿名页，内存没有与之对应的文件，如果想要回收这部分内存就需要添加 swap 分区，如果系统中有大量的使用匿名页的情况想要回收更多的内存应该添加 swap 分区。</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
 <p>《Linux Document》</p>
 
       </div>

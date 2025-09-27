@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="Memset栈空间 在debug期间我们可以给栈空间赋值为一个特定值，比如0x5a，然后在每次中断中检查该值是否发生变化，来检测操作内存附近是否有内存被改写，同时该方法也可以用于统计栈最大使用情况。 -fstack-protector -fstack-protector&nbsp;会在函数返回地址之前插入一个保护字（称为“canary”）。如果在函数执行期间发生了缓冲区溢出，可能会覆盖这个保护字。">
+    <meta name="description" content="Memset栈空间 在debug期间我们可以给栈空间赋值为一个特定值，比如0x5a，然后在每次中断中检查该值是否发生变化，来检测操作内存附近是否有内存被改写，同时该方法也可以用于统计栈最大使用情况。  -fstack-protector -fstack-protector&nbsp;会在函数返回地址之前插入一个保护字（称为“canary”）。如果在函数执行期间发生了缓冲区溢出，可能会覆盖这个保护">
 <meta property="og:type" content="website">
 <meta property="og:title" content="栈溢出">
 <meta property="og:url" content="https://carlyleliu.github.io/note/Blog/Debug/stackOverflow.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="Memset栈空间 在debug期间我们可以给栈空间赋值为一个特定值，比如0x5a，然后在每次中断中检查该值是否发生变化，来检测操作内存附近是否有内存被改写，同时该方法也可以用于统计栈最大使用情况。 -fstack-protector -fstack-protector&nbsp;会在函数返回地址之前插入一个保护字（称为“canary”）。如果在函数执行期间发生了缓冲区溢出，可能会覆盖这个保护字。">
+<meta property="og:description" content="Memset栈空间 在debug期间我们可以给栈空间赋值为一个特定值，比如0x5a，然后在每次中断中检查该值是否发生变化，来检测操作内存附近是否有内存被改写，同时该方法也可以用于统计栈最大使用情况。  -fstack-protector -fstack-protector&nbsp;会在函数返回地址之前插入一个保护字（称为“canary”）。如果在函数执行期间发生了缓冲区溢出，可能会覆盖这个保护">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/i/6702366847217.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/i/670236c0d6ae2.png">
@@ -156,9 +156,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#memset%E6%A0%88%E7%A9%BA%E9%97%B4"><span class="nav-text">Memset栈空间</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#fstack-protector"><span class="nav-text">-fstack-protector</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#guard-page"><span class="nav-text">guard page</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%88%E7%A9%BA%E9%97%B4"><span class="nav-text">栈空间</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux%E4%B8%8Bdebug"><span class="nav-text">Linux下debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E8%83%BDstack-trace"><span class="nav-text">使能stack trace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E7%94%A8stack-trace"><span class="nav-text">启用stack trace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8function-tracer%E5%8A%A8%E6%80%81%E8%BF%BD%E8%B8%AA%E5%86%85%E6%A0%B8%E5%87%BD%E6%95%B0%E5%A0%86%E6%A0%88"><span class="nav-text">使用function
-tracer动态追踪内核函数堆栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E6%9F%A5%E7%9C%8B%E5%BD%93%E5%89%8Dthread-stack%E4%BD%BF%E7%94%A8%E6%83%85%E5%86%B5"><span class="nav-text">Linux查看当前Thread
-stack使用情况</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#memset%E6%A0%88%E7%A9%BA%E9%97%B4"><span class="nav-text"> Memset栈空间</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#-fstack-protector"><span class="nav-text"> -fstack-protector</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#guard-page"><span class="nav-text"> guard page</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A0%88%E7%A9%BA%E9%97%B4"><span class="nav-text"> 栈空间</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux%E4%B8%8Bdebug"><span class="nav-text"> Linux下debug</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E8%83%BDstack-trace"><span class="nav-text"> 使能stack trace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%90%AF%E7%94%A8stack-trace"><span class="nav-text"> 启用stack trace</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8function-tracer%E5%8A%A8%E6%80%81%E8%BF%BD%E8%B8%AA%E5%86%85%E6%A0%B8%E5%87%BD%E6%95%B0%E5%A0%86%E6%A0%88"><span class="nav-text"> 使用function tracer动态追踪内核函数堆栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#linux%E6%9F%A5%E7%9C%8B%E5%BD%93%E5%89%8Dthread-stack%E4%BD%BF%E7%94%A8%E6%83%85%E5%86%B5"><span class="nav-text"> Linux查看当前Thread stack使用情况</span></a></li></ol></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -246,48 +244,37 @@ stack使用情况</span></a></li></ol></li></ol></div>
       
       
       <div class="post-body">
-          <h1 id="memset栈空间">Memset栈空间</h1>
+          <h1 id="memset栈空间"><a class="markdownIt-Anchor" href="#memset栈空间"></a> Memset栈空间</h1>
 <p>在debug期间我们可以给栈空间赋值为一个特定值，比如0x5a，然后在每次中断中检查该值是否发生变化，来检测操作内存附近是否有内存被改写，同时该方法也可以用于统计栈最大使用情况。</p>
-<h1 id="fstack-protector">-fstack-protector</h1>
+<h1 id="-fstack-protector"><a class="markdownIt-Anchor" href="#-fstack-protector"></a> -fstack-protector</h1>
 <p><code>-fstack-protector</code>&nbsp;会在函数返回地址之前插入一个保护字（称为“canary”）。如果在函数执行期间发生了缓冲区溢出，可能会覆盖这个保护字。在函数返回之前，编译器会检查这个保护字是否被修改，如果被修改，程序会立即终止，从而防止潜在的攻击。</p>
-<p>stack-protector：保护函数中通过alloca()分配缓存以及存在大于8字节的缓存。缺点是保护能力有限。
-stack-protector-all：保护所有函数的栈。缺点是增加很多额外栈空间，增加程序体积。
-stack-protector-strong：在stack-protector基础上，增加本地数组、指向本地帧栈地址空间保护。
-stack-protector-explicit：在stack-protector基础上，增加程序中显式属性”stack_protect”空间。</p>
+<p>stack-protector：保护函数中通过alloca()分配缓存以及存在大于8字节的缓存。缺点是保护能力有限。<br>
+stack-protector-all：保护所有函数的栈。缺点是增加很多额外栈空间，增加程序体积。<br>
+stack-protector-strong：在stack-protector基础上，增加本地数组、指向本地帧栈地址空间保护。<br>
+stack-protector-explicit：在stack-protector基础上，增加程序中显式属性"stack_protect"空间。</p>
 <span id="more"></span>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">add</span><span class="params">(<span class="type">int</span> val1, <span class="type">int</span> val2)</span> {</span><br><span class="line">    <span class="keyword">return</span> val1 + val2;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> {</span><br><span class="line">    <span class="type">int</span> val1 = <span class="number">10</span>;</span><br><span class="line">    <span class="type">int</span> val2 = <span class="number">20</span>;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> result = add(val1, val2);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>加-fstack-protector-all和不加分别编译后反汇编对比如下：</p>
-<figure>
-<img src="https://lsky.carlyleliu.vip/i/6702366847217.png" alt="drbug_stack_overflow1.png">
-<figcaption aria-hidden="true">drbug_stack_overflow1.png</figcaption>
-</figure>
+<p><img src="https://lsky.carlyleliu.vip/i/6702366847217.png" alt="drbug_stack_overflow1.png"></p>
 <p>可以看到函数返回前会做一个判断来决定是否返回，如果canary被修改了则执行__stack_chk_fail函数。</p>
-<h1 id="guard-page">guard page</h1>
-<p>guard page
-内核在每个堆栈区域下方放置了一个保护页（即拥有该页的进程无法访问的页）这样当出现栈溢出时就会触发访问没有权限访问的page，内核会panic告知用户程序发生栈溢出问题。guard
-page不会咱用实际物理内存，只占用虚拟地址空间，对于64bit系统，虚拟地址空间非常大，无需担心这点浪费。</p>
-<p>在内核使能了CONFIG_VMAP_STACK选项的情况下会使用vmalloc区域内存作为内核栈空间，这种情况下就可以使用guard
-page机制了。使能CONFIG_VMAP_STACK带来的一个问题是内核栈地址空间物理地址不再是连续的了，那么就不能使用dma进行数据传输，这个需要注意，使用dma请老实使用<strong>kmalloc申请内存</strong>。</p>
+<h1 id="guard-page"><a class="markdownIt-Anchor" href="#guard-page"></a> guard page</h1>
+<p>guard page 内核在每个堆栈区域下方放置了一个保护页（即拥有该页的进程无法访问的页）这样当出现栈溢出时就会触发访问没有权限访问的page，内核会panic告知用户程序发生栈溢出问题。guard page不会咱用实际物理内存，只占用虚拟地址空间，对于64bit系统，虚拟地址空间非常大，无需担心这点浪费。</p>
+<p>在内核使能了CONFIG_VMAP_STACK选项的情况下会使用vmalloc区域内存作为内核栈空间，这种情况下就可以使用guard page机制了。使能CONFIG_VMAP_STACK带来的一个问题是内核栈地址空间物理地址不再是连续的了，那么就不能使用dma进行数据传输，这个需要注意，使用dma请老实使用<strong>kmalloc申请内存</strong>。</p>
 <p>另外thread_info结构体已经被严重弱化了，当前已经不通过该结构体寻找task_struct了，已经嵌入到task_struct结构体内部了。</p>
-<h1 id="栈空间">栈空间</h1>
+<h1 id="栈空间"><a class="markdownIt-Anchor" href="#栈空间"></a> 栈空间</h1>
 <ul>
 <li>一个函数中的局部变量在栈中的顺序是不定的，是由编译器决定的，故不能通过直接比较两个局部变量的地址来判断栈的增长方向，也不能通过最后定义的变量地址来判断栈指针sp</li>
 <li>函数参数压栈的顺序也是不确定的，虽然一般编译器都是从后向前压栈，然而从前向后也不是绝对不可能</li>
 <li>连续嵌套调用两个函数时，第一个函数的相关数据会先入栈，之后才是它调用的第二个函数，这一点应该是一个通用成立的结论</li>
 </ul>
-<h1 id="linux下debug">Linux下debug</h1>
-<h2 id="使能stack-trace">使能stack trace</h2>
-<figure>
-<img src="https://lsky.carlyleliu.vip/i/670236c0d6ae2.png" alt="drbug_stack_overflow2.png">
-<figcaption aria-hidden="true">drbug_stack_overflow2.png</figcaption>
-</figure>
-<h2 id="启用stack-trace">启用stack trace</h2>
+<h1 id="linux下debug"><a class="markdownIt-Anchor" href="#linux下debug"></a> Linux下debug</h1>
+<h2 id="使能stack-trace"><a class="markdownIt-Anchor" href="#使能stack-trace"></a> 使能stack trace</h2>
+<p><img src="https://lsky.carlyleliu.vip/i/670236c0d6ae2.png" alt="drbug_stack_overflow2.png"></p>
+<h2 id="启用stack-trace"><a class="markdownIt-Anchor" href="#启用stack-trace"></a> 启用stack trace</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">mount -t debugfs none /sys/kernel/debug/</span><br><span class="line"><span class="built_in">cd</span> /sys/kernel/debug/</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启用内核栈追溯</span></span><br><span class="line"><span class="built_in">cat</span> /proc/sys/kernel/stack_tracer_enabled</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /proc/sys/kernel/stack_tracer_enabled</span><br><span class="line"><span class="built_in">cat</span> /proc/sys/kernel/stack_tracer_enabled</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看内核栈已用最大值及对应调用链信息</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/stack_max_size</span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/stack_trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用watch动态查看</span></span><br><span class="line">watch -n 1 <span class="string">'free -m; echo &amp;&amp; echo "stack_max_size:"; cat /sys/kernel/debug/tracing/stack_max_size; echo &amp;&amp; echo "stack_trace:"; cat /sys/kernel/debug/tracing/stack_trace'</span></span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
-<h2 id="使用function-tracer动态追踪内核函数堆栈">使用function
-tracer动态追踪内核函数堆栈</h2>
+<h2 id="使用function-tracer动态追踪内核函数堆栈"><a class="markdownIt-Anchor" href="#使用function-tracer动态追踪内核函数堆栈"></a> 使用function tracer动态追踪内核函数堆栈</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查看当前内核支持的可追踪的函数</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/available_filter_functions | grep Mbox_invoke</span><br><span class="line"></span><br><span class="line"><span class="built_in">echo</span> Mbox_invoke /sys/kernel/debug/tracing/set_ftrace_filter</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置当前追踪为函数追踪</span></span><br><span class="line"><span class="built_in">echo</span> <span class="keyword">function</span> &gt; /sys/kernel/debug/tracing/current_tracer </span><br><span class="line"></span><br><span class="line"><span class="comment"># 开启函数栈追踪</span></span><br><span class="line"><span class="built_in">echo</span> 1 &gt; /sys/kernel/debug/tracing/options/stacktrace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查看追踪结果</span></span><br><span class="line"><span class="built_in">cat</span> /sys/kernel/debug/tracing/trace</span><br><span class="line"></span><br><span class="line"><span class="comment"># 注：上述设置步骤可以一条命令搞定：</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">'Mbox_invoke:stacktrace:10'</span> &gt; /sys/kernel/debug/tracing/set_ftrace_filter</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="linux查看当前thread-stack使用情况">Linux查看当前Thread
-stack使用情况</h2>
+<h2 id="linux查看当前thread-stack使用情况"><a class="markdownIt-Anchor" href="#linux查看当前thread-stack使用情况"></a> Linux查看当前Thread stack使用情况</h2>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">unsigned long *stack = task_stack_page(current);</span><br><span class="line">register unsigned long sp asm (<span class="string">"sp"</span>);</span><br><span class="line">printk(<span class="string">"stack size: %ld range [%lx %lx] sp : 0x%lx\n"</span>, \</span><br><span class="line">        (unsigned long)stack, (unsigned long)stack + THREAD_SIZE,sp);</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
 <p>output:</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">stack size: 16384 range [ffffffc0804b0000 ffffffc0804b4000] sp : 0xffffffc0804b3d50</span><br></pre></td></tr></tbody></table></figure>

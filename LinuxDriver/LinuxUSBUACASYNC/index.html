@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="同步问题原因 USB Isochronous 传输（协议无问题）  Isochronous Transfer 同步问题 电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。 问题来了，晶振是有">
+    <meta name="description" content="同步问题原因  USB Isochronous 传输（协议无问题）   Isochronous Transfer 同步问题 电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。 问题来了，晶">
 <meta property="og:type" content="article">
 <meta property="og:title" content="UAC（六）UAC 同步方式">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxUSBUACASYNC/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="同步问题原因 USB Isochronous 传输（协议无问题）  Isochronous Transfer 同步问题 电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。 问题来了，晶振是有">
+<meta property="og:description" content="同步问题原因  USB Isochronous 传输（协议无问题）   Isochronous Transfer 同步问题 电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。 问题来了，晶">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB_Transfer.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC_SyncMethod.png">
@@ -155,10 +155,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98%E5%8E%9F%E5%9B%A0"><span class="nav-text">同步问题原因</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#usb-isochronous-%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE%E6%97%A0%E9%97%AE%E9%A2%98"><span class="nav-text">USB Isochronous
-传输（协议无问题）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#isochronous-transfer-%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98"><span class="nav-text">Isochronous Transfer
-同步问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#usb-%E9%9F%B3%E9%A2%91%E5%A3%B0%E5%8D%A1%E7%9A%84%E6%97%B6%E9%92%9F%E5%90%8C%E6%AD%A5%E6%96%B9%E5%BC%8F"><span class="nav-text">USB 音频声卡的时钟同步方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#usb-%E7%9A%84-isochronous-%E6%A8%A1%E5%BC%8F"><span class="nav-text">USB 的 isochronous 模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#asynchronous"><span class="nav-text">Asynchronous</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronous"><span class="nav-text">Synchronous</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#adaptive"><span class="nav-text">Adaptive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#feedback"><span class="nav-text">Feedback</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#implicit-feedback"><span class="nav-text">Implicit Feedback</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3-5.x-%E4%BB%A5%E5%89%8D%E7%9A%84%E5%86%85%E6%A0%B8%E5%9C%A8-windows10-%E7%B3%BB%E7%BB%9F%E4%B8%8B%E6%97%A0%E6%B3%95%E8%AF%86%E5%88%AB-uac2-%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text">解决
-5.x 以前的内核在 Windows10 系统下无法识别 UAC2 的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#uac-%E7%AB%AF%E7%82%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">UAC 端点描述符</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98%E5%8E%9F%E5%9B%A0"><span class="nav-text"> 同步问题原因</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#usb-isochronous-%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE%E6%97%A0%E9%97%AE%E9%A2%98"><span class="nav-text"> USB Isochronous 传输（协议无问题）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#isochronous-transfer-%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98"><span class="nav-text"> Isochronous Transfer 同步问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#usb-%E9%9F%B3%E9%A2%91%E5%A3%B0%E5%8D%A1%E7%9A%84%E6%97%B6%E9%92%9F%E5%90%8C%E6%AD%A5%E6%96%B9%E5%BC%8F"><span class="nav-text"> USB 音频声卡的时钟同步方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#usb-%E7%9A%84-isochronous-%E6%A8%A1%E5%BC%8F"><span class="nav-text"> USB 的 isochronous 模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#asynchronous"><span class="nav-text"> Asynchronous</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronous"><span class="nav-text"> Synchronous</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#adaptive"><span class="nav-text"> Adaptive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#feedback"><span class="nav-text"> Feedback</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#implicit-feedback"><span class="nav-text"> Implicit Feedback</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3-5x-%E4%BB%A5%E5%89%8D%E7%9A%84%E5%86%85%E6%A0%B8%E5%9C%A8-windows10-%E7%B3%BB%E7%BB%9F%E4%B8%8B%E6%97%A0%E6%B3%95%E8%AF%86%E5%88%AB-uac2-%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text"> 解决 5.x 以前的内核在 Windows10 系统下无法识别 UAC2 的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#uac-%E7%AB%AF%E7%82%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> UAC 端点描述符</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text"> 总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -313,223 +310,147 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="同步问题原因">同步问题原因</h1>
-<h2 id="usb-isochronous-传输协议无问题">USB Isochronous
-传输（协议无问题）</h2>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB_Transfer.png"></p>
-<h2 id="isochronous-transfer-同步问题">Isochronous Transfer
-同步问题</h2>
-<p>电脑播放器播放音乐时：是按一个固定的速率，比如
-44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB
-的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个
-44.1KHZ，供给 I2S 信号或 DAC。</p>
-<p>问题来了，晶振是有误差的，这两个 44.1KHZ
-不可能完全一模一样，电脑可能是 44.100KHZ，USB 声卡可能是
-44.098KHZ，误差约 50ppm，很正常的情况。虽然声卡晶振分频出来是
-44.098KHZ，但声卡认为它就是工作在 44.100KHZ
-下。好吧，如果二者时钟独立运行，那么 1 个小时会误差 0.2
-秒，会出现不同步！ 即电脑播了 1 个小时的数据，USB
-声卡实际是无法播完的，要多 0.2 秒才能播完。 如果声卡也要 1
-小时播完，那这 1 小时就需要丢掉 0.2 秒的数据。</p>
-<p>所以二者的时钟必须要同步一致才行，这就是 UAC 同步问题的原因，因此 USB
-音频规定了一是采用“等时传输模式”，二是设备需要指定为 3
-种同步方式之一：同步（synchronous），适应（adaptive），异步（asynchronous）。</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="同步问题原因"><a class="markdownIt-Anchor" href="#同步问题原因"></a> 同步问题原因</h1>
+<h2 id="usb-isochronous-传输协议无问题"><a class="markdownIt-Anchor" href="#usb-isochronous-传输协议无问题"></a> USB Isochronous 传输（协议无问题）</h2>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB_Transfer.png" alt=""></p>
+<h2 id="isochronous-transfer-同步问题"><a class="markdownIt-Anchor" href="#isochronous-transfer-同步问题"></a> Isochronous Transfer 同步问题</h2>
+<p>电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。</p>
+<p>问题来了，晶振是有误差的，这两个 44.1KHZ 不可能完全一模一样，电脑可能是 44.100KHZ，USB 声卡可能是 44.098KHZ，误差约 50ppm，很正常的情况。虽然声卡晶振分频出来是 44.098KHZ，但声卡认为它就是工作在 44.100KHZ 下。好吧，如果二者时钟独立运行，那么 1 个小时会误差 0.2 秒，会出现不同步！ 即电脑播了 1 个小时的数据，USB 声卡实际是无法播完的，要多 0.2 秒才能播完。 如果声卡也要 1 小时播完，那这 1 小时就需要丢掉 0.2 秒的数据。</p>
+<p>所以二者的时钟必须要同步一致才行，这就是 UAC 同步问题的原因，因此 USB 音频规定了一是采用“等时传输模式”，二是设备需要指定为 3 种同步方式之一：同步（synchronous），适应（adaptive），异步（asynchronous）。</p>
 <span id="more"></span>
 <p>以上摘自 <span class="exturl" data-url="aHR0cDovL2Jicy5lcmppLm5ldC9mb3J1bS5waHA/bW9kPXZpZXd0aHJlYWQmdGlkPTIwNzY2NzQmcGFnZT0x">http://bbs.erji.net/forum.php?mod=viewthread&amp;tid=2076674&amp;page=1<i class="fa fa-external-link-alt"></i></span></p>
-<h1 id="usb-音频声卡的时钟同步方式">USB 音频声卡的时钟同步方式</h1>
-<h2 id="usb-的-isochronous-模式">USB 的 isochronous 模式</h2>
-<p>USB 音频声卡采用
-isochronous“等时传输模式”，能保证实时传输数据，但错误容忍，出错不重传。它是实时传输，所以
-USB 电脑端发出多少速率的数据，USB 接收端（USB
-声卡）就得接收多少速率。比如电脑发送 44.1KHZ 的，声卡就接收 44.1KHZ。
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC_SyncMethod.png"></p>
-<h3 id="asynchronous">Asynchronous</h3>
+<h1 id="usb-音频声卡的时钟同步方式"><a class="markdownIt-Anchor" href="#usb-音频声卡的时钟同步方式"></a> USB 音频声卡的时钟同步方式</h1>
+<h2 id="usb-的-isochronous-模式"><a class="markdownIt-Anchor" href="#usb-的-isochronous-模式"></a> USB 的 isochronous 模式</h2>
+<p>USB 音频声卡采用 isochronous“等时传输模式”，能保证实时传输数据，但错误容忍，出错不重传。它是实时传输，所以 USB 电脑端发出多少速率的数据，USB 接收端（USB 声卡）就得接收多少速率。比如电脑发送 44.1KHZ 的，声卡就接收 44.1KHZ。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC_SyncMethod.png" alt=""></p>
+<h3 id="asynchronous"><a class="markdownIt-Anchor" href="#asynchronous"></a> Asynchronous</h3>
 <p>cannot synchronize to SOF or any other clock in the USB domain。</p>
-<p><em>Source：</em> Provides implicit feedforward(data stream)，Free
-running Fs</p>
-<p><em>Sink：</em> Provides explicit feedback (isochronous pipe)，Free
-running Fs</p>
-<p>Asynchronous sink endpoints must provide explicit feedback
-information to an adaptive driver.</p>
+<p><em>Source：</em> Provides implicit feedforward(data stream)，Free running Fs</p>
+<p><em>Sink：</em>  Provides explicit feedback (isochronous pipe)，Free running Fs</p>
+<p>Asynchronous sink endpoints must provide explicit feedback information to an adaptive driver.</p>
 <blockquote>
-<p>Asynchronous：要求 Sink 主动提供 data rate
-信息，对信息如何使用没做规范要求，Source 和 Sink
-都各自按照自己的速率运行，音频质量是最好的</p>
+<p>Asynchronous：要求 Sink 主动提供 data rate 信息，对信息如何使用没做规范要求，Source 和 Sink 都各自按照自己的速率运行，音频质量是最好的</p>
 </blockquote>
-<h3 id="synchronous">Synchronous</h3>
+<h3 id="synchronous"><a class="markdownIt-Anchor" href="#synchronous"></a> Synchronous</h3>
 <p>Source：Uses implicit feedback(SOF)， Fs locked to SOF</p>
 <p>Sink： Uses implicit feedback(SOF) Fs locked to SOF</p>
-<p><em>Source：</em> its sample clock from SOF and produces a fixed
-number of audio samples every USB (micro)frame，</p>
-<p><em>Sink：</em> its sample clock from SOF and consumes a fixed number
-of samples every USB (micro)frame.</p>
+<p><em>Source：</em> its sample clock from SOF and produces a fixed number of audio samples every USB (micro)frame，</p>
+<p><em>Sink：</em> its sample clock from SOF and consumes a fixed number of samples every USB (micro)frame.</p>
 <blockquote>
-<p>Synchronous：Source 和 Sink 都与 SOF 同步，这样导致 Source 和 Sink 的
-clk 都不够稳定，音频质量会受到影响，但是 Source 和 Sink 都无需提供
-feedback 信息，兼容性最好</p>
+<p>Synchronous：Source 和 Sink 都与 SOF 同步，这样导致 Source 和 Sink 的 clk 都不够稳定，音频质量会受到影响，但是 Source 和 Sink 都无需提供 feedback 信息，兼容性最好</p>
 </blockquote>
-<h3 id="adaptive">Adaptive</h3>
-<p>Source：Uses explicit feedback(isochronous pipe) ，Fs locked to
-sink</p>
-<p><em>Sink：</em> Uses implicitfeedforward (data stream)， Fs locked to
-data flow</p>
-<p><em>Source：</em> Adaptive source endpoints produce data at a rate
-that is controlled by the data sink。</p>
-<p>Sink：The sink provides feedback to the source，the data rate
-information is embedded in the data stream。The average number of
-samples received during a certain averaging time determines the
-instantaneous data rate</p>
-<p>condition：Sink Device contains a fully adaptive sample rate
-converter (SRC)</p>
+<h3 id="adaptive"><a class="markdownIt-Anchor" href="#adaptive"></a> Adaptive</h3>
+<p>Source：Uses explicit feedback(isochronous pipe) ，Fs locked to sink</p>
+<p><em>Sink：</em> Uses implicitfeedforward (data stream)， Fs locked to data flow</p>
+<p><em>Source：</em> Adaptive source endpoints produce data at a rate that is controlled by the data sink。</p>
+<p>Sink：The sink provides feedback to the source，the data rate information is embedded in the data stream。The average number of samples received during a certain averaging time determines the instantaneous data rate</p>
+<p>condition：Sink Device contains a fully adaptive sample rate converter (SRC)</p>
 <blockquote>
-<p>Adaptive：使用 Sink 提供的 feedback 信息（明确要求 Sink 提供 data
-rate 信息），调整自己的 clk 对齐 Sink</p>
+<p>Adaptive：使用 Sink 提供的 feedback 信息（明确要求 Sink 提供 data rate 信息），调整自己的 clk 对齐 Sink</p>
 </blockquote>
-<h3 id="feedback">Feedback</h3>
-<p><em>ASYNC：</em> An asynchronous sink must provide explicit feedback
-to the host by indicating accurately what its desired data rate (Ff) is,
-relative to the USB (micro)frame frequency。This allows the host to
-continuously adjust the number of samples sent to the sink so that
-neither underflow or overflow of the data buffer occurs</p>
-<p><em>ADAPTIVE：</em> An adaptive source must receive explicit feedback
-from the host so that it can accurately generate the number of samples
-required by the host.</p>
+<h3 id="feedback"><a class="markdownIt-Anchor" href="#feedback"></a> Feedback</h3>
+<p><em>ASYNC：</em> An asynchronous sink must provide explicit feedback to the host by indicating accurately what its desired data rate (Ff) is, relative to the USB (micro)frame frequency。This allows the host to continuously adjust the number of samples sent to the sink so that neither underflow or overflow of the data buffer occurs</p>
+<p><em>ADAPTIVE：</em> An adaptive source must receive explicit feedback from the host so that it can accurately generate the number of samples required by the host.</p>
 <p><em>Ff:</em> the desired data rate</p>
-<p><em>Fs:</em> actual sampling rate, 至少需要 1s 的测量时间
-Tmeas（单位是帧数）。单位是帧数，对于全速设备 1ms 一帧，那么 1s 就需要
-1000 帧（Fs&gt;=1000），而对于高速设备，125us 一帧 (Fs≥8000).</p>
+<p><em>Fs:</em> actual sampling rate, 至少需要 1s 的测量时间 Tmeas（单位是帧数）。单位是帧数，对于全速设备 1ms 一帧，那么 1s 就需要 1000 帧（Fs&gt;=1000），而对于高速设备，125us 一帧 (Fs≥8000).</p>
 <p><em>Fm：</em> 通常 Fs 是由 master clock Fm 分频得到：</p>
-<p><span class="math display"><em>F</em><sub><em>m</em></sub> = <em>F</em><sub><em>s</em></sub> * 2<sup><em>P</em></sup></span></p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>F</mi><mi>m</mi></msub><mo>=</mo><msub><mi>F</mi><mi>s</mi></msub><mo>∗</mo><msup><mn>2</mn><mi>P</mi></msup></mrow><annotation encoding="application/x-tex">F_m = F_s * 2^P
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">m</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8913309999999999em;vertical-align:0em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">P</span></span></span></span></span></span></span></span></span></span></span></span></p>
 <p>因此可以利用 Fm 来缩短测量时间 Tmeas:</p>
-<p><span class="math display">$$
-T_{meas} = \frac{2^K}{2^P} = 2^{K-P}
-$$</span></p>
-<p>这样测量 Fs 的时间就降低为 <span class="math inline">2<sup>(</sup><em>K</em> − <em>P</em>)</span>
-帧时间了。</p>
-<p>对于全速设备，Fs 需要使用定点数 10.10（K=10）格式，需要 3
-字节，调整为 10.14 定点数来表示</p>
-<p>对于高速设备，Fs 需要使用定点数 12.13（K=13）格式，需要 4
-字节，调整为 16.16 定点数来表示</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mrow><mi>m</mi><mi>e</mi><mi>a</mi><mi>s</mi></mrow></msub><mo>=</mo><mfrac><msup><mn>2</mn><mi>K</mi></msup><msup><mn>2</mn><mi>P</mi></msup></mfrac><mo>=</mo><msup><mn>2</mn><mrow><mi>K</mi><mo>−</mo><mi>P</mi></mrow></msup></mrow><annotation encoding="application/x-tex">T_{meas} = \frac{2^K}{2^P} = 2^{K-P}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">m</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">s</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.204331em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5183309999999999em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.767331em;"><span style="top:-2.9890000000000003em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">P</span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413309999999999em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.891331em;vertical-align:0em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.891331em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span><span class="mbin mtight">−</span><span class="mord mathnormal mtight" style="margin-right:0.13889em;">P</span></span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>这样测量 Fs 的时间就降低为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mo stretchy="false">(</mo></msup><mi>K</mi><mo>−</mo><mi>P</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">2^(K-P)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9713299999999999em;vertical-align:-0.08333em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8879999999999999em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mopen mtight">(</span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.07153em;">K</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mclose">)</span></span></span></span> 帧时间了。</p>
+<p>对于全速设备，Fs 需要使用定点数 10.10（K=10）格式，需要 3 字节，调整为 10.14 定点数来表示</p>
+<p>对于高速设备，Fs 需要使用定点数 12.13（K=13）格式，需要 4 字节，调整为 16.16 定点数来表示</p>
 <p>对 P 的要求：</p>
 <ul>
 <li>P must be in the range [0,K]</li>
 <li>P 尽量大一些，这样可以减少 Tmeas 测试时间，也可以减少缓存大小</li>
 <li>P 应该小于 K，保证至少两帧取平均来减少抖动，测量更平滑</li>
-<li>P 不要为 0，保证在 Ff 丢失的情况下可以用更为近的 Fs
-来代替，减小误差相邻数据相似性</li>
+<li>P 不要为 0，保证在 Ff 丢失的情况下可以用更为近的 Fs 来代替，减小误差相邻数据相似性</li>
 </ul>
-<h3 id="implicit-feedback">Implicit Feedback</h3>
-<p>有些时候，可以避免 explicit 实现一个 feedback
-endpoint，如果设备实现了一组 isochronous data endpoints，且：</p>
+<h3 id="implicit-feedback"><a class="markdownIt-Anchor" href="#implicit-feedback"></a> Implicit Feedback</h3>
+<p>有些时候，可以避免 explicit 实现一个 feedback endpoint，如果设备实现了一组 isochronous data endpoints，且：</p>
 <ul>
-<li>All the endpoints in the group are synchronized (i.e.&nbsp;use sample
-clocks that are derived from a common master clock)</li>
-<li>The group contains one or more isochronous data endpoints in one
-direction that normally would need explicit feedback</li>
-<li>The group contains at least one isochronous data endpoint in the
-opposite direction</li>
+<li>All the endpoints in the group are synchronized (i.e. use sample clocks that are derived from a common master clock)</li>
+<li>The group contains one or more isochronous data endpoints in one direction that normally would need explicit feedback</li>
+<li>The group contains at least one isochronous data endpoint in the opposite direction</li>
 </ul>
 <p>在这些情况下，设备可以不 explicit feedback endpoint.</p>
 <p>有以下可能的情况：</p>
 <ul>
-<li>One or more asynchronous sink endpoints are accompanied by an
-asynchronous source endpoint. The data rate on the source endpoint can
-be used as implicit feedback information to adjust the data rate on the
-sink endpoint(s).</li>
-<li>One or more adaptive source endpoints are accompanied by an adaptive
-sink endpoint. The source endpoint can adjust its data rate based on the
-data rate received by the sink endpoint</li>
+<li>One or more asynchronous sink endpoints are accompanied by an asynchronous source endpoint. The data rate on the source endpoint can be used as implicit feedback information to adjust the data rate on the sink endpoint(s).</li>
+<li>One or more adaptive source endpoints are accompanied by an adaptive sink endpoint. The source endpoint can adjust its data rate based on the data rate received by the sink endpoint</li>
 </ul>
-<h1 id="解决-5.x-以前的内核在-windows10-系统下无法识别-uac2-的问题">解决
-5.x 以前的内核在 Windows10 系统下无法识别 UAC2 的问题</h1>
-<h2 id="uac-端点描述符">UAC 端点描述符</h2>
+<h1 id="解决-5x-以前的内核在-windows10-系统下无法识别-uac2-的问题"><a class="markdownIt-Anchor" href="#解决-5x-以前的内核在-windows10-系统下无法识别-uac2-的问题"></a> 解决 5.x 以前的内核在 Windows10 系统下无法识别 UAC2 的问题</h1>
+<h2 id="uac-端点描述符"><a class="markdownIt-Anchor" href="#uac-端点描述符"></a> UAC 端点描述符</h2>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">ENDPOIN_DESCRIPTOR_STRUCT</span> </span></span><br><span class="line"><span class="class">{</span> </span><br><span class="line">    BYTE bLength;           <span class="comment">//设备描述符的字节数大小，为 0x7 </span></span><br><span class="line">    BYTE bDescriptorType;   <span class="comment">//描述符类型编号，为 0x05</span></span><br><span class="line">    BYTE bEndpointAddress;  <span class="comment">//端点地址及输入输出属性 </span></span><br><span class="line">    BYTE bmAttribute;       <span class="comment">//端点的传输类型属性 </span></span><br><span class="line">    WORD wMaxPacketSize;    <span class="comment">//端点收、发的最大包的大小 </span></span><br><span class="line">    BYTE bInterval;         <span class="comment">//主机查询端点的时间间隔 </span></span><br><span class="line">} ENDPOIN_DESCRIPTOR_STRUCT ；</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li><p>bLength : 描述符大小．固定为 0x07．</p></li>
-<li><p>bDescriptorType : 端点描述符类型．固定为 0x05．</p></li>
-<li><p>bEndpointAddress : USB
-设备的端点地址．Bit7，方向，对于控制端点可以忽略，1/0:IN/OUT．Bit6-4，保留．BIt3-0：端点号．</p></li>
-<li><p>bmAttributes : 端点属性．Bit7-2，保留（同步有定义）．BIt1-0：00
-控制，01 同步，02 批量，03 中断． 当为同步传输时，bEndpointType 的
-bit3-2
-的值不同代表的含义不同：00：无同步，01：异步，10：适配，11：同步；BIT5:4
-含义 00: 表示数据端点，01：表示反馈端点 Feedback
-endpoint，10：表示隐式反馈数据端点 Implicit feedback Data endpoint，11:
-保留</p></li>
-<li><p>wMaxPacketSize : 本端点接收或发送的最大信息包大小．</p>
+<li>
+<p>bLength : 描述符大小．固定为 0x07．</p>
+</li>
+<li>
+<p>bDescriptorType : 端点描述符类型．固定为 0x05．</p>
+</li>
+<li>
+<p>bEndpointAddress : USB 设备的端点地址．Bit7，方向，对于控制端点可以忽略，1/0:IN/OUT．Bit6-4，保留．BIt3-0：端点号．</p>
+</li>
+<li>
+<p>bmAttributes : 端点属性．Bit7-2，保留（同步有定义）．BIt1-0：00 控制，01 同步，02 批量，03 中断．<br>
+当为同步传输时，bEndpointType 的 bit3-2 的值不同代表的含义不同：00：无同步，01：异步，10：适配，11：同步；BIT5:4 含义 00: 表示数据端点，01：表示反馈端点 Feedback endpoint，10：表示隐式反馈数据端点 Implicit feedback Data endpoint，11: 保留</p>
+</li>
+<li>
+<p>wMaxPacketSize : 本端点接收或发送的最大信息包大小．</p>
 <ul>
-<li><p>USB2.0 时：
+<li>
+<p>USB2.0 时：<br>
 对于同步端点，此值用于指示主机在调度中保留的总线时间，这是每（微）帧数据有效负载所需的时间，有效负载时间就是发送一帧数据需要占用的总线时间，在实际数据传输过程中，管道实际使用的带宽可能比保留的带宽少，大家想想，如果实际使用的带宽比保留的还多，那就丢数了；</p>
 <p>对于其类型的端点，bit10~bit0 指定最大数据包大小（以字节为单位）；</p>
-<p>bit12~bit11 对于高速传输的同步和中断端点有效：bit12~bit11
-可指定每个微帧的额外通信次数，这里大家一定要知道是在高速传输中，当一个事务超时时，在一个微帧时间内重传的次数，如果设置为
-00b（None），则表示在一个微帧内只传输一个事务，不进行额外的超时重传，如果设置为
-01b，则表示在一个微帧内可以传输两次事务，有一次额外的重传机会，从下面可以看出，一个微帧最多可以有两次重传事务的机会，如果微帧结束了还是失败，就需要等到下一个微帧继续发送该事务；</p></li>
-<li><p>USB3.0 时： wMaxPacketSize 表示包的大小。对于 bulk 为
-1024，而对于同步传输，可以为 0~1024 或 1024。</p></li>
-</ul></li>
-<li><p>bInterval :
-轮询数据传送端点的时间间隔．对于批量传送和控制传送的端点忽略．对于同步传送的端点，必须为１，对于中断传送的端点，范围为
-1-255．</p>
+<p>bit12~bit11 对于高速传输的同步和中断端点有效：bit12~bit11 可指定每个微帧的额外通信次数，这里大家一定要知道是在高速传输中，当一个事务超时时，在一个微帧时间内重传的次数，如果设置为 00b（None），则表示在一个微帧内只传输一个事务，不进行额外的超时重传，如果设置为 01b，则表示在一个微帧内可以传输两次事务，有一次额外的重传机会，从下面可以看出，一个微帧最多可以有两次重传事务的机会，如果微帧结束了还是失败，就需要等到下一个微帧继续发送该事务；</p>
+</li>
+<li>
+<p>USB3.0 时：<br>
+wMaxPacketSize 表示包的大小。对于 bulk 为 1024，而对于同步传输，可以为 0~1024 或 1024。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>bInterval : 轮询数据传送端点的时间间隔．对于批量传送和控制传送的端点忽略．对于同步传送的端点，必须为１，对于中断传送的端点，范围为 1-255．</p>
 <ul>
-<li>对于全速/高速同步端点，此值必须在 1 到 16 之间。bInterval 值用作 2
-的指数，例如 bInterval 为 4，表示周期为 8 个单位；</li>
-<li>对于全速/低速中断端点，该字段的值可以是 1 到 255，也就是主机多少 ms
-给设备发一次数据请求；</li>
-<li>对于高速中断端点，使用 bInterval 值作为 2 的指数，例如 bInterval 为
-4 表示周期为 8。这个值必须在 1 到 16 之间；</li>
-<li>对于高速批量/控制输出端点，bInterval 必须指定端点的最大 NAK 速率。值
-0 表示端点永不 NAK。其它值表示每个微帧的 bInterval*125us 时间最多 1 个
-NAK。这个值的范围必须在 0 到 255 之间；
+<li>对于全速/高速同步端点，此值必须在 1 到 16 之间。bInterval 值用作 2 的指数，例如 bInterval 为 4，表示周期为 8 个单位；</li>
+<li>对于全速/低速中断端点，该字段的值可以是 1 到 255，也就是主机多少 ms 给设备发一次数据请求；</li>
+<li>对于高速中断端点，使用 bInterval 值作为 2 的指数，例如 bInterval 为 4 表示周期为 8。这个值必须在 1 到 16 之间；</li>
+<li>对于高速批量/控制输出端点，bInterval 必须指定端点的最大 NAK 速率。值 0 表示端点永不 NAK。其它值表示每个微帧的 bInterval*125us 时间最多 1 个 NAK。这个值的范围必须在 0 到 255 之间；
 <ul>
 <li>00 = None (1 transaction per microframe)</li>
 <li>01 = 1 additional (2 per microframe)</li>
 <li>10 = 2 additional (3 per microframe)</li>
 <li>11 = Reserved</li>
 <li>其它位默认为 0，</li>
-</ul></li>
+</ul>
+</li>
 <li>对于全速/低速批量/控制输出端点，此值无意义，可以任意指定。</li>
-</ul></li>
+</ul>
+</li>
 </ul>
 <p>以 fs_epout_desc 为例描述：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* STD AS ISO OUT Endpoint */</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">usb_endpoint_descriptor</span> <span class="title">fs_epout_desc</span> =</span> {</span><br><span class="line">  .bLength = USB_DT_ENDPOINT_SIZE,    <span class="comment">//#define USB_DT_ENDPOINT_SIZE		7</span></span><br><span class="line">  .bDescriptorType = USB_DT_ENDPOINT, <span class="comment">//#define USB_DT_ENDPOINT			0x05</span></span><br><span class="line"></span><br><span class="line">  .bEndpointAddress = USB_DIR_OUT,    <span class="comment">// #define USB_DIR_OUT			0		/* to device */</span></span><br><span class="line">  <span class="comment">// #define USB_ENDPOINT_XFER_ISOC		1 /* 同步传输 */</span></span><br><span class="line">    <span class="comment">// #define USB_ENDPOINT_SYNC_ADAPTIVE	(2 &lt;&lt; 2) /* 适配 */</span></span><br><span class="line">  .bmAttributes = USB_ENDPOINT_XFER_ISOC | USB_ENDPOINT_SYNC_ADAPTIVE, </span><br><span class="line">  <span class="comment">/* The USB limits the maximum data payload size to 1,023 bytes for each full-speed isochronous endpoint.</span></span><br><span class="line"><span class="comment">			High-speed endpoints are allowed up to 1024-byte data payloads. */</span></span><br><span class="line">  .wMaxPacketSize = cpu_to_le16(<span class="number">1023</span>),</span><br><span class="line">  .bInterval = <span class="number">1</span>,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p><em>IN 和 OUT 都是相对于 USB Host 设备来讲的：</em></p>
 <p><strong>对于 OUT Endpoint 不支持 ASYNC 做如下说明：</strong></p>
 <ul>
-<li>ASYNC 模式下需要 Sink 设备 Provides explicit feedback，而对于 OUT
-Endpoint，Sink 设备是我们的主机，这说明我们的设备不支持 feedback</li>
+<li>ASYNC 模式下需要 Sink 设备 Provides explicit feedback，而对于 OUT Endpoint，Sink 设备是我们的主机，这说明我们的设备不支持 feedback</li>
 </ul>
-<p><strong>对于 IN EndPoint，测试发现支持 ASYNC
-做如下说明：</strong></p>
+<p><strong>对于 IN EndPoint，测试发现支持 ASYNC 做如下说明：</strong></p>
 <ul>
-<li>ASYNC 模式下需要 Sink 设备 Provides explicit feedback，而对于 IN
-Endpoint，Sink 设备是测试的 Windows10 系统，说明
-Windows10（基于我的测试版本）是支持 feedback</li>
+<li>ASYNC 模式下需要 Sink 设备 Provides explicit feedback，而对于 IN Endpoint，Sink 设备是测试的 Windows10 系统，说明 Windows10（基于我的测试版本）是支持 feedback</li>
 </ul>
 <p><em>结论：</em><br>
-Windows 的 UAC2 是支持 Feedback 的，而我们的系统不支持，那么将 OUT
-Endpoint 改成 ADAPTIVE 模式符合 USB isochronous
-传输规范，但是因为我们设备没有实现 feedback，有没有利用到 Host 提供的
-feedback 信息待验证。同理 OUT Endpoint 改成 ADAPTIVE 模式，那么 IN
-EndPoint 就可以保持为 ASYNC，因为这都要求 Host 端提供
-feedback。当然全部改成 SYNC 模式也可以获得很好的兼容性，但是会造成
-Source 和 Sink 的 clk 抖动。 还有另外一种做法，我看到 Linux6.x
-驱动里已经支持 feedback 了，移植过来 Device 端就支持三种同步方式了。</p>
-<p>fs_epout_desc 端点会由 USB_ENDPOINT_SYNC_ASYNC 改成
-USB_ENDPOINT_SYNC_ADAPTIVE，最新的 6.x 内核会根据是否支持 feedback
-来决定用哪个同步模式，如果支持 feedback 就用
-USB_ENDPOINT_SYNC_ASYNC，如果不支持 feedback 就用
-USB_ENDPOINT_SYNC_ADAPTIVE。实际上用 USB_ENDPOINT_SYNC_SYNC 也能够在
-windows 上识别。 fs_epin_desc 端点：由 USB_ENDPOINT_SYNC_ASYNC 改成
-USB_ENDPOINT_SYNC_SYNC。</p>
-<h1 id="总结">总结</h1>
+Windows 的 UAC2 是支持 Feedback 的，而我们的系统不支持，那么将 OUT Endpoint 改成 ADAPTIVE 模式符合 USB isochronous 传输规范，但是因为我们设备没有实现 feedback，有没有利用到 Host 提供的 feedback 信息待验证。同理 OUT Endpoint 改成 ADAPTIVE 模式，那么 IN EndPoint 就可以保持为 ASYNC，因为这都要求 Host 端提供 feedback。当然全部改成 SYNC 模式也可以获得很好的兼容性，但是会造成 Source 和 Sink 的 clk 抖动。<br>
+还有另外一种做法，我看到 Linux6.x 驱动里已经支持 feedback 了，移植过来 Device 端就支持三种同步方式了。</p>
+<p>fs_epout_desc 端点会由 USB_ENDPOINT_SYNC_ASYNC 改成 USB_ENDPOINT_SYNC_ADAPTIVE，最新的 6.x 内核会根据是否支持 feedback 来决定用哪个同步模式，如果支持 feedback 就用 USB_ENDPOINT_SYNC_ASYNC，如果不支持 feedback 就用 USB_ENDPOINT_SYNC_ADAPTIVE。实际上用 USB_ENDPOINT_SYNC_SYNC 也能够在 windows 上识别。<br>
+fs_epin_desc 端点：由 USB_ENDPOINT_SYNC_ASYNC 改成 USB_ENDPOINT_SYNC_SYNC。</p>
+<h1 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h1>
 <table>
-<colgroup>
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-<col style="width: 25%">
-</colgroup>
 <thead>
 <tr>
 <th></th>
@@ -541,24 +462,19 @@ USB_ENDPOINT_SYNC_SYNC。</p>
 <tbody>
 <tr>
 <td>SYNC</td>
-<td>Source 和 Sink 各自运行在自己的 Clock
-下，两者之间没有任何反馈，Source 只管发，Sink 只管收</td>
+<td>Source 和 Sink 各自运行在自己的 Clock 下，两者之间没有任何反馈，Source 只管发，Sink 只管收</td>
 <td>简单</td>
-<td>运行时间久了由于两则的 clock 不匹配会导致 hw buffer 溢出或者为空导致
-xrun 问题</td>
+<td>运行时间久了由于两则的 clock 不匹配会导致 hw buffer 溢出或者为空导致 xrun 问题</td>
 </tr>
 <tr>
 <td>ADAPTIVE</td>
-<td>Source 提供自己的 srate 信息给 Sink，Sink 可以自己调节 Clock
-或者其他方式匹配 Source 的 Clock</td>
+<td>Source 提供自己的 srate 信息给 Sink，Sink 可以自己调节 Clock 或者其他方式匹配 Source 的 Clock</td>
 <td>提供了一种匹配 Clock 的方式，可以解决 xrun 问题了</td>
-<td>由于 Source 端发送频率和大小固定，只能 Device 端靠调节 Clock 来解决
-xrun，调节 clock 会影响音质</td>
+<td>由于 Source 端发送频率和大小固定，只能 Device 端靠调节 Clock 来解决 xrun，调节 clock 会影响音质</td>
 </tr>
 <tr>
 <td>ASYNC</td>
-<td>Sink 提供自己的 srate 给 Source，Source 通过调节每个 USB
-包大小来匹配 Sink 的 Clock</td>
+<td>Sink 提供自己的 srate 给 Source，Source 通过调节每个 USB 包大小来匹配 Sink 的 Clock</td>
 <td>提供了匹配 clock 的方式，解决了 xrun 问题</td>
 <td></td>
 </tr>
@@ -570,7 +486,7 @@ xrun，调节 clock 会影响音质</td>
 </tr>
 </tbody>
 </table>
-<h1 id="参考文献">参考文献</h1>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
 <p>《USB2.0 协议规范》<br>
 《UAC2 协议规范》</p>
 
