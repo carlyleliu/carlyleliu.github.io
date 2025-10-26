@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="什么是 ISP主流的 CMOS 和 CCD sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据，这种数据格式是无法直接观看的，必须转换成常见的 RGB 或 YUV 格式才能被主流的图像处理软件支持。对于 camera 产品而言，一般还需要将 RGB 或 YUV 图像进一步转换成 JPEG 格式以方便进行存储。上述图像处理过程统称图像信号处理（Image Signal Pro">
+    <meta name="description" content="什么是 ISP 主流的 CMOS 和 CCD sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据，这种数据格式是无法直接观看的，必须转换成常见的 RGB 或 YUV 格式才能被主流的图像处理软件支持。对于 camera 产品而言，一般还需要将 RGB 或 YUV 图像进一步转换成 JPEG 格式以方便进行存储。上述图像处理过程统称图像信号处理（Image Signal P">
 <meta property="og:type" content="article">
 <meta property="og:title" content="ISP 之 Pipeline">
 <meta property="og:url" content="https://carlyleliu.github.io/Camera/CameraPipeline/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="什么是 ISP主流的 CMOS 和 CCD sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据，这种数据格式是无法直接观看的，必须转换成常见的 RGB 或 YUV 格式才能被主流的图像处理软件支持。对于 camera 产品而言，一般还需要将 RGB 或 YUV 图像进一步转换成 JPEG 格式以方便进行存储。上述图像处理过程统称图像信号处理（Image Signal Pro">
+<meta property="og:description" content="什么是 ISP 主流的 CMOS 和 CCD sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据，这种数据格式是无法直接观看的，必须转换成常见的 RGB 或 YUV 格式才能被主流的图像处理软件支持。对于 camera 产品而言，一般还需要将 RGB 或 YUV 图像进一步转换成 JPEG 格式以方便进行存储。上述图像处理过程统称图像信号处理（Image Signal P">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline1.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline2.png">
@@ -161,7 +161,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-ISP"><span class="nav-text">什么是 ISP</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#ISP-%E8%BE%93%E5%85%A5%E5%9B%BE%E5%83%8F%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="nav-text">ISP 输入图像的格式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E6%8E%A5%E5%85%A5-ISP-%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-text">图像接入 ISP 的方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%8C%E7%BC%93%E5%86%B2-Line-Buffer"><span class="nav-text">行缓冲 Line Buffer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AF%B9%E9%BD%90-Alignment"><span class="nav-text">数据对齐 Alignment</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E5%8E%8B%E7%BC%A9"><span class="nav-text">图像压缩</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%89%B2%E8%B0%83%E6%98%A0%E5%B0%84-Tone-Mapping"><span class="nav-text">色调映射 Tone Mapping</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E7%AE%97%E6%B3%95%EF%BC%88Global-Tone-Mapping%EF%BC%8CGTM%EF%BC%89"><span class="nav-text">全局算法（Global Tone Mapping，GTM）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E7%AE%97%E6%B3%95%EF%BC%88Local-Tone-Mapping%EF%BC%8CLTM%EF%BC%89"><span class="nav-text">局部算法（Local Tone Mapping，LTM）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AF-isp"><span class="nav-text"> 什么是 ISP</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#isp-%E8%BE%93%E5%85%A5%E5%9B%BE%E5%83%8F%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="nav-text"> ISP 输入图像的格式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E6%8E%A5%E5%85%A5-isp-%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-text"> 图像接入 ISP 的方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A1%8C%E7%BC%93%E5%86%B2-line-buffer"><span class="nav-text"> 行缓冲 Line Buffer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%AF%B9%E9%BD%90-alignment"><span class="nav-text"> 数据对齐 Alignment</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%BE%E5%83%8F%E5%8E%8B%E7%BC%A9"><span class="nav-text"> 图像压缩</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%89%B2%E8%B0%83%E6%98%A0%E5%B0%84-tone-mapping"><span class="nav-text"> 色调映射 Tone Mapping</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E7%AE%97%E6%B3%95global-tone-mappinggtm"><span class="nav-text"> 全局算法（Global Tone Mapping，GTM）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B1%80%E9%83%A8%E7%AE%97%E6%B3%95local-tone-mappingltm"><span class="nav-text"> 局部算法（Local Tone Mapping，LTM）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -320,80 +320,121 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="什么是-ISP"><a href="#什么是-ISP" class="headerlink" title="什么是 ISP"></a>什么是 ISP</h1><p>主流的 CMOS 和 CCD sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据，这种数据格式是无法直接观看的，必须转换成常见的 RGB 或 YUV 格式才能被主流的图像处理软件支持。对于 camera 产品而言，一般还需要将 RGB 或 YUV 图像进一步转换成 JPEG 格式以方便进行存储。上述图像处理过程统称图像信号处理（Image Signal Processing，ISP），广义的 ISP 包含了 JPEG 和 H.264/265 图像压缩处理，而狭义的 ISP 仅包括从 RAW 格式变换到 RGB 或 YUV 的处理过程。</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="什么是-isp"><a class="markdownIt-Anchor" href="#什么是-isp"></a> 什么是 ISP</h1>
+<p>主流的 CMOS 和 CCD sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据，这种数据格式是无法直接观看的，必须转换成常见的 RGB 或 YUV 格式才能被主流的图像处理软件支持。对于 camera 产品而言，一般还需要将 RGB 或 YUV 图像进一步转换成 JPEG 格式以方便进行存储。上述图像处理过程统称图像信号处理（Image Signal Processing，ISP），广义的 ISP 包含了 JPEG 和 H.264/265 图像压缩处理，而狭义的 ISP 仅包括从 RAW 格式变换到 RGB 或 YUV 的处理过程。</p>
 <span id="more"></span>
-<p>一个典型的 ISP 流水线由一系列处理模块组成，这些模块首尾相连，在几百 MHz 的时钟驱动下同时高速运转，图像数据不断从一个模块转移至下一个模块，直到完成所有的算法处理，最终以 YUV 或 RGB 的形式从流水线的末级流出 ISP。下图所示的是一个支持常见基本功能的 ISP 流水线。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline1.png" alt=""></p>
-<p>从图中可以看到，图像数据在 ISP 内部经历了两次颜色空间变换，第一次变换发生在 Demosaic 模块，它把像素从即 RAW 域变换到 RGB 域，第二次变换发生在 CSC 模块，它把像素从 RGB 变到 YUV 域。下表对 ISP 各模块的作用给予了简要说明。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline2.png" alt=""><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline3.png" alt=""></p>
+<p>一个典型的 ISP 流水线由一系列处理模块组成，这些模块首尾相连，在几百 MHz 的时钟驱动下同时高速运转，图像数据不断从一个模块转移至下一个模块，直到完成所有的算法处理，最终以 YUV 或 RGB 的形式从流水线的末级流出 ISP。下图所示的是一个支持常见基本功能的 ISP 流水线。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline1.png" alt=""></p>
+<p>从图中可以看到，图像数据在 ISP 内部经历了两次颜色空间变换，第一次变换发生在 Demosaic 模块，它把像素从即 RAW 域变换到 RGB 域，第二次变换发生在 CSC 模块，它把像素从 RGB 变到 YUV 域。下表对 ISP 各模块的作用给予了简要说明。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline2.png" alt=""><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline3.png" alt=""></p>
 <ul>
-<li><p>DPC(Defective Pixel Correction) 坏点矫正。<br>  如果图像中存在坏点的话，在进行插值和滤波处理的时候，会影响周围的像素点，因此需要在插值和滤波之前对坏点进行校正。</p>
+<li>
+<p>DPC(Defective Pixel Correction) 坏点矫正。<br>
+如果图像中存在坏点的话，在进行插值和滤波处理的时候，会影响周围的像素点，因此需要在插值和滤波之前对坏点进行校正。</p>
 <ul>
 <li>静态坏点校正：静态坏点的校正是基于已有的静态坏点表，比较当前点的坐标是否与静态坏点表中的某个坐标一致，若一致则判定为坏点，然后再计算校正结果对其进行校正。，每个 sensor 的坏点都不一样，需要 sensor 厂商给出每个 sensor 的静态坏点表。sensor 的静态坏点表一旦写入存储，dpc 模块会自动替换坏点表中所示坏点。</li>
 <li>动态坏点校正：动态坏点的校正可以实时的检测和校正 sensor 的亮点与暗点，并且校正的坏点个数不受限制。</li>
 </ul>
 </li>
-<li><p>BLC(Black Level Compensation) 黑电平补偿 矫正。<br>  黑电平（Black Level Correction）：即黑色数据的最低电平值，通常指感光图像数据为 0 时对应的 sensor 信号电平值。其原因如下：</p>
+<li>
+<p>BLC(Black Level Compensation) 黑电平补偿 矫正。<br>
+黑电平（Black Level Correction）：即黑色数据的最低电平值，通常指感光图像数据为 0 时对应的 sensor 信号电平值。其原因如下：</p>
 <ul>
 <li>sensor 厂家一般会在 AD 的输入之前加上一个固定的偏移量，使输出的 pixel value 在 5（非固定）~255 之间，目的是为了让暗部的细节完全保留。</li>
-<li>sensor 的电路本身会存在暗电流。<br>矫正方法：</li>
+<li>sensor 的电路本身会存在暗电流。<br>
+矫正方法：</li>
 <li>目前市场上使用的 ISP 一般采用的方法是在 sensor 输出的图像上减去一个固定数值。</li>
 <li>利用黑电平随温度和 gain 的漂移曲线，利用一次函数的方式进行校正，但是对于不同 sensor，漂移曲线不一样，因此该方案没有作为通用方案。</li>
 </ul>
 </li>
-<li><p>LSC(Lens Shading Correction) 镜头矫正。<br>  由于镜头的原因造成的暗角色散等现象需要对图像做一些矫正，后文再做详细介绍。</p>
+<li>
+<p>LSC(Lens Shading Correction) 镜头矫正。<br>
+由于镜头的原因造成的暗角色散等现象需要对图像做一些矫正，后文再做详细介绍。</p>
 </li>
-<li><p>NR(Noise Reduction) 降噪。<br>  raw 域降噪，由于 sensor 输出的数据会存在各种噪声，而 raw 域是在偏靠近原始数据一端，在这个阶段做降噪可以减少噪声在后续算法中放大和传播，后文再做详细介绍。</p>
+<li>
+<p>NR(Noise Reduction) 降噪。<br>
+raw 域降噪，由于 sensor 输出的数据会存在各种噪声，而 raw 域是在偏靠近原始数据一端，在这个阶段做降噪可以减少噪声在后续算法中放大和传播，后文再做详细介绍。</p>
 </li>
-<li><p>AWB(Auto White Balance) 自动白平衡。<br>  自动白平衡，监测环境光，尽可能还原物体本来的颜色，后文再做详细介绍。</p>
+<li>
+<p>AWB(Auto White Balance) 自动白平衡。<br>
+自动白平衡，监测环境光，尽可能还原物体本来的颜色，后文再做详细介绍。</p>
 </li>
-<li><p>Bayer Demosaic 去马赛克。<br>  raw 数据只有在 CFA 下只有一个颜色的亮度信息，需要根据周围的颜色来差值得到 RGB 颜色，这是 raw 域最后一步，经过这一步图像就变成 RGB 域了。</p>
+<li>
+<p>Bayer Demosaic 去马赛克。<br>
+raw 数据只有在 CFA 下只有一个颜色的亮度信息，需要根据周围的颜色来差值得到 RGB 颜色，这是 raw 域最后一步，经过这一步图像就变成 RGB 域了。</p>
 </li>
-<li><p>Gamma 曲线校正。<br>  sensor 对光线的感知是线性的，而人眼对 gamma 的感知是非线性的，因此需要一个映射。其矫正方法如下：</p>
+<li>
+<p>Gamma 曲线校正。<br>
+sensor 对光线的感知是线性的，而人眼对 gamma 的感知是非线性的，因此需要一个映射。其矫正方法如下：</p>
 <ul>
 <li><strong>LUT 法：</strong> 提前把每个像素值经 gamma 矫正后对应的值求出来，然后把这些数据直接存储到一个数中，到矫正的时候根据输入的值就能直接通过数组下标就能找到对应的矫正后的值，这种方式最大的有点就时快，几乎不消耗硬件资源，因为几乎不用做任何计算的处理，但是这种方式的弊端在于需要大量的内存来存储这么这个表。</li>
 <li><strong>线性插值法：</strong> 线性插值法也很好理解，就是在 gamma 曲线上提取一些采样点，然后把采样点的输入输出作为 xy 存储起来，然后矫正的时候如果在采样点上就接直接输入矫正值，如果不在，那么肯定在某两个采样点之间，那么就可以就可以通过这两个采样点的线性方程求解出该点的校正值。但是这种方式会有一定的误差，因为线性方程并布恩那个完全拟合 gamma 曲线。</li>
 </ul>
 </li>
-<li><p>CCM(Color Correction Matrix) 颜色校正。<br>  由于人眼对色彩的感知曲线和 sensor 对色彩的感知曲线不同，为了更符合人类的视觉需要对 sensor 输出的色彩做一个映射，就是 CCM 模块做的事情。这个后文再做详细介绍。</p>
+<li>
+<p>CCM(Color Correction Matrix) 颜色校正。<br>
+由于人眼对色彩的感知曲线和 sensor 对色彩的感知曲线不同，为了更符合人类的视觉需要对 sensor 输出的色彩做一个映射，就是 CCM 模块做的事情。这个后文再做详细介绍。</p>
 </li>
-<li><p>CSC(Color Space Convert) 色彩空间转换。<br>  颜色空间转换，很多算法需要基于 YUV 格式来做，且最重要的 H264、H265 编解码都是基于 YUV 格式的，ISP 需要将图像由 RGB 域转 YUV 域，而该模块就是干这个事情的。</p>
+<li>
+<p>CSC(Color Space Convert) 色彩空间转换。<br>
+颜色空间转换，很多算法需要基于 YUV 格式来做，且最重要的 H264、H265 编解码都是基于 YUV 格式的，ISP 需要将图像由 RGB 域转 YUV 域，而该模块就是干这个事情的。</p>
 </li>
-<li><p>NR Luma(Noise Reduction forLuma) 亮度降噪。<br>  对 Y 分量，也就是亮度信息做降噪处理，一般亮度越低信噪比越低。降噪方法一般就是两种在频域和空域里进行降噪，而常用的算法就是就是设计一个滤波窗口然后对图像进行卷积运算。</p>
+<li>
+<p>NR Luma(Noise Reduction forLuma) 亮度降噪。<br>
+对 Y 分量，也就是亮度信息做降噪处理，一般亮度越低信噪比越低。降噪方法一般就是两种在频域和空域里进行降噪，而常用的算法就是就是设计一个滤波窗口然后对图像进行卷积运算。</p>
 </li>
-<li><p>NR Chroma(Noise Reduction for Chroma) 色彩降噪。<br>  对 UV 分量进行降噪处理，这里的噪声会造成色彩的波动，在亮度很低的情况下噪声会很大，造成色彩波动比较大。</p>
+<li>
+<p>NR Chroma(Noise Reduction for Chroma) 色彩降噪。<br>
+对 UV 分量进行降噪处理，这里的噪声会造成色彩的波动，在亮度很低的情况下噪声会很大，造成色彩波动比较大。</p>
 </li>
-<li><p>Edge Enhance 边缘增强。<br>  由于之前的域中会多次进行降噪处理，而降噪不可避免的会将图像中一些细节也捎带着消除了，导致图像模糊。为了将图像细节还原，减少图像损失，需要对其进行增强，但是不能再次引入噪声，就出现了 Edge Enhance 边缘增强这类处理模块。边缘增强和我们日常说的锐化 sharp 是比较相似的。但是二者也有区别：锐化针对图像所有内容增加锐利度，边缘增强只是针对边缘，避免噪声也会锐化放大。后文再详细介绍。</p>
+<li>
+<p>Edge Enhance 边缘增强。<br>
+由于之前的域中会多次进行降噪处理，而降噪不可避免的会将图像中一些细节也捎带着消除了，导致图像模糊。为了将图像细节还原，减少图像损失，需要对其进行增强，但是不能再次引入噪声，就出现了 Edge Enhance 边缘增强这类处理模块。边缘增强和我们日常说的锐化 sharp 是比较相似的。但是二者也有区别：锐化针对图像所有内容增加锐利度，边缘增强只是针对边缘，避免噪声也会锐化放大。后文再详细介绍。</p>
 </li>
-<li><p>Hue &amp; Saturation 色调饱和度控制。</p>
+<li>
+<p>Hue &amp; Saturation 色调饱和度控制。</p>
 <ul>
 <li>饱和度 Saturation 就是说色彩的鲜艳程度。在 YUV 域中，U、V 分量分别代表蓝和红分量。当 U=V=128 的时候，表示饱和度为 0；当|U-128|和|V-128|的值越大，饱和度也越大。当 U、V 分量的差值与系数 s 相乘，就可以调整饱和度幅度。s=0 表示灰度，s=1 表示原图不调整，0~1 之间表示降低饱和度，大于 1 表示增加饱和度。</li>
 <li>Hue 的意思是色调、色相，表示颜色的相位角。简单理解就是，在一个标准圆中，红色是 0°，绿色是 120°、蓝色是 240°，不同度数表示不同的颜色。后文再详细介绍。</li>
 </ul>
 </li>
-<li><p>Contrast &amp; Brightness 对比度亮度控制。</p>
+<li>
+<p>Contrast &amp; Brightness 对比度亮度控制。</p>
 <ul>
 <li>Brightness 亮度控制是一般摄像头都会有的功能，顾名思义，就是控制亮度来改变图片效果。</li>
-<li>对比度调节 Contrast 也叫做对比度增强 Contrast Enhancement，就是增强图片的对比度。目前对比度增强主要的算法是直方图均衡化（Histogram），根据原始图像的亮度数据进行重新分布，使图片的亮度分布更加均匀<br>后文再详细介绍。</li>
+<li>对比度调节 Contrast 也叫做对比度增强 Contrast Enhancement，就是增强图片的对比度。目前对比度增强主要的算法是直方图均衡化（Histogram），根据原始图像的亮度数据进行重新分布，使图片的亮度分布更加均匀<br>
+后文再详细介绍。</li>
 </ul>
 </li>
 </ul>
-<h1 id="ISP-输入图像的格式"><a href="#ISP-输入图像的格式" class="headerlink" title="ISP 输入图像的格式"></a>ISP 输入图像的格式</h1><p>目前主流的 CMOS sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据。Bayer 格式图片是伊士曼·柯达公司科学家 Bryce Bayer（1929 –2012）发明的，拜耳阵列被广泛运用与数字图像处理领域。</p>
-<p>常用的 Bayer 格式有 RGGB,、GRBG、GBRG 等多种，因此需要正确配置 ISP 以反应 sensor 的数据格式。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline4.png" alt=""></p>
+<h1 id="isp-输入图像的格式"><a class="markdownIt-Anchor" href="#isp-输入图像的格式"></a> ISP 输入图像的格式</h1>
+<p>目前主流的 CMOS sensor 几乎都是输出 Bayer mosaic 格式的 RAW 数据。Bayer 格式图片是伊士曼·柯达公司科学家 Bryce Bayer（1929 –2012）发明的，拜耳阵列被广泛运用与数字图像处理领域。</p>
+<p>常用的 Bayer 格式有 RGGB,、GRBG、GBRG 等多种，因此需要正确配置 ISP 以反应 sensor 的数据格式。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline4.png" alt=""></p>
 <p>RAW 数据的精度常见有 8/10/12/14bit 等规格。安防监控行业较多使用 10/12bit 精度的 sensor，医疗行业则主要使用 12bit 以上精度 sensor，单反和广电行业则主要使用 14bit 精度 sensor。对与一些带宽和存储资源特别紧张的场合，有些 sensor 会支持压缩表示以节约带宽 RawCopmpress。</p>
-<h2 id="图像接入-ISP-的方式"><a href="#图像接入-ISP-的方式" class="headerlink" title="图像接入 ISP 的方式"></a>图像接入 ISP 的方式</h2><ul>
+<h2 id="图像接入-isp-的方式"><a class="markdownIt-Anchor" href="#图像接入-isp-的方式"></a> 图像接入 ISP 的方式</h2>
+<ul>
 <li>在线模式，online mode，sensor 产生的实时数据和时序控制信号以行为单位送入 ISP 进行处理，具备低延迟 (low latency) 的优点。</li>
 <li>离线模式，offline mode，待处理的图像以帧为单位存储于系统内存，需要处理时由一个控制逻辑通过 DMA 从内存中读取数据，并添加模拟 sensor 行为的时序控制信号，然后送给 ISP 进行处理。</li>
 </ul>
-<h2 id="行缓冲-Line-Buffer"><a href="#行缓冲-Line-Buffer" class="headerlink" title="行缓冲 Line Buffer"></a>行缓冲 Line Buffer</h2><p>不论是在线模式还是离线模式，ISP 处理图像都是以行为单位的，所以 ISP 模块都会设计一个 line buffer 可以缓存若干行图像。通常这个 line buffer 的大小就决定了这个 ISP 所支持的最大分辨率。举例来说，如果一个 ISP 的 line buffer 可以容纳每行 2048 个像素，则它无法支持超过 2k/1080p 的分辨率规格。</p>
-<h2 id="数据对齐-Alignment"><a href="#数据对齐-Alignment" class="headerlink" title="数据对齐 Alignment"></a>数据对齐 Alignment</h2><p>ISP、CODEC 等硬件单元在处理图像时通常都会有粒度（granularity）要求，即必须将 8/16/32/64/128 个像素作为一组来处理，这样就可以通过硬件并行化来提高吞吐率。这个需求称为 ISP 的数据对齐（alignment）需求，多数 sensor 都支持一个 linesize 属性，以保证 sensor 输出的每行数据的宽度符合 ISP 的对齐要求。</p>
-<h2 id="图像压缩"><a href="#图像压缩" class="headerlink" title="图像压缩"></a>图像压缩</h2><p>4K 分辨率的图像有 800W 个像素，RAW 格式占 1600W 字节，YUV422 格式占 1200W 字节，8K 分辨率，也就是 7680x4320，RAW 格式占 6600W 字节。</p>
+<h2 id="行缓冲-line-buffer"><a class="markdownIt-Anchor" href="#行缓冲-line-buffer"></a> 行缓冲 Line Buffer</h2>
+<p>不论是在线模式还是离线模式，ISP 处理图像都是以行为单位的，所以 ISP 模块都会设计一个 line buffer 可以缓存若干行图像。通常这个 line buffer 的大小就决定了这个 ISP 所支持的最大分辨率。举例来说，如果一个 ISP 的 line buffer 可以容纳每行 2048 个像素，则它无法支持超过 2k/1080p 的分辨率规格。</p>
+<h2 id="数据对齐-alignment"><a class="markdownIt-Anchor" href="#数据对齐-alignment"></a> 数据对齐 Alignment</h2>
+<p>ISP、CODEC 等硬件单元在处理图像时通常都会有粒度（granularity）要求，即必须将 8/16/32/64/128 个像素作为一组来处理，这样就可以通过硬件并行化来提高吞吐率。这个需求称为 ISP 的数据对齐（alignment）需求，多数 sensor 都支持一个 linesize 属性，以保证 sensor 输出的每行数据的宽度符合 ISP 的对齐要求。</p>
+<h2 id="图像压缩"><a class="markdownIt-Anchor" href="#图像压缩"></a> 图像压缩</h2>
+<p>4K 分辨率的图像有 800W 个像素，RAW 格式占 1600W 字节，YUV422 格式占 1200W 字节，8K 分辨率，也就是 7680x4320，RAW 格式占 6600W 字节。</p>
 <p>为了减轻传输带宽和存储的压力，支持 4K 以上的芯片都会在 DMA 上设计一个压缩算法。当 DMA 向内存中写入数据时，实际进入内存的是压缩后的数据。当 DMA 从内存中读取数据时，用户得到的是解压缩后的数据。</p>
 <p>Arm 出售的图像压缩技术叫 AFBC，即 Arm Frame Buffer Compression，这是一种基于脉冲编码调制 (Pulse Code Modulation,PCM) 技术实现的无损压缩技术，典型情况下可以实现 50% 左右的压缩率，可以节省存储空间和传输带宽。</p>
-<h1 id="色调映射-Tone-Mapping"><a href="#色调映射-Tone-Mapping" class="headerlink" title="色调映射 Tone Mapping"></a>色调映射 Tone Mapping</h1><p>摄像机拍摄室外场景时，晴朗夏天的光照度可以达到 10 万~20 万 lux，理论上拍摄这种场景需要提供高达 5000：1 的动态范围，在摄像机内部则需要使用至少 13 位的数据才能表示 5000：1 的动态范围，在通用 CPU 架构中使用 16 位整数则更加方便。由于数据在处理环节经常涉及除法、开方、指数等浮点运算，所以还需要预留若干个小数位以保持浮点精度，4 位二进制小数可以提供 0.0625 精度，8 位二进制小数可以提供 0.0039 精度。上述的主流 ISP 方案中使用 20 位数据。</p>
+<h1 id="色调映射-tone-mapping"><a class="markdownIt-Anchor" href="#色调映射-tone-mapping"></a> 色调映射 Tone Mapping</h1>
+<p>摄像机拍摄室外场景时，晴朗夏天的光照度可以达到 10 万~20 万 lux，理论上拍摄这种场景需要提供高达 5000：1 的动态范围，在摄像机内部则需要使用至少 13 位的数据才能表示 5000：1 的动态范围，在通用 CPU 架构中使用 16 位整数则更加方便。由于数据在处理环节经常涉及除法、开方、指数等浮点运算，所以还需要预留若干个小数位以保持浮点精度，4 位二进制小数可以提供 0.0625 精度，8 位二进制小数可以提供 0.0039 精度。上述的主流 ISP 方案中使用 20 位数据。</p>
 <p>当图像在显示设备上输出时，普通的 LDR 显示器只能提供 256 级灰度，按数量级是 100:1 的动态范围。符合 HDR10 标准的显示器可以提供 1000:1 的动态范围，已经可以较好地还原自然场景的动态。如果摄像机的适配输出设备是 LDR 显示器，则摄像机的 ISP 内部需要完成从 5000:1 到 100:1 的动态范围压缩。</p>
 <p>当 WDR 模块完成多帧合成（frame stitch）后，接下来就需要对数据位宽进行压缩以节约后续步骤的计算资源。比较合理的做法是采取逐级压缩策略，比如在 WDR 模块先压缩到 12 位精度，经过 CCM、Gamma 等颜色处理后进一步压缩到 10 位精度，经过 CSC 模块后进行最后一次压缩得到最终的 8 位精度输出。</p>
-<p>从 16/20 位精度压缩到 12 位精度的过程称为色调映射，这一步骤的主要任务是压缩图像的动态范围，将 HDR 图像映射到 LDR 图像，并尽量保证图像细节不损失。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline5.png" alt=""></p>
+<p>从 16/20 位精度压缩到 12 位精度的过程称为色调映射，这一步骤的主要任务是压缩图像的动态范围，将 HDR 图像映射到 LDR 图像，并尽量保证图像细节不损失。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline5.png" alt=""></p>
 <p>色调映射的方法大致分为两类 ，即全局算法和局部算法。</p>
-<h2 id="全局算法（Global-Tone-Mapping，GTM）"><a href="#全局算法（Global-Tone-Mapping，GTM）" class="headerlink" title="全局算法（Global Tone Mapping，GTM）"></a>全局算法（Global Tone Mapping，GTM）</h2><p>全局算法可以理解为每幅图像有一个颜色映射表，GTM 算法通过查表的方法把一个输入颜色映射为一个输出颜色。有些算法对所有图像都使用固定的表，有些算法则是针对每一帧图像创建不同的表。</p>
+<h2 id="全局算法global-tone-mappinggtm"><a class="markdownIt-Anchor" href="#全局算法global-tone-mappinggtm"></a> 全局算法（Global Tone Mapping，GTM）</h2>
+<p>全局算法可以理解为每幅图像有一个颜色映射表，GTM 算法通过查表的方法把一个输入颜色映射为一个输出颜色。有些算法对所有图像都使用固定的表，有些算法则是针对每一帧图像创建不同的表。</p>
 <p>GTM 算法特点 ：</p>
 <ul>
 <li>任意相同颜色的像素点，在映射后，还是相同的颜色。</li>
@@ -401,9 +442,13 @@
 <li>全局算法的性能一般劣于局部方法。</li>
 </ul>
 <p>存在算法 ： 直方图均衡化、Gamma、对数校正、直方图规定化、分段灰度变换</p>
-<p>一种基于 Gamma 的算法叫做 Academy Color Encoding System（ACES），它由美国电影艺术与科学学会提出，有人认为这是目前最好的一种 GTM 算法。ACES 本质上是一个通用的数据交换格式，既可以把不同的输入设备转成 ACES，也可以把 ACES 在不同的显示设备上正确地显示。不管是 LDR 还是 HDR 都可以在 ACES 里表达出来。ACES 的转换曲线如下图所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline6.png" alt=""></p>
-<h2 id="局部算法（Local-Tone-Mapping，LTM）"><a href="#局部算法（Local-Tone-Mapping，LTM）" class="headerlink" title="局部算法（Local Tone Mapping，LTM）"></a>局部算法（Local Tone Mapping，LTM）</h2><p>人眼的感知特性具有局部性特点，举例来说，在普通人眼看来下图中的 A 色块的亮度明显低于 B 色块的亮度。而事实真相是，这两个色块的真实像素亮度是一模一样的，人眼感觉 B 更亮，主要是因为 B 的周围是暗色块，而 A 的周围是亮色块，人的知觉系统针对这种场景自动做了对比度提升。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline7.png" alt=""></p>
-<p>这种现象在总体上可以归结为人的知觉恒常特性，具体地说就是亮度恒常特性。下图是另外一个亮度恒常的例子。在这个例子中，所有小灰色块的真实亮度都是一样的，但是如果周围环绕的颜色不同，人对灰色块的颜色知觉也不相同。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline8.png" alt=""></p>
+<p>一种基于 Gamma 的算法叫做 Academy Color Encoding System（ACES），它由美国电影艺术与科学学会提出，有人认为这是目前最好的一种 GTM 算法。ACES 本质上是一个通用的数据交换格式，既可以把不同的输入设备转成 ACES，也可以把 ACES 在不同的显示设备上正确地显示。不管是 LDR 还是 HDR 都可以在 ACES 里表达出来。ACES 的转换曲线如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline6.png" alt=""></p>
+<h2 id="局部算法local-tone-mappingltm"><a class="markdownIt-Anchor" href="#局部算法local-tone-mappingltm"></a> 局部算法（Local Tone Mapping，LTM）</h2>
+<p>人眼的感知特性具有局部性特点，举例来说，在普通人眼看来下图中的 A 色块的亮度明显低于 B 色块的亮度。而事实真相是，这两个色块的真实像素亮度是一模一样的，人眼感觉 B 更亮，主要是因为 B 的周围是暗色块，而 A 的周围是亮色块，人的知觉系统针对这种场景自动做了对比度提升。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline7.png" alt=""></p>
+<p>这种现象在总体上可以归结为人的知觉恒常特性，具体地说就是亮度恒常特性。下图是另外一个亮度恒常的例子。在这个例子中，所有小灰色块的真实亮度都是一样的，但是如果周围环绕的颜色不同，人对灰色块的颜色知觉也不相同。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pipeline8.png" alt=""></p>
 <p>局部算法借鉴了人眼的知觉原理，在映射一个像素时，不仅考虑该像素的绝对值，还会考虑该像素周围区域的平均亮度值，将对比度大的像素映射为高亮，对比度小的像素映射为低亮，往往可以取得更好的效果。</p>
 <p>LTM 算法特点 ：</p>
 <ul>
@@ -413,7 +458,9 @@
 <li>会出现光晕等现象。</li>
 </ul>
 <p>存在算法 ： 分块中值直方图，基于 Retinex 原理的算法等</p>
-<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC85ODgyMDkyNw==">https://zhuanlan.zhihu.com/p/98820927<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8zOTc4MTM0MTc=">https://zhuanlan.zhihu.com/p/397813417<i class="fa fa-external-link-alt"></i></span></p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC85ODgyMDkyNw==">https://zhuanlan.zhihu.com/p/98820927<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8zOTc4MTM0MTc=">https://zhuanlan.zhihu.com/p/397813417<i class="fa fa-external-link-alt"></i></span></p>
 
     </div>
 

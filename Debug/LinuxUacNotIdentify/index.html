@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="USB枚举流程USB连接过程 这个过程包括Attached、Powered、Reset（进入Default状态）、Set Address（进入Address状态）。然后会进入config阶段，如下： Config过程请求device描述符  bmRequestType：0x80表示从设备到主机，请求标准命令，接收者为设备 bRequest：0x06表示读取描述符 wValue: 表示要获取描述符的">
+    <meta name="description" content="USB枚举流程  USB连接过程  这个过程包括Attached、Powered、Reset（进入Default状态）、Set Address（进入Address状态）。然后会进入config阶段，如下：  Config过程  请求device描述符   bmRequestType：0x80表示从设备到主机，请求标准命令，接收者为设备 bRequest：0x06表示读取描述符 wValue: 表">
 <meta property="og:type" content="article">
 <meta property="og:title" content="一次UAC设备不识别问题追查">
 <meta property="og:url" content="https://carlyleliu.github.io/Debug/LinuxUacNotIdentify/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="USB枚举流程USB连接过程 这个过程包括Attached、Powered、Reset（进入Default状态）、Set Address（进入Address状态）。然后会进入config阶段，如下： Config过程请求device描述符  bmRequestType：0x80表示从设备到主机，请求标准命令，接收者为设备 bRequest：0x06表示读取描述符 wValue: 表示要获取描述符的">
+<meta property="og:description" content="USB枚举流程  USB连接过程  这个过程包括Attached、Powered、Reset（进入Default状态）、Set Address（进入Address状态）。然后会进入config阶段，如下：  Config过程  请求device描述符   bmRequestType：0x80表示从设备到主机，请求标准命令，接收者为设备 bRequest：0x06表示读取描述符 wValue: 表">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/i/6717886ddf1a1.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/i/67924961e9527.png">
@@ -45,9 +45,9 @@
 <meta property="article:published_time" content="2025-01-03T13:39:55.000Z">
 <meta property="article:modified_time" content="2025-10-26T03:13:11.000Z">
 <meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="UAC">
 <meta property="article:tag" content="Debug">
 <meta property="article:tag" content="Programming">
-<meta property="article:tag" content="UAC">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://lsky.carlyleliu.vip/i/6717886ddf1a1.png">
 
@@ -166,7 +166,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#USB%E6%9E%9A%E4%B8%BE%E6%B5%81%E7%A8%8B"><span class="nav-text">USB枚举流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#USB%E8%BF%9E%E6%8E%A5%E8%BF%87%E7%A8%8B"><span class="nav-text">USB连接过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Config%E8%BF%87%E7%A8%8B"><span class="nav-text">Config过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82device%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">请求device描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#device%E7%9A%84%E8%AE%BE%E5%A4%87%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">device的设备描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%BE%97%E7%9A%84%E9%85%8D%E7%BD%AE%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">获得的配置描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E5%85%B6%E4%BB%96%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text">获取其他描述符</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E7%8E%B0%E8%B1%A1"><span class="nav-text">问题现象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="nav-text">问题分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AB%AF%E7%82%B9%E5%8F%B7%E7%BB%9F%E8%AE%A1"><span class="nav-text">端点号统计</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95"><span class="nav-text">解决办法</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#usb%E6%9E%9A%E4%B8%BE%E6%B5%81%E7%A8%8B"><span class="nav-text"> USB枚举流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#usb%E8%BF%9E%E6%8E%A5%E8%BF%87%E7%A8%8B"><span class="nav-text"> USB连接过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#config%E8%BF%87%E7%A8%8B"><span class="nav-text"> Config过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82device%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> 请求device描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#device%E7%9A%84%E8%AE%BE%E5%A4%87%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> device的设备描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%BE%97%E7%9A%84%E9%85%8D%E7%BD%AE%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> 获得的配置描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E5%85%B6%E4%BB%96%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> 获取其他描述符</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E7%8E%B0%E8%B1%A1"><span class="nav-text"> 问题现象</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%97%AE%E9%A2%98%E5%88%86%E6%9E%90"><span class="nav-text"> 问题分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%AB%AF%E7%82%B9%E5%8F%B7%E7%BB%9F%E8%AE%A1"><span class="nav-text"> 端点号统计</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%8A%9E%E6%B3%95"><span class="nav-text"> 解决办法</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -325,9 +325,13 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="USB枚举流程"><a href="#USB枚举流程" class="headerlink" title="USB枚举流程"></a><strong>USB枚举流程</strong></h1><h2 id="USB连接过程"><a href="#USB连接过程" class="headerlink" title="USB连接过程"></a>USB连接过程</h2><p><img src="https://lsky.carlyleliu.vip/i/6717886ddf1a1.png" alt="UACId1.png"></p>
+    <div class="post-body" itemprop="articleBody"><h1 id="usb枚举流程"><a class="markdownIt-Anchor" href="#usb枚举流程"></a> <strong>USB枚举流程</strong></h1>
+<h2 id="usb连接过程"><a class="markdownIt-Anchor" href="#usb连接过程"></a> USB连接过程</h2>
+<p><img src="https://lsky.carlyleliu.vip/i/6717886ddf1a1.png" alt="UACId1.png"></p>
 <p>这个过程包括Attached、Powered、Reset（进入Default状态）、Set Address（进入Address状态）。然后会进入config阶段，如下：</p>
-<h2 id="Config过程"><a href="#Config过程" class="headerlink" title="Config过程"></a>Config过程</h2><h3 id="请求device描述符"><a href="#请求device描述符" class="headerlink" title="请求device描述符"></a><strong>请求device描述符</strong></h3><p><img src="https://lsky.carlyleliu.vip/i/67924961e9527.png" alt="UACId2.png"></p>
+<h2 id="config过程"><a class="markdownIt-Anchor" href="#config过程"></a> Config过程</h2>
+<h3 id="请求device描述符"><a class="markdownIt-Anchor" href="#请求device描述符"></a> <strong>请求device描述符</strong></h3>
+<p><img src="https://lsky.carlyleliu.vip/i/67924961e9527.png" alt="UACId2.png"></p>
 <ul>
 <li>bmRequestType：0x80表示从设备到主机，请求标准命令，接收者为设备</li>
 <li>bRequest：0x06表示读取描述符</li>
@@ -340,7 +344,8 @@
 <li>wLength：指定了描述符的字节数，这里为0x12（18）字节</li>
 </ul>
 <span id="more"></span>
-<h3 id="device的设备描述符"><a href="#device的设备描述符" class="headerlink" title="device的设备描述符"></a><strong>device的设备描述符</strong></h3><p><img src="https://lsky.carlyleliu.vip/i/679249fca2e07.png" alt="UACId3.png"></p>
+<h3 id="device的设备描述符"><a class="markdownIt-Anchor" href="#device的设备描述符"></a> <strong>device的设备描述符</strong></h3>
+<p><img src="https://lsky.carlyleliu.vip/i/679249fca2e07.png" alt="UACId3.png"></p>
 <ul>
 <li>bLength：设备描述符的字节数大小，这里长度为0x12（18）字节</li>
 <li>bDescriptorType：描述符类型编号，0x01代表设备描述符</li>
@@ -358,24 +363,34 @@
 <li>bNumConfiguration：可能的配置数量 （1）</li>
 </ul>
 <p><img src="https://lsky.carlyleliu.vip/i/67924a3ccda56.png" alt="UACId4.png"></p>
-<p>请求config描述符<br><img src="https://lsky.carlyleliu.vip/i/67924a6340091.png" alt="UACId5.png"></p>
+<p>请求config描述符<br>
+<img src="https://lsky.carlyleliu.vip/i/67924a6340091.png" alt="UACId5.png"></p>
 <p>与请求设备描述符差别在于wValue，bDescriptorType=0x02表示配置描述符</p>
-<h3 id="获得的配置描述符"><a href="#获得的配置描述符" class="headerlink" title="获得的配置描述符"></a><strong>获得的配置描述符</strong></h3><p>配置描述符在USB设备的枚举过程中，需要获取两次：第一次只获取配置描述符的基本长度9字节，获取后从wTotalLength字节中解析出配置描述符的总长度，然后再次获取全部的描述符。如下图所示，第一次获取描述符基本数据得到的respond是配置描述符有301字节，需要再获取一次301字节的请求，第二次数据量太大包含配置描述符的拓扑结构这里不列出来，只把第一次请求返回的结果列出来，如下图所示。<br><img src="https://lsky.carlyleliu.vip/i/67924a8c720f1.png" alt="UACId6.png"></p>
-<p><img src="https://lsky.carlyleliu.vip/i/67924aab069e0.png" alt="UACId8.png"><br>抓包数据和windows显示的描述符两者是一致的。</p>
-<h3 id="获取其他描述符"><a href="#获取其他描述符" class="headerlink" title="获取其他描述符"></a><strong>获取其他描述符</strong></h3><p>之后就是相同的流程继续获取各string描述符。</p>
+<h3 id="获得的配置描述符"><a class="markdownIt-Anchor" href="#获得的配置描述符"></a> <strong>获得的配置描述符</strong></h3>
+<p>配置描述符在USB设备的枚举过程中，需要获取两次：第一次只获取配置描述符的基本长度9字节，获取后从wTotalLength字节中解析出配置描述符的总长度，然后再次获取全部的描述符。如下图所示，第一次获取描述符基本数据得到的respond是配置描述符有301字节，需要再获取一次301字节的请求，第二次数据量太大包含配置描述符的拓扑结构这里不列出来，只把第一次请求返回的结果列出来，如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/i/67924a8c720f1.png" alt="UACId6.png"></p>
+<p><img src="https://lsky.carlyleliu.vip/i/67924aab069e0.png" alt="UACId8.png"><br>
+抓包数据和windows显示的描述符两者是一致的。</p>
+<h3 id="获取其他描述符"><a class="markdownIt-Anchor" href="#获取其他描述符"></a> <strong>获取其他描述符</strong></h3>
+<p>之后就是相同的流程继续获取各string描述符。</p>
 <p>对于UAC的FU，会有获取CUR、MIN、MAX、RANGE、RES等流程以及设置CUR的流程。</p>
 <p>其中获取CUR、MIN、MAX、RANGE、RES等是通过USB设备请求format获取的，其相关字段解释如下：</p>
-<p><strong>Format of Setup Data</strong><br><img src="https://lsky.carlyleliu.vip/i/67924ad21dd56.png" alt="UACId7.png"></p>
+<p><strong>Format of Setup Data</strong><br>
+<img src="https://lsky.carlyleliu.vip/i/67924ad21dd56.png" alt="UACId7.png"></p>
 <p><img src="https://lsky.carlyleliu.vip/i/67924af5f1d84.png" alt="UACId9.png"></p>
-<h1 id="问题现象"><a href="#问题现象" class="headerlink" title="问题现象"></a>问题现象</h1><ul>
+<h1 id="问题现象"><a class="markdownIt-Anchor" href="#问题现象"></a> 问题现象</h1>
+<ul>
 <li>前提：我们的公版和客户的板子usb驱动和uac驱动完全一致</li>
 <li>我们的公版UAC1+ADB+Feature Unit接PC和手机都可以识别</li>
 <li>客户板子UAC1+ADB+Feature Unit设备接手机时UAC设备不识别，接PC的时候能够被识别</li>
 <li>客户板子UAC1+Feature Unit接手机可以被识别</li>
 <li>客户板子UAC1+Feature Unit（disabled int ep）+ADB接手机可以被识别</li>
 </ul>
-<h1 id="问题分析"><a href="#问题分析" class="headerlink" title="问题分析"></a>问题分析</h1><p>通过以上现象发现UAC1不识别跟端点相关，但是统计发现端点数量是够用的，可以支持同时开启UAC1+Feature Unit+ADB。可以对比同时开启UAC1+Feature Unit+ADB公版和客户版的usb包。<br><img src="https://lsky.carlyleliu.vip/i/67924b290f23f.png" alt="UACId10.png"></p>
-<h2 id="端点号统计"><a href="#端点号统计" class="headerlink" title="端点号统计"></a>端点号统计</h2><p>只有低4bit位代表端点号 harman Board.（UAC先申请的EP）</p>
+<h1 id="问题分析"><a class="markdownIt-Anchor" href="#问题分析"></a> 问题分析</h1>
+<p>通过以上现象发现UAC1不识别跟端点相关，但是统计发现端点数量是够用的，可以支持同时开启UAC1+Feature Unit+ADB。可以对比同时开启UAC1+Feature Unit+ADB公版和客户版的usb包。<br>
+<img src="https://lsky.carlyleliu.vip/i/67924b290f23f.png" alt="UACId10.png"></p>
+<h2 id="端点号统计"><a class="markdownIt-Anchor" href="#端点号统计"></a> 端点号统计</h2>
+<p>只有低4bit位代表端点号 harman Board.（UAC先申请的EP）</p>
 <ul>
 <li>uac 端点号：</li>
 <li>FU：129-&gt;1</li>
@@ -396,10 +411,12 @@
 <li>1</li>
 <li>129-&gt;1</li>
 </ul>
-<p>手机下发131-&gt;3,对应UAC IN端口<br><img src="https://lsky.carlyleliu.vip/i/67924b529b132.png" alt="UACId11.png"></p>
+<p>手机下发131-&gt;3,对应UAC IN端口<br>
+<img src="https://lsky.carlyleliu.vip/i/67924b529b132.png" alt="UACId11.png"></p>
 <p>这是wIndex各bit组成，通过测试发现，客户的板子先初始化了UAC后初始化了ADB，我们公版先初始化了ADB后初始化了UAC 由于FFS驱动在匹配端点号的时候只匹配了低4bit，也就是只匹配了ep num，而忽略了dir，导致FFS匹配错端点号了，手机下发的wIndex是130实际对应的是UAC的IN端点，但是FFS驱动在匹配端点的函数中（ffs_func_req_match）忽略了dir bit，导致手机下发的UAC IN端点号130取低4bit=2跟FFS的端点2重复了。本来该UAC处理的请求被FFS驱动匹配端点号后由FFS驱动处理了。导致后续很多异常包。</p>
 <p><img src="https://lsky.carlyleliu.vip/i/67924b7b56b33.png" alt="UACId12.png"></p>
-<h1 id="解决办法"><a href="#解决办法" class="headerlink" title="解决办法"></a>解决办法</h1><ul>
+<h1 id="解决办法"><a class="markdownIt-Anchor" href="#解决办法"></a> 解决办法</h1>
+<ul>
 <li>可以修改启动脚本，先初始化ADB后初始化UAC来绕过这个问题</li>
 <li>修改FFS端点匹配机制，除了低4bit的ep num需要匹配外，dir也要匹配</li>
 <li>修改EP num编号，IN和OUT使用不同的endpoint number，例如IN使用奇数，OUT使用偶数</li>
@@ -442,9 +459,9 @@
 </div>
 
           <div class="post-tags">
+              <a href="/tags/UAC/" rel="tag"><i class="fa fa-tag"></i> UAC</a>
               <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
               <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
-              <a href="/tags/UAC/" rel="tag"><i class="fa fa-tag"></i> UAC</a>
           </div>
 
         

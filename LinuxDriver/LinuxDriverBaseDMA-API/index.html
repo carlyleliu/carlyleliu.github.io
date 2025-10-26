@@ -23,15 +23,14 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="😊 There are two types of DMA mappingsConsistent DM（硬件保证 cache 一致性） mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the">
+    <meta name="description" content="😊 There are two types of DMA mappings Consistent DM（硬件保证 cache 一致性） mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that t">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 驱动之基础（二）DMA-API">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxDriverBaseDMA-API/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="😊 There are two types of DMA mappingsConsistent DM（硬件保证 cache 一致性） mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the">
+<meta property="og:description" content="😊 There are two types of DMA mappings Consistent DM（硬件保证 cache 一致性） mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that t">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma1.png">
-<meta property="og:image" content="https://github.githubassets.com/images/icons/emoji/unicode/1f61c.png?v8">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma2.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma3.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma4.png">
@@ -40,8 +39,8 @@
 <meta property="article:published_time" content="2024-05-02T15:20:16.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.389Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Linux">
 <meta property="article:tag" content="Driver">
+<meta property="article:tag" content="Linux">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma1.png">
 
@@ -160,7 +159,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%F0%9F%98%8A-There-are-two-types-of-DMA-mappings"><span class="nav-text">😊 There are two types of DMA mappings</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%F0%9F%98%84-DMA-Direction"><span class="nav-text">😄 DMA Direction:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%F0%9F%98%8B-dma-sync-single-for-device-cpu-API"><span class="nav-text">😋 dma_sync_single_for_device&#x2F;cpu API</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#stuck-out-tongue-winking-eye-%E5%AF%B9%E4%BA%8E-Linux-upstream-%E7%A4%BE%E5%8C%BA"><span class="nav-text">😜 对于 Linux upstream 社区</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-5-x"><span class="nav-text">kernel 5.x</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-6-x"><span class="nav-text">kernel 6.x</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8E-Google-%E7%A4%BE%E5%8C%BA"><span class="nav-text">对于 Google 社区</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-5-x-1"><span class="nav-text">kernel 5.x</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-6-x-1"><span class="nav-text">kernel 6.x</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Linux-upstream"><span class="nav-text">Linux upstream</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Google-%E7%A4%BE%E5%8C%BA"><span class="nav-text">Google 社区</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%F0%9F%8D%A6-QA"><span class="nav-text">🍦 QA</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%F0%9F%8D%AD-%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">🍭 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#there-are-two-types-of-dma-mappings"><span class="nav-text"> 😊 There are two types of DMA mappings</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dma-direction"><span class="nav-text"> 😄 DMA Direction:</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#dma_sync_single_for_devicecpu-api"><span class="nav-text"> 😋 dma_sync_single_for_device&#x2F;cpu API</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8E-linux-upstream-%E7%A4%BE%E5%8C%BA"><span class="nav-text"> 😜 对于 Linux upstream 社区</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-5x"><span class="nav-text"> kernel 5.x</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-6x"><span class="nav-text"> kernel 6.x</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%B9%E4%BA%8E-google-%E7%A4%BE%E5%8C%BA"><span class="nav-text"> 对于 Google 社区</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-5x-2"><span class="nav-text"> kernel 5.x</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#kernel-6x-2"><span class="nav-text"> kernel 6.x</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text"> 总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#linux-upstream"><span class="nav-text"> Linux upstream</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#google-%E7%A4%BE%E5%8C%BA"><span class="nav-text"> Google 社区</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#qa"><span class="nav-text"> 🍦 QA</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 🍭 参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -319,10 +318,12 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="😊-There-are-two-types-of-DMA-mappings"><a href="#😊-There-are-two-types-of-DMA-mappings" class="headerlink" title="😊 There are two types of DMA mappings"></a>😊 There are two types of DMA mappings</h1><p>Consistent DM（硬件保证 cache 一致性） mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the CPU can access the data in parallel and will see updates made by each other without any explicit software flushing.</p>
-<p>Streaming DMA（需要软件来维护 cache 一致性） mappings which are usually mapped for one DMA transfer, unmapped right after it (unless you use dma<em>sync</em>* below) and for which hardware can optimize for sequential accesses.</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="there-are-two-types-of-dma-mappings"><a class="markdownIt-Anchor" href="#there-are-two-types-of-dma-mappings"></a> 😊 There are two types of DMA mappings</h1>
+<p>Consistent DM（硬件保证 cache 一致性） mappings which are usually mapped at driver initialization, unmapped at the end and for which the hardware should guarantee that the device and the CPU can access the data in parallel and will see updates made by each other without any explicit software flushing.</p>
+<p>Streaming DMA（需要软件来维护 cache 一致性） mappings which are usually mapped for one DMA transfer, unmapped right after it (unless you use dma_sync_* below) and for which hardware can optimize for sequential accesses.</p>
 <span id="more"></span>
-<h1 id="😄-DMA-Direction"><a href="#😄-DMA-Direction" class="headerlink" title="😄 DMA Direction:"></a>😄 DMA Direction:</h1><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma1.png" alt=""></p>
+<h1 id="dma-direction"><a class="markdownIt-Anchor" href="#dma-direction"></a> 😄 DMA Direction:</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma1.png" alt=""></p>
 <p>The interfaces described in subsequent portions of this document take a DMA direction argument, which is an integer and takes on one of the following values:</p>
 <ul>
 <li>DMA_BIDIRECTIONAL</li>
@@ -338,26 +339,48 @@
 <p>Another advantage of specifying this value precisely (outside of potential platform-specific optimizations of such) is for debugging. Some platforms actually have a write permission boolean which DMA mappings can be marked with, much like page protections in the user program address space.  Such platforms can and do report errors in the kernel logs when the DMA controller hardware detects violation of the permission setting.</p>
 <p>Only streaming mappings specify a direction, consistent mappings implicitly have a direction attribute setting of DMA_BIDIRECTIONAL.</p>
 <p>For Networking drivers, it’s a rather simple affair.  For transmit packets, map/unmap them with the DMA_TO_DEVICE direction specifier.  For receive packets, just the opposite, map/unmap them with the DMA_FROM_DEVICE direction specifier.</p>
-<h1 id="😋-dma-sync-single-for-device-cpu-API"><a href="#😋-dma-sync-single-for-device-cpu-API" class="headerlink" title="😋 dma_sync_single_for_device/cpu API"></a>😋 dma_sync_single_for_device/cpu API</h1><p><em>调用栈：</em>   </p>
+<h1 id="dma_sync_single_for_devicecpu-api"><a class="markdownIt-Anchor" href="#dma_sync_single_for_devicecpu-api"></a> 😋 dma_sync_single_for_device/cpu API</h1>
+<p><em>调用栈：</em></p>
 <figure class="highlight diff"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">dma_sync_single_for_device/cpu</span><br><span class="line">    --&gt;dma_direct_sync_single_for_device/cpu</span><br><span class="line">        --&gt;arch_sync_dma_for_device/cpu</span><br><span class="line">            --&gt;_dma_map_area/__dma_unmap_area --&gt; dcache_clean_poc/dcache_inval_poc</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="stuck-out-tongue-winking-eye-对于-Linux-upstream-社区"><a href="#stuck-out-tongue-winking-eye-对于-Linux-upstream-社区" class="headerlink" title=":stuck_out_tongue_winking_eye: 对于 Linux upstream 社区"></a><span class="github-emoji"><span>😜</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f61c.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span> 对于 Linux upstream 社区</h2><h3 id="kernel-5-x"><a href="#kernel-5-x" class="headerlink" title="kernel 5.x"></a>kernel 5.x</h3><p>arch_sync_dma_for_device 全部执行 clean cache<br>arch_sync_dma_for_device 如果 direction 是 DMA_TO_DEVICE 则什么也不做否则执行 invalid cache</p>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma2.png" alt=""><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma3.png" alt=""></p>
-<h3 id="kernel-6-x"><a href="#kernel-6-x" class="headerlink" title="kernel 6.x"></a>kernel 6.x</h3><p>在 arch_sync_dma_for_device 中 direction 被忽略掉，执行 dcache_clean_poc(clean cache)<br>在 arch_sync_dma_for_cpu 中 dir 为 DMA_TO_DEVICE 什么也不做直接返回，否则执行 dcache_inval_poc（invalid cache）</p>
+<h2 id="对于-linux-upstream-社区"><a class="markdownIt-Anchor" href="#对于-linux-upstream-社区"></a> 😜 对于 Linux upstream 社区</h2>
+<h3 id="kernel-5x"><a class="markdownIt-Anchor" href="#kernel-5x"></a> kernel 5.x</h3>
+<p>arch_sync_dma_for_device 全部执行 clean cache<br>
+arch_sync_dma_for_device 如果 direction 是 DMA_TO_DEVICE 则什么也不做否则执行 invalid cache</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma2.png" alt=""><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma3.png" alt=""></p>
+<h3 id="kernel-6x"><a class="markdownIt-Anchor" href="#kernel-6x"></a> kernel 6.x</h3>
+<p>在 arch_sync_dma_for_device 中 direction 被忽略掉，执行 dcache_clean_poc(clean cache)<br>
+在 arch_sync_dma_for_cpu 中 dir 为 DMA_TO_DEVICE 什么也不做直接返回，否则执行 dcache_inval_poc（invalid cache）</p>
 <p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma4.png" alt=""></p>
-<h2 id="对于-Google-社区"><a href="#对于-Google-社区" class="headerlink" title="对于 Google 社区"></a>对于 Google 社区</h2><h3 id="kernel-5-x-1"><a href="#kernel-5-x-1" class="headerlink" title="kernel 5.x"></a>kernel 5.x</h3><p><strong>dma_map_area(): 如果 direction 是 DMA_FROM_DEVICE 则先执行一个 fluah 操作，然后执行 clean cache，如果 direction 不是 DMA_FROM_DEVICE 则只执行 clean cache
-</strong>dma_unmap_area(): 如果 direction 等于 DMA_TO_DEVICE 什么也不做否则执行__dma_inv_area(invalid cache)<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma5.png" alt=""></p>
-<h3 id="kernel-6-x-1"><a href="#kernel-6-x-1" class="headerlink" title="kernel 6.x"></a>kernel 6.x</h3><p>for_device 忽略 direction、全部 direction 执行 clean cache<br>for_cpu 忽略 DMA_TO_DEVICE, 其他 direction 执行 invalid cache<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma6.png" alt=""></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><h3 id="Linux-upstream"><a href="#Linux-upstream" class="headerlink" title="Linux upstream"></a>Linux upstream</h3><p><em>kernel 5.x:</em>   </p>
-<p>dma_sync_single_for_device： 忽略 direction 全部执行 clean cache<br>dma_sync_single_for_cpu： 如果 direction 是 DMA_TO_DEVICE 则什么也不做，否则执行 invalid cache</p>
-<p><em>kernel 6.x:</em> </p>
+<h2 id="对于-google-社区"><a class="markdownIt-Anchor" href="#对于-google-社区"></a> 对于 Google 社区</h2>
+<h3 id="kernel-5x-2"><a class="markdownIt-Anchor" href="#kernel-5x-2"></a> kernel 5.x</h3>
+<p>__dma_map_area(): 如果 direction 是 DMA_FROM_DEVICE 则先执行一个 fluah 操作，然后执行 clean cache，如果 direction 不是 DMA_FROM_DEVICE 则只执行 clean cache<br>
+__dma_unmap_area(): 如果 direction 等于 DMA_TO_DEVICE 什么也不做否则执行__dma_inv_area(invalid cache)<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma5.png" alt=""></p>
+<h3 id="kernel-6x-2"><a class="markdownIt-Anchor" href="#kernel-6x-2"></a> kernel 6.x</h3>
+<p>for_device 忽略 direction、全部 direction 执行 clean cache<br>
+for_cpu 忽略 DMA_TO_DEVICE, 其他 direction 执行 invalid cache<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/dma6.png" alt=""></p>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<h3 id="linux-upstream"><a class="markdownIt-Anchor" href="#linux-upstream"></a> Linux upstream</h3>
+<p><em>kernel 5.x:</em></p>
+<p>dma_sync_single_for_device： 忽略 direction 全部执行 clean cache<br>
+dma_sync_single_for_cpu： 如果 direction 是 DMA_TO_DEVICE 则什么也不做，否则执行 invalid cache</p>
+<p><em>kernel 6.x:</em></p>
 <p>同 kernel 5.x 逻辑一致，只是改了下 api 名称</p>
-<h3 id="Google-社区"><a href="#Google-社区" class="headerlink" title="Google 社区"></a>Google 社区</h3><p><em>kernel 5.x:</em>   </p>
-<p>dma_sync_single_for_device： 如果 direction 是 DMA_FROM_DEVICE 则多执行一个 flush cache，全部 direction 都会执行 clean cache<br>dma_sync_single_for_cpu： 如果 direction 是 DMA_TO_DEVICE 则什么也不做，否则执行 invalid cache（同 linux upstream 逻辑一致）   </p>
-<p><em>kernel 6.x:</em> </p>
-<p>同 linux upstream 逻辑一致   </p>
-<p>dma_sync_single_for_device： 忽略 direction 全部执行 clean cache<br>dma_sync_single_for_cpu： 如果 direction 是 DMA_TO_DEVICE 则什么也不做，否则执行 invalid cache   </p>
-<h1 id="🍦-QA"><a href="#🍦-QA" class="headerlink" title="🍦 QA"></a>🍦 QA</h1><p><strong>Q：</strong> 在 cache 和 ddr 中的数据一致后，DMA 将 device 数据搬运到 ddr 后（cache 与 ddr 不一样）如果调用 flush 接口，flush 先做 clean 操作会不会将 cache 中的数据写回 DDR.<br><strong>A：</strong> 不会。clean 操作是检查 dirty 标志位，在硬件改写过程中 dirty 标志位一直是 0（非 dirty），所以此时 flush 操作中的 clean 操作只是检查一遍 dirty bit, 之后做 invalid 操作。</p>
-<h1 id="🍭-参考文献"><a href="#🍭-参考文献" class="headerlink" title="🍭 参考文献"></a>🍭 参考文献</h1><p>《Linux Document》   </p>
+<h3 id="google-社区"><a class="markdownIt-Anchor" href="#google-社区"></a> Google 社区</h3>
+<p><em>kernel 5.x:</em></p>
+<p>dma_sync_single_for_device： 如果 direction 是 DMA_FROM_DEVICE 则多执行一个 flush cache，全部 direction 都会执行 clean cache<br>
+dma_sync_single_for_cpu： 如果 direction 是 DMA_TO_DEVICE 则什么也不做，否则执行 invalid cache（同 linux upstream 逻辑一致）</p>
+<p><em>kernel 6.x:</em></p>
+<p>同 linux upstream 逻辑一致</p>
+<p>dma_sync_single_for_device： 忽略 direction 全部执行 clean cache<br>
+dma_sync_single_for_cpu： 如果 direction 是 DMA_TO_DEVICE 则什么也不做，否则执行 invalid cache</p>
+<h1 id="qa"><a class="markdownIt-Anchor" href="#qa"></a> 🍦 QA</h1>
+<p><strong>Q：</strong> 在 cache 和 ddr 中的数据一致后，DMA 将 device 数据搬运到 ddr 后（cache 与 ddr 不一样）如果调用 flush 接口，flush 先做 clean 操作会不会将 cache 中的数据写回 DDR.<br>
+<strong>A：</strong> 不会。clean 操作是检查 dirty 标志位，在硬件改写过程中 dirty 标志位一直是 0（非 dirty），所以此时 flush 操作中的 clean 操作只是检查一遍 dirty bit, 之后做 invalid 操作。</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 🍭 参考文献</h1>
+<p>《Linux Document》</p>
 
     </div>
 
@@ -396,8 +419,8 @@
 </div>
 
           <div class="post-tags">
-              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
               <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
           </div>
 
         
