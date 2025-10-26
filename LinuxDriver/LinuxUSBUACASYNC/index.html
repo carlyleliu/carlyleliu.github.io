@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="同步问题原因  USB Isochronous 传输（协议无问题）   Isochronous Transfer 同步问题 电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。 问题来了，晶">
+<meta property="og:type" content="article">
+<meta property="og:title" content="UAC（六）UAC 同步方式">
+<meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxUSBUACASYNC/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="同步问题原因  USB Isochronous 传输（协议无问题）   Isochronous Transfer 同步问题 电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。 问题来了，晶">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB_Transfer.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC_SyncMethod.png">
+<meta property="article:published_time" content="2024-04-19T05:15:01.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.014Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="UAC">
+<meta property="article:tag" content="USB">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB_Transfer.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/LinuxDriver/LinuxUSBUACASYNC/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxDriver/LinuxUSBUACASYNC/","path":"LinuxDriver/LinuxUSBUACASYNC/","title":"UAC（六）UAC 同步方式"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>UAC（六）UAC 同步方式 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98%E5%8E%9F%E5%9B%A0"><span class="nav-text"> 同步问题原因</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#usb-isochronous-%E4%BC%A0%E8%BE%93%E5%8D%8F%E8%AE%AE%E6%97%A0%E9%97%AE%E9%A2%98"><span class="nav-text"> USB Isochronous 传输（协议无问题）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#isochronous-transfer-%E5%90%8C%E6%AD%A5%E9%97%AE%E9%A2%98"><span class="nav-text"> Isochronous Transfer 同步问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#usb-%E9%9F%B3%E9%A2%91%E5%A3%B0%E5%8D%A1%E7%9A%84%E6%97%B6%E9%92%9F%E5%90%8C%E6%AD%A5%E6%96%B9%E5%BC%8F"><span class="nav-text"> USB 音频声卡的时钟同步方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#usb-%E7%9A%84-isochronous-%E6%A8%A1%E5%BC%8F"><span class="nav-text"> USB 的 isochronous 模式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#asynchronous"><span class="nav-text"> Asynchronous</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#synchronous"><span class="nav-text"> Synchronous</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#adaptive"><span class="nav-text"> Adaptive</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#feedback"><span class="nav-text"> Feedback</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#implicit-feedback"><span class="nav-text"> Implicit Feedback</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3-5x-%E4%BB%A5%E5%89%8D%E7%9A%84%E5%86%85%E6%A0%B8%E5%9C%A8-windows10-%E7%B3%BB%E7%BB%9F%E4%B8%8B%E6%97%A0%E6%B3%95%E8%AF%86%E5%88%AB-uac2-%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-text"> 解决 5.x 以前的内核在 Windows10 系统下无法识别 UAC2 的问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#uac-%E7%AB%AF%E7%82%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> UAC 端点描述符</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text"> 总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxDriver/LinuxUSBUACASYNC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="UAC（六）UAC 同步方式 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          UAC（六）UAC 同步方式
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/USB/" itemprop="url" rel="index"><span itemprop="name">USB</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/LinuxDriver/LinuxUSBUACASYNC/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/LinuxDriver/LinuxUSBUACASYNC/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2.8k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>10 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="同步问题原因"><a class="markdownIt-Anchor" href="#同步问题原因"></a> 同步问题原因</h1>
+<h2 id="usb-isochronous-传输协议无问题"><a class="markdownIt-Anchor" href="#usb-isochronous-传输协议无问题"></a> USB Isochronous 传输（协议无问题）</h2>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/USB_Transfer.png" alt=""></p>
+<h2 id="isochronous-transfer-同步问题"><a class="markdownIt-Anchor" href="#isochronous-transfer-同步问题"></a> Isochronous Transfer 同步问题</h2>
+<p>电脑播放器播放音乐时：是按一个固定的速率，比如 44.1KHZ，电脑内有一个晶振，可分频出一个 44.1KHZ，进行音乐播放，发给 USB 的数据流速率固定。USB 声卡自己得有一个晶振才能工作，它也可分频出一个 44.1KHZ，供给 I2S 信号或 DAC。</p>
+<p>问题来了，晶振是有误差的，这两个 44.1KHZ 不可能完全一模一样，电脑可能是 44.100KHZ，USB 声卡可能是 44.098KHZ，误差约 50ppm，很正常的情况。虽然声卡晶振分频出来是 44.098KHZ，但声卡认为它就是工作在 44.100KHZ 下。好吧，如果二者时钟独立运行，那么 1 个小时会误差 0.2 秒，会出现不同步！ 即电脑播了 1 个小时的数据，USB 声卡实际是无法播完的，要多 0.2 秒才能播完。 如果声卡也要 1 小时播完，那这 1 小时就需要丢掉 0.2 秒的数据。</p>
+<p>所以二者的时钟必须要同步一致才行，这就是 UAC 同步问题的原因，因此 USB 音频规定了一是采用“等时传输模式”，二是设备需要指定为 3 种同步方式之一：同步（synchronous），适应（adaptive），异步（asynchronous）。</p>
+<span id="more"></span>
+<p>以上摘自 <span class="exturl" data-url="aHR0cDovL2Jicy5lcmppLm5ldC9mb3J1bS5waHA/bW9kPXZpZXd0aHJlYWQmdGlkPTIwNzY2NzQmcGFnZT0x">http://bbs.erji.net/forum.php?mod=viewthread&amp;tid=2076674&amp;page=1<i class="fa fa-external-link-alt"></i></span></p>
+<h1 id="usb-音频声卡的时钟同步方式"><a class="markdownIt-Anchor" href="#usb-音频声卡的时钟同步方式"></a> USB 音频声卡的时钟同步方式</h1>
+<h2 id="usb-的-isochronous-模式"><a class="markdownIt-Anchor" href="#usb-的-isochronous-模式"></a> USB 的 isochronous 模式</h2>
+<p>USB 音频声卡采用 isochronous“等时传输模式”，能保证实时传输数据，但错误容忍，出错不重传。它是实时传输，所以 USB 电脑端发出多少速率的数据，USB 接收端（USB 声卡）就得接收多少速率。比如电脑发送 44.1KHZ 的，声卡就接收 44.1KHZ。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/USB/UAC_SyncMethod.png" alt=""></p>
+<h3 id="asynchronous"><a class="markdownIt-Anchor" href="#asynchronous"></a> Asynchronous</h3>
+<p>cannot synchronize to SOF or any other clock in the USB domain。</p>
+<p><em>Source：</em> Provides implicit feedforward(data stream)，Free running Fs</p>
+<p><em>Sink：</em>  Provides explicit feedback (isochronous pipe)，Free running Fs</p>
+<p>Asynchronous sink endpoints must provide explicit feedback information to an adaptive driver.</p>
+<blockquote>
+<p>Asynchronous：要求 Sink 主动提供 data rate 信息，对信息如何使用没做规范要求，Source 和 Sink 都各自按照自己的速率运行，音频质量是最好的</p>
+</blockquote>
+<h3 id="synchronous"><a class="markdownIt-Anchor" href="#synchronous"></a> Synchronous</h3>
+<p>Source：Uses implicit feedback(SOF)， Fs locked to SOF</p>
+<p>Sink： Uses implicit feedback(SOF) Fs locked to SOF</p>
+<p><em>Source：</em> its sample clock from SOF and produces a fixed number of audio samples every USB (micro)frame，</p>
+<p><em>Sink：</em> its sample clock from SOF and consumes a fixed number of samples every USB (micro)frame.</p>
+<blockquote>
+<p>Synchronous：Source 和 Sink 都与 SOF 同步，这样导致 Source 和 Sink 的 clk 都不够稳定，音频质量会受到影响，但是 Source 和 Sink 都无需提供 feedback 信息，兼容性最好</p>
+</blockquote>
+<h3 id="adaptive"><a class="markdownIt-Anchor" href="#adaptive"></a> Adaptive</h3>
+<p>Source：Uses explicit feedback(isochronous pipe) ，Fs locked to sink</p>
+<p><em>Sink：</em> Uses implicitfeedforward (data stream)， Fs locked to data flow</p>
+<p><em>Source：</em> Adaptive source endpoints produce data at a rate that is controlled by the data sink。</p>
+<p>Sink：The sink provides feedback to the source，the data rate information is embedded in the data stream。The average number of samples received during a certain averaging time determines the instantaneous data rate</p>
+<p>condition：Sink Device contains a fully adaptive sample rate converter (SRC)</p>
+<blockquote>
+<p>Adaptive：使用 Sink 提供的 feedback 信息（明确要求 Sink 提供 data rate 信息），调整自己的 clk 对齐 Sink</p>
+</blockquote>
+<h3 id="feedback"><a class="markdownIt-Anchor" href="#feedback"></a> Feedback</h3>
+<p><em>ASYNC：</em> An asynchronous sink must provide explicit feedback to the host by indicating accurately what its desired data rate (Ff) is, relative to the USB (micro)frame frequency。This allows the host to continuously adjust the number of samples sent to the sink so that neither underflow or overflow of the data buffer occurs</p>
+<p><em>ADAPTIVE：</em> An adaptive source must receive explicit feedback from the host so that it can accurately generate the number of samples required by the host.</p>
+<p><em>Ff:</em> the desired data rate</p>
+<p><em>Fs:</em> actual sampling rate, 至少需要 1s 的测量时间 Tmeas（单位是帧数）。单位是帧数，对于全速设备 1ms 一帧，那么 1s 就需要 1000 帧（Fs&gt;=1000），而对于高速设备，125us 一帧 (Fs≥8000).</p>
+<p><em>Fm：</em> 通常 Fs 是由 master clock Fm 分频得到：</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>F</mi><mi>m</mi></msub><mo>=</mo><msub><mi>F</mi><mi>s</mi></msub><mo>∗</mo><msup><mn>2</mn><mi>P</mi></msup></mrow><annotation encoding="application/x-tex">F_m = F_s * 2^P
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">m</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">F</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">s</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">∗</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.8913309999999999em;vertical-align:0em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">P</span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>因此可以利用 Fm 来缩短测量时间 Tmeas:</p>
+<p class="katex-block"><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msub><mi>T</mi><mrow><mi>m</mi><mi>e</mi><mi>a</mi><mi>s</mi></mrow></msub><mo>=</mo><mfrac><msup><mn>2</mn><mi>K</mi></msup><msup><mn>2</mn><mi>P</mi></msup></mfrac><mo>=</mo><msup><mn>2</mn><mrow><mi>K</mi><mo>−</mo><mi>P</mi></mrow></msup></mrow><annotation encoding="application/x-tex">T_{meas} = \frac{2^K}{2^P} = 2^{K-P}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.13889em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.151392em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">m</span><span class="mord mathnormal mtight">e</span><span class="mord mathnormal mtight">a</span><span class="mord mathnormal mtight">s</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:2.204331em;vertical-align:-0.686em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.5183309999999999em;"><span style="top:-2.314em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.767331em;"><span style="top:-2.9890000000000003em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.13889em;">P</span></span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.677em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8413309999999999em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span></span></span></span></span></span></span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.686em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.891331em;vertical-align:0em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.891331em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight" style="margin-right:0.07153em;">K</span><span class="mbin mtight">−</span><span class="mord mathnormal mtight" style="margin-right:0.13889em;">P</span></span></span></span></span></span></span></span></span></span></span></span></span></p>
+<p>这样测量 Fs 的时间就降低为 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mn>2</mn><mo stretchy="false">(</mo></msup><mi>K</mi><mo>−</mo><mi>P</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">2^(K-P)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9713299999999999em;vertical-align:-0.08333em;"></span><span class="mord"><span class="mord">2</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8879999999999999em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mopen mtight">(</span></span></span></span></span></span></span></span><span class="mord mathnormal" style="margin-right:0.07153em;">K</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.13889em;">P</span><span class="mclose">)</span></span></span></span> 帧时间了。</p>
+<p>对于全速设备，Fs 需要使用定点数 10.10（K=10）格式，需要 3 字节，调整为 10.14 定点数来表示</p>
+<p>对于高速设备，Fs 需要使用定点数 12.13（K=13）格式，需要 4 字节，调整为 16.16 定点数来表示</p>
+<p>对 P 的要求：</p>
+<ul>
+<li>P must be in the range [0,K]</li>
+<li>P 尽量大一些，这样可以减少 Tmeas 测试时间，也可以减少缓存大小</li>
+<li>P 应该小于 K，保证至少两帧取平均来减少抖动，测量更平滑</li>
+<li>P 不要为 0，保证在 Ff 丢失的情况下可以用更为近的 Fs 来代替，减小误差相邻数据相似性</li>
+</ul>
+<h3 id="implicit-feedback"><a class="markdownIt-Anchor" href="#implicit-feedback"></a> Implicit Feedback</h3>
+<p>有些时候，可以避免 explicit 实现一个 feedback endpoint，如果设备实现了一组 isochronous data endpoints，且：</p>
+<ul>
+<li>All the endpoints in the group are synchronized (i.e. use sample clocks that are derived from a common master clock)</li>
+<li>The group contains one or more isochronous data endpoints in one direction that normally would need explicit feedback</li>
+<li>The group contains at least one isochronous data endpoint in the opposite direction</li>
+</ul>
+<p>在这些情况下，设备可以不 explicit feedback endpoint.</p>
+<p>有以下可能的情况：</p>
+<ul>
+<li>One or more asynchronous sink endpoints are accompanied by an asynchronous source endpoint. The data rate on the source endpoint can be used as implicit feedback information to adjust the data rate on the sink endpoint(s).</li>
+<li>One or more adaptive source endpoints are accompanied by an adaptive sink endpoint. The source endpoint can adjust its data rate based on the data rate received by the sink endpoint</li>
+</ul>
+<h1 id="解决-5x-以前的内核在-windows10-系统下无法识别-uac2-的问题"><a class="markdownIt-Anchor" href="#解决-5x-以前的内核在-windows10-系统下无法识别-uac2-的问题"></a> 解决 5.x 以前的内核在 Windows10 系统下无法识别 UAC2 的问题</h1>
+<h2 id="uac-端点描述符"><a class="markdownIt-Anchor" href="#uac-端点描述符"></a> UAC 端点描述符</h2>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> _<span class="title">ENDPOIN_DESCRIPTOR_STRUCT</span> </span></span><br><span class="line"><span class="class">{</span> </span><br><span class="line">    BYTE bLength;           <span class="comment">//设备描述符的字节数大小，为 0x7 </span></span><br><span class="line">    BYTE bDescriptorType;   <span class="comment">//描述符类型编号，为 0x05</span></span><br><span class="line">    BYTE bEndpointAddress;  <span class="comment">//端点地址及输入输出属性 </span></span><br><span class="line">    BYTE bmAttribute;       <span class="comment">//端点的传输类型属性 </span></span><br><span class="line">    WORD wMaxPacketSize;    <span class="comment">//端点收、发的最大包的大小 </span></span><br><span class="line">    BYTE bInterval;         <span class="comment">//主机查询端点的时间间隔 </span></span><br><span class="line">} ENDPOIN_DESCRIPTOR_STRUCT ；</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>
+<p>bLength : 描述符大小．固定为 0x07．</p>
+</li>
+<li>
+<p>bDescriptorType : 端点描述符类型．固定为 0x05．</p>
+</li>
+<li>
+<p>bEndpointAddress : USB 设备的端点地址．Bit7，方向，对于控制端点可以忽略，1/0:IN/OUT．Bit6-4，保留．BIt3-0：端点号．</p>
+</li>
+<li>
+<p>bmAttributes : 端点属性．Bit7-2，保留（同步有定义）．BIt1-0：00 控制，01 同步，02 批量，03 中断．<br>
+当为同步传输时，bEndpointType 的 bit3-2 的值不同代表的含义不同：00：无同步，01：异步，10：适配，11：同步；BIT5:4 含义 00: 表示数据端点，01：表示反馈端点 Feedback endpoint，10：表示隐式反馈数据端点 Implicit feedback Data endpoint，11: 保留</p>
+</li>
+<li>
+<p>wMaxPacketSize : 本端点接收或发送的最大信息包大小．</p>
+<ul>
+<li>
+<p>USB2.0 时：<br>
+对于同步端点，此值用于指示主机在调度中保留的总线时间，这是每（微）帧数据有效负载所需的时间，有效负载时间就是发送一帧数据需要占用的总线时间，在实际数据传输过程中，管道实际使用的带宽可能比保留的带宽少，大家想想，如果实际使用的带宽比保留的还多，那就丢数了；</p>
+<p>对于其类型的端点，bit10~bit0 指定最大数据包大小（以字节为单位）；</p>
+<p>bit12~bit11 对于高速传输的同步和中断端点有效：bit12~bit11 可指定每个微帧的额外通信次数，这里大家一定要知道是在高速传输中，当一个事务超时时，在一个微帧时间内重传的次数，如果设置为 00b（None），则表示在一个微帧内只传输一个事务，不进行额外的超时重传，如果设置为 01b，则表示在一个微帧内可以传输两次事务，有一次额外的重传机会，从下面可以看出，一个微帧最多可以有两次重传事务的机会，如果微帧结束了还是失败，就需要等到下一个微帧继续发送该事务；</p>
+</li>
+<li>
+<p>USB3.0 时：<br>
+wMaxPacketSize 表示包的大小。对于 bulk 为 1024，而对于同步传输，可以为 0~1024 或 1024。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>bInterval : 轮询数据传送端点的时间间隔．对于批量传送和控制传送的端点忽略．对于同步传送的端点，必须为１，对于中断传送的端点，范围为 1-255．</p>
+<ul>
+<li>对于全速/高速同步端点，此值必须在 1 到 16 之间。bInterval 值用作 2 的指数，例如 bInterval 为 4，表示周期为 8 个单位；</li>
+<li>对于全速/低速中断端点，该字段的值可以是 1 到 255，也就是主机多少 ms 给设备发一次数据请求；</li>
+<li>对于高速中断端点，使用 bInterval 值作为 2 的指数，例如 bInterval 为 4 表示周期为 8。这个值必须在 1 到 16 之间；</li>
+<li>对于高速批量/控制输出端点，bInterval 必须指定端点的最大 NAK 速率。值 0 表示端点永不 NAK。其它值表示每个微帧的 bInterval*125us 时间最多 1 个 NAK。这个值的范围必须在 0 到 255 之间；
+<ul>
+<li>00 = None (1 transaction per microframe)</li>
+<li>01 = 1 additional (2 per microframe)</li>
+<li>10 = 2 additional (3 per microframe)</li>
+<li>11 = Reserved</li>
+<li>其它位默认为 0，</li>
+</ul>
+</li>
+<li>对于全速/低速批量/控制输出端点，此值无意义，可以任意指定。</li>
+</ul>
+</li>
+</ul>
+<p>以 fs_epout_desc 为例描述：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* STD AS ISO OUT Endpoint */</span></span><br><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">usb_endpoint_descriptor</span> <span class="title">fs_epout_desc</span> =</span> {</span><br><span class="line">  .bLength = USB_DT_ENDPOINT_SIZE,    <span class="comment">//#define USB_DT_ENDPOINT_SIZE		7</span></span><br><span class="line">  .bDescriptorType = USB_DT_ENDPOINT, <span class="comment">//#define USB_DT_ENDPOINT			0x05</span></span><br><span class="line"></span><br><span class="line">  .bEndpointAddress = USB_DIR_OUT,    <span class="comment">// #define USB_DIR_OUT			0		/* to device */</span></span><br><span class="line">  <span class="comment">// #define USB_ENDPOINT_XFER_ISOC		1 /* 同步传输 */</span></span><br><span class="line">    <span class="comment">// #define USB_ENDPOINT_SYNC_ADAPTIVE	(2 &lt;&lt; 2) /* 适配 */</span></span><br><span class="line">  .bmAttributes = USB_ENDPOINT_XFER_ISOC | USB_ENDPOINT_SYNC_ADAPTIVE, </span><br><span class="line">  <span class="comment">/* The USB limits the maximum data payload size to 1,023 bytes for each full-speed isochronous endpoint.</span></span><br><span class="line"><span class="comment">			High-speed endpoints are allowed up to 1024-byte data payloads. */</span></span><br><span class="line">  .wMaxPacketSize = cpu_to_le16(<span class="number">1023</span>),</span><br><span class="line">  .bInterval = <span class="number">1</span>,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p><em>IN 和 OUT 都是相对于 USB Host 设备来讲的：</em></p>
+<p><strong>对于 OUT Endpoint 不支持 ASYNC 做如下说明：</strong></p>
+<ul>
+<li>ASYNC 模式下需要 Sink 设备 Provides explicit feedback，而对于 OUT Endpoint，Sink 设备是我们的主机，这说明我们的设备不支持 feedback</li>
+</ul>
+<p><strong>对于 IN EndPoint，测试发现支持 ASYNC 做如下说明：</strong></p>
+<ul>
+<li>ASYNC 模式下需要 Sink 设备 Provides explicit feedback，而对于 IN Endpoint，Sink 设备是测试的 Windows10 系统，说明 Windows10（基于我的测试版本）是支持 feedback</li>
+</ul>
+<p><em>结论：</em><br>
+Windows 的 UAC2 是支持 Feedback 的，而我们的系统不支持，那么将 OUT Endpoint 改成 ADAPTIVE 模式符合 USB isochronous 传输规范，但是因为我们设备没有实现 feedback，有没有利用到 Host 提供的 feedback 信息待验证。同理 OUT Endpoint 改成 ADAPTIVE 模式，那么 IN EndPoint 就可以保持为 ASYNC，因为这都要求 Host 端提供 feedback。当然全部改成 SYNC 模式也可以获得很好的兼容性，但是会造成 Source 和 Sink 的 clk 抖动。<br>
+还有另外一种做法，我看到 Linux6.x 驱动里已经支持 feedback 了，移植过来 Device 端就支持三种同步方式了。</p>
+<p>fs_epout_desc 端点会由 USB_ENDPOINT_SYNC_ASYNC 改成 USB_ENDPOINT_SYNC_ADAPTIVE，最新的 6.x 内核会根据是否支持 feedback 来决定用哪个同步模式，如果支持 feedback 就用 USB_ENDPOINT_SYNC_ASYNC，如果不支持 feedback 就用 USB_ENDPOINT_SYNC_ADAPTIVE。实际上用 USB_ENDPOINT_SYNC_SYNC 也能够在 windows 上识别。<br>
+fs_epin_desc 端点：由 USB_ENDPOINT_SYNC_ASYNC 改成 USB_ENDPOINT_SYNC_SYNC。</p>
+<h1 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h1>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>实现方式</th>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SYNC</td>
+<td>Source 和 Sink 各自运行在自己的 Clock 下，两者之间没有任何反馈，Source 只管发，Sink 只管收</td>
+<td>简单</td>
+<td>运行时间久了由于两则的 clock 不匹配会导致 hw buffer 溢出或者为空导致 xrun 问题</td>
+</tr>
+<tr>
+<td>ADAPTIVE</td>
+<td>Source 提供自己的 srate 信息给 Sink，Sink 可以自己调节 Clock 或者其他方式匹配 Source 的 Clock</td>
+<td>提供了一种匹配 Clock 的方式，可以解决 xrun 问题了</td>
+<td>由于 Source 端发送频率和大小固定，只能 Device 端靠调节 Clock 来解决 xrun，调节 clock 会影响音质</td>
+</tr>
+<tr>
+<td>ASYNC</td>
+<td>Sink 提供自己的 srate 给 Source，Source 通过调节每个 USB 包大小来匹配 Sink 的 Clock</td>
+<td>提供了匹配 clock 的方式，解决了 xrun 问题</td>
+<td></td>
+</tr>
+<tr>
+<td>Sink 不需要调节 clock，音质不会受到任何影响，完美</td>
+<td>无</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>《USB2.0 协议规范》<br>
+《UAC2 协议规范》</p>
+<p>[[LinuxUSBUACASYNC]]<br>
+[[LinuxUSBUACTopology]]<br>
+[[LinuxUSBUACASYNCPPM]]<br>
+[[LinuxUSBUACASYNCFeedback]]</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/UAC/" rel="tag"><i class="fa fa-tag"></i> UAC</a>
+              <a href="/tags/USB/" rel="tag"><i class="fa fa-tag"></i> USB</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/LinuxDriver/LinuxUSBUACFU/" rel="prev" title="UAC（五）Feature Unit">
+                  <i class="fa fa-angle-left"></i> UAC（五）Feature Unit
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/LinuxDriver/LinuxDriverBaseDeviceIO/" rel="next" title="Linux 驱动之基础（一）Device-I/O">
+                  Linux 驱动之基础（一）Device-I/O <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxDriver/LinuxUSBUACASYNC/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

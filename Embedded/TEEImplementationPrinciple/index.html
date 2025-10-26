@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="TrustZone   如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？ CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TEE 实现原理">
+<meta property="og:url" content="https://carlyleliu.github.io/Embedded/TEEImplementationPrinciple/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="TrustZone   如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？ CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee1.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee2.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee3.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee4.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee5.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee6.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee7.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee8.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee9.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee10.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee11.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee12.png">
+<meta property="article:published_time" content="2024-08-14T02:22:04.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.010Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="TEE">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee1.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/Embedded/TEEImplementationPrinciple/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/Embedded/TEEImplementationPrinciple/","path":"Embedded/TEEImplementationPrinciple/","title":"TEE 实现原理"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>TEE 实现原理 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#trustzone"><span class="nav-text"> TrustZone</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%8C%BA%E5%88%86%E5%BD%93%E5%89%8D%E8%AE%BF%E9%97%AE%E7%8A%B6%E6%80%81%E6%98%AF%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%AE%BF%E9%97%AE%E8%BF%98%E6%98%AF%E9%9D%9E%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E8%AE%BF%E9%97%AE"><span class="nav-text"> 如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%88%92%E5%88%86%E5%AE%89%E5%85%A8%E5%8C%BA%E5%9F%9F%E5%92%8C%E9%9D%9E%E5%AE%89%E5%85%A8%E5%8C%BA%E5%9F%9F%E4%BB%A5%E5%8F%8A%E5%A6%82%E4%BD%95%E6%8B%A6%E6%88%AA%E9%9D%9E%E5%AE%89%E5%85%A8%E7%8A%B6%E6%80%81%E4%B8%8B%E7%9A%84%E5%AE%89%E5%85%A8%E5%9C%B0%E5%9D%80%E8%AE%BF%E9%97%AE"><span class="nav-text"> 如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ddrtzasc"><span class="nav-text"> DDR（TZASC）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sram%E5%92%8Cromtzma"><span class="nav-text"> SRAM和ROM（TZMA）：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%96%E8%AE%BE%E5%9C%B0%E5%9D%80apb-to-axi%E6%A1%A5"><span class="nav-text"> 外设地址（APB-to-AXI桥）：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#axi-%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B"><span class="nav-text"> AXI 访问流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#atfarm-trusted-firmware"><span class="nav-text"> ATF（ARM Trusted Firmware）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#atf%E5%90%AF%E5%8A%A8%E6%B5%81%E7%A8%8B"><span class="nav-text"> ATF启动流程：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#atf%E4%B8%BB%E8%A6%81%E5%AE%8C%E6%88%90%E7%9A%84%E5%8A%9F%E8%83%BD%E5%A6%82%E4%B8%8B"><span class="nav-text"> ATF主要完成的功能如下：</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#op-tee"><span class="nav-text"> OP-TEE</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#tee-os%E5%8A%9F%E8%83%BD"><span class="nav-text"> TEE OS功能</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tee%E5%BA%94%E7%94%A8"><span class="nav-text"> TEE应用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Embedded/TEEImplementationPrinciple/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="TEE 实现原理 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          TEE 实现原理
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/TEE/" itemprop="url" rel="index"><span itemprop="name">TEE</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Embedded/TEEImplementationPrinciple/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Embedded/TEEImplementationPrinciple/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>3.6k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>13 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="trustzone"><a class="markdownIt-Anchor" href="#trustzone"></a> TrustZone</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee1.png" alt=""></p>
+<h2 id="如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问"><a class="markdownIt-Anchor" href="#如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问"></a> 如何区分当前访问状态是安全状态下的访问还是非安全状态下的访问？</h2>
+<p>CPU发出的地址都是虚拟地址，需要经过页表转换才能得到物理地址，其中在pte页表中低12bit（针对4k大小的页表）为控制位，用来控制页表的访问属性，也就是说在页表建立的时候就确定了访问状态是安全状态还是非安全状态，其pte低12bit如下：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee2.png" alt=""></p>
+<span id="more"></span>
+<p>这里的bit 5 NS bit（Non-secure bit）：用来指定访问的内存地址是安全映射的还是非安全映射的。</p>
+<p>只有当ARM核处于安全状态（NS bit=0）时发送到系统总线（AXI）上的读写操作才会被识别为安全读写操作，对应TEE侧的数据资源才能被访问。反之，当ARM核处于非安全状态（NS bit=1）时，ARM核发送到系统总线上的读写操作请求会被作为非安全读写操作，<strong>安全组件会根据对资源的访问权限配置来决定是否响应该访问请求</strong>。</p>
+<p>💡 NS bit的设置是通过SMC指令触发异常进入EL3安全监视器中设置的，即Normal World通过SMC调用进入Security World，将NS bit置0，Security World通过SMC指令进入Normal World，安全监视器将NS bit置1</p>
+<h2 id="如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问"><a class="markdownIt-Anchor" href="#如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问"></a> 如何划分安全区域和非安全区域以及如何拦截非安全状态下的安全地址访问？</h2>
+<h3 id="ddrtzasc"><a class="markdownIt-Anchor" href="#ddrtzasc"></a> DDR（TZASC）：</h3>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee3.png" alt=""></p>
+<p>TrustZone地址空间控制组件（TrustZone Address Space Controller，TZASC）是AXI总线上的一个主设备，<strong>TZASC能够将从设备全部的地址空间分割成一系列的不同地址范围</strong>。在安全状态下， 通过编程TZASC能够将这一系列分割后的地址区域设定成安全空间或者是非安全空间。被配置成安全属性的区域将会拒绝非安全的访问请求。</p>
+<p>使用TZASC主要是将一个AXI从设备分割成几个安全设备，例如off-Soc、DRAM等。ARM的动态内存控制器（Dynamic Memory Controller，DMC） 并不支持安全和非安全分区的功能。如果将DMC接到TZASC上，就能实现DRAM支持安全区域和非安全区域访问的功能。需要注意的是，<strong>TZASC组件只支持存储映射设备对安全和非安全区域的划分与扩展</strong>，但不支持对块设备（如EMMC、NAND flash 等）的安全和非安全区域的划分与扩展</p>
+<p>一个完整的系统必然会有片外RAM，对片外 RAM的隔离是通过TZASC组件实现的，ARM本身的DMC可以将DRAM分割成不同的区域，这些区域是没有安全和非安全分类。将DMC与TZASC相连 后再挂到总线上，通过对TZASC组件进行编程可以将DRAM划分成安全区域和非安全区域。当主设备 访问DRAM时，除需要提供物理地址之外，还会发送PROT信号。TZASC组件首先会判定主设备需要访问的DARM地址是属于安全区域还是非安全区域，然后再结合接收到的PROT信号来判定该次访问是否有效。如果PROT信号为非安全访问操作， 且访问的DRAM地址属于安全区域，则TZASC就不会响应这次访问操作，这样就能实现DRAM中安全区域和非安全区域的隔离。</p>
+<h3 id="sram和romtzma"><a class="markdownIt-Anchor" href="#sram和romtzma"></a> SRAM和ROM（TZMA）：</h3>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee4.png" alt=""></p>
+<p>TrustZone内存适配器组件（TrustZone Memory Adapter，TZMA）允许对片上静态内存（on-SoC Static Memory）或者片上ROM进行安全区域和非安全区域的划分（仅有安全访问可以配置TZASC的寄存器）。TZMA支持最大2MB空间的片上静态RAM的划分，可以将2MB空间划分成两个部 分，高地址部分为非安全区域，低地址部分为安全区域，两个区域必须按照4KB进行对齐。分区的具体大小通过TZMA的输入信号R0SIZE来控制，该信号来自TZPC的输出信号TZPCR0SIZE。即通过编程TZPC可以动态地配置片上静态RAM或者ROM的大小。</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee5.png" alt=""></p>
+<h3 id="外设地址apb-to-axi桥"><a class="markdownIt-Anchor" href="#外设地址apb-to-axi桥"></a> 外设地址（APB-to-AXI桥）：</h3>
+<p>TrustZone同样能够保护外围设备的安全，例如：中断控制、时钟、I/O设备，因此Trust-Zone架构还 能用来解决更加广泛的安全问题。比如一个安全中断控制器和安全时钟允许一个非中断的安全任务来监控系统，能够为DRM提供可靠的时钟，能够为用户提供一个安全的输入设备从而保证用户密码数据不会被恶意软件窃取。</p>
+<p>AMBA3规范包含了一个低门数、低带宽的外设总线，被称作外设总线（Advanced Peripheral Bus，APB），APB通过AXI-to-APB桥连接到系统总线上。而APB总线并不具有安全状态位，<strong>为实现 APB外设与TrustZone技术相兼容，APB-to-AXI桥将负责管理APB总线上设备的安全</strong>。APB-to-AXI桥会拒绝不匹配的安全事务设置，并且不会将该事务请求发送给外设。</p>
+<p>TrustZone保护控制器组件（TrustZone Protection Controller，TZPC）是用来设定 TZPC DECPORT信号和TZPC R0SIZE等相关控制信号的。<strong>这些信号用来告知APB-to-AXI对应的外设是安全设备还是非安全设备，而TZPCR0SIZE信号用来控制TZMA对片上RAM或片上ROM安全区域大小的划分</strong>。</p>
+<p>TZPC包含三组通用寄存器 TZPCDECPROT[2：0]，每组通用寄存器可以产生8 种TZPCDECPROT信号，也就是TZPC最多可以将 24个外设设定成安全外设。TZPC组件还包含一个TZPCROSIZE寄存器，该寄存器用来为TZMA提供分区大小信息。TZPC组件的接口示意如图所示</p>
+<h2 id="axi-访问流程"><a class="markdownIt-Anchor" href="#axi-访问流程"></a> AXI 访问流程</h2>
+<p>cpu发出了虚拟地址访问，这个地址要经过AXI总线到达外设地址，但是这个地址访问仍然是没有安全状态的，<strong>TZASC或者TZMA或者APB-to-AXI桥</strong>是如何判断访问级别的呢？</p>
+<p>TrustZone技术通过对总线进行扩展增加安全位读写信号线来实现。除了对总线进行扩展还需要对MMU、Cache、TLB以及其他组件进行扩展都是增加了安全bit。</p>
+<p><strong>AXI总线上安全状态位的扩展</strong></p>
+<p>AXI写数据的过程如下图所示：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee6.png" alt=""></p>
+<p>地址通道携带描述被传输数据性质的控制信息。</p>
+<p>读数据的过程如下图所示：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee7.png" alt=""></p>
+<p>每一个通道都拥有自己的VALID与READY信号用于实现握手，其中VALID信号表示通道的地址、数据或控制信息已经可用，而READY信号则表示接收方已准备好接收信息。</p>
+<p><strong>AXI信号描述</strong></p>
+<p>写地址通道信号：</p>
+<table>
+<thead>
+<tr>
+<th>信号名</th>
+<th>来源</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AWID</td>
+<td>主设备</td>
+<td>写地址ID，该信号用于标识写地址组</td>
+</tr>
+<tr>
+<td>AWADDR</td>
+<td>主设备</td>
+<td>写地址，写突发操作中第一次数据传输的地址</td>
+</tr>
+<tr>
+<td>AWLEN</td>
+<td>主设备</td>
+<td>突发长度，这个字段标识每次突发传输的传输次数</td>
+</tr>
+<tr>
+<td>AWSIZE</td>
+<td>主设备</td>
+<td>突发大小，这个字段表示每次突发传输的大小</td>
+</tr>
+<tr>
+<td>AWBURST</td>
+<td>主设备</td>
+<td>突发类型，包括突发类型和突发大小信息，该字段决定了每次突发传输时地址的计算方法</td>
+</tr>
+<tr>
+<td>AWLOCK</td>
+<td>主设备</td>
+<td>锁定类型，提供关于传输时原子特性的额外信息</td>
+</tr>
+<tr>
+<td>AWCACHE</td>
+<td>主设备</td>
+<td>存储器类型</td>
+</tr>
+<tr>
+<td>AWPROT</td>
+<td>主设备</td>
+<td>保护类型</td>
+</tr>
+<tr>
+<td>AWQOS</td>
+<td>主设备</td>
+<td>服务质量，即每次写传输的QoS标识符，仅AXI4支持</td>
+</tr>
+<tr>
+<td>AWREGION</td>
+<td>主设备</td>
+<td>区域标识符，允许一个从设备的单个物理接口用作多个逻辑接口，仅AXI4支持</td>
+</tr>
+<tr>
+<td>AWUSER</td>
+<td>主设备</td>
+<td>用户定义信号，可选</td>
+</tr>
+<tr>
+<td>AWVALID</td>
+<td>主设备</td>
+<td>主设备给出的地址和相关控制信号有效</td>
+</tr>
+<tr>
+<td>AWREADY</td>
+<td>从设备</td>
+<td>从设备已准备好接收地址和相关的控制信号</td>
+</tr>
+</tbody>
+</table>
+<p><strong>读地址通道信号：</strong></p>
+<table>
+<thead>
+<tr>
+<th>信号名</th>
+<th>来源</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ARID</td>
+<td>主设备</td>
+<td>读地址ID，该信号用于标识读地址组</td>
+</tr>
+<tr>
+<td>ARADDR</td>
+<td>主设备</td>
+<td>读地址，读突发操作中第一次数据传输的地址</td>
+</tr>
+<tr>
+<td>ARLEN</td>
+<td>主设备</td>
+<td>突发长度，这个字段标识每次突发传输的传输次数</td>
+</tr>
+<tr>
+<td>ARSIZE</td>
+<td>主设备</td>
+<td>突发大小，这个字段表示每次突发传输的大小</td>
+</tr>
+<tr>
+<td>ARBURST</td>
+<td>主设备</td>
+<td>突发类型，包括突发类型和突发大小信息，该字段决定了每次突发传输时地址的计算方法</td>
+</tr>
+<tr>
+<td>ARLOCK</td>
+<td>主设备</td>
+<td>锁定类型，提供关于传输时原子特性的额外信息</td>
+</tr>
+<tr>
+<td>ARCACHE</td>
+<td>主设备</td>
+<td>存储器类型</td>
+</tr>
+<tr>
+<td>ARPROT</td>
+<td>主设备</td>
+<td>保护类型</td>
+</tr>
+<tr>
+<td>ARQOS</td>
+<td>主设备</td>
+<td>服务质量，即每次读传输的QoS标识符，仅AXI4支持</td>
+</tr>
+<tr>
+<td>ARREGION</td>
+<td>主设备</td>
+<td>区域标识符，允许一个从设备的单个物理接口用作多个逻辑接口，仅AXI4支持</td>
+</tr>
+<tr>
+<td>ARUSER</td>
+<td>主设备</td>
+<td>用户定义信号，可选</td>
+</tr>
+<tr>
+<td>ARVALID</td>
+<td>主设备</td>
+<td>主设备给出的地址和相关控制信号有效</td>
+</tr>
+<tr>
+<td>ARREADY</td>
+<td>从设备</td>
+<td>从设备已准备好接收地址和相关的控制信号</td>
+</tr>
+</tbody>
+</table>
+<p>以上只列出了部分<strong>读地址通道信号和写地址通道信号。</strong></p>
+<p>而我们关心的是AWPROT和ARPROT信号。</p>
+<ul>
+<li>ARPROT[2:0]定义了读访问的访问权限。</li>
+<li>AWPROT[2:0]定义了写访问的访问权限。</li>
+</ul>
+<p>其中，信号定义如下：</p>
+<table>
+<thead>
+<tr>
+<th>AxPROT</th>
+<th>值</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>[0]</td>
+<td>0/1</td>
+<td>非特权访问/特权访问</td>
+</tr>
+<tr>
+<td>[1]</td>
+<td>0/1</td>
+<td>安全访问/不安全访问</td>
+</tr>
+<tr>
+<td>[2]</td>
+<td>0/1</td>
+<td>数据访问/指令访问</td>
+</tr>
+</tbody>
+</table>
+<p>这里又多了一个特权访问和非特权访问？官方手册是这么描述的：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee8.png" alt=""></p>
+<p>AXI提供特权访问还是非特权访问的信息，但是具体怎么用，看各控制器的设计了。没有查到更多信息，暂时先不管这个特权访问了。</p>
+<p>详细可参考：<br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cubHpybm90ZS5jbi8yMDIxLzEwLzA4L2F4aSVFNiU4MCVCQiVFNyVCQSVCRiVFNiU4MCVCQiVFNyVCQiU5My8=">https://www.lzrnote.cn/2021/10/08/axi总线总结/<i class="fa fa-external-link-alt"></i></span></p>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy5nc3RpdHQuZWNlLnVmbC5lZHUvY291cnNlcy9mYWxsMTUvZWVsNDcyMF81NzIxL2xhYnMvcmVmcy9BWEk0X3NwZWNpZmljYXRpb24ucGRm">http://www.gstitt.ece.ufl.edu/courses/fall15/eel4720_5721/labs/refs/AXI4_specification.pdf<i class="fa fa-external-link-alt"></i></span></p>
+<h1 id="atfarm-trusted-firmware"><a class="markdownIt-Anchor" href="#atfarm-trusted-firmware"></a> ATF（ARM Trusted Firmware）</h1>
+<p>该固件统一了ARM底层接口标准，如电源状态控制接口（Power Status Control Interface，PSCI）、安全启 动需求（Trusted Board Boot Requirements， TBBR）、安全世界状态（SWS）与正常世界状态 （NWS）切换的安全监控模式调用（secure monitor call，smc）操作等。ATF旨在将ARM底层的操作统一使代码能够重用和便于移植。</p>
+<h2 id="atf启动流程"><a class="markdownIt-Anchor" href="#atf启动流程"></a> ATF启动流程：</h2>
+<p>ATF的源代码共分为bl1、bl2、bl31、bl32、 bl33部分，其中bl1、bl2、bl31部分属于固定的固件，bl32和bl33分别用于加载TEE OS和REE侧的镜像。整个加载过程可配置成安全启动的方式，每一个镜像文件在被加载之前都会验证镜像文件的电子签名是否合法。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee9.png" alt=""></p>
+<h2 id="atf主要完成的功能如下"><a class="markdownIt-Anchor" href="#atf主要完成的功能如下"></a> ATF主要完成的功能如下：</h2>
+<ul>
+<li>初始化安全世界状态运行环境、异常向量、 控制寄存器、中断控制器、配置平台的中断。</li>
+<li>初始化ARM通用中断控制器（General Interrupt Controller，GIC）2.0版本和3.0版本的驱动初始化。</li>
+<li>执行ARM系统IP的标准初始化操作以及安全扩展组件的基本配置。</li>
+<li>安全监控模式调用（Secure Monitor Call， SMC）请求的逻辑处理代码（Monitor模式/EL3）。</li>
+<li>实现可信板级引导功能，对引导过程中加载的镜像文件进行电子签名检查。</li>
+<li>支持自有固件的引导，开发者可根据具体需求将自有固件添加到ATF的引导流程中。</li>
+</ul>
+<p>Trusted Firmware提供了满足ARM安全规格的参考代码，包括TBBR(Trusted Board&nbsp; Boot Requirements)和SMCC。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee10.png" alt=""></p>
+<p>SMC Dispatcher：处理非安全世界的SMC请求，决定哪些SMC由Trusted Firmware在EL3处理，哪些转发给TEE进行处理。</p>
+<p>Trusted Firmware处理PSCI任务、或者SOC相关工作。一个典型的基于TrustZone系统软件调用栈关系图：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee11.png" alt=""></p>
+<ul>
+<li>安全世界的Trusted OS提供一系列安全服务，比如key管理或DRM。非安全世界应用需要使用这些服务，但是又无法直接使用。通过使用一些库中API来获取这些能力，<span class="exturl" data-url="aHR0cDovL3huLS1saWJEUk0taGg0a2o0Mmouc28=">比如libDRM.so<i class="fa fa-external-link-alt"></i></span>。</li>
+<li>这些库和Trusted service之间通信往往通过message queue或者Mailbox。他们之间通信所用内存往往被称为WSM(World Shared Memory)。这些内存必须能够被Trusted service和库访问，这就意味着这些内存是非安全内存。</li>
+<li>应用通过库发送一个请求到Mailbox或message queue，然后触发内核中TrustZone驱动。</li>
+<li>TrustZone驱动负责和TEE部分交互，包括为message queue申请内存和注册这些内存。由于安全和非安全运行在两个虚拟地址空间，所以无法通过虚拟地址进行通信。</li>
+<li>TrustZone驱动通过调用SMC进入安全状态，控制权通过EL3的Secure Monitor传递到TEE中的TEEOS。TEEOS从message queue内存中获取内容由Trusted service进行处理。
+<ul>
+<li><strong>Trusting the message</strong>：由于message是从非安全世界传递的，所以需要安全世界对这些内容进行一些认证。</li>
+<li><strong>Scheduling</strong>：对于PSCI类型快速处理并且不频繁请求，进入EL3处理完成后退出到非安全状态。对于一些需要TOS处理的任务，不能被非安全中断打断，避免造成安全服务不可用。</li>
+<li><strong>OP-TEE</strong>：OP-TEE内核运行在S.EL1，可信应用运行在S.EL0。</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/TEE/tee12.png" alt=""></p>
+<h1 id="op-tee"><a class="markdownIt-Anchor" href="#op-tee"></a> OP-TEE</h1>
+<p>OP-TEE 是依靠 Arm TrustZone 技术作为底层硬件隔离机制而实现的一种TEE OS。</p>
+<h2 id="tee-os功能"><a class="markdownIt-Anchor" href="#tee-os功能"></a> TEE OS功能</h2>
+<ul>
+<li>进程管理</li>
+<li>内存管理</li>
+<li>安全存储
+<ul>
+<li>RPMB File System</li>
+<li>REE File System</li>
+</ul>
+</li>
+<li>加密引擎
+<ul>
+<li>对称加密（AES，DES）</li>
+<li>非对称加密（RSA，ECC）</li>
+<li>摘要（MD5，HASH，HMAC）</li>
+</ul>
+</li>
+<li>软件隔离
+<ul>
+<li>进程隔离</li>
+<li>内存隔离</li>
+<li>数据隔离</li>
+</ul>
+</li>
+<li>真随机数</li>
+<li>安全时钟</li>
+<li>硬件秘钥及派生</li>
+<li>…</li>
+</ul>
+<h2 id="tee应用"><a class="markdownIt-Anchor" href="#tee应用"></a> TEE应用</h2>
+<ul>
+<li>DRM
+<ul>
+<li>Widevine</li>
+<li>PlayReady</li>
+<li>Netflix</li>
+</ul>
+</li>
+<li>CAS
+<ul>
+<li>Nagra</li>
+<li>Verimatrix</li>
+<li>Irdeto</li>
+<li>NSK</li>
+<li>VO</li>
+</ul>
+</li>
+<li>秘钥烧录</li>
+<li>无线显示</li>
+<li>生物识别</li>
+<li>移动支付</li>
+<li>飞控系统</li>
+<li>重置保护</li>
+<li>…</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmxvc2NuL2Jsb2cvYmxvYi9tYXN0ZXIvUkVBRE1FLm1k">https://github.com/carloscn/blog/blob/master/README.md<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuc2VjcnNzLmNvbS9hcnRpY2xlcy8xNDE4Nw==">物联网终端应用TEE的一些思考<i class="fa fa-external-link-alt"></i></span><br>
+[[EncryptionAlgorithm]]<br>
+[[RPMB]]<br>
+[[SecureBoot]]<br>
+[[TEESoftPipeLine]]</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/TEE/" rel="tag"><i class="fa fa-tag"></i> TEE</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/Tools/HexoNextUsage/" rel="prev" title="Blog 搭建">
+                  <i class="fa fa-angle-left"></i> Blog 搭建
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/Embedded/RPMB/" rel="next" title="RPMB 简介">
+                  RPMB 简介 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/Embedded/TEEImplementationPrinciple/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

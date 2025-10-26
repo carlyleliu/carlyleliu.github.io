@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="自测试代码的价值 一套测试就是一个强大的 bug 侦测器，能够大大缩减查找 bug 所需的时间。 事实上，撰写测试代码的最好时机是在开始动手编码之前。当我需要添加特性时，我会先编写相应的测试代码。听起来离经叛道，其实不然。编写测试代码其实就是在问自己：为了添加这个功能，我需要实现些什么？编写测试代码还能帮我把注意力集中于接口而非实现（这永远是一件好事）。预先写好的测试代码也为我的工作安上一个明确">
+<meta property="og:type" content="article">
+<meta property="og:title" content="重构（三）构筑测试体系">
+<meta property="og:url" content="https://carlyleliu.github.io/Program/RefactorPart3/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="自测试代码的价值 一套测试就是一个强大的 bug 侦测器，能够大大缩减查找 bug 所需的时间。 事实上，撰写测试代码的最好时机是在开始动手编码之前。当我需要添加特性时，我会先编写相应的测试代码。听起来离经叛道，其实不然。编写测试代码其实就是在问自己：为了添加这个功能，我需要实现些什么？编写测试代码还能帮我把注意力集中于接口而非实现（这永远是一件好事）。预先写好的测试代码也为我的工作安上一个明确">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-01-03T05:30:29.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.026Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Programming">
+<meta property="article:tag" content="Refactor">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/Program/RefactorPart3/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/Program/RefactorPart3/","path":"Program/RefactorPart3/","title":"重构（三）构筑测试体系"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>重构（三）构筑测试体系 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%87%AA%E6%B5%8B%E8%AF%95%E4%BB%A3%E7%A0%81%E7%9A%84%E4%BB%B7%E5%80%BC"><span class="nav-text"> 自测试代码的价值</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E7%BB%84%E9%87%8D%E6%9E%84"><span class="nav-text"> 第一组重构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E7%82%BC%E5%87%BD%E6%95%B0extract-function"><span class="nav-text"> 提炼函数（Extract Function）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%90%E7%82%BC%E5%8F%98%E9%87%8Fextract-variable"><span class="nav-text"> 提炼变量（Extract Variable）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%94%B9%E5%8F%98%E5%87%BD%E6%95%B0%E5%A3%B0%E6%98%8Echange-function-declaration"><span class="nav-text"> 改变函数声明（Change Function Declaration）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%81%E8%A3%85%E5%8F%98%E9%87%8Fencapsulate-variable"><span class="nav-text"> 封装变量（Encapsulate Variable）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E5%85%A5%E5%8F%82%E6%95%B0%E5%AF%B9%E8%B1%A1introduce-parameter-object"><span class="nav-text"> 引入参数对象（Introduce Parameter Object）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E7%BB%84%E5%90%88%E6%88%90%E7%B1%BBcombine-functions-into-class"><span class="nav-text"> 函数组合成类（Combine Functions into Class）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8B%86%E5%88%86%E9%98%B6%E6%AE%B5split-phase"><span class="nav-text"> 拆分阶段（Split Phase）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B0%81%E8%A3%85"><span class="nav-text"> 封装</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%81%E8%A3%85%E8%AE%B0%E5%BD%95encapsulate-record"><span class="nav-text"> 封装记录（Encapsulate Record）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B0%81%E8%A3%85%E9%9B%86%E5%90%88encapsulate-collection"><span class="nav-text"> 封装集合（Encapsulate Collection）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E6%9F%A5%E8%AF%A2%E5%8F%96%E4%BB%A3%E4%B8%B4%E6%97%B6%E5%8F%98%E9%87%8Freplace-temp-with-query"><span class="nav-text"> 以查询取代临时变量（Replace Temp with Query）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9A%90%E8%97%8F%E5%A7%94%E6%89%98%E5%85%B3%E7%B3%BBhide-delegate"><span class="nav-text"> 隐藏委托关系（Hide Delegate）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A7%BB%E9%99%A4%E4%B8%AD%E9%97%B4%E4%BA%BAremove-middle-man"><span class="nav-text"> 移除中间人（Remove Middle Man）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%AE%80%E5%8C%96%E6%9D%A1%E4%BB%B6%E9%80%BB%E8%BE%91"><span class="nav-text"> 简化条件逻辑</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E8%A7%A3%E6%9D%A1%E4%BB%B6%E8%A1%A8%E8%BE%BE%E5%BC%8Fdecompose-conditional"><span class="nav-text"> 分解条件表达式（Decompose Conditional）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%8D%AB%E8%AF%AD%E5%8F%A5%E5%8F%96%E4%BB%A3%E5%B5%8C%E5%A5%97%E6%9D%A1%E4%BB%B6%E8%A1%A8%E8%BE%BE%E5%BC%8Freplace-nested-conditional-with-guard-clauses"><span class="nav-text"> 以卫语句取代嵌套条件表达式（Replace Nested Conditional with Guard Clauses）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%A4%9A%E6%80%81%E5%8F%96%E4%BB%A3%E6%9D%A1%E4%BB%B6%E8%A1%A8%E8%BE%BE%E5%BC%8Freplace-conditional-with-polymorphism"><span class="nav-text"> 以多态取代条件表达式（Replace Conditional with Polymorphism）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E5%85%A5%E6%96%AD%E8%A8%80introduce-assertion"><span class="nav-text"> 引入断言（Introduce Assertion）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E7%BB%A7%E6%89%BF%E5%85%B3%E7%B3%BB"><span class="nav-text"> 处理继承关系</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%AD%90%E7%B1%BB%E5%8F%96%E4%BB%A3%E7%B1%BB%E5%9E%8B%E7%A0%81replace-type-code-with-subclasses"><span class="nav-text"> 以子类取代类型码（Replace Type Code with Subclasses）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%A7%94%E6%89%98%E5%8F%96%E4%BB%A3%E5%AD%90%E7%B1%BBreplace-subclass-with-delegate"><span class="nav-text"> 以委托取代子类（Replace Subclass with Delegate</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%A5%E5%A7%94%E6%89%98%E5%8F%96%E4%BB%A3%E8%B6%85%E7%B1%BBreplace-superclass-with-delegate"><span class="nav-text"> 以委托取代超类（Replace Superclass with Delegate）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Program/RefactorPart3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="重构（三）构筑测试体系 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          重构（三）构筑测试体系
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Programming/Principle/" itemprop="url" rel="index"><span itemprop="name">Principle</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Program/RefactorPart3/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Program/RefactorPart3/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>4.6k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>17 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="自测试代码的价值"><a class="markdownIt-Anchor" href="#自测试代码的价值"></a> 自测试代码的价值</h1>
+<p>一套测试就是一个强大的 bug 侦测器，能够大大缩减查找 bug 所需的时间。</p>
+<p>事实上，撰写测试代码的最好时机是在开始动手编码之前。当我需要添加特性时，我会先编写相应的测试代码。听起来离经叛道，其实不然。编写测试代码其实就是在问自己：为了添加这个功能，我需要实现些什么？编写测试代码还能帮我把注意力集中于接口而非实现（这永远是一件好事）。预先写好的测试代码也为我的工作安上一个明确的结束标志：一旦测试代码正常运行，工作就可以结束了。</p>
+<p>Kent Beck 将这种先写测试的习惯提炼成一门技艺，叫测试驱动开发（Test-Driven Development，TDD）[mf-tdd]。测试驱动开发的编程方式依赖于下面这个短循环：先编写一个（失败的）测试，编写代码使测试通过，然后进行重构以保证代码整洁。这个“测试、编码、重构”的循环应该在每个小时内都完成很多次。这种良好的节奏感可使编程工作以更加高效、有条不紊的方式开展。</p>
+<span id="more"></span>
+<h1 id="第一组重构"><a class="markdownIt-Anchor" href="#第一组重构"></a> 第一组重构</h1>
+<h2 id="提炼函数extract-function"><a class="markdownIt-Anchor" href="#提炼函数extract-function"></a> 提炼函数（Extract Function）</h2>
+<p>我会浏览一段代码，理解其作用，然后将其提炼到一个独立的函数中，并以这段代码的用途为这个函数命名。如果你需要花时间浏览一段代码才能弄清它到底在干什么，那么就应该将其提炼到一个函数中，并根据它所做的事为其命名。以后再读到这段代码时，你一眼就能看到函数的用途，大多数时候根本不需要关心函数如何达成其用途（这是函数体内干的事）。</p>
+<h2 id="提炼变量extract-variable"><a class="markdownIt-Anchor" href="#提炼变量extract-variable"></a> 提炼变量（Extract Variable）</h2>
+<p>如果我考虑使用提炼变量，就意味着我要给代码中的一个表达式命名。一旦决定要这样做，我就得考虑这个名字所处的上下文。如果这个名字只在当前的函数中有意义，那么提炼变量是个不错的选择；但如果这个变量名在更宽的上下文中也有意义，我就会考虑将其暴露出来，通常以函数的形式。如果在更宽的范围可以访问到这个名字，就意味着其他代码也可以用到这个表达式，而不用把它重写一遍，这样能减少重复，并且能更好地表达我的意图。</p>
+<h2 id="改变函数声明change-function-declaration"><a class="markdownIt-Anchor" href="#改变函数声明change-function-declaration"></a> 改变函数声明（Change Function Declaration）</h2>
+<p>如果我看到一个函数的名字不对，一旦发现了更好的名字，就得尽快给函数改名。这样，下一次再看到这段代码时，我就不用再费力搞懂其中到底在干什么。有一个改进函数名字的好办法：先写一句注释描述这个函数的用途，再把这句注释变成函数的名字。）<br>
+修改参数列表不仅能增加函数的应用范围，还能改变连接一个模块所需的条件，从而去除不必要的耦合。如何选择正确的参数，没有简单的规则可循。我可能有一个简单的函数，用于判断支付是否逾期——如果超期 30 天未付款，那么这笔支付就逾期了。这个函数的参数应该是“支付”（payment）对象，还是支付的到期日呢？如果使用支付对象，会使这个函数与支付对象的接口耦合，但好处是可以很容易地访问后者的其他属性，当“逾期”的逻辑发生变化时就不用修改所有调用该函数的代码——换句话说，提高了该函数的封装度。</p>
+<h2 id="封装变量encapsulate-variable"><a class="markdownIt-Anchor" href="#封装变量encapsulate-variable"></a> 封装变量（Encapsulate Variable）</h2>
+<p>如果我把数据搬走，就必须同时修改所有引用该数据的代码，否则程序就不能运行。如果数据的可访问范围很小，比如一个小函数内部的临时变量，那还不成问题。但如果可访问范围变大，重构的难度就会随之增大，这也是说全局数据是大麻烦的原因。所以，如果想要搬移一处被广泛使用的数据，最好的办法往往是先以函数形式封装所有对该数据的访问。这样，我就能把“重新组织数据”的困难任务转化为“重新组织函数”这个相对简单的任务。</p>
+<p>封装数据的价值还不止于此。封装能提供一个清晰的观测点，可以由此监控数据的变化和使用情况；我还可以轻松地添加数据被修改时的验证或后续逻辑。我的习惯是：对于所有可变的数据，只要它的作用域超出单个函数，我就会将其封装起来，只允许通过函数访问。数据的作用域越大，封装就越重要。</p>
+<h2 id="引入参数对象introduce-parameter-object"><a class="markdownIt-Anchor" href="#引入参数对象introduce-parameter-object"></a> 引入参数对象（Introduce Parameter Object）</h2>
+<p>我常会看见，一组数据项总是结伴同行，出没于一个又一个函数。这样一组数据就是所谓的数据泥团，我喜欢代之以一个数据结构。</p>
+<p>这项重构真正的意义在于，它会催生代码中更深层次的改变。一旦识别出新的数据结构，我就可以重组程序的行为来使用这些结构。我会创建出函数来捕捉围绕这些数据的共用行为——可能只是一组共用的函数，也可能用一个类把数据结构与使用数据的函数组合起来。这个过程会改变代码的概念图景，将这些数据结构提升为新的抽象概念，可以帮助我更好地理解问题域。</p>
+<h2 id="函数组合成类combine-functions-into-class"><a class="markdownIt-Anchor" href="#函数组合成类combine-functions-into-class"></a> 函数组合成类（Combine Functions into Class）</h2>
+<p>如果发现一组函数形影不离地操作同一块数据（通常是将这块数据作为参数传递给函数），我就认为，是时候组建一个类了。类能明确地给这些函数提供一个共用的环境，在对象内部调用这些函数可以少传许多参数，从而简化函数调用，并且这样一个对象也可以更方便地传递给系统的其他部分。</p>
+<h2 id="拆分阶段split-phase"><a class="markdownIt-Anchor" href="#拆分阶段split-phase"></a> 拆分阶段（Split Phase）</h2>
+<p>每当看见一段代码在同时处理两件不同的事，我就想把它拆分成各自独立的模块，因为这样到了需要修改的时候，我就可以单独处理每个主题，而不必同时在脑子里考虑两个不同的主题。如果运气够好的话，我可能只需要修改其中一个模块，完全不用回忆起另一个模块的诸般细节。</p>
+<p>最简洁的拆分方法之一，就是把一大段行为分成顺序执行的两个阶段。如果一块代码中出现了上下几段，各自使用不同的一组数据和函数，这就是最明显的线索。将这些代码片段拆分成各自独立的模块，能更明确地标示出它们之间的差异。</p>
+<h1 id="封装"><a class="markdownIt-Anchor" href="#封装"></a> 封装</h1>
+<h2 id="封装记录encapsulate-record"><a class="markdownIt-Anchor" href="#封装记录encapsulate-record"></a> 封装记录（Encapsulate Record）</h2>
+<p>记录型结构是多数编程语言提供的一种常见特性。它们能直观地组织起存在关联的数据，让我可以将数据作为有意义的单元传递，而不仅是一堆数据的拼凑。但简单的记录型结构也有缺陷，最恼人的一点是，它强迫我清晰地区分“记录中存储的数据”和“通过计算得到的数据”。假使我要描述一个整数闭区间，我可以用{start: 1, end: 5}描述，或者用{start: 1, length: 5}（甚至还能用{end: 5, length: 5}，如果我想露两手华丽的编程技巧的话）。但不论如何存储，这 3 个值都是我想知道的，即区间的起点（start）和终点（end），以及区间的长度（length）。</p>
+<p>这就是对于可变数据，我总是更偏爱使用类对象而非记录的原因。对象可以隐藏结构的细节，仅为这 3 个值提供对应的方法。该对象的用户不必追究存储的细节和计算的过程。同时，这种封装还有助于字段的改名：我可以重新命名字段，但同时提供新老字段名的访问方法，这样我就可以渐进地修改调用方，直到替换全部完成。</p>
+<h2 id="封装集合encapsulate-collection"><a class="markdownIt-Anchor" href="#封装集合encapsulate-collection"></a> 封装集合（Encapsulate Collection）</h2>
+<p>封装集合时人们常常犯一个错误：只对集合变量的访问进行了封装，但依然让取值函数返回集合本身。这使得集合的成员变量可以直接被修改，而封装它的类则全然不知，无法介入。<br>
+一种避免直接修改集合的方法是，永远不直接返回集合的值。还有一种方法是，以某种形式限制集合的访问权，只允许对集合进行读操作。</p>
+<h2 id="以查询取代临时变量replace-temp-with-query"><a class="markdownIt-Anchor" href="#以查询取代临时变量replace-temp-with-query"></a> 以查询取代临时变量（Replace Temp with Query）</h2>
+<p>这项重构手法在类中施展效果最好，因为类为待提炼函数提供了一个共同的上下文。如果不是在类中，我很可能会在顶层函数中拥有过多参数，这将冲淡提炼函数所能带来的诸多好处。<br>
+以查询取代临时变量手法只适用于处理某些类型的临时变量：那些只被计算一次且之后不再被修改的变量。</p>
+<h2 id="隐藏委托关系hide-delegate"><a class="markdownIt-Anchor" href="#隐藏委托关系hide-delegate"></a> 隐藏委托关系（Hide Delegate）</h2>
+<p>如果某些客户端先通过服务对象的字段得到另一个对象（受托类），然后调用后者的函数，那么客户就必须知晓这一层委托关系。万一受托类修改了接口，变化会波及通过服务对象使用它的所有客户端。我可以在服务对象上放置一个简单的委托函数，将委托关系隐藏起来，从而去除这种依赖。这么一来，即使将来委托关系发生变化，变化也只会影响服务对象，而不会直接波及所有客户端。</p>
+<h2 id="移除中间人remove-middle-man"><a class="markdownIt-Anchor" href="#移除中间人remove-middle-man"></a> 移除中间人（Remove Middle Man）</h2>
+<p>在隐藏委托关系的“动机”一节中，我谈到了“封装受托对象”的好处。但是这层封装也是有代价的。每当客户端要使用受托类的新特性时，你就必须在服务端添加一个简单委托函数。随着受托类的特性（功能）越来越多，更多的转发函数就会使人烦躁。服务类完全变成了一个中间人，此时就应该让客户直接调用受托类。</p>
+<p>很难说什么程度的隐藏才是合适的。还好，有了隐藏委托关系（189）和删除中间人，我大可不必操心这个问题，因为我可以在系统运行过程中不断进行调整。随着代码的变化，“合适的隐藏程度”这个尺度也相应改变。</p>
+<h1 id="简化条件逻辑"><a class="markdownIt-Anchor" href="#简化条件逻辑"></a> 简化条件逻辑</h1>
+<h2 id="分解条件表达式decompose-conditional"><a class="markdownIt-Anchor" href="#分解条件表达式decompose-conditional"></a> 分解条件表达式（Decompose Conditional）</h2>
+<p>在带有复杂条件逻辑的函数中，代码会告诉我发生的事，但常常让我弄不清楚为什么会发生这样的事，这就说明代码的可读性的确大大降低了。和任何大块头代码一样，我可以将它分解为多个独立的函数，根据每个小块代码的用途，为分解而得的新函数命名，并将原函数中对应的代码改为调用新函数，从而更清楚地表达自己的意图。对于条件逻辑，将每个分支条件分解成新函数还可以带来更多好处：可以突出条件逻辑，更清楚地表明每个分支的作用，并且突出每个分支的原因。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!aDate.isBefore(plan.summerStart) &amp;amp;&amp;amp; !aDate.isAfter(plan.summerEnd))</span><br><span class="line"> charge = quantity * plan.summerRate;</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line"> charge = quantity * plan.regularRate + plan.regularServiceCharge;</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> (summer())</span><br><span class="line"> charge = summerCharge();</span><br><span class="line"><span class="keyword">else</span></span><br><span class="line"> charge = regularCharge();</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="以卫语句取代嵌套条件表达式replace-nested-conditional-with-guard-clauses"><a class="markdownIt-Anchor" href="#以卫语句取代嵌套条件表达式replace-nested-conditional-with-guard-clauses"></a> 以卫语句取代嵌套条件表达式（Replace Nested Conditional with Guard Clauses）</h2>
+<p>根据我的经验，条件表达式通常有两种风格。第一种风格是：两个条件分支都属于正常行为。第二种风格则是：只有一个条件分支是正常行为，另一个分支则是异常的情况。</p>
+<p>这两类条件表达式有不同的用途，这一点应该通过代码表现出来。如果两条分支都是正常行为，就应该使用形如 if…else… 的条件表达式；如果某个条件极其罕见，就应该单独检查该条件，并在该条件为真时立刻从函数中返回。这样的单独检查常常被称为“卫语句”（guard clauses）。</p>
+<p>以卫语句取代嵌套条件表达式的精髓就是：给某一条分支以特别的重视。如果使用 if-then-else 结构，你对 if 分支和 else 分支的重视是同等的。这样的代码结构传递给阅读者的消息就是：各个分支有同样的重要性。卫语句就不同了，它告诉阅读者：“这种情况不是本函数的核心逻辑所关心的，如果它真发生了，请做一些必要的整理工作，然后退出。”</p>
+<h2 id="以多态取代条件表达式replace-conditional-with-polymorphism"><a class="markdownIt-Anchor" href="#以多态取代条件表达式replace-conditional-with-polymorphism"></a> 以多态取代条件表达式（Replace Conditional with Polymorphism）</h2>
+<p>复杂的条件逻辑是编程中最难理解的东西之一，因此我一直在寻求给条件逻辑添加结构。很多时候，我发现可以将条件逻辑拆分到不同的场景（或者叫高阶用例），从而拆解复杂的条件逻辑。这种拆分有时用条件逻辑本身的结构就足以表达，但使用类和多态能把逻辑的拆分表述得更清晰。</p>
+<p>多态是面向对象编程的关键特性之一。跟其他一切有用的特性一样，它也很容易被滥用。我曾经遇到有人争论说所有条件逻辑都应该用多态取代。我不赞同这种观点。我的大部分条件逻辑只用到了基本的条件语句——if/else 和 switch/case，并不需要劳师动众地引入多态。但如果发现如前所述的复杂条件逻辑，多态是改善这种情况的有力工具。</p>
+<h2 id="引入断言introduce-assertion"><a class="markdownIt-Anchor" href="#引入断言introduce-assertion"></a> 引入断言（Introduce Assertion）</h2>
+<p>断言是一个条件表达式，应该总是为真。如果它失败，表示程序员犯了错误。断言的失败不应该被系统任何地方捕捉。整个程序的行为在有没有断言出现的时候都应该完全一样。实际上，有些编程语言中的断言可以在编译期用一个开关完全禁用掉。</p>
+<h1 id="处理继承关系"><a class="markdownIt-Anchor" href="#处理继承关系"></a> 处理继承关系</h1>
+<h2 id="以子类取代类型码replace-type-code-with-subclasses"><a class="markdownIt-Anchor" href="#以子类取代类型码replace-type-code-with-subclasses"></a> 以子类取代类型码（Replace Type Code with Subclasses）</h2>
+<p>软件系统经常需要表现“相似但又不同的东西”，比如员工可以按职位分类（工程师、经理、销售），订单可以按优先级分类（加急、常规）。表现分类关系的第一种工具是类型码字段——根据具体的编程语言，可能实现为枚举、符号、字符串或者数字。类型码的取值经常来自给系统提供数据的外部服务。</p>
+<p>大多数时候，有这样的类型码就够了。但也有些时候，我可以再多往前一步，引入子类。继承有两个诱人之处。首先，你可以用多态来处理条件逻辑。另外，有些字段或函数只对特定的类型码取值才有意义，例如“销售目标”只对“销售”这类员工才有意义。此时我可以创建子类，然后用字段下移把这样的字段放到合适的子类中去。当然，我也可以加入验证逻辑，确保只有当类型码取值正确时才使用该字段，不过子类的形式能更明确地表达数据与类型之间的关系。</p>
+<h2 id="以委托取代子类replace-subclass-with-delegate"><a class="markdownIt-Anchor" href="#以委托取代子类replace-subclass-with-delegate"></a> 以委托取代子类（Replace Subclass with Delegate</h2>
+<p>继承也有其短板。最明显的是，继承这张牌只能打一次。导致行为不同的原因可能有多种，但继承只能用于处理一个方向上的变化。比如说，我可能希望“人”的行为根据“年龄段”不同，并且根据“收入水平”不同。使用继承的话，子类可以是“年轻人”和“老人”，也可以是“富人”和“穷人”，但不能同时采用两种继承方式。更大的问题在于，继承给类之间引入了非常紧密的关系。在超类上做任何修改，都很可能破坏子类，所以我必须非常小心，并且充分理解子类如何从超类派生。</p>
+<p>这两个问题用委托都能解决。对于不同的变化原因，我可以委托给不同的类。委托是对象之间常规的关系。与继承关系相比，使用委托关系时接口更清晰、耦合更少。因此，继承关系遇到问题时运用以委托取代子类是常见的情况。有一条流行的原则：“对象组合优于类继承”（“组合”跟“委托”是同一回事）。</p>
+<h2 id="以委托取代超类replace-superclass-with-delegate"><a class="markdownIt-Anchor" href="#以委托取代超类replace-superclass-with-delegate"></a> 以委托取代超类（Replace Superclass with Delegate）</h2>
+<p>如果超类的一些函数对子类并不适用，就说明我不应该通过继承来获得超类的功能。除了“子类用得上超类的所有函数”之外，合理的继承关系还有一个重要特征：子类的所有实例都应该是超类的实例，通过超类的接口来使用子类的实例应该完全不出问题。</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>《重构 改善既有代码的设计》<br>
+<span class="exturl" data-url="aHR0cHM6Ly9ib29rLXJlZmFjdG9yaW5nMi5pZm1pY3JvLmNvbS9kb2NzL2NoMy5odG1s">https://book-refactoring2.ifmicro.com/docs/ch3.html<i class="fa fa-external-link-alt"></i></span></p>
+<p>[[RefactorPart3]]<br>
+[[RefactorPart2]]<br>
+[[RefactorPart1]]</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
+              <a href="/tags/Refactor/" rel="tag"><i class="fa fa-tag"></i> Refactor</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/Program/RefactorPart2/" rel="prev" title="重构（二）代码的坏味道">
+                  <i class="fa fa-angle-left"></i> 重构（二）代码的坏味道
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/Program/CPP11Part1/" rel="next" title="C++11（一）assert 与 noexcept">
+                  C++11（一）assert 与 noexcept <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/Program/RefactorPart3/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

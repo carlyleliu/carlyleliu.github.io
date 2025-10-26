@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="内存使用情况分析  DRAM 大小 硬件上 DDR 确定之后， DRAM 大小就已经确定。 uboot 会根据 DRAM 驱动提供的接口获取 DRAM 的大小，然后修改 dts 中的 memory 节点，Linux 启动时解析 dts 获取 DRAM 的大小。 uboot 启动 log 中会打印 dram 的大小。比如 R329 方案 uboot 启动时会有如下 log： 1[01.300]DR">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 内存优化">
+<meta property="og:url" content="https://carlyleliu.github.io/Debug/LinuxMemoryOptimization/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="内存使用情况分析  DRAM 大小 硬件上 DDR 确定之后， DRAM 大小就已经确定。 uboot 会根据 DRAM 驱动提供的接口获取 DRAM 的大小，然后修改 dts 中的 memory 节点，Linux 启动时解析 dts 获取 DRAM 的大小。 uboot 启动 log 中会打印 dram 的大小。比如 R329 方案 uboot 启动时会有如下 log： 1[01.300]DR">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-03-01T14:38:04.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.008Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Debug">
+<meta property="article:tag" content="Programming">
+<meta property="article:tag" content="Performance">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/Debug/LinuxMemoryOptimization/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/Debug/LinuxMemoryOptimization/","path":"Debug/LinuxMemoryOptimization/","title":"Linux 内存优化"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 内存优化 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8%E6%83%85%E5%86%B5%E5%88%86%E6%9E%90"><span class="nav-text"> 内存使用情况分析</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#dram-%E5%A4%A7%E5%B0%8F"><span class="nav-text"> DRAM 大小</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%86%85%E5%AD%98%E4%BD%BF%E7%94%A8%E6%83%85%E5%86%B5"><span class="nav-text"> 系统内存使用情况</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#free-%E5%91%BD%E4%BB%A4"><span class="nav-text"> free 命令</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AC%AC%E4%B8%80%E8%A1%8C-mem%E5%BD%93%E5%89%8D%E7%B3%BB%E7%BB%9F%E5%86%85%E5%AD%98%E7%9A%84%E4%BD%BF%E7%94%A8%E6%83%85%E5%86%B5"><span class="nav-text"> 第一行 Mem，当前系统内存的使用情况</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AC%AC%E4%BA%8C%E8%A1%8C"><span class="nav-text"> 第二行</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E8%A1%8C-swap%E4%BA%A4%E6%8D%A2%E5%88%86%E5%8C%BA%E7%9A%84%E4%BD%BF%E7%94%A8%E6%83%85%E5%86%B5"><span class="nav-text"> 第三行 Swap，交换分区的使用情况</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#procmeminfo-%E8%8A%82%E7%82%B9"><span class="nav-text"> &#x2F;proc&#x2F;meminfo 节点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E7%95%99%E5%86%85%E5%AD%98"><span class="nav-text"> 保留内存</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#buffers-cached"><span class="nav-text"> buffers &amp; cached</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E4%BD%BF%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98"><span class="nav-text"> 系统使用的内存</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E4%BD%BF%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98"><span class="nav-text"> 进程使用的内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E4%BD%BF%E7%94%A8%E5%86%85%E5%AD%98"><span class="nav-text"> 总使用内存</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-text"> 内存优化</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BF%9D%E7%95%99%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-text"> 保留内存优化</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E9%9D%99%E6%80%81%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-text"> 内核静态内存优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#dtb-%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-text"> DTB 内存优化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#tee-%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-text"> TEE 内存优化</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E4%BD%BF%E7%94%A8%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-text"> 内核使用内存优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#slab-%E4%BC%98%E5%8C%96"><span class="nav-text"> Slab 优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E6%A0%B8%E6%A8%A1%E5%9D%97%E4%BC%98%E5%8C%96"><span class="nav-text"> 内核模块优化</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E7%A9%BA%E9%97%B4%E4%BD%BF%E7%94%A8%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="nav-text"> 用户空间使用内存优化</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Debug/LinuxMemoryOptimization/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 内存优化 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 内存优化
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Programming/Performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Debug/LinuxMemoryOptimization/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Debug/LinuxMemoryOptimization/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>3k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>11 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="内存使用情况分析"><a class="markdownIt-Anchor" href="#内存使用情况分析"></a> 内存使用情况分析</h1>
+<h2 id="dram-大小"><a class="markdownIt-Anchor" href="#dram-大小"></a> DRAM 大小</h2>
+<p>硬件上 DDR 确定之后， DRAM 大小就已经确定。</p>
+<p>uboot 会根据 DRAM 驱动提供的接口获取 DRAM 的大小，然后修改 dts 中的 memory 节点，Linux 启动时解析 dts 获取 DRAM 的大小。<br>
+uboot 启动 log 中会打印 dram 的大小。比如 R329 方案 uboot 启动时会有如下 log：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[01.300]DRAM: 128 MiB</span><br></pre></td></tr></tbody></table></figure>
+<p>执行：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root@TinaLinux:/<span class="comment"># hexdump -C /sys/firmware/devicetree/base/memory@40000000/reg</span></span><br><span class="line">00000000 00 00 00 00 40 00 00 00 00 00 00 00 08 00 00 00 |....@...........|</span><br><span class="line">00000010</span><br></pre></td></tr></tbody></table></figure>
+<p>也可以获取 dram 的起始地址与大小。如下面 R329 例子所示，其中 0x40000000 为起始地址， 0x08000000 为 dram 的 size.</p>
+<span id="more"></span>
+<h2 id="系统内存使用情况"><a class="markdownIt-Anchor" href="#系统内存使用情况"></a> 系统内存使用情况</h2>
+<h3 id="free-命令"><a class="markdownIt-Anchor" href="#free-命令"></a> free 命令</h3>
+<p>进入 Linux 用户空间，执行 free 命令可获得当前系统的内存使用情况。比如 R329 方案，某次执行 free 命令的结果如下：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">root@TinaLinux:/<span class="comment"># free</span></span><br><span class="line">total used free shared buffers cached</span><br><span class="line">Mem: 110592 79960 30632 36 9172 22860</span><br><span class="line">-/+ buffers/cache: 47928 62664</span><br><span class="line">Swap: 0 0 0</span><br></pre></td></tr></tbody></table></figure>
+<p>free 命令输出说明如下：</p>
+<h4 id="第一行-mem当前系统内存的使用情况"><a class="markdownIt-Anchor" href="#第一行-mem当前系统内存的使用情况"></a> 第一行 Mem，当前系统内存的使用情况</h4>
+<ul>
+<li>total： Linux 内核可支配的内存</li>
+<li>used：系统已使用的内存</li>
+<li>free：系统尚未使用的内存</li>
+<li>shared：共享内存以及 tmpfs、 devtmpfs 所占用的内存。共享内存指使用 shmget、shm_open、 mmap 等接口创建的共享内存</li>
+<li>buffers： Buffers 表示块设备 block device 所占用的缓存页，包括直接读写块设备、以及文件系统元数据 metadata 等</li>
+<li>cached： Cache 里包括所有与文件对应的内存页。如果一个文件不再与进程关联，该文件不会立即回收，此时仍然包含在 Cached 中；此外， Cached 中还包含 tmpfs 中的文件以及 shmem 等</li>
+</ul>
+<h4 id="第二行"><a class="markdownIt-Anchor" href="#第二行"></a> 第二行</h4>
+<p>-/+ buffers/cache，减号表示第一行 used 内存减去 buffers 与 cached 内存，即 Mem_used - Mem_buffers - Mem_cached；<br>
+加号表示第一行 free 内存加上 buffers 与 cached 内存，即 Mem_free + Mem_buffers + Mem_cached。从应用程序的角度看， buffers 和 cached 是潜在可用的内存。</p>
+<h4 id="第三行-swap交换分区的使用情况"><a class="markdownIt-Anchor" href="#第三行-swap交换分区的使用情况"></a> 第三行 Swap，交换分区的使用情况</h4>
+<p>Tina 产品上使用 flash 作为存储器，读写次数是有限的，而 swap 分区特点是会被频繁地读写，导致 flash 寿命变短，因此 tina 上没有创建 swap 分区。</p>
+<ul>
+<li>total: 交换分区总大小</li>
+<li>used: 已使用的交换分区大小</li>
+<li>free: 空闲的交换分区大小</li>
+</ul>
+<h3 id="procmeminfo-节点"><a class="markdownIt-Anchor" href="#procmeminfo-节点"></a> /proc/meminfo 节点</h3>
+<p>实际上 free 命令信息来源是从/proc/meminfo 节点。比如 R329 方案，某次执行 cat /proc/meminfo 命令的结果如下：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">root@TinaLinux:/<span class="comment"># cat /proc/meminfo</span></span><br><span class="line">MemTotal: 110592 kB</span><br><span class="line">MemFree: 30380 kB</span><br><span class="line">MemAvailable: 62044 kB</span><br><span class="line">Buffers: 9276 kB</span><br><span class="line">Cached: 22872 kB</span><br><span class="line">SwapCached: 0 kB</span><br><span class="line">Active: 17580 kB</span><br><span class="line">Inactive: 16336 kB</span><br><span class="line">Active(anon): 1780 kB</span><br><span class="line">Inactive(anon): 24 kB</span><br><span class="line">Active(file): 15800 kB</span><br><span class="line">Inactive(file): 16312 kB</span><br><span class="line">Unevictable: 0 kB</span><br><span class="line">Mlocked: 0 kB</span><br><span class="line">SwapTotal: 0 kB</span><br><span class="line">SwapFree: 0 kB</span><br><span class="line">Dirty: 0 kB</span><br><span class="line">Writeback: 0 kB</span><br><span class="line">AnonPages: 1800 kB</span><br><span class="line">Mapped: 3324 kB</span><br><span class="line">Shmem: 36 kB</span><br><span class="line">Slab: 13536 kB</span><br><span class="line">SReclaimable: 4224 kB</span><br><span class="line">SUnreclaim: 9312 kB</span><br><span class="line">KernelStack: 1232 kB</span><br><span class="line">PageTables: 200 kB</span><br><span class="line">NFS_Unstable: 0 kB</span><br><span class="line">Bounce: 0 kB</span><br><span class="line">WritebackTmp: 0 kB</span><br><span class="line">CommitLimit: 55296 kB</span><br><span class="line">Committed_AS: 29116 kB</span><br><span class="line">VmallocTotal: 263061440 kB</span><br><span class="line">VmallocUsed: 0 kB</span><br><span class="line">VmallocChunk: 0 kB</span><br><span class="line">CmaTotal: 24576 kB</span><br><span class="line">CmaFree: 2684 kB</span><br></pre></td></tr></tbody></table></figure>
+<p>相关说明如下：</p>
+<ul>
+<li>MemTotal、 MemFree、 Buffers、 Cached、 Shmem，即 free 命令第一行。</li>
+<li>MemAvailable：使用 MemFree, Active(file), Inactive(file), SReclaimable 和/proc/zoneinfo 中的 low watermark 根据特定算法计算得出，是一个估值，并不精确。可用来评估应用程序层面可用的内存。</li>
+<li>Active/Inactive： Active 表示最近使用的内存，回收的优先级低； Inactive 表示最近较少使用的内存，回收的优先级高。可细分为 Active/Inactive 匿名页与文件页。所谓文件页，就是与文件对应的内存页，如进程的代码、映射的文件都属于文件页，当内存不足时，这部分的内存可以写回到存储器中；与之对应的就属于匿名页，即没有与具体文件对应的页，如进程的堆栈等，内存不足时，如果存在 swap 分区，可以将匿名页写入到交换分区，如果没有 swap 分区，则只能常驻内存中。</li>
+<li>AnonPages：匿名页。</li>
+<li>Mapped：设备或文件映射的大小。比如共享内存、动态库、 mmap 的文件等都统计在该内存中。</li>
+<li>slab/SReclaimable/SUnreclaim：内核 slab 使用的内存，包含可回收与不可回收部分。</li>
+<li>KernelStack：内核栈大小。</li>
+<li>PageTables：页表的大小（用于将虚拟地址翻译为物理地址），内存分配越多，此块内存就会增大。</li>
+<li>CommitLimit/Committed_AS： overcommit 的阈值/已经申请的内存大小（不是已分配）。 Overcommit 是 Linux 一种内存申请处理方式，为了跑更多更大的程序，大部分申请内存的请求都回复 “yes”，总申请的内存大于总物理内存。</li>
+<li>VmallocTotal/VmallocUsed/VmallocChunk： vmalloc 区 域 大 小/vmalloc 区 域 使 用大小/vmalloc 区域中最大可用的连续区块大小。这部分在新版本内核上移除了。</li>
+<li>CmaTotal/CmaFree：总 CMA 内存/空闲 CMA 内存。</li>
+</ul>
+<h2 id="保留内存"><a class="markdownIt-Anchor" href="#保留内存"></a> 保留内存</h2>
+<p>R329 DRAM 大小为 128M，而 free 命令中显示系统可支配总内存只有 110592KB=108M，为什么？<br>
+这里就涉及到一个概念：保留内存（Reserved Memory）。保留内存是指把系统中的一部分内存保留起来用作特殊用途，这部分内存通常不会被释放，也不会被转移到交换分区。</p>
+<p>进入控制台，执行 cat /sys/kernel/debug/memblock/reserved 可以查看 reserved memory 使用情况：当前 R329 reserved memory 使用情况如下：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">root@TinaLinux:/<span class="comment"># cat /sys/kernel/debug/memblock/reserved</span></span><br><span class="line">0: 0x0000000040080000..0x00000000408a3fff, size:8336K</span><br><span class="line">1: 0x00000000408a5000..0x00000000408a5fff, size:4K</span><br><span class="line">2: 0x0000000041700000..0x000000004171767f, size:93K</span><br><span class="line">3: 0x0000000041800000..0x00000000420fffff, size:9216K</span><br><span class="line">4: 0x0000000045000000..0x00000000467fffff, size:24576K</span><br><span class="line">5: 0x0000000046d86000..0x0000000046f85fff, size:2048K</span><br><span class="line">6: 0x0000000047f29e00..0x0000000047f59e5f, size:192K</span><br><span class="line">7: 0x0000000047f59e80..0x0000000047f59edf, size:0K</span><br><span class="line">8: 0x0000000047f59f00..0x0000000047f8400f, size:168K</span><br><span class="line">9: 0x0000000047f84080..0x0000000047f84087, size:0K</span><br><span class="line">10: 0x0000000047f84100..0x0000000047f84107, size:0K</span><br><span class="line">11: 0x0000000047f85180..0x0000000047fff2e6, size:488K</span><br><span class="line">......</span><br></pre></td></tr></tbody></table></figure>
+<p>在内核 cmdline 加上 memblock=debug bootmem_debug=1 参数，在内核启动时，会打印上述 reserved memory 详细信息。由于内容太多，这里不展示了。</p>
+<p>经分析对比，当前 R329 reserved memory 主要包含如下几个部分：</p>
+<ul>
+<li>
+<p>0: 0x0000000040080000…0x00000000408a3fff, size:8336K<br>
+内核代码段、数据段。详细包括 text， init， data， bss 四段，其中 init 在内核启动完成后会被释放。</p>
+</li>
+<li>
+<p>1: 0x00000000408a5000…0x00000000408a5fff, size:4K<br>
+略</p>
+</li>
+<li>
+<p>2: 0x0000000041700000…0x000000004171767f, size:93K<br>
+DTB 占用内存</p>
+</li>
+<li>
+<p>3: 0x0000000041800000…0x00000000420fffff, size:9216K<br>
+TEE 内存（共 8M，包括 SHM 2M， ATF 1M， OS 1M， TA 4M）。DSP 内存（共 1M）。</p>
+</li>
+<li>
+<p>4: 0x0000000045000000…0x00000000467fffff, size:24576K<br>
+CMA 内存，共 24M，在 cmdline 中通过 cma=24M 配置而来。在初始化的过程中， CMA 内存会全部导入伙伴系统（具体是通过 cma_init_reserved_areas 函数来实现），所以内核是可以支配 CMA 内存的</p>
+</li>
+<li>
+<p>5: 0x0000000046d86000…0x0000000046f85fff, size:2048K<br>
+所有 struct page 结构体的总大小。 struct page 结构体用来描述物理上的页帧。当前 R329 上配置一个页的大小为 4K，因此总共有 128M / 4K = 32768 个页，而 sizeof(struct page) 的值为 64B，因此这一块共 32768 * 64 = 2048 KB。注： aarch64 内核 sizeof(struct page) 的值为 64B， arm32 内核 sizeof(struct page) 的值为 32B。</p>
+</li>
+<li>
+<p>6: 0x0000000047f29e00…0x0000000047f59e5f, size:192K<br>
+主要是 vfs cache，包括 Dentry 和 Inode 的 hash table，存放最近访问的 Dentry 和 Inode 节点，加速对虚拟文件系统的访问。</p>
+</li>
+<li>
+<p>8: 0x0000000047f59f00…0x0000000047f8400f, size:168K<br>
+主要是 per-cpu 变量占用的内存。</p>
+</li>
+<li>
+<p>11: 0x0000000047f85180…0x0000000047fff2e6, size:488K<br>
+主要是解析 dtb 生成 struct device_node 结构体所用的内存。</p>
+</li>
+</ul>
+<h2 id="buffers-cached"><a class="markdownIt-Anchor" href="#buffers-cached"></a> buffers &amp; cached</h2>
+<p>free 命令第二行为什么要-/+ buffers/cache？ buffers 与 cached 内存都属于空闲内存么？</p>
+<p>Linux 为加速 IO 访问速度，会使用空闲内存来缓存文件以及元数据等内容，这就是 buffers 和 cached 内存。当内存不足时，这些内存会被回收，供内核与应用使用。所以 buffer 与 cache 实际上是已经使用了的内存，由于可以回收，属于潜在的空闲内存。但是并非所有的 buffer 和 cache 都可以回收，比如：</p>
+<ul>
+<li>如果有某个进程访问块设备或者普通文件，就需要 buffers 和 cached 空间，这部分就不能释放。</li>
+<li>shared、 tmpfs 也包含在 cached 空间中。</li>
+</ul>
+<h2 id="系统使用的内存"><a class="markdownIt-Anchor" href="#系统使用的内存"></a> 系统使用的内存</h2>
+<p>free 命令的结果展示系统已经使用了 47928KB 的内存，都用到哪里去了呢？</p>
+<h3 id="进程使用的内存"><a class="markdownIt-Anchor" href="#进程使用的内存"></a> 进程使用的内存</h3>
+<p>新增一个进程使用了哪些内存？<br>
+首先，访问文件系统加载进程的可执行文件、库等，导致 buffer/cache 增大；其次，进程本身在用户空间运行时需要有自己的地址空间信息（用 mm_struct 结构体来表示，包含代码段、数据段、用户栈等地址空间描述）；再次，内核会为进程创建进程描述符（task_struct）、内存描述符（mm_struct）等结构体，用于管理进程；此外，进程还有对应的内核栈，当进程陷入内核时需要内核栈来支持内核函数调用等等。<br>
+我们常说的进程使用的内存，指的是在用户空间所使用的内存。<br>
+关于用户进程的内存使用，涉及几个通用概念：</p>
+<ul>
+<li>VSS： Virtual Set Size 使用的虚拟内存（包含共享库占用的内存）</li>
+<li>RSS： Resident Set Size 实际使用物理内存（包含共享库占用的内存）</li>
+<li>PSS： Proportional Set Size 实际使用的物理内存（比例分配共享库占用的内存）</li>
+<li>USS： Unique Set Size 进程独自占用的物理内存（不包含共享库占用的内存）</li>
+</ul>
+<p>一般来说： VSS &gt;= RSS &gt;= PSS &gt;= USS</p>
+<p>在/proc/<pid>/smaps 节点中包含了进程的每一个内存映射的统计值，包含了 PSS、 RSS 等信息。<br>
+所以对/proc/<pid>/smaps 节点中所有的 PSS 进行累加，即可统计出所有进程在用户空间所使用的内存，具体命令如下：</pid></pid></p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">grep ^Pss /proc/[0-9]*/smaps | awk <span class="string">'{total+=$2}; END {print total}'</span></span><br></pre></td></tr></tbody></table></figure>
+<p>查看 rss 信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cat</span> /proc/`pidof ***app`/status | grep RSS</span><br></pre></td></tr></tbody></table></figure>
+<p>此外还有 ramparser 统计工具：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">root@Tina:/proc/684<span class="comment">#  ramparser -a | grep Total</span></span><br><span class="line">Mem      Total = 256 Mb   (Free 7.39 Mb, Available 7.75 Mb)</span><br><span class="line">Mem Used Total = 235.96 Mb</span><br><span class="line">Mem Used Total = Kernel used total(21.21Mb) + pss total(100.72Mb) +</span><br></pre></td></tr></tbody></table></figure>
+<h3 id="总使用内存"><a class="markdownIt-Anchor" href="#总使用内存"></a> 总使用内存</h3>
+<p>单一个进程，涉及到了很多种类的内存使用，完全统计起来不太现实。为统计系统总使用内存，可将其划分为用户空间使用内存与内核使用内存。<br>
+用户空间使用的内存 = Buffers + Cached + AnonPages。<br>
+内核使用的内存 = Slab + PageTable + KernelStack + CmaUsed + Vmalloc + X。</p>
+<p>其中，</p>
+<ul>
+<li>CmaUsed = CmaTotal - CmaFree。</li>
+<li>Vmalloc 表示/proc/vmallocinfo 中的 vmalloc 分配的内存，包含了内核模块使用的内存。计算方法为 grep vmalloc /proc/vmallocinfo | awk ‘{total+=$2}; END {print total}’。</li>
+<li>X 表示直接通过 alloc_pages/get_free_page 分配的内存，这部分内存未纳入统计，属于内存黑洞。</li>
+</ul>
+<h1 id="内存优化"><a class="markdownIt-Anchor" href="#内存优化"></a> 内存优化</h1>
+<p>主要包括：</p>
+<ul>
+<li>保留内存优化</li>
+<li>内核使用内存优化</li>
+<li>用户空间使用内存优化</li>
+</ul>
+<h2 id="保留内存优化"><a class="markdownIt-Anchor" href="#保留内存优化"></a> 保留内存优化</h2>
+<h3 id="内核静态内存优化"><a class="markdownIt-Anchor" href="#内核静态内存优化"></a> 内核静态内存优化</h3>
+<p>内核静态内存包括内核代码段数据段。优化方法主要有如下几种：<br>
+关闭不需要的模块，关闭模块下不需要的功能</p>
+<ul>
+<li>
+<p>在内核根目录，执行。/scripts/ksize vmlinux 各个模块的代码段数据段的统计信息：</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br></pre></td><td class="code"><pre><span class="line">Linux Kernel (vmlinux)                                      total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">vmlinux                                                   6471329 |    4315221    2013884     142224</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">drivers                                                   2899612 |    2032098     819710      47804</span><br><span class="line">net                                                        753530 |     721792      23658       8080</span><br><span class="line">fs                                                         664960 |     642997       3151      18812</span><br><span class="line">kernel                                                     543470 |     467211      34187      42072</span><br><span class="line">mm                                                         314765 |     288517       6932      19316</span><br><span class="line">crypto                                                     254117 |     196774      57271         72</span><br><span class="line">sound                                                      193477 |     188029       3852       1596</span><br><span class="line">lib                                                        156575 |     154010        236       2329</span><br><span class="line">block                                                      151072 |     147441       2399       1232</span><br><span class="line">ipc                                                         30522 |      29794        724          4</span><br><span class="line">init                                                        25199 |      10990      14145         64</span><br><span class="line">security                                                     4780 |       4756          8         16</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                       5992079 |    4884409     966273     141397</span><br><span class="line">delta                                                      479250 |    -569188    1047611        827</span><br><span class="line"></span><br><span class="line">drivers                                                     total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">drivers/built-in.o                                        2899612 |    2032098     819710      47804</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">drivers/video                                             1012684 |     244524     739328      28832</span><br><span class="line">drivers/usb                                                247516 |     235586       8306       3624</span><br><span class="line">drivers/mtd                                                180132 |     171969       5455       2708</span><br><span class="line">drivers/media                                              171917 |     167120       3313       1484</span><br><span class="line">drivers/base                                               168782 |     164886       3264        632</span><br><span class="line">drivers/mmc                                                150962 |     149050       1716        196</span><br><span class="line">drivers/tty                                                 92952 |      89978       1070       1904</span><br><span class="line">drivers/clk                                                 71921 |      55673      15584        664</span><br><span class="line">drivers/hid                                                 69921 |      66181       3728         12</span><br><span class="line">drivers/regulator                                           60558 |      58806       1612        140</span><br><span class="line">drivers/char                                                59195 |      54555       3640       1000</span><br><span class="line">drivers/input                                               57220 |      54728       2348        144</span><br><span class="line">drivers/pinctrl                                             56336 |      49295       6957         84</span><br><span class="line">drivers/spi                                                 46753 |      45264       1485          4</span><br><span class="line">drivers/cpufreq                                             46675 |      41339       1088       4248</span><br><span class="line">drivers/i2c                                                 46201 |      45552        597         52</span><br><span class="line">drivers/of                                                  36229 |      35370        371        488</span><br><span class="line">drivers/thermal                                             30927 |      28822       2029         76</span><br><span class="line">drivers/gpio                                                30829 |      30392        404         33</span><br><span class="line">drivers/staging                                             27577 |      27104        449         24</span><br><span class="line">drivers/power                                               24587 |      22547       1708        332</span><br><span class="line">drivers/iommu                                               23637 |      23029        544         64</span><br><span class="line">drivers/rtc                                                 21690 |      21150        384        156</span><br><span class="line">drivers/mfd                                                 21408 |      14180       7220          8</span><br><span class="line">drivers/iio                                                 18761 |      18545        160         56</span><br><span class="line">drivers/dma                                                 18404 |      17998        310         96</span><br><span class="line">drivers/pwm                                                 17398 |      16766        456        176</span><br><span class="line">drivers/irqchip                                             15919 |      13483       2340         96</span><br><span class="line">drivers/dma-buf                                             14119 |      14064         23         32</span><br><span class="line">drivers/soc                                                 12843 |      11375       1332        136</span><br><span class="line">drivers/watchdog                                            10668 |      10174        449         45</span><br><span class="line">drivers/clocksource                                          9076 |       8380        592        104</span><br><span class="line">drivers/bus                                                  6536 |       5762        738         36</span><br><span class="line">drivers/hwmon                                                5226 |       5054        144         28</span><br><span class="line">drivers/misc                                                 4730 |       4358        360         12</span><br><span class="line">drivers/reset                                                3838 |       3718        120          0</span><br><span class="line">drivers/firmware                                             3587 |       3527          4         56</span><br><span class="line">drivers/net                                                  1479 |       1431         48          0</span><br><span class="line">drivers/mpp                                                   350 |        334          8          8</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                       2899543 |    2032069     819684      47790</span><br><span class="line">delta                                                          69 |         29         26         14</span><br><span class="line"></span><br><span class="line">net                                                         total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">net/built-in.o                                             753530 |     721792      23658       8080</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">net/ipv4                                                   343777 |     327407      12726       3644</span><br><span class="line">net/core                                                   231660 |     222656       7276       1728</span><br><span class="line">net/xfrm                                                    50407 |      48727       1292        388</span><br><span class="line">net/unix                                                    27015 |      24614        344       2057</span><br><span class="line">net/packet                                                  26639 |      26370        269          0</span><br><span class="line">net/netlink                                                 25701 |      25138        423        140</span><br><span class="line">net/key                                                     20676 |      20372        300          4</span><br><span class="line">net/*.o                                                     15735 |      15307        376         52</span><br><span class="line">net/sched                                                    8093 |       7528        565          0</span><br><span class="line">net/ethernet                                                 2443 |       2403         40          0</span><br><span class="line">net/ipv6                                                     1263 |       1227         28          8</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                        753409 |     721749      23639       8021</span><br><span class="line">delta                                                         121 |         43         19         59</span><br><span class="line"></span><br><span class="line">fs                                                          total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">fs/built-in.o                                              664960 |     642997       3151      18812</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">fs/*.o                                                     351463 |     339657       1550      10256</span><br><span class="line">fs/proc                                                     83517 |      78968        361       4188</span><br><span class="line">fs/jffs2                                                    79570 |      79278        136        156</span><br><span class="line">fs/fat                                                      51402 |      51230        144         28</span><br><span class="line">fs/kernfs                                                   21130 |      16955         75       4100</span><br><span class="line">fs/configfs                                                 19069 |      18820        237         12</span><br><span class="line">fs/squashfs                                                 19013 |      18965         44          4</span><br><span class="line">fs/debugfs                                                  15752 |      15688         52         12</span><br><span class="line">fs/nls                                                      11112 |      10996        116          0</span><br><span class="line">fs/sysfs                                                     7133 |       7086         39          8</span><br><span class="line">fs/devpts                                                    3299 |       2938        353          8</span><br><span class="line">fs/ramfs                                                     1840 |       1796         40          4</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                        664300 |     642377       3147      18776</span><br><span class="line">delta                                                         660 |        620          4         36</span><br><span class="line"></span><br><span class="line">kernel                                                      total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">kernel/built-in.o                                          543470 |     467211      34187      42072</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">kernel/*.o                                                 228463 |     209842      11969       6652</span><br><span class="line">kernel/time                                                 94112 |      83229       6691       4192</span><br><span class="line">kernel/printk                                               54979 |      18467       8424      28088</span><br><span class="line">kernel/sched                                                47388 |      43798       3446        144</span><br><span class="line">kernel/irq                                                  43205 |      40313        812       2080</span><br><span class="line">kernel/rcu                                                  31236 |      29275       1932         29</span><br><span class="line">kernel/power                                                18951 |      17575        828        548</span><br><span class="line">kernel/locking                                              16625 |      16616          5          4</span><br><span class="line">kernel/bpf                                                   8404 |       8048         64        292</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                        543363 |     467163      34171      42029</span><br><span class="line">delta                                                         107 |         48         16         43</span><br><span class="line"></span><br><span class="line">sound                                                       total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">sound/built-in.o                                           193477 |     188029       3852       1596</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">sound/soc                                                  101278 |      98458       2688        132</span><br><span class="line">sound/core                                                  91802 |      89198       1148       1456</span><br><span class="line">sound/*.o                                                     586 |        558         20          8</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                        193666 |     188214       3856       1596</span><br><span class="line">delta                                                        -189 |       -185         -4          0</span><br><span class="line"></span><br><span class="line">lib                                                         total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">lib/built-in.o                                             156575 |     154010        236       2329</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">lib/*.o                                                    192773 |     192059        644         70</span><br><span class="line">lib/zlib_deflate                                            16704 |      14364         60       2280</span><br><span class="line">lib/zlib_inflate                                            11187 |      11187          0          0</span><br><span class="line">lib/xz                                                       8199 |       8163         36          0</span><br><span class="line">lib/lzo                                                      2551 |       2551          0          0</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                        231414 |     228324        740       2350</span><br><span class="line">delta                                                      -74839 |     -74314       -504        -21</span><br><span class="line"></span><br><span class="line">block                                                       total |       text       data        bss</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">block/built-in.o                                           151072 |     147441       2399       1232</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line">block/*.o                                                  143829 |     140218       2383       1228</span><br><span class="line">block/partitions                                             7227 |       7207         16          4</span><br><span class="line">----------------------------------------------------------------------------------------------------</span><br><span class="line"><span class="built_in">sum</span>                                                        151056 |     147425       2399       1232</span><br><span class="line">delta                                                          16 |         16          0          0</span><br></pre></td></tr></tbody></table></figure>
+</li>
+<li>
+<p>关闭内核调试功能</p>
+</li>
+<li>
+<p>开启 CONFIG_CC_OPTIMIZE_FOR_SIZE 宏，使能-Os 编译参数</p>
+</li>
+<li>
+<p>排查内核占用空间大的符号</p>
+</li>
+</ul>
+<p>执行 nm --size -r vmlinux，可以列出所有符号占用的内存</p>
+<ul>
+<li>开启 CONFIG_THUMB2_AVOID_R_ARM_THM_JUMP11 和 CONFIG_THUMB2_KERNEL。注：会带来性能损失，具体损失根据实际平台典型应用场景进行测试</li>
+</ul>
+<h3 id="dtb-内存优化"><a class="markdownIt-Anchor" href="#dtb-内存优化"></a> DTB 内存优化</h3>
+<p>Tina 内核中提供的 DTS 一般来说比较全面，对于特定的方案，往往用不了那么多，可以针对性的删除一些节点。</p>
+<h3 id="tee-内存优化"><a class="markdownIt-Anchor" href="#tee-内存优化"></a> TEE 内存优化</h3>
+<p>Tina 中一些平台，会默认配置一些 TEE 保留内存。对于特定方案来说，很有可能用不了那么多内存。 TEE 默认保留配置与 bl31.bin、 optee-${CHIP}.bin 是配套的，因此修改时需要注意步更新。<br>
+比如 R329 默认配置了 8M 内存（SHM 2M,ATF 1M,OS 1M,TA 4M），但是对于非安全方案来说，只需要保留 ATF 就够了；对于不使用 TA 的安全方案，只需要保留 ATF 与 OS 的内存就可以了。</p>
+<h2 id="内核使用内存优化"><a class="markdownIt-Anchor" href="#内核使用内存优化"></a> 内核使用内存优化</h2>
+<p>内核使用的内存包括 Slab、 PageTable、 KernelStack、 CmaUsed、Vmalloc 等</p>
+<h2 id="slab-优化"><a class="markdownIt-Anchor" href="#slab-优化"></a> Slab 优化</h2>
+<p>目前 Tina 上大部分方案默认选用的是 SLUB 分配器</p>
+<ul>
+<li>关闭 slab 调试宏 COFNIG_SLUB_DEBUG 与 CONFIG_SLABINFO</li>
+<li>尝试使用针对微小的嵌入式系统的 SLOB</li>
+</ul>
+<h2 id="内核模块优化"><a class="markdownIt-Anchor" href="#内核模块优化"></a> 内核模块优化</h2>
+<ul>
+<li>不要开机全部加载，实时加载，实时卸载</li>
+<li>将内核模块编译到内核镜像中</li>
+</ul>
+<h2 id="用户空间使用内存优化"><a class="markdownIt-Anchor" href="#用户空间使用内存优化"></a> 用户空间使用内存优化</h2>
+<ul>
+<li>使用更小的 C 库</li>
+<li>使用 size 优化的编译选项，比如-Os， -mthumb 等</li>
+<li>将 tmpfs 下大文件保持到 flash 上</li>
+<li>对于 64 位 CPU，可以使用 32 位的 rootfs</li>
+<li>使用更小的库或应用程序。比如使用 mbedtls，而不是 openssl</li>
+<li>减少守护进程数量，实时运行/关闭特定程序</li>
+<li>将只被一次依赖的动态库转化为动态库；使用 dlopen 来控制动态库的生存周期</li>
+<li>优化程序源码</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>《全志SDK文档》<br>
+[[oops]]<br>
+[[stackOverflow]]<br>
+[[ValgrindMemleak]]</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Debug/" rel="tag"><i class="fa fa-tag"></i> Debug</a>
+              <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
+              <a href="/tags/Performance/" rel="tag"><i class="fa fa-tag"></i> Performance</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/Note/LeakTracer/" rel="prev" title="Leaktrace 使用方法">
+                  <i class="fa fa-angle-left"></i> Leaktrace 使用方法
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/Debug/LinuxPerf/" rel="next" title="Linux 性能分析">
+                  Linux 性能分析 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/Debug/LinuxMemoryOptimization/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 内存管理（十一）调试信息">
+<meta property="og:url" content="https://carlyleliu.github.io/LinuxKernel/LinuxMemoryDebug/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryDebug.png">
+<meta property="article:published_time" content="2021-12-05T02:10:23.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.018Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Kernel">
+<meta property="article:tag" content="Memory">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryDebug.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxMemoryDebug/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxKernel/LinuxMemoryDebug/","path":"LinuxKernel/LinuxMemoryDebug/","title":"Linux 内存管理（十一）调试信息"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 内存管理（十一）调试信息 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#procmeminfo"><span class="nav-text"> &#x2F;proc&#x2F;meminfo</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-memtotal-%E4%B8%8D%E7%AD%89%E4%BA%8E-qemu-%E8%99%9A%E6%8B%9F%E6%9C%BA%E4%B8%AD%E5%88%86%E9%85%8D%E7%9A%84%E5%86%85%E5%AD%98%E5%A4%A7%E5%B0%8F"><span class="nav-text"> 为什么 MemTotal 不等于 QEMU 虚拟机中分配的内存大小？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#memavailable-%E7%A9%B6%E7%AB%9F%E6%98%AF%E4%BB%80%E4%B9%88%E6%84%8F%E6%80%9D"><span class="nav-text"> MemAvailable 究竟是什么意思？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-sab-%E5%88%86%E9%85%8D%E5%99%A8%E8%A6%81%E5%8C%BA%E5%88%86-sreclaimable-%E5%92%8C-sunreclaim"><span class="nav-text"> 为什么 sab 分配器要区分 SReclaimable 和 SUnreclaim</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-activeanon-nactiveanon%E4%B8%8D%E7%AD%89%E4%BA%8E-anonpages"><span class="nav-text"> 为什么 Active（anon）+ nactive（anon）不等于 Anonpages</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-activefile-inactivefile-%E4%B8%8D%E7%AD%89%E4%BA%8E-mapped"><span class="nav-text"> 为什么 Active（file) + Inactive（file) 不等于 Mapped?</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-activefile-inactivefile%E4%B8%8D%E7%AD%89%E4%BA%8E-cached"><span class="nav-text"> 为什么 Active（file）+ Inactive（file）不等于 Cached？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BC%99%E4%BC%B4%E7%B3%BB%E7%BB%9F%E4%BF%A1%E6%81%AF"><span class="nav-text"> 伙伴系统信息</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8C%BA%E7%9A%84%E4%BF%A1%E6%81%AF"><span class="nav-text"> 查看内存管理区的信息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BD%93%E5%89%8D%E5%86%85%E5%AD%98%E8%8A%82%E7%82%B9%E7%9A%84%E5%86%85%E5%AD%98%E7%BB%9F%E8%AE%A1%E4%BF%A1%E6%81%AF"><span class="nav-text"> 当前内存节点的内存统计信息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%BD%93%E5%89%8D%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8C%BA%E7%9A%84%E6%80%BB%E4%BF%A1%E6%81%AF%E4%B8%8B%E9%9D%A2%E7%BB%A7%E7%BB%AD%E7%9C%8Bproczoneinfo-%E8%8A%82%E7%82%B9%E7%9A%84%E4%BF%A1%E6%81%AF"><span class="nav-text"> 当前内存管理区的总信息下面继续看&#x2F;proc&#x2F;zoneinfo 节点的信息</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86%E5%8C%BA%E8%AF%A6%E7%BB%86%E7%9A%84%E9%A1%B5%E9%9D%A2%E4%BF%A1%E6%81%AF"><span class="nav-text"> 内存管理区详细的页面信息</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AF%8F%E4%B8%AA-cpu-%E5%86%85%E5%AD%98%E5%88%86%E9%85%8D%E5%99%A8%E7%9A%84%E4%BF%A1%E6%81%AF"><span class="nav-text"> 每个 CPU 内存分配器的信息</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E7%9C%8B%E4%B8%8E%E8%BF%9B%E7%A8%8B%E7%9B%B8%E5%85%B3%E7%9A%84%E5%86%85%E5%AD%98%E4%BF%A1%E6%81%AF"><span class="nav-text"> 查看与进程相关的内存信息</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-s_swap-%E4%B8%8E-p_swap-%E4%B8%8D%E7%9B%B8%E7%AD%89"><span class="nav-text"> 为什么 S_swap 与 P_swap 不相等</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxKernel/LinuxMemoryDebug/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 内存管理（十一）调试信息 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 内存管理（十一）调试信息
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/Kernel/" itemprop="url" rel="index"><span itemprop="name">Kernel</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/LinuxKernel/LinuxMemoryDebug/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/LinuxKernel/LinuxMemoryDebug/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>4.1k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>15 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryDebug.png" alt=""><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM4OTE1MGYzNDZmYjA3MjVmYmIzZjM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h1 id="procmeminfo"><a class="markdownIt-Anchor" href="#procmeminfo"></a> /proc/meminfo</h1>
+<p>在 Linux 系统中查看内存信息最准确的方法是查看/proc/meminfo 节点信息，他包含当前时刻系统的所有的物理页面信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~/workspace/blog$ <span class="built_in">cat</span> /proc/meminfo</span><br><span class="line">MemTotal:       32766544 kB</span><br><span class="line">MemFree:        18617392 kB</span><br><span class="line">MemAvailable:   31598252 kB</span><br><span class="line">Buffers:          829808 kB</span><br><span class="line">Cached:         11869936 kB</span><br><span class="line">SwapCached:            0 kB</span><br><span class="line">Active:          7991876 kB</span><br><span class="line">Inactive:        4838568 kB</span><br><span class="line">Active(anon):     125680 kB</span><br><span class="line">Inactive(anon):      628 kB</span><br><span class="line">Active(file):    7866196 kB</span><br><span class="line">Inactive(file):  4837940 kB</span><br><span class="line">Unevictable:           0 kB</span><br><span class="line">Mlocked:               0 kB</span><br><span class="line">SwapTotal:      92274680 kB</span><br><span class="line">SwapFree:       92274680 kB</span><br><span class="line">Dirty:               248 kB</span><br><span class="line">Writeback:             0 kB</span><br><span class="line">AnonPages:        130960 kB</span><br><span class="line">Mapped:           164660 kB</span><br><span class="line">Shmem:              5180 kB</span><br><span class="line">KReclaimable:     746412 kB</span><br><span class="line">Slab:            1116388 kB</span><br><span class="line">SReclaimable:     746412 kB</span><br><span class="line">SUnreclaim:       369976 kB</span><br><span class="line">KernelStack:       11840 kB</span><br><span class="line">PageTables:         3800 kB</span><br><span class="line">NFS_Unstable:          0 kB</span><br><span class="line">Bounce:                0 kB</span><br><span class="line">WritebackTmp:          0 kB</span><br><span class="line">CommitLimit:    108657952 kB</span><br><span class="line">Committed_AS:    1769632 kB</span><br><span class="line">VmallocTotal:   34359738367 kB</span><br><span class="line">VmallocUsed:       56828 kB</span><br><span class="line">VmallocChunk:          0 kB</span><br><span class="line">Percpu:            58368 kB</span><br><span class="line">HardwareCorrupted:     0 kB</span><br><span class="line">AnonHugePages:         0 kB</span><br><span class="line">ShmemHugePages:        0 kB</span><br><span class="line">ShmemPmdMapped:        0 kB</span><br><span class="line">FileHugePages:         0 kB</span><br><span class="line">FilePmdMapped:         0 kB</span><br><span class="line">CmaTotal:              0 kB</span><br><span class="line">CmaFree:               0 kB</span><br><span class="line">HugePages_Total:       0</span><br><span class="line">HugePages_Free:        0</span><br><span class="line">HugePages_Rsvd:        0</span><br><span class="line">HugePages_Surp:        0</span><br><span class="line">Hugepagesize:       2048 kB</span><br><span class="line">Hugetlb:               0 kB</span><br><span class="line">DirectMap4k:      722824 kB</span><br><span class="line">DirectMap2M:    16992256 kB</span><br><span class="line">DirectMap1G:    17825792 kB</span><br></pre></td></tr></tbody></table></figure>
+<p>meminfo 节点实现在 meminfo_proc_show() 函数里，该函数在 fs/proc/meminfo.c 文件里。</p>
+<ul>
+<li>MemTotal：系统当前可用物理内存总量，通过读取全局变量 _totalram_pages 来获得</li>
+<li>MemFree: 系统当前剩余空闲物理内存，通过读取全局变量 wm_zone_stat[] 数组中的 NR_FREE_PAGES 来获得</li>
+<li>Memavailable: 系统中可使用页面的数量，由 si_mem_available() 函数计算而来，计算公式为 Available= memfree + pagecache + reclaimable - totalreserve_pages。这里包括了空闲页面（ memfree）、文件映射页面（ pagecache）、可回收的页面（ reclaimable），最后减去系统保留的页面</li>
+<li>Buffers：用于块层的缓存，由 nr_blockdev_pages() 函数来计算</li>
+<li>Cached: 用于页面高速缓存的页面。计算公式为 Cached= NR_FILE_PAGES - swap_cache - Buffers</li>
+<li>SwapCached: 这里统计交换缓存的数量，交换缓存类似于内容缓存，只不过它对应的是交换分区，而内容缓存对应的是文件。这里表示匿名页面曾经被交換出去，现在又被交換回来，但是页面内容还在交换缓存中</li>
+<li>Active：活跃的匿名页面（ LRU_ACTIVE_ANON）和活跃的文件映射页面（ LRU_ACTIVE_FILE）</li>
+<li>Inactive: 不活跃的匿名页面（ LRU_INACTIVE_ANON）和不活跃的文件映射页面（ LRU_INACTIVE_FILE）</li>
+<li>Active(anon): 活跃的匿名页面（ LRU_ACTIVE_ANON）</li>
+<li>Inactive(anon): 不活跃的匿名页面（ LRU_INACTIVE_ANON）</li>
+<li>Active(file): 活跃的文件映射页面（ LRU_ACTIVE_FILE）</li>
+<li>Inactive(file): 不活跃的文件映射页面（ LRU_INACTIVE_FILE）</li>
+<li>Unevictable: 不能回收的页面（ LRU_UNEVICTABLE）</li>
+<li>Mlocked: 不会被交换到交换分区的页面，由全局的 vm_zone_stat[] 中的 NR_MLOCK 来统计</li>
+<li>SwapTotal: 交换分区的大小</li>
+<li>Swapfree: 交换分区的空闲空间大小</li>
+<li>Dirty: 脏页的数量，由全局的 vm_node_stat[] 中的 NR_FILE_DIRTY 来统计</li>
+<li>Writeback: 正在回写的页面数量，由全局的 vm_node_stat[] 中的 NR_WRITEBACK 来统计</li>
+<li>Anonpages: 统计有反向映射（RMAP）的页面，通常这些页面都是匿名页面并且都映射到了用户空间，但是并不是所有匿名页面都配置了反向映射，如部分的 shmem 和 tmps 页面就没有设置反向映射。这个计数由全局的 vm_node_stat[] 中的 NR_ANON_MAPPED 来统计</li>
+<li>Mapped: 统计所有映射到用户地址空间的内容级存页面，由全局的 vm_node_stat[] 中的 NR_FILE_MAEED 来统计</li>
+<li>Shmem: 共享内存（基于 tmps 实现的 shmem、 devtmfs 等）页面的数量，由全局的 vm_node_stat[] 中的 NR_SHMEM 来统计</li>
+<li>KReclaimable: 内核可回收的内存，包括可回收的 slab 页面（ NR_SLAB_RECLAIMABLE）和其他的可回收的内核页面（ NR_KERNEL_MISC_RECLAIMABLE）</li>
+<li>Slab: 所有 slab 页面，包括可回收的 slab 页面（ NR_SLAB_RECLAIMABLE）和不可回收的 slab 页面 (NR_SLAB_UNRECLAIMABLE)</li>
+<li>Reclaimable: 可回收的 slab 页面（ NR_SLAB_RECLAIMABLE）</li>
+<li>SUnreclaim: 不可回收的 slab 页面（NR_SLAB_UNRECLAIMABLE）</li>
+<li>Kernelstack: 所有进程内核栈的总大小，由全局的 vm_zone_stat[] 中的 NR_KERNEL_STACK_KB 来统计</li>
+<li>Pagetables: 所有用于页表的页面数量，由全局的 vm_zone_stat[] 中的 NR_PAGETABLE 来统计</li>
+<li>NFS_Unstable: 在 NFS 中，发送到服务器端但是还没有写入磁盘的页面（INR_UNSTABLE_NFS）</li>
+<li>WritebackTmp: 回写过程中使用的临时缓存（ NR_WRITEBACK_TEMP）</li>
+<li>VmallocTotal: vmalloc 区域的总大小</li>
+<li>VmallocUsed: 已经使用的 vmalloc 区域总大小</li>
+<li>Percpu： percpu 机制使用的页面，由 pcpu_nr_pages() 函数统计</li>
+<li>AnonHugePage： 统计透明巨页的数量</li>
+<li>ShmemHugePages： 统计在 shmem 或者 tmpfs 中使用的透明巨页的数量</li>
+<li>ShmemPmdMapped： 使用透明巨页并且映射到用户空间的 shmem 或者 tmps 的页面数量</li>
+<li>CmaTotal： CMA 机制使用的内存</li>
+<li>CmaFree： CMA 机制中空闲的内存</li>
+<li>HugePages_Total: 普通巨页的数量，普通巨页的页面是预分配的</li>
+<li>Hugepages_Free: 空闲的普通巨页的数量</li>
+<li>Hugepageslze: 普通巨页的大小，通常是 2MB 或者 1GB</li>
+<li>Hugetlb: 普通巨页的总大小，单位是 KB</li>
+</ul>
+<p>读者可能会对上述内容感到疑惑，下面归纳常见的问题。</p>
+<h2 id="为什么-memtotal-不等于-qemu-虚拟机中分配的内存大小"><a class="markdownIt-Anchor" href="#为什么-memtotal-不等于-qemu-虚拟机中分配的内存大小"></a> 为什么 MemTotal 不等于 QEMU 虚拟机中分配的内存大小？</h2>
+<p>读者可能会发现 MemTotal 显示的总内存大小并不等于物理系统中真实的内存大小或者 QEMU 虚拟机中分配的内存大小，如在 QEMU 虚拟机启动参数中指定内存大小为 1GB 进入 QEMU 虚拟机后发现 MemTotal 为“99984KB"。这是因为内核静态使用的内存（如内核代码等）在启动阶段需要用到，它没有计入 MemTotal 统计项中，而是统计到 reserved 中。下面是一个计算机的内核启动日志信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[0.000000] Memory: 929640K/1048576K available(23228K kernel code, 1090K rwdata, 3872K rodata, 4608K init, 503K bss, 53400K reserved, 65536K cma-reserved)</span><br><span class="line">[8.910031] Freeing unused kernel memory: 4608K</span><br></pre></td></tr></tbody></table></figure>
+<p>从上述内核日志可以看到，在启动初始化时有 53400 大小的内容被保留了，用于内核代码等。在内核初始化完成之后，init 段的内存会被释放，因此被保留的内存大小为 53400KB-4608KB=48792KB，加上 MemTotal 正好是 1GB 内存</p>
+<h2 id="memavailable-究竟是什么意思"><a class="markdownIt-Anchor" href="#memavailable-究竟是什么意思"></a> MemAvailable 究竟是什么意思？</h2>
+<p>MemavAilable 表示系统中有多少可以利用的内存，这些内存不包括交换分区。 MemAvailable 的计算和 MemFree、可回收的 slab 页面、内容页面以及每个内存管理区的最低水位等有密切关系。</p>
+<h2 id="为什么-sab-分配器要区分-sreclaimable-和-sunreclaim"><a class="markdownIt-Anchor" href="#为什么-sab-分配器要区分-sreclaimable-和-sunreclaim"></a> 为什么 sab 分配器要区分 SReclaimable 和 SUnreclaim</h2>
+<p>一个 slab 分配器由一个或者多个连续的物理页面组成。在为 slab 分配器分配物理页面时根据 slab 描述符（ cache-&gt;flags）是否设置了 SLAB_RECLAIM_ACCOUNT 标志位来判断这些页面是属于 SReclaimable 还是属于 SUnreclaim.</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/slab.c&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="keyword">struct</span> page *<span class="title function_">kmem_getpages</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">if</span> (cachep-&gt;flags &amp; SLAB_RECLAIM_ACCOUNT)</span><br><span class="line">        mod_lruvec_page_state(page, NR_SLAB_RECLAIMABLE, nr_pages);</span><br><span class="line">    <span class="keyword">else</span></span><br><span class="line">        mod_lruvec_page_state(page, NR_SLAB_UNRECLAIMABLE, nr_pages);</span><br><span class="line"></span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>而在创建 sab 描述符时若发现设置了 SLAB_RECLAIM_ACCOUNT，那么分配物理页面的行为就是可回收的，即设置 __GFP_RECLAIMABLE，表示这些页面是可以被 sab 机制的收割机回收的。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/slab.c&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> __kmem_cache_create(<span class="keyword">struct</span> kmem_cache *cachep, <span class="type">slab_flags_t</span> flags)</span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">if</span> (flags &amp; SLAB_RECLAIM_ACCOUNT)</span><br><span class="line">        cachp-&gt;allocflags |= __GFP_RECLAIMABLE;</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>因此，这些 slb 分配器的页面的迁移类型是 MIGRATE_RECLAIMABLE。在页面回收机中会调用 slab 收割机的回调函数（ shrinker-&gt;scan_objects）来回收一些 slab 对象，但是在 scan_objects 回调函数的实现中并没有判断哪些 slab 分配器的页面设置了__GFP_RECLAIMABLE，哪些页面没有设置__GFP_RECLAIMABLE。在 slab 机制里，有一个定时器会定时扫描和检查哪些 slab 分配器可以被销毁，如果一个 slab 分配器中都是空闲的 slab 对象那么这个 slab 分配器就可以被回收，并且 slab 分配器占用的页面会被释放，见 cache_reap() 数。因此，统计 SReclaimable 和 SUnreclaim 页面的含义是在于计算系统可用的总内存数 meminfo 中的 MemAvailable，详见 si_mem_available() 函数。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/page_alloc.c&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">long</span> <span class="title function_">si_mem_available</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    reclaimable = global_node_page_state(NR_SLAB_RECLAIMABLE) +</span><br><span class="line">        global_node_page_state(NR_KERNEL_MISC_RECLAIMABLE);</span><br><span class="line">    available += reclaimable  - min(reclaimable / <span class="number">2</span>, wmar_low);</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">return</span> available;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="为什么-activeanon-nactiveanon不等于-anonpages"><a class="markdownIt-Anchor" href="#为什么-activeanon-nactiveanon不等于-anonpages"></a> 为什么 Active（anon）+ nactive（anon）不等于 Anonpages</h2>
+<p>我们知道 Active（anon）表示 LRU 链表中的活跃匿名页面， Inactive（anon）表示不活跃匿名页面，这两个值相加，表示系统的 LRU 链表中的总匿名页面数量。而 AnonPages 表示和用户态进程地址空间建立映射关系。当一个匿名页面和进程地址空间建立映射关系时会调用 page_add_new_anon_mmap() 函数来新增一个 RMAP。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">page_add_new_anon_rmap</span> <span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    __mod_node_page_state(page_pgdat(page), NR_ANON_MAPPED, nr);</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>但是 shmem（基于 tmpfs 实现）使用的页面会被添加到系统的匿名页面的 LRU 链表中因此它会被计入 Active（anon）或者 Inactive（anon）之中。主要原因是 shmem 使用的页面基于 RAM 内存，它可以被写入交换分区里。在分配 shmem 页面时设置了 PG_SwapBacked 标志位，见 shmem_alloc_and_acct_page() 函数。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">struct</span> page *<span class="title function_">shmem_alloc_and_acct_page</span> <span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    page =shmem_alloc_page(gfp, info, index);</span><br><span class="line">    __SetPageLocked(page);</span><br><span class="line">    __SetPageSwapbacd(page);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>通过判断 PG_SwapBacked 标志位来定将页面加到名页面的 LRU 链表中还是文件映射的 LRU 链表中，见 page_is_file_cache() 函数。若没有设置 PG_SwapBacked 标志位，则页面是文件映射的页面，会被添加到文件映射的 LRU 链表中否则，被添加到名页面的 LRU 链表中。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="keyword">inline</span> <span class="type">int</span> <span class="title function_">page_is_file_cache</span><span class="params">(<span class="keyword">struct</span> page * page)</span></span><br><span class="line">{</span><br><span class="line">    <span class="keyword">return</span> !PageSwapBacked(page);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>另外， shmem 页面并没有计入 Anonpages 中，而是计入了 MM_SHMEMPAGES 类型的计数值（即 Shmem）中，见 do_shared_fault()-&gt;finish_fault()-&gt;alloc_set_pte() 函数。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">vm_fault_t</span> <span class="title function_">alloc_set_pte</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    inc_mm_counter_fast(vma-&gt;vm_mm, mm_counter_file(page));</span><br><span class="line">    page_add_file_rmap(page, <span class="literal">false</span>);</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>在 page_add_file_rmap() 中会把这个页面计入 NR_FILE_MAPPED 计数值中。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">page_add_file_rmap</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    mod_lruvec_page_state(page, NR_FILE_MAPPED, nr);</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>总之， shmem 页面一方面被添加到了置名页面的 LRU 链表里，另一方面被统计到文件映射页面的计数中，真是个“另类的”页面。</p>
+<h2 id="为什么-activefile-inactivefile-不等于-mapped"><a class="markdownIt-Anchor" href="#为什么-activefile-inactivefile-不等于-mapped"></a> 为什么 Active（file) + Inactive（file) 不等于 Mapped?</h2>
+<p>Active（file）+ nactive(file) 表示系统 LRU 链表中所有文件映射页面的总和，而 Mapped 表示统计所有映射到用户地址空间的内容缓存页面，由 NR_FILE_MAPPED 来统计。当一个内容缓存映射到用户态的进程地址空间时，会调用 page_add_file_map() 函数来建立 RMAP，并增加 NR_FILE_MAPPED 计数值。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">page_add_file_rmap</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    __mod_lruvec_page_state(page, NR_FILE_MAPPED, nr);</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>有一个特殊情况需要考虑，就是 shmem 页面。它会被计入 NR_FILE_MAPPED 计数值中但是它会设置 PG_SwapBacked 标志位，因此它会被计入匿名页面。<br>
+当创建一个 shmem 页面时会把它计入 NR_FILE_PAGES 和 NR_SHMEM 计数值中，见 shmem_add_to_page_cache() 函数。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">shmem_add_to_page_cache</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    __mod_node_page_state(page_pgdat(page), NR_FILE_PAGES, nr);</span><br><span class="line">    __mod_node_page_state(page_pgdat(page), NR_SHMEM, nr);</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="为什么-activefile-inactivefile不等于-cached"><a class="markdownIt-Anchor" href="#为什么-activefile-inactivefile不等于-cached"></a> 为什么 Active（file）+ Inactive（file）不等于 Cached？</h2>
+<p>Cached 计数值的计算公式是 Cached = NR_FILE_PAGES - swap_cache - Buffers。但是 shmem 页面被计入 NR_FILE_PAGES 里，同时，它也在匿名页面 LRU 链表的计数值里<br>
+Active(file) + Inactive（file）表示系统的 LRU 链表中所有文件映射页面的总和，因此 LRU 表所有文件映射页面总和不等于 Cached 计数值。</p>
+<h1 id="伙伴系统信息"><a class="markdownIt-Anchor" href="#伙伴系统信息"></a> 伙伴系统信息</h1>
+<p>/proc/buddyinfo 节点包含当前系统的伙件系统简要信息 而 proc/pagetypeinfo 节点则包含当前系统的伙伴系统详细信息，包括每个迁移类型和每个链表的成员数量等。当前系统只有一个 DMA32 的内存管理区，支持的迁移类型有 Unmovable、 Movable、Reclaimable、 HighAtomic、CMA 以及 Isolate 等迁移类型，其中页面数量最多的迁移类型是 Movable 类型。迁移类型的最小的单位是页块，在 ARM64 架构中，页块的大小是 2MB，即 order 为 9 其中一共有 512 个页面：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">root@liushuai:/home/vooxle/workspace/blog<span class="comment"># cat /proc/pagetypeinfo</span></span><br><span class="line">Page block order: 9</span><br><span class="line">Pages per block:  512</span><br><span class="line"></span><br><span class="line">Free pages count per migrate <span class="built_in">type</span> at order       0      1      2      3      4      5      6      7      8      9     10</span><br><span class="line">Node    0, zone      DMA, <span class="built_in">type</span>    Unmovable      1      1      0      0      2      1      1      0      1      0      0</span><br><span class="line">Node    0, zone      DMA, <span class="built_in">type</span>      Movable      0      0      0      0      0      0      0      0      0      1      3</span><br><span class="line">Node    0, zone      DMA, <span class="built_in">type</span>  Reclaimable      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone      DMA, <span class="built_in">type</span>   HighAtomic      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone      DMA, <span class="built_in">type</span>          CMA      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone      DMA, <span class="built_in">type</span>      Isolate      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone    DMA32, <span class="built_in">type</span>    Unmovable      1      0      0      0      0      0      1      1      1      1      0</span><br><span class="line">Node    0, zone    DMA32, <span class="built_in">type</span>      Movable      9      5      5      5      4      6      6      5      5      3    459</span><br><span class="line">Node    0, zone    DMA32, <span class="built_in">type</span>  Reclaimable      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone    DMA32, <span class="built_in">type</span>   HighAtomic      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone    DMA32, <span class="built_in">type</span>          CMA      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone    DMA32, <span class="built_in">type</span>      Isolate      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone   Normal, <span class="built_in">type</span>    Unmovable      1    499    477    515    204     39     28      5      0      0      0</span><br><span class="line">Node    0, zone   Normal, <span class="built_in">type</span>      Movable   8557  24298  10230   7542   2723    231    664    257    371     94   3641</span><br><span class="line">Node    0, zone   Normal, <span class="built_in">type</span>  Reclaimable      8      1     62     35     38     12      0      1      0      1      0</span><br><span class="line">Node    0, zone   Normal, <span class="built_in">type</span>   HighAtomic      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone   Normal, <span class="built_in">type</span>          CMA      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line">Node    0, zone   Normal, <span class="built_in">type</span>      Isolate      0      0      0      0      0      0      0      0      0      0      0</span><br><span class="line"></span><br><span class="line">Number of blocks <span class="built_in">type</span>     Unmovable      Movable  Reclaimable   HighAtomic          CMA      Isolate</span><br><span class="line">Node 0, zone      DMA            1            7            0            0            0            0</span><br><span class="line">Node 0, zone    DMA32            2         1014            0            0            0            0</span><br><span class="line">Node 0, zone   Normal          394        14596          370            0            0            0</span><br></pre></td></tr></tbody></table></figure>
+<p>读者需要注意，页块的大小和普通巨页有关。当系统配置了 CONFIG_HUGETLB_PAGE 时，页块的 order 大小等于 HUGETLB_PAGE_ORDER，通常是 9：否则，页块的 order 大小是 10，如下图所示。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_HUGETLB_PAGE</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> pageblock_order HUGETLB_PAGE_ORDER</span></span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> pageblock_order (MAX_ORDER-1)</span></span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br></pre></td></tr></tbody></table></figure>
+<h2 id="查看内存管理区的信息"><a class="markdownIt-Anchor" href="#查看内存管理区的信息"></a> 查看内存管理区的信息</h2>
+<p>/proc/zoneinfo 节点包含当前系统所有内存管理区的信息。/proc/zoneinfo 节点是显示如下几部分信息。</p>
+<h4 id="当前内存节点的内存统计信息"><a class="markdownIt-Anchor" href="#当前内存节点的内存统计信息"></a> 当前内存节点的内存统计信息</h4>
+<p>下面是/proc/zoneinfo 节点的第一部分信息。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">root@liushuai:/home/vooxle/workspace/blog<span class="comment"># cat /proc/zoneinfo</span></span><br><span class="line">Node 0, zone      DMA</span><br><span class="line">  per-node stats</span><br><span class="line">      nr_inactive_anon 157</span><br><span class="line">      nr_active_anon 31943</span><br><span class="line">      nr_inactive_file 1209487</span><br><span class="line">      nr_active_file 1968292</span><br><span class="line">      nr_unevictable 0</span><br><span class="line">      ...</span><br><span class="line">      nr_kernel_misc_reclaimable 0</span><br></pre></td></tr></tbody></table></figure>
+<p>在第 2 行中，表示当前内存节点是第 0 个内存节点，当前内存管理区为 DMA。<br>
+在第 3 行中，表示下面是该内存节点的总体信息。如果当前内存管理区是内存节点的第一个内存管理区，那么会显示该内存节点的总信息。它通过 node_page_state() 函数来读取内存节点的数据结构 plist_data 中的 vm_stat 计数值。<br>
+上述信息是在 zoneinfo_show_print() 函数中输出的。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/vmstat.c&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> <span class="title function_">zoneinfo_show_print</span><span class="params">(<span class="keyword">struct</span> seq_file * m, <span class="type">pg_data_t</span> *pgdat,</span></span><br><span class="line"><span class="params">                                <span class="keyword">struct</span> zone *zone)</span></span><br></pre></td></tr></tbody></table></figure>
+<h4 id="当前内存管理区的总信息下面继续看proczoneinfo-节点的信息"><a class="markdownIt-Anchor" href="#当前内存管理区的总信息下面继续看proczoneinfo-节点的信息"></a> 当前内存管理区的总信息下面继续看/proc/zoneinfo 节点的信息</h4>
+<p>下面继续看/proc/zoneinfo 节点的第二部分信息。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">pages free     3971</span><br><span class="line">      min      8</span><br><span class="line">      low      11</span><br><span class="line">      high     14</span><br><span class="line">      spanned  4095</span><br><span class="line">      present  3999</span><br><span class="line">      managed  3971</span><br><span class="line">      protection: (0, 1776, 31892, 31892, 31892)</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>pages free: 表示这个内存管理区中空闲页面的数量</li>
+<li>min：表示这个内存管理区中处于最低警戒水位的页面数量</li>
+<li>low：表示这个内存管理区中处于低水位的页面数量</li>
+<li>high：表示这个内存管理区中处于高水位的页面数量</li>
+<li>spanned：表示这个内存管理区包含的页面数量</li>
+<li>present：表示这个内存管理区里实际管理页面的数量</li>
+<li>managed：表示这个内存管理区中被伙伴系统管理的页面数量</li>
+<li>protection：表示这个内存管理区预留的内存</li>
+</ul>
+<h3 id="内存管理区详细的页面信息"><a class="markdownIt-Anchor" href="#内存管理区详细的页面信息"></a> 内存管理区详细的页面信息</h3>
+<p>接下来是内存管理区详细的页面信息/proc/zoneinfo 节点的第三部分信息</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">nr_free_pages 3971</span><br><span class="line">nr_zone_inactive_anon 0</span><br><span class="line">nr_zone_active_anon 0</span><br><span class="line">nr_zone_inactive_file 0</span><br><span class="line">nr_zone_active_file 0</span><br><span class="line">nr_zone_unevictable 0</span><br><span class="line">nr_zone_write_pending 0</span><br><span class="line">nr_mlock     0</span><br><span class="line">nr_page_table_pages 0</span><br><span class="line">nr_kernel_stack 0</span><br><span class="line">nr_bounce    0</span><br><span class="line">nr_zspages   0</span><br><span class="line">nr_free_cma  0</span><br><span class="line">numa_hit     0</span><br><span class="line">numa_miss    0</span><br><span class="line">numa_foreign 0</span><br><span class="line">numa_interleave 0</span><br><span class="line">numa_local   0</span><br><span class="line">numa_other   0</span><br></pre></td></tr></tbody></table></figure>
+<p>上述是这个内存管理区详细的页面信息。它通过 zone_page_state() 函数来读取 zone 数据结构中的 vm_stat 计数值。</p>
+<h4 id="每个-cpu-内存分配器的信息"><a class="markdownIt-Anchor" href="#每个-cpu-内存分配器的信息"></a> 每个 CPU 内存分配器的信息</h4>
+<p>最后是每个 C 内存分配器的/proc/zonelnf。节点的第四部分信息</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">pagesets</span><br><span class="line">  cpu: 0</span><br><span class="line">            count: 0</span><br><span class="line">            high:  0</span><br><span class="line">            batch: 1</span><br><span class="line">vm stats threshold: 12</span><br><span class="line">  cpu: 1</span><br><span class="line">            count: 0</span><br><span class="line">            high:  0</span><br><span class="line">            batch: 1</span><br><span class="line">  ...</span><br><span class="line">vm stats threshold: 12</span><br><span class="line">node_unreclaimable:  0</span><br><span class="line">start_pfn:           1</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>pagesets：表示每个 CPU 内存分配器中每个 CPU 缓存的页面信息。</li>
+<li>node_unreclaimable：表示页面回收失败的次数。</li>
+<li>start_pfn：表示内存管理区的起始页帧号</li>
+</ul>
+<h2 id="查看与进程相关的内存信息"><a class="markdownIt-Anchor" href="#查看与进程相关的内存信息"></a> 查看与进程相关的内存信息</h2>
+<p>进程的 mm_struct 数据结构中有一个 rss_stat 成员，它用于记录进程的内存使用情况。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * When updating this, please also update struct resident_page_types[] in</span></span><br><span class="line"><span class="comment"> * kernel/fork.c</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="class"><span class="keyword">enum</span> {</span></span><br><span class="line">	MM_FILEPAGES,	<span class="comment">/* Resident file mapping pages */</span></span><br><span class="line">	MM_ANONPAGES,	<span class="comment">/* Resident anonymous pages */</span></span><br><span class="line">	MM_SWAPENTS,	<span class="comment">/* Anonymous swap entries */</span></span><br><span class="line">	MM_SHMEMPAGES,	<span class="comment">/* Resident shared memory pages */</span></span><br><span class="line">	NR_MM_COUNTERS</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">if</span> USE_SPLIT_PTE_PTLOCKS &amp;&amp; defined(CONFIG_MMU)</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> SPLIT_RSS_COUNTING</span></span><br><span class="line"><span class="comment">/* per-thread cached information, */</span></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">task_rss_stat</span> {</span></span><br><span class="line">	<span class="type">int</span> events;	<span class="comment">/* for synchronization threshold */</span></span><br><span class="line">	<span class="type">int</span> count[NR_MM_COUNTERS];</span><br><span class="line">};</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span> <span class="comment">/* USE_SPLIT_PTE_PTLOCKS */</span></span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mm_rss_stat</span> {</span></span><br><span class="line">	<span class="type">atomic_long_t</span> count[NR_MM_COUNTERS];</span><br><span class="line">};</span><br><span class="line">...</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">mm_struct</span></span></span><br></pre></td></tr></tbody></table></figure>
+<p>进程的 mm_struct 数据结构会记录下面 4 种页面的数量</p>
+<ul>
+<li>MM_FILEPAGES：进程使用的文件映射的页面数量。</li>
+<li>MM_ANONPAGES：进程使用的匿名页面数量。</li>
+<li>MM_SWAPENTS：进程使用的交换分区的匿名页面数量</li>
+<li>MM_SHMEMPAGES：进程共享的内存的页面数量</li>
+</ul>
+<p>增加和减小进程内存计数的接口函数有如下几个。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">#获取 member 计数值</span><br><span class="line">unsigned long get_mm_counter(struct mm_struct *mm, int member)</span><br><span class="line"># 使 member 计数值增加 value</span><br><span class="line">void add_mm_counter(struct mm_struct *mm, int member, long value)</span><br><span class="line">#使 member 计数值增加 1</span><br><span class="line">void inc_mm_counter(struct mm_struct *mm, int member)</span><br><span class="line">#使 member 计数值减小 1</span><br><span class="line">roid dec_mm_counter(struct mm_struct *mm, int member)</span><br><span class="line">#当 page 不是匿名页面时，若 page 设置了 PageSwapbacked，那么返回 MM_SHMEMPAGES，否则返回 MM_EILEPAGES</span><br><span class="line">int mm_counter_file(struct page *page)</span><br><span class="line">#返回 page 对应的统计类型</span><br><span class="line">int mm_counter(struct page *page)</span><br></pre></td></tr></tbody></table></figure>
+<p>proc 文件系统包含每个进程的相关信息，其中 /proc/PID/status 节点有不少和具体进程内存相关的信息。下面是 sshd 线程的状态信息，只截取了和内存相关的信息。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">root@liushuai:/proc/2<span class="comment"># cat status</span></span><br><span class="line">Name:	kthreadd</span><br><span class="line">Umask:	0000</span><br><span class="line">State:	S (sleeping)</span><br><span class="line">Tgid:	2</span><br><span class="line">Ngid:	0</span><br><span class="line">Pid:	2</span><br><span class="line">PPid:	0</span><br><span class="line">TracerPid:	0</span><br><span class="line">Uid:	0	0	0	0</span><br><span class="line">Gid:	0	0	0	0</span><br><span class="line">FDSize:	64</span><br><span class="line">Groups:</span><br><span class="line">NStgid:	2</span><br><span class="line">NSpid:	2</span><br><span class="line">NSpgid:	0</span><br><span class="line">NSsid:	0</span><br><span class="line">Threads:	1</span><br><span class="line">SigQ:	0/127633</span><br><span class="line">SigPnd:	0000000000000000</span><br><span class="line">ShdPnd:	0000000000000000</span><br><span class="line">SigBlk:	0000000000000000</span><br><span class="line">SigIgn:	ffffffffffffffff</span><br><span class="line">SigCgt:	0000000000000000</span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	0000003fffffffff</span><br><span class="line">CapEff:	0000003fffffffff</span><br><span class="line">CapBnd:	0000003fffffffff</span><br><span class="line">CapAmb:	0000000000000000</span><br><span class="line">NoNewPrivs:	0</span><br><span class="line">Seccomp:	0</span><br><span class="line">Speculation_Store_Bypass:	thread vulnerable</span><br><span class="line">Cpus_allowed:	ffff,ffffffff</span><br><span class="line">Cpus_allowed_list:	0-47</span><br><span class="line">Mems_allowed:	00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000000,00000001</span><br><span class="line">Mems_allowed_list:	0</span><br><span class="line">voluntary_ctxt_switches:	3335</span><br><span class="line">nonvoluntary_ctxt_switches:	0</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>Name：进程的名称</li>
+<li>Pid:PID。</li>
+<li>VmPeak：进程使用的最大虚拟内存，通常情况下它等于进程的内存描述符 mm 中的 total_vm</li>
+<li>VmSize：进程使用的虚拟内存，它等于 mm-&gt;total_vm</li>
+<li>VmLck：进程锁住的内存，它等于 m-&gt;locked_vm，这里指使用 mlock() 锁住的内存。</li>
+<li>VmPin：进程固定住的内存，它等于 mm-&gt;pinned_vm，这里指使用 get_user_page() 固定住的内存。</li>
+<li>VmHWM：进程使用的最大物理内存，它通常等于进程使用的匿名页面、文件映射页面以及共享内存页面的大小总和</li>
+<li>VmRSS：进程使用的最大物理内存，它常常等于 VmHWM，计算公式为 VmRSS = RssAnon + RssFile + RssShmem</li>
+<li>RssAnon：进程使用的匿名页面，通过 get_mm_counter（mm， MM_ANONPAGES）获取。</li>
+<li>RssFile：进程使用的文件映射页面，通过 get_mm_counter（mm， MM_FILEPAGES）获取</li>
+<li>RssShmem：进程使用的共享内存页面，通过 get_mm_counter（mm， MM_SHMEMPAGES）获取。</li>
+<li>VmData：进程私有数据段的大小，它等于 mm-&gt;data_vm</li>
+<li>VmStk：进程用户栈的大小，它等于 mm-&gt;stack_vm</li>
+<li>VmExe：进程代码段的大小，通过内存描述符 mm 中的 start_code 和 end_code 两个成员获取</li>
+<li>VmLib：进程共享库的大小，通过内存描述符 mm 中的 exec_vm 和 VmExe 计算。</li>
+<li>VmPTE：进程页表大小，通过内存描述符 mm 中的 pgtables_byes 成员获取。</li>
+<li>VmSwap：进程使用的交换分区的大小，通过 get_mm_counter(mm， MM_SWAPENTS) 获取</li>
+<li>HugetlbPages：进程使用巨页的大小，通过内存描述符 mm 中的 hugetlb_usage 成员获取</li>
+</ul>
+<h2 id="为什么-s_swap-与-p_swap-不相等"><a class="markdownIt-Anchor" href="#为什么-s_swap-与-p_swap-不相等"></a> 为什么 S_swap 与 P_swap 不相等</h2>
+<p>proc/meminfo 节点中 SwapTotal 减去 SwapFree 等于系统中已经使用的交换内存大小，我们称之为 S_swap。另外，我们写一个小程序来遍历系统中所有的进程，并把进程中 /proc/PID/status 节点的 VmSwap 值都累加起来，我们把它称为 P_swap。为什么这两个值不相等？在 Linux 内核中通过 si_mapinfo() 函数来查看 S_swap 的值，由 nr_swap_pages 和 swap_info_struct 中的 flags 来统计，见 si_swapinfo() 函数。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&lt;mm/swapfile. c&gt;</span><br><span class="line"></span><br><span class="line"><span class="type">void</span> <span class="title function_">si_swapinfo</span><span class="params">(<span class="keyword">struct</span> sysinfo *val)</span></span><br></pre></td></tr></tbody></table></figure>
+<p>当一个页面需要被交换到交换分区时，它需要在 kswapd 内核线程中经历活跃和不活跃 LRU 链表老化过程。一个页面被选为候选交换页面后，它需要调用 try_to_unmap_one() 函数来断开所有和用户进程地址空间映射的 PTE。 try_to_unmap_one() 函数的代码片段如下。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">static bool try_to_unmap_one()</span><br><span class="line">{</span><br><span class="line">    ...</span><br><span class="line">    if (PageAnon(page)) {</span><br><span class="line">        dec_mm_counter(mm, MM_ANONPAGES);</span><br><span class="line">        inc_mm_counter(mm, MM_SWAPENTS);</span><br><span class="line">        swp_pte = swp_entry_to_pte(entry);</span><br><span class="line">        set_pte_at(mm, address, pvmw.pte, swp_pte);</span><br><span class="line">    }</span><br><span class="line">    ...</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>在 try_to_unmap_one() 函数中，对于匿名页面，会减小进程的 MM_ANONPAGES 计数，增加 MM_SWAPENTS 计数，这里通过 PageAnon() 来判断页面是否为匿名页面。<br>
+shmem（共享内存）比较特殊，它是基于 tmpfs 来实现的，本质上它是基于 RAM 的一个文件系统，因此它具有文件的属性，如有文件节点、页面高速缓存等。另外，它的内容不能随便丢弃。当系统内存短缺时会把 shmem 暂时写入交换分区以便腾出内存，因此它有部分匿名页面的属性。那它究竟属于匿名页面还是文件映射页面呢？</p>
+<p>创建 shmem 页面时，使用 shmem_fault() 函数，它的 page-&gt;mmaping 字段指向 inode-&gt;i_mapping，因此我们没法通过 PageAnon() 来判定它是否是传统的匿名页面。在 try_to_unmap_one() 函数中， shmem 页面并没有被统计到进程的 MM_SWAPENTS 计数中，/proc/PID/status 节点中的 VmSwap 不包含被写入交换分区的 shmem 页面。</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p>《奔跑吧 Linux 内核》</p>
+<p>[[LinuxMemoryKSM]]<br>
+[[LinuxMemoryslab]]<br>
+[[LinuxMemoryDebug]]<br>
+[[LinuxMemoryCache]]<br>
+[[LinuxMemoryBasic]]<br>
+[[LinuxMemorymigrate]]<br>
+[[LinuxMemoryPageMngr]]<br>
+[[LinuxMemoryARM64linux]]<br>
+[[LinuxMemoryPageRecycle]]<br>
+[[LinuxMemoryProcessSpace]]<br>
+[[LinuxMemoryPageAllocate]]<br>
+[[Blog/LinuxKernel/LinuxMemoryOptimization|LinuxMemoryOptimization]]</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
+              <a href="/tags/Memory/" rel="tag"><i class="fa fa-tag"></i> Memory</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/LinuxKernel/LinuxMemoryKSM/" rel="prev" title="Linux 内存管理（十）KSM">
+                  <i class="fa fa-angle-left"></i> Linux 内存管理（十）KSM
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/LinuxKernel/LinuxMemoryOptimization/" rel="next" title="Linux 内存管理（十二）内存调优">
+                  Linux 内存管理（十二）内存调优 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxKernel/LinuxMemoryDebug/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="title: Sensor 的结构 categories:  Technology Blog Image Sensor date: 2023-03-18 19:48:23 tags: Image ISP Sensor    sensor 的硬件结构  每个像素的结构   Microlens（微透镜）。 每个像素点的最上方有个微透镜，增加透光量。有镜头就有 CRA 的问题，超出一定角度的光线无法被">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Matrix">
+<meta property="og:url" content="https://carlyleliu.github.io/Camera/CameraSensorStruct/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="title: Sensor 的结构 categories:  Technology Blog Image Sensor date: 2023-03-18 19:48:23 tags: Image ISP Sensor    sensor 的硬件结构  每个像素的结构   Microlens（微透镜）。 每个像素点的最上方有个微透镜，增加透光量。有镜头就有 CRA 的问题，超出一定角度的光线无法被">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel9.jpg">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel10.jpg">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel1.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel2.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel30.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel31.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel34.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel35.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel36.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel37.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel38.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel39.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel40.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel41.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel3.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel4.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel7.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel8.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel33.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel32.png">
+<meta property="article:published_time" content="2025-09-30T16:37:09.007Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.007Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Matrix">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/Camera/CameraSensorStruct/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/Camera/CameraSensorStruct/","path":"Camera/CameraSensorStruct/","title":""}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title> | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#sensor-%E7%9A%84%E7%A1%AC%E4%BB%B6%E7%BB%93%E6%9E%84"><span class="nav-text"> sensor 的硬件结构</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AF%8F%E4%B8%AA%E5%83%8F%E7%B4%A0%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-text"> 每个像素的结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%86%E8%AF%B4-cra"><span class="nav-text"> 细说 CRA</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#sensor-%E7%9A%84%E7%BA%B5%E5%90%91%E7%BB%93%E6%9E%84"><span class="nav-text"> sensor 的纵向结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%86%E8%AF%B4-cfacolor-filter-array"><span class="nav-text"> 细说 CFA(color filter array)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ad-%E8%BD%AC%E6%8D%A2%E5%8F%8A%E8%AF%BB%E5%87%BA"><span class="nav-text"> AD 转换及读出</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text"> 总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%83%8F%E7%B4%A0%E7%B1%BB%E5%9E%8B-pixel-type"><span class="nav-text"> 像素类型 (Pixel type)</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A2%AB%E5%8A%A8%E5%83%8F%E7%B4%A0-passive-pixel"><span class="nav-text"> 被动像素 （Passive pixel）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%83%8F%E7%B4%A0-ktc-%E5%99%AA%E5%A3%B0"><span class="nav-text"> 像素 kTC 噪声</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E5%8A%A8%E5%83%8F%E7%B4%A0-active-pixel"><span class="nav-text"> 主动像素 （Active pixel）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ppd-%E7%BB%93%E6%9E%84"><span class="nav-text"> PPD 结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ppd-%E5%85%B1%E4%BA%AB%E7%BB%93%E6%9E%84"><span class="nav-text"> PPD 共享结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%8C%E7%9B%B8%E5%85%B3%E9%87%87%E6%A0%B7cds"><span class="nav-text"> 双相关采样（CDS）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%89%E8%B0%B1%E5%93%8D%E5%BA%94%E6%9B%B2%E7%BA%BF"><span class="nav-text"> 光谱响应曲线</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#sensor-%E7%9A%84%E6%9B%9D%E5%85%89"><span class="nav-text"> Sensor 的曝光</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8D%B7%E5%B8%98%E6%9B%9D%E5%85%89rolling-shutter"><span class="nav-text"> 卷帘曝光（rolling shutter）</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#interlaced-%E6%9B%9D%E5%85%89"><span class="nav-text"> Interlaced 曝光</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A5%E9%A2%91%E9%97%AA%E7%83%81-flicker"><span class="nav-text"> 工频闪烁 (flicker)</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%A8%E5%B1%80%E6%9B%9D%E5%85%89global-shutter"><span class="nav-text"> 全局曝光（global shutter）</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8E-ccd-%E5%AF%B9%E6%AF%94"><span class="nav-text"> 与 CCD 对比</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Camera/CameraSensorStruct/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content=" | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Camera/CameraSensorStruct/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Camera/CameraSensorStruct/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>4.8k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>18 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><hr>
+<p>title: Sensor 的结构<br>
+categories:</p>
+<ul>
+<li>Technology Blog</li>
+<li>Image</li>
+<li>Sensor<br>
+date: 2023-03-18 19:48:23<br>
+tags:</li>
+<li>Image</li>
+<li>ISP</li>
+<li>Sensor</li>
+</ul>
+<hr>
+<h1 id="sensor-的硬件结构"><a class="markdownIt-Anchor" href="#sensor-的硬件结构"></a> sensor 的硬件结构</h1>
+<h2 id="每个像素的结构"><a class="markdownIt-Anchor" href="#每个像素的结构"></a> 每个像素的结构</h2>
+<ul>
+<li>
+<p>Microlens（微透镜）。<br>
+每个像素点的最上方有个微透镜，增加透光量。有镜头就有 CRA 的问题，超出一定角度的光线无法被收集，需要和镜头进行匹配。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel.png" alt=""></p>
+</li>
+<li>
+<p>Photodiode（硅感光区）捕获光子，激发光生电子。</p>
+</li>
+<li>
+<p>势阱，用电场捕获、存储光生电子。</p>
+</li>
+<li>
+<p>电路，将电荷数量变换为电压信号，以及复位、选择、读出逻辑。</p>
+</li>
+<li>
+<p>滤光膜，选择性透过三种波长中的一种。</p>
+</li>
+</ul>
+<span id="more"></span>
+<h2 id="细说-cra"><a class="markdownIt-Anchor" href="#细说-cra"></a> 细说 CRA</h2>
+<p>CRA 是 Chief Ray Angle 的缩写，意思是主光角。从镜头的传感器一侧，可以聚焦到像素上的光线的最大角度被定义为一个参数，称为主光角 (CRA)。对于主光角的一般性定义是：此角度处的像素响应降低为零度角像素响应的 80%。</p>
+<p>我们在挑选 Lens 的时候会有一个 CRA 的参数，在选择 sensor 的时候同样有一个 CRA 的参数，一般我们要求 Lens 的 CRA 曲线与 senosr 的 CRA 曲线完全匹配，如果实在不能匹配，我们也要求在同样的像高位置，CRA 相差不能超过 3 度，而且最好是 Lens 的 CRA 比 sensor 的 CRA 小，否则将会导致成像照度或色彩问题。</p>
+<p>普通的 FSI 的 sensor 都有一个类似光子井的结构用来收集光子：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel9.jpg" alt=""></p>
+<p>当 CRA 增加的时候，光线会被金属电路层阻挡掉一部分，导致 sensor 接受光的效能降低。</p>
+<p>对于 BSI 的 sensor，这种影响也会更小：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel10.jpg" alt=""></p>
+<p>怎样选择 Sensor 的 CRA：</p>
+<ul>
+<li>广角镜头：这时一般 Lens 的 CRA 比较大，需要选择 CRA 大于 25 度的 Sensor 或者 BSI 的 Sensor；一般用于手机、安防、玩具、网络摄像头等。</li>
+<li>超长焦镜头：这时一般 Lens 的 CRA 比较小，需要选择 CRA 为 0 度的 Sensor；一般用于安防、机器视觉等。</li>
+<li>变焦镜头：这时 Lens 的 CRA 是变化的，一般需要根据实际应用选择，最好采用大 pixel，BSI 的 Sensor；一般用于安防等。</li>
+</ul>
+<h2 id="sensor-的纵向结构"><a class="markdownIt-Anchor" href="#sensor-的纵向结构"></a> sensor 的纵向结构</h2>
+<p>对于前照式 CMOS，光透过电路会发生反射，造成每个像素点之间的干扰。背照式的结构（感光层在电路的上方）不会受到电路的影响。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel1.png" alt=""></p>
+<p>在背照式工艺的基础上又发展出了堆栈式（Stacked）工艺。顾名思义，堆栈式工艺把两片或者更多片硅片上下堆叠在一起，最上层硅片全部用于制造像素的感光区，而 sensor 控制所需的模拟、数字逻辑全部移到下层硅片，所以感光区占 sensor 靶面尺寸的比例可以接近 100%，终于达到了 sensor 效率的巅峰。</p>
+<h2 id="细说-cfacolor-filter-array"><a class="markdownIt-Anchor" href="#细说-cfacolor-filter-array"></a> 细说 CFA(color filter array)</h2>
+<p>每个像素点上覆盖有一种颜色的滤光片，从而去感知每种颜色的亮度。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel2.png" alt=""></p>
+<p>Bayer 格式：绿色分量为总像素数的一半，红色蓝色各为总像素的四分之一。</p>
+<h2 id="ad-转换及读出"><a class="markdownIt-Anchor" href="#ad-转换及读出"></a> AD 转换及读出</h2>
+<p>sensor 会使用一个行选信号 (Row Select) 和一个列选信号 (Column Select) 来选中一个存储单元 (Pixel)，被选中的存储单元与输出放大器联通，将其存储的电荷数转换成电压值输出到阵列外部。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel30.png" alt=""></p>
+<ul>
+<li>每个像素内置一个电荷/电压放大器（Charge/Voltage Converter, CVC），将像素势阱中电荷的数量转换成电压信号。</li>
+<li>读出逻辑选中某一行，该行所有像素的电荷/电压放大器的输出信号与列输出信号联通。</li>
+<li>读出逻辑继续选中某一列，该列信号与可编程输出放大器（Output Amplifier）联通，被选中的像素的电压信号被放大一定倍数。</li>
+<li>放大后的电压信号经 ADC 转换器后变成数字信号，最后通过一定的接口协议（如 MIPI）输出到外部。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel31.png" alt=""></li>
+</ul>
+<blockquote>
+<p>调节相机的 ISO 其实就是调节这里的放大器放大倍率以及经过 AD 转换后的数字量乘以一个倍率，很容易理解模拟放大器的噪声更小，因为 AD 转换器本身存在一定的精度损失以及 AD 固有的噪声都会被数字增益放大。具体在设计的时候根据用户设置的 ISO 将其转换成具体的增益值，然后如果模拟增益足够就只用模拟增益，如果模拟增益不够，那么先将模拟增益拉满再设置数字增益。</p>
+</blockquote>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<p>sensor 会通过微透镜将光线聚在一起（更多的光子照射到感光元件上）然后通过 Bayer Filter 分别获取红绿蓝三原色，这样每个像元上将可以获取一种颜色，再经过感光元件将光子转换成电信号存储起来。然后该信号会经过经过模拟放大器，将信号放大，再经过 AD 转换器获得数字信号，经过 MIPI 等物理接口将信号发送出去（对于集成 ISP 的模组还会经过 ISP 的处理再将信号发送出去）。</p>
+<h1 id="像素类型-pixel-type"><a class="markdownIt-Anchor" href="#像素类型-pixel-type"></a> 像素类型 (Pixel type)</h1>
+<h2 id="被动像素-passive-pixel"><a class="markdownIt-Anchor" href="#被动像素-passive-pixel"></a> 被动像素 （Passive pixel）</h2>
+<p>最简单的 Pixel 结构只有一个 PN 结作为感光结构，以及一个与它相连的 reset 晶体管（RS）作为一个开关，如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel34.png" alt=""></p>
+<ul>
+<li>开始曝光前，像素的行选择地址会上电，于是 RS 使能，连通 PN 结与列选择器（column bus），同时列选择器会上电，使 PN 结上加高反向电压（如 3.3 V），短暂延时后 PN 结内电子空穴对达到平衡，于是 reset 操作完成，RS 信号失效，隔断 PN 结与 column bus 的连通。</li>
+<li>开始曝光时，PN 结内的硅在吸收光子激发出电子-空穴对。受 PN 结内电场的影响，电子会流向 PN 结的 n+端，空穴会流向 PN 结的 p-substrate。因此，曝光后的的 PN 结反向电压会降低。</li>
+<li>曝光结束后，RS 再次使能，读出电路会测量 PN 结内的电压，该电压与原反向电压之间的差值即正比于 PN 结接受到的光子数。</li>
+<li>在读出感光信号后，会对 PN 结进行再次 reset，准备下次曝光。</li>
+</ul>
+<p>这种像素结构因为读出电路完全位于像素外面所以称为 Passive Pixel，其优点是 PN 结可以独占像素面积，缺点是噪声较大，主要有 2 个原因：</p>
+<ul>
+<li>PN 结的电容小于读出电路上的电容，所以对电路噪声很敏感。</li>
+<li>PN 结的信号需要先读出才进行放大，因此读出电路的噪声会被一起放大。</li>
+</ul>
+<p>当 RS 使能且列选择器通高电平时，在电路原理上相当于对 PN 结的电容进行充电，但是充电后得到的电压值却有一定的随机性，一方面每个 PN 结的实际电容大小会服从一定的概率分布，结与结之间存在固定的偏差，这会构成一种固定模式噪声（Fixed Pattern Noise, FPN）；另一方面由于电路中存在暗电流噪声，即使是同一个结每次充电后得到的实际电压也不完全一样，这就构成了另一种模式的噪声，它与 PN 结的结构、温度和结电容大小都有关，称为 kTC 噪声。</p>
+<h2 id="像素-ktc-噪声"><a class="markdownIt-Anchor" href="#像素-ktc-噪声"></a> 像素 kTC 噪声</h2>
+<p>在研究 PN 结的噪声特性时可将其简化为下图所示的由电阻电容形成的低通滤波网络。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel35.png" alt=""></p>
+<p>可以证明，由电子热运动引起的宽带热噪声经 PN 结滤波后反应在结电容上的输出噪声功率用 kT/C 描述，其中 T 为 PN 结温度，C 为结电容，k 为常系数，因此合称 kTC 噪声。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel36.png" alt=""></p>
+<h2 id="主动像素-active-pixel"><a class="markdownIt-Anchor" href="#主动像素-active-pixel"></a> 主动像素 （Active pixel）</h2>
+<p>目前主流的 CMOS 传感器都采用 Active Pixel 结构设计。下图所示的 Active Pixel 结构称为 3T 结构，每个像素包含一个感光 PN 结和 3 个晶体管，即一个复位管 RST，一个行选择器 RS，一个放大器 SF。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel37.png" alt=""></p>
+<p>3T 结构的工作方式是：</p>
+<ul>
+<li>复位：使能 RST 给 PN 结加载反向电压，复位完成后撤销 RST。</li>
+<li>曝光：与 Passive Pixel 原理相同。</li>
+<li>读出：曝光完成后，RS 会被激活，PN 结中的信号被 SF 放大后读出。</li>
+<li>循环：读出信号后，重新复位，曝光，读出，不断输出图像信号。</li>
+</ul>
+<p>基于 PN 结的 Active Pixel 流行与 90 年代中期，它解决了很多噪声问题。但是由 PN 结复位引入的 kTC 噪声却并没有得到解决。</p>
+<h2 id="ppd-结构"><a class="markdownIt-Anchor" href="#ppd-结构"></a> PPD 结构</h2>
+<p>为了解决复位 kTC 噪声，减小暗电流，在 3T 结构之后又出现了 PPD 结构（Pinned Photodiode Pixel），包括一个 PN 结感光区和 4 个晶体管，所以也称 4T 结构，它在 3T 结构的基础上增加了一个 TX 三极管起控制电荷转移的作用。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel38.png" alt=""></p>
+<p>PPD 的出现是 CMOS 性能的巨大突破，它允许相关双采样（CDS）电路的引入，消除了复位引入的 kTC 噪声，运放器引入的 1/f 噪声和 offset 噪声。 它的工作方式如下：</p>
+<ul>
+<li>曝光。</li>
+<li>复位：曝光结束时使能 RST，将读出区（n+区）复位到高电平。</li>
+<li>读复位电平：读出 n+区的电平，其中包含运放的 offset 噪声，1/f 噪声以及复位引入的 kTC 噪声，将读出的信号存储在第一个电容中。</li>
+<li>电荷转移：使能 TX，将电荷从感光区完全转移到 n+区准备读出，这里的机制类似于 CCD 中的电荷转移。</li>
+<li>读信号电平：将 n+区的电压信号读出到第二个电容。这里的信号包括：光电转换产生的信号，运放产生的 offset，1/f 噪声以及复位引入的 kTC 噪声。</li>
+<li>信号输出：将存储在两个电容中的信号相减（如采用 CDS，即可消除 Pixel 中的主要噪声），得到的信号在经过模拟放大，然后经过 ADC 采样，即可进行数字化信号输出。</li>
+</ul>
+<p>PPD 像素结构有如下优点：</p>
+<ul>
+<li>读出结构（n+区）的 kTC 噪声完全被 CDS 消除。</li>
+<li>运放器的 offset 和 1/f 噪声，都会因 CDS 得到明显改善。</li>
+<li>感光结构因复位引起的 kTC 噪声，由于 PPD 电荷的全转移，变的不再存在。</li>
+<li>光敏感度，它直接取决于耗尽区的宽度，由于 PPD 的耗尽区一直延伸到近 Si−SiO2 界面，PPD 的光感度更高。</li>
+<li>由于 p-n-p 的双结结构，PPD 的电容更高，能产生更高的动态范围。</li>
+<li>由于 Si−SiO2 界面由一层 p+覆盖，减小了暗电流。</li>
+</ul>
+<h2 id="ppd-共享结构"><a class="markdownIt-Anchor" href="#ppd-共享结构"></a> PPD 共享结构</h2>
+<p>PPD 结构有 4 个晶体管，有的设计甚至有 5 个，这大大降低了像素的填充因子（即感光区占整个像素面积的比值），这会影响传感器的光电转换效率，进而影响传感器的噪声表现。为了解决这个问题又出现了 PPD 共享结构，像素的感光区和读出电路由 TX 晶体管隔开，相邻像素之间可以共用读出电路，如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel39.png" alt=""></p>
+<p>图中 2x2 像素共享一个读出电路，一共使用 7 个晶体管，平均一个像素 1.75 个晶体管。这样可以大大减少每个像素中读出电路占用的面积，提高填充因子。美中不足的是，由于这 2x2 个像素的结构不再一致，会导致固定模式噪声（FPN）的出现，需要在后续 ISP 处理中消除。</p>
+<h2 id="双相关采样cds"><a class="markdownIt-Anchor" href="#双相关采样cds"></a> 双相关采样（CDS）</h2>
+<p>双相关采样即 Correlated Double Samping，其基本思想是进行两次采样，先采样一个参考信号用于评估背景噪声，延迟很短时间后再采集目标信号，从第二次采样中减去参考信号即得到去除了大部分背景噪声的目标信号，其原理模型如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel40.png" alt=""></p>
+<p>CDS 成立的条件是在两次采样间背景噪声的幅度变化不大，因此它对去除固定噪声（FPN）和低频噪声效果比较理想，如 1/f 噪声，kTC 噪声等。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel41.png" alt=""></p>
+<h1 id="光谱响应曲线"><a class="markdownIt-Anchor" href="#光谱响应曲线"></a> 光谱响应曲线</h1>
+<p>下图是 IMX290 每个红绿蓝滤光片的光谱响应曲线。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel3.png" alt=""></p>
+<p>这是人眼视锥细胞对光谱的响应曲线<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel4.png" alt=""></p>
+<p>由于人眼和 sensor 对光谱的感应曲线不同，同一个物体感知到的颜色不同。因此颜色需要一个转换关系。ISP 中的 CCM（色彩校正矩阵）就此诞生，利用一个 3x3 的矩阵，将 sensor 感知到的 RGB 颜色，校准成我们看到的 RGB 颜色。</p>
+<h1 id="sensor-的曝光"><a class="markdownIt-Anchor" href="#sensor-的曝光"></a> Sensor 的曝光</h1>
+<p>sensor 的曝光时间和快门时间是一个概念，都是 sensor 的感光时间。曝光（快门）时间越长，图像就越亮。</p>
+<p>当控制快门时间，仍然达不到期望的亮度，就需要调节 sensor 的感光度（ISO）。CMOS sensor 的感光度就是它的增益。增益是用模拟或数字的方法进行放大，不可避免的会放大噪声，因此拍摄时一般快门优先。</p>
+<p>当拍摄高速运动的物体或者手抖的时候，容易产生运动模糊，就需要降低快门时间。</p>
+<p>sensor 的曝光方式有两种，卷帘曝光和全局曝光。</p>
+<h2 id="卷帘曝光rolling-shutter"><a class="markdownIt-Anchor" href="#卷帘曝光rolling-shutter"></a> 卷帘曝光（rolling shutter）</h2>
+<ul>
+<li>一个 reset 信号负责将某一行像素清零，使其从零开始积累电荷。</li>
+<li>一个 read 信号负责选择某一行，读出该行信号。</li>
+</ul>
+<p>这两个信号的工作时序是 reset 信号在先，read 信号在后，之间相差一个恒定的间隔，这个间隔在空间上看是两个信号前后相差固定的行数，在时间上看是一行像素被清零后，等待固定的时间后即被读出。</p>
+<p>显然，sensor read 信号与 reset 信号之间的时间间隔就是每个像素能够积累光信号的时间，也就是人们所熟知的“曝光时间（exposure time）”，在技术领域则更多会使用“积分时间（integration time）”这个术语，它一般是以行为单位的一个量，能够精确地反映像素曝光过程的物理本质和实现原理。</p>
+<p>下图是卷帘曝光拍摄高速运动的物体的现象。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel7.png" alt=""></p>
+<p>这是 IMX290 的 sensor 曝光与输出示意图<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel8.png" alt=""></p>
+<p>黄色区域是 sensor 处于感光的时间，蓝色区域是 sensor 每一行数据的输出时间，红色是曝光开始的时间。XHS 是进行每个操作的最小时间单位。</p>
+<p>从时间先后来看，一幅图像是从第一行开始曝光，一个 XHS 之后，再从第二行开始曝光，依次类推。图像的第一行曝光结束后，进行输出，输出数据的时间是一个 XHS，依此类推。</p>
+<p>卷帘曝光带来的问题：</p>
+<ul>
+<li>日光灯下有横条纹。<br>
+日光灯属于频闪灯，跟当地的供电频率有关，如果当地的供电是 50Hz 的正弦波（国内），日光灯就会以 100Hz 的频率闪烁。sensor 每行的起始曝光时间是不同的，这就导致了每一行曝光时的亮度不同。因此会出现横条纹<br>
+解决方法：<br>
+- 控制曝光时间是 1/100 的整数倍，这样每行的曝光时间都是一个周期的整数倍，亮度就保持一致了<br>
+- 控制帧率为 25/50 帧，不能解决横条纹的问题，但是可以让每帧图像中的横条纹固定在相同的位置。1/25 是 1/100 的整数倍，可以使不同图像中每一行曝光的开始时间都相差四个周期。保证了每张图像中同一行的亮度是一致的</li>
+<li>Rolling shutter（拍摄快速运动的物体会有失真）。<br>
+因为每一行曝光开始的时间不同，当物体快速运动时，每行抓拍下来的物体位置都不同，造成了物体的变形。<br>
+解决方法：<br>
+- 加大图像输出的速度（提高帧率也可行，本质上改变的就是输出速度）<br>
+- 调整抓拍的时间和角度，比如远处的车辆每帧移动的像素点较少，可以去抓拍稍远处的车辆<br>
+- 使用全局曝光的 sensor</li>
+</ul>
+<h2 id="interlaced-曝光"><a class="markdownIt-Anchor" href="#interlaced-曝光"></a> Interlaced 曝光</h2>
+<p>为了改善 rolling shutter 曝光方式存在的问题，有人提出了 Interlaced 曝光和读出方式，如下图所示，新的曝光顺序将一帧拆分成 8 组，第一组包含行号 {0,8,16,24…}，第二组包含行号 {1,9,17,25,…} ，以此类推，第八组包含行号 {7,15,23,31,…} 。这种曝光方式的优点是组与组之间的曝光延时为一帧时间的八分之一，以 1080p@30fps 为例，一帧的读出时间大致在 28ms 左右，在新的曝光方式下像素间的最大曝光延时仅为 3.5ms，可以更好地捕捉运动场景。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel33.png" alt=""></p>
+<h2 id="工频闪烁-flicker"><a class="markdownIt-Anchor" href="#工频闪烁-flicker"></a> 工频闪烁 (flicker)</h2>
+<p>flicker 的本质是像素曝光起始点相对交流电的相位关系在不断变化。这个问题不仅存在于一帧图像内部，在帧与帧之间也存在同样的问题。</p>
+<p>以电频率 50Hz 为例，如果 sensor 工作在 25 或 50fps（frame per second），则帧频率刚好与电频率同步，每帧图像的 flicker 表现（明暗位置）与上一帧完全相同，所以明暗条纹在视频上是静止不动的。如果 sensor 工作在 30 或 60fps，则每帧的 flicker 与上一帧会产生固定的相移，视频上的明暗条纹图样会在画面垂直方向上缓慢移动。</p>
+<h2 id="全局曝光global-shutter"><a class="markdownIt-Anchor" href="#全局曝光global-shutter"></a> 全局曝光（global shutter）</h2>
+<p>每一行的起始曝光和终止曝光的时间一致，目前只有电警设备上用到，价格昂贵。因为电警设备有爆闪灯，爆闪灯亮的时间很短。如果使用卷帘曝光的 sensor，一幅图像才曝光几行灯就熄灭了，所以必须要用全局曝光的传感器。</p>
+<h1 id="与-ccd-对比"><a class="markdownIt-Anchor" href="#与-ccd-对比"></a> 与 CCD 对比</h1>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/ISP/pixel32.png" alt=""></p>
+<p>CCD 的一个主要优点在于所有像素共享同一个电荷-电压转换器，所以像素一致性非常好。相比之下 CMOS 每个像素都有自己专用的电荷-电压转换器，一致性很不容易控制。</p>
+<p>当 CCD 像素数多于 200 万时，所有像素共用一个电荷-电压转换器会严重影响读出速度，所以此时会考虑把像素设计成两个或四个阵列，每个阵列配备专用的行缓冲和电荷-电压转换器，可以成倍加快读出速度。</p>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly93d3cucWlueGluZy54eXovcG9zdHMvZTZmMDUyNGEv">https://www.qinxing.xyz/posts/e6f0524a/<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMDA3NzcxMjE=">https://zhuanlan.zhihu.com/p/100777121<i class="fa fa-external-link-alt"></i></span></p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/Debug/Tips/" rel="prev" title="Debug tips">
+                  <i class="fa fa-angle-left"></i> Debug tips
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/Note/linux%E7%B3%BB%E7%BB%9F%E6%9E%84%E5%BB%BA/" rel="next" title="">
+                   <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/Camera/CameraSensorStruct/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="原图">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 内存管理（二）ARM64 的虚拟地址转换在 linux 中的实现">
+<meta property="og:url" content="https://carlyleliu.github.io/LinuxKernel/LinuxMemoryARM64linux/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="原图">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryARM64linux.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mmu.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/process_address.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/aarch64_addr.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/l0_l2.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/l3.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/page_attr.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Linux_page.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mem_barrier.png">
+<meta property="article:published_time" content="2021-11-13T22:06:23.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.017Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Kernel">
+<meta property="article:tag" content="Memory">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryARM64linux.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxMemoryARM64linux/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxKernel/LinuxMemoryARM64linux/","path":"LinuxKernel/LinuxMemoryARM64linux/","title":"Linux 内存管理（二）ARM64 的虚拟地址转换在 linux 中的实现"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 内存管理（二）ARM64 的虚拟地址转换在 linux 中的实现 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#arm64-%E5%86%85%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text"> arm64 内存管理</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8"><span class="nav-text"> 页表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E6%98%A0%E5%B0%84"><span class="nav-text"> 页表映射</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> 页表项描述符</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#l0~l2-%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> L0~L2 页表项描述符</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#l3-%E9%A1%B5%E8%A1%A8%E9%A1%B9%E6%8F%8F%E8%BF%B0%E7%AC%A6"><span class="nav-text"> L3 页表项描述符</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux-%E5%86%85%E6%A0%B8%E4%B8%AD%E7%9A%84%E9%A1%B5%E8%A1%A8"><span class="nav-text"> Linux 内核中的页表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#aarch64-%E5%9C%A8-linux-%E4%B8%AD%E7%9A%84%E5%86%85%E5%AD%98%E5%B8%83%E5%B1%80"><span class="nav-text"> AArch64 在 Linux 中的内存布局</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%AB%98%E9%80%9F%E7%BC%93%E5%AD%98%E7%AE%A1%E7%90%86"><span class="nav-text"> 高速缓存管理</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%9E%E6%80%A7"><span class="nav-text"> 内存属性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%9E%E6%80%A7-2"><span class="nav-text"> 内存属性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%99%AE%E9%80%9A%E5%86%85%E5%AD%98"><span class="nav-text"> 普通内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E5%A4%87%E5%86%85%E5%AD%98"><span class="nav-text"> 设备内存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%AB%98%E9%80%9F%E7%BC%93%E5%AD%98%E5%85%B1%E4%BA%AB%E5%B1%9E%E6%80%A7"><span class="nav-text"> 高速缓存共享属性</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C"><span class="nav-text"> 内存屏障</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E5%B1%8F%E9%9A%9C%E6%8C%87%E4%BB%A4"><span class="nav-text"> 内存屏障指令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD-%E8%8E%B7%E5%8F%96%E5%B1%8F%E9%9A%9C%E5%8E%9F%E8%AF%AD%E4%B8%8E%E5%AD%98%E5%82%A8-%E9%87%8A%E6%94%BE%E5%B1%8F%E9%9A%9C%E5%8E%9F%E8%AF%AD"><span class="nav-text"> 加载-获取屏障原语与存储-释放屏障原语</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxKernel/LinuxMemoryARM64linux/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 内存管理（二）ARM64 的虚拟地址转换在 linux 中的实现 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 内存管理（二）ARM64 的虚拟地址转换在 linux 中的实现
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/Kernel/" itemprop="url" rel="index"><span itemprop="name">Kernel</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/LinuxKernel/LinuxMemoryARM64linux/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/LinuxKernel/LinuxMemoryARM64linux/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>6.4k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>23 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MemoryARM64linux.png" alt=""><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM3MTc1NjFlMDg1MzA2ZjhjNGRlZDk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+<span id="more"></span>
+<h1 id="arm64-内存管理"><a class="markdownIt-Anchor" href="#arm64-内存管理"></a> arm64 内存管理</h1>
+<p>如图所示，ARM 处理器内核的 MMU 包括 TLB 和页表遍历单元（Table Walk Unit）两个部件。TLB 是一个高速缓存。一个完整的页表翻译和查找的过程叫作页表查询，页表查询的过程由硬件自动完成，但是页表的维护需要软件来完成。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mmu.png" alt=""></p>
+<p>下图为进程地址空间和物理地址空间的映射关系，左边是进程地址空间视图，右边是物理地址空间视图。进程地址空间又分成内核空间（Kermel Space）和用户空间（User Space）。无论是内核空间还是用户空间都可以通过处理器提供的页表机制映射到实际的物理地址。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/process_address.png" alt=""></p>
+<h2 id="页表"><a class="markdownIt-Anchor" href="#页表"></a> 页表</h2>
+<p>在 AArch64 架构中的 MMU 支持单一阶段的页表转换，同样也支持虚拟化扩展中两阶段的页表转换。</p>
+<ul>
+<li>单一阶段的页表转换，把虑虚拟地址（VA）翻译成物理地址（PA）。</li>
+<li>两阶段的页表转换：包括两个阶段。在阶段 1，把虚拟地址翻译成中间物 （Intermediate Phvsical Address，IPA）；在阶段 2，把 IPA 翻译成最终 PA 另外，ARMv8 架构支持多种页表格式。具体如下。
+<ul>
+<li>ARMv8 架构的长描述符页表格式（Long Descriptor Translation Table Format）</li>
+<li>ARMv7 架构的长描述符页表格式，需要打开大物理地址扩展（Large PhysicalA Extention, LPAE）</li>
+<li>ARMv7 加构的短描述符页表格式（Short Descriptor Translation Table Format）</li>
+</ul>
+</li>
+</ul>
+<p>ARMv8 架构还支持 4KB、16KB 或 64KB 这 3 种页面粒度。</p>
+<h2 id="页表映射"><a class="markdownIt-Anchor" href="#页表映射"></a> 页表映射</h2>
+<p>在 AArch64 架构中，因为地址总线位宽最多支持 48 位，所以 VA 被划分为两个空间，每个空间最多支持 256TB。</p>
+<ul>
+<li>低位的虚拟地址空间位于 0x0000 0000 0000 0000 到 0x0000 FFFF FFFF FFFF。虚拟地址的最高位等于 0，就使用这个虚拟地址空间，并且使用 TTBRO_ELx 来存放的基地址。</li>
+<li>高位的虚拟地址空间位于 0xFFFF 0000 0000 0000 到 0xFFFF FFFF FFFF FFFF。虚拟地址的最高位等于 1，就使用这个虚拟地址空间，并且使用 TTBR1_ELx 来存放的基地址。</li>
+</ul>
+<p>AArch64 架构中的页表支持如下特性。</p>
+<ul>
+<li>最多可以支持 4 级页表</li>
+<li>输入地址的最大有效位宽为 48 位</li>
+<li>输出地址的最大有效位宽为 48 位</li>
+<li>翻译的页面粒度可以是 4KB、16KB 或 64KB</li>
+</ul>
+<p>注意，本文以 4KB 大小的页面和 48 位地址宽度为例来说明 AArch64 架构页表映射。如下图所示为 AArch64 架构的地址映射，其中页面是 4KB 的小页面。当 TLB 未命中时，处理器查询页表的过程如下。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/aarch64_addr.png" alt=""></p>
+<ul>
+<li>处理器根据页表基地址控制寄存器和虚拟地址来判断使用哪个页表基地址寄存器 TTBRO 还是 TTBR1。当虚拟地址第 63 位简称 VA[63] 为 1 时选择 TTBR1；当 VA[63] 为 0 时选择 TTBR0。页表基地址寄存器中存放着 1 级页表</li>
+<li>处理器将 VA[47:39] 作为 L0 索引，在 1 级页表（L0 页表）中找到页表项，1 级页表有 512 个页表项</li>
+<li>1 级页表的页表项中存放着 2 级页表（L1 页表）的物理基地址。处理器将 VA[38] 作为 L1 索引，在 2 级页表中找到相应的页表项，2 级页表有 512 个页表项</li>
+<li>2 级页表的页表项中存放着 3 级页表（L2 页表）的物理基地址。处理器以 VA[29:21] 作为 L2 索引，在 3 级页表（L2 页表）中找到相应的页表项，3 级页表有 512 个页表项</li>
+<li>3 级页表的页表项中存放着 4 级页表（L3 页表）的物理基地址。处理器以 VA[20:12] 作为 L3 索引，在 4 级页表（L3 页表）中找到相应的页表项，4 级页表有 512 个页表项</li>
+<li>4 级页表的页表项里存放着 4KB 页面的物理基地址，然后加上 VA[11：0]，就构成了新的物理地址，因此处理器就完成了页表的查询和翻译工作</li>
+</ul>
+<h2 id="页表项描述符"><a class="markdownIt-Anchor" href="#页表项描述符"></a> 页表项描述符</h2>
+<p>从下图可知，AArch64 架构页表分成 4 级页表，每一级页表都有页表项，我们把它们称为页表项描述符，每个页表项描述符占 8 字节，那么这些页表项描述符的格式和内容是否都一样？</p>
+<h3 id="l0~l2-页表项描述符"><a class="markdownIt-Anchor" href="#l0~l2-页表项描述符"></a> L0~L2 页表项描述符</h3>
+<p>AArch64 架构中 L0 ~ L3 页表项描述符的格式不完全一样，其中 L0 ~ L2 页表项的内容比较类似，如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/l0_l2.png" alt=""></p>
+<p>L0~L2 页表项根据内容可以分成 3 类，一是无效的页表项，二是块（block）类型的页表项，三是页表（table）类型的页表项。</p>
+<ul>
+<li>当页表项描述符 Bit[0] 为 1 时，表示有效的描述符；当 Bit[0] 为 0 时，表示无效描述符</li>
+<li>页表项描述符 Bit[1] 用来表示类型
+<ul>
+<li>页表类型：当 Bit[1] 为 1 时，表示该描述符包含了指向下一级页表的基地址，是一个页表类型的页表项</li>
+<li>块类型，当 Bit[1] 为 0 时表示一个大内存块（memory block）的页表项，其中包含了最终的物理地址。大内存块通常是用来描述大的连续的物理内存，如 2MBit 或者 1GB 大小的连续物理内存</li>
+</ul>
+</li>
+<li>在块类型的页表项中，Bit[47：n] 表示最终输出的物理地址
+<ul>
+<li>若页面粒度是 4KB，在 L1 页表项描述符中 n 为 30，表示 1GB 大小的连续物存。在 L2 页表项描述符中 n 为 21，用来表示 2MB 大小的连续物理内存</li>
+<li>若页面粒度为 16KB，在 L2 页表项描述符中 n 为 25，用来表示 32MB 大小的连续物理内存</li>
+</ul>
+</li>
+<li>在块类型的页表项中，Bit[11：2] 是低位属性（lower attribute），Bit[63:52] 是高位属性 (upper attribute)</li>
+<li>在页表类型的页表项描述符中，Bit[47：m] 用来指向下一级页表的基地址
+<ul>
+<li>当页面粒度为 4KB 时 m 为 12</li>
+<li>当页面粒度为 16KB 时 m 为 14</li>
+<li>当页面粒度为 64KB 时 m 为 16</li>
+</ul>
+</li>
+</ul>
+<h3 id="l3-页表项描述符"><a class="markdownIt-Anchor" href="#l3-页表项描述符"></a> L3 页表项描述符</h3>
+<p>如下图所示，L3 页表项描述符包含 5 种页表项，分别是无效的页表项、保留的页表项 4KB 粒度的页表项、16KB 粒度的页表项、64KB 粒度的页表项。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/l3.png" alt=""></p>
+<p>L3 页表项描述符的格式如下。</p>
+<ul>
+<li>当页表项描述符 Bit[0] 为 1 时，表示有效的描述符；当 Bit[0] 为 0 时，表示无效描述符</li>
+<li>当页表项描述符 Bit[1] 为 0 时，表示保留页表项；当 Bit[1] 为 1 时，表示页表类型的页表项</li>
+<li>页表描述符 Bit[11：2] 是低位属性，Bit[63:51] 是高位属性</li>
+<li>页表描述符中间的位域中包含了输出地址（output address），也就是最终物理页面的高地址段
+<ul>
+<li>当页面粒度为 4KB 时输出地址为 Bit[47:12]</li>
+<li>当页面粒度为 16KB 时输出地址为 Bit[47:14]</li>
+<li>当页面粒度为 64KB 时输出地址为 Bit[47:16]</li>
+</ul>
+</li>
+</ul>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/page_attr.png" alt=""></p>
+<h1 id="linux-内核中的页表"><a class="markdownIt-Anchor" href="#linux-内核中的页表"></a> Linux 内核中的页表</h1>
+<p>在 ARM64 的 Linux 内核中采用以下 4 级分页模型：</p>
+<ul>
+<li>页全局目录（Page Global Directory，PGD）</li>
+<li>页上级目录（Page Upper Directory，PUD）</li>
+<li>页中间目录（Page Middle Directory，PMD）</li>
+<li>页表（Page Table，PT）</li>
+</ul>
+<p>上述 4 级分页模型分别对应 ARMv8 架构页表的 L0~L3 页表。上述 4 级分页模型在 64 位虚拟地址的划分如下图所示。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/Linux_page.png" alt=""></p>
+<p>64 位的虚拟地址分成如下几个部分。</p>
+<ul>
+<li>Bit[63]：用来选择页表基地址寄存器</li>
+<li>Bit[62:48]：保留</li>
+<li>Bit[47:39]：表示 PGD 索引，即 ARM64 中的 L0 索引</li>
+<li>Bit[38:30]：表示 PUD 索引，即 ARM64 中的 L1 索引</li>
+<li>Bit[29:21]：表示 PMD 索引，即 ARM64 中的 L2 索引</li>
+<li>Bit[20:12]：表示 PT 索引，即 ARM64 中的 L3 索引</li>
+<li>Bit[11:0]：表示页面内的偏移量</li>
+</ul>
+<p>基于 ARMv8-A 架构的处理器可以通过配置 ARM64_VA_BITS 宏来设置虚拟地址的宽度。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;arch/arm64/Kconfig&gt;</span><br><span class="line">config ARM64_VA_BITS</span><br><span class="line">    int</span><br><span class="line">    default 39 if ARM64_VA_BITS_39</span><br><span class="line">    default 42 if ARM64_VA_BITS_42</span><br><span class="line">    default 48 if ARM64_VA_BITS_48</span><br></pre></td></tr></tbody></table></figure>
+<p>另外，基于 ARMv8-A 架构的处理器支持的最大物理地址宽度也是 48 位。<br>
+Linux 内存空间布局与地址映射的粒度和地址映射的层级有关。基于 ARMv8-A 架构的处理器支持的页面粒度可以是 4KB、16KB 或者 64KB。映射的层级可以是 3 级或者 4 级。</p>
+<h2 id="aarch64-在-linux-中的内存布局"><a class="markdownIt-Anchor" href="#aarch64-在-linux-中的内存布局"></a> AArch64 在 Linux 中的内存布局</h2>
+<p>AArch64 Linux 使用 3 级或 4 级转换表，其页大小配置为 4KB，对于用户和内核分别都有 39-bit (512GB) 或 48-bit (256TB) 的虚拟地址空间。对于页大小为 64KB 的配置，仅使用 2 级转换表，有 42-bit (4TB) 的虚拟地址空间，但内存布局相同。</p>
+<p>用户地址空间的 63:48 位为 0，而内核地址空间的相应位为 1。TTBRx 的选择由虚拟地址的 63 位给出。swapper_pg_dir 仅包含内核（全局）映射，而用户 pgd 仅包含用户（非全局）映射。swapper_pg_dir 地址被写入 TTBR1 中，且从不写入 TTBR0。</p>
+<p>AArch64 Linux 在页大小为 4KB，并使用 4 级转换表时的内存布局：</p>
+<pre><code>起始地址			结束地址			大小		用途
+-----------------------------------------------------------------------
+0000000000000000	0000ffffffffffff	 256TB		用户空间
+ffff000000000000	ffffffffffffffff	 256TB		内核空间
+</code></pre>
+<p>AArch64 Linux 在页大小为 64KB，并使用 2 级转换表时的内存布局：</p>
+<pre><code>起始地址			结束地址			大小		用途
+-----------------------------------------------------------------------
+0000000000000000	000003ffffffffff	   4TB		用户空间
+fffffc0000000000	ffffffffffffffff	   4TB		内核空间
+</code></pre>
+<p>更详细的内核虚拟内存布局，请参阅内核启动信息。</p>
+<p>4KB 页大小的转换表查找：</p>
+<pre><code>+--------+--------+--------+--------+--------+--------+--------+--------+
+|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
++--------+--------+--------+--------+--------+--------+--------+--------+
+ |                 |         |         |         |         |
+ |                 |         |         |         |         v
+ |                 |         |         |         |   [11:0]  页内偏移
+ |                 |         |         |         +-&gt; [20:12] L3 索引
+ |                 |         |         +-----------&gt; [29:21] L2 索引
+ |                 |         +---------------------&gt; [38:30] L1 索引
+ |                 +-------------------------------&gt; [47:39] L0 索引
+ +-------------------------------------------------&gt; [63] TTBR0/1
+</code></pre>
+<p>64KB 页大小的转换表查找：</p>
+<pre><code>+--------+--------+--------+--------+--------+--------+--------+--------+
+|63    56|55    48|47    40|39    32|31    24|23    16|15     8|7      0|
++--------+--------+--------+--------+--------+--------+--------+--------+
+ |                 |    |               |              |
+ |                 |    |               |              v
+ |                 |    |               |            [15:0]  页内偏移
+ |                 |    |               +----------&gt; [28:16] L3 索引
+ |                 |    +--------------------------&gt; [41:29] L2 索引
+ |                 +-------------------------------&gt; [47:42] L1 索引
+ +-------------------------------------------------&gt; [63] TTBR0/1
+</code></pre>
+<p>当使用 KVM 时，管理程序（hypervisor）在 EL2 中通过相对内核虚拟地址的一个固定偏移来映射内核页（内核虚拟地址的高 24 位设为零）:</p>
+<pre><code>起始地址			结束地址			大小		用途
+-----------------------------------------------------------------------
+0000004000000000	0000007fffffffff	 256GB		在 HYP 中映射的内核对象
+</code></pre>
+<h1 id="高速缓存管理"><a class="markdownIt-Anchor" href="#高速缓存管理"></a> 高速缓存管理</h1>
+<p>ARM64 指今集提供了对高速缓存进行管理的指令，包括管理无效高速缓存和清除高速缓存的指令。高速缓存的管理主要有如下 3 种情况。</p>
+<ul>
+<li>使整个高速缓存或者某个高速缓存行无效。</li>
+<li>清除（clean）整个高速缓存或者某个高速缓存行。之后，相应的高速缓存行会被标为脏的，数据会写回到下一级高速缓存中或者主存储器中。</li>
+<li>清零（zero）操作。在某些情况下，对高速缓存进行清零操作以起到一个预取和加速的作用。例如，当程序需要使用较大的临时内存时，如果在初始化阶段对这个内存行清零操作，高速缓存控制器就会主动把这些零数据写入高速缓存行中。若程序主动使用高速缓存的清零操作，那么将大大减少系统内部总线的带宽。</li>
+</ul>
+<p>对高速缓存的操作可以指定如下不同的范围。</p>
+<ul>
+<li>整块高速缓存</li>
+<li>某个虚拟地址</li>
+<li>特定的高速缓存行或者组和路</li>
+</ul>
+<p>另外，在 ARMv8 架构中最多可以支持 7 级的高速缓存，即 L1~L7 高速缓存。当对一个高速缓存行进行操作时，我们需要知道高速缓存操作的范围。ARMv8 架构中将从以下角度观察内存。</p>
+<ul>
+<li>
+<p>全局缓存一致性角度（Point of Coherency，PoC）：系统中所有可以发起内存访问的硬件单元（如处理器、DMA 设备、GPU 等）都能保证观察到的某一个地址上的数据是一致的或者是相同的副本。通常 PoC 表示站在系统的角度来看高速缓存的一致性问题。</p>
+</li>
+<li>
+<p>处理器缓存一致性角度（Point of Unification，PoU）：表示站在处理器角度来看高速缓存的一致性问题。对于一个内部共享（inner shareable）的 PoU，所有的处理器都能看到相同的内存副本<br>
+假设在一个双核处理器系统中，每一个处理器都有独自的 L1 高速缓存，它们共享一个 L2 高速缓存，它们都可以共同访问 DDR4 内存。另外，系统中还有 GPU 等硬件单元。</p>
+</li>
+<li>
+<p>如果以 PoU 看高速缓存，那么这个观察点就是 L2 高速缓存，因为两个处理器都可以在 L2 高速缓存中看到相同的副本。</p>
+</li>
+<li>
+<p>如果以 PoC 看高速缓存，那么这个观察点是 DDR4 内存，因为 CPU 和 GPU 都能共同访问 DDR4 内存。</p>
+</li>
+</ul>
+<p>ARMv8 架构提供 DC 和 IC 两条与高速缓存相关的指令，它们根据不同的辅助操作符可以有不同的含义，如下所示。</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">//DC 指令的格式</span><br><span class="line">DC &lt;dc_op&gt;, &lt;Xt&gt;</span><br><span class="line">//IC 指令的格式</span><br><span class="line">Ic &lt;ic_op&gt; &lt;Xt&gt;</span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>
+<p>DC：</p>
+<ul>
+<li>cisw：清除并使指定的组和路的高速缓存无效</li>
+<li>civac：从 PoC，清除并使指定的虚拟地址对应的高速缓存无效</li>
+<li>csw：清除指定的组或路的高速缓存</li>
+<li>cvac：从 PoC，清除指定的虚拟地址对应的高速缓存</li>
+<li>cvau：从 PoU，清除指定的虚拟地址对应的高速缓存</li>
+<li>isw：使指定的组或路的高速缓存无效</li>
+<li>ivac：从 PoC，使指定的虚拟地址中对应的高速缓存无效</li>
+<li>zva：把虚拟地址中的高速缓存清零</li>
+</ul>
+</li>
+<li>
+<p>IC：</p>
+<ul>
+<li>ialluis：从 PoU，使所有的指令高速缓存无效，内部共享属性</li>
+<li>iallu：从 PoU，使所有的指令高速缓存无效</li>
+<li>ivau：从 PoU，使指定虚拟地址对应的指令高速缓存无效</li>
+</ul>
+</li>
+</ul>
+<p>Linux 内核提供了多个与高速缓存管理相关的接口函数，它们定义在 arch/arm64/include/asm/cacheflush.h 头文件中，它们实现在 arch/arm64/mm/cache.S 汇编文件中，如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">flush_cache_mm(mm) <span class="comment">//在修改页表之前清除和无效该进程的进程地址空间中所有的高速缓存页表项</span></span><br><span class="line">flush_icache_range(start, end)<span class="comment">//用于同步由虚拟地址 start 和 end 组成的区域的指令高速缓存与数据高速缓存的-致性</span></span><br><span class="line">flush_cache_page(vma, addr, pfin)<span class="comment">//用于清除由虚拟地址 addr 和页帧号 pfn 对应的高速缓存页表项</span></span><br><span class="line">flush_cache_range(vma, start, end)<span class="comment">//用于清除由虚拟地址 start 和 end 组成的区域中所有的高速缓存</span></span><br></pre></td></tr></tbody></table></figure>
+<h1 id="内存属性"><a class="markdownIt-Anchor" href="#内存属性"></a> 内存属性</h1>
+<p>ARMv8 架构处理器实现了弱一致性内存模型，在某些情况下，处理器在执行指令时不一定完全按照程序员编写的指令顺序来执行。处理器为了提高指令执行效率会乱序执行指令和预测指令。现代处理器为了提高系统吞吐率都会做如下优化。</p>
+<ul>
+<li>并发执行多条指令（multiple issue ofinstructions）。处理器可以在一个时钟周期内发射和执行多条指令。</li>
+<li>乱序执行（out of order execution）。处理器可以乱序执行没有依赖关系的指令。</li>
+<li>预测执行（speculation）。处理器在遇到一个条件判断时会预测将来可能发生的情况并且提前执行分支代码。</li>
+<li>预测加载。若可以预测一个加载指令，那么高速缓存就可以提前把数据预取到高速缓存行中，从而提高效率。</li>
+<li>加载和存储优化。读写外部内存是一个耗时的操作，处理器应该尽量减少读写次数，如处理器将多次访问内存的操作合并为一次传输，这样可以提高系统效率。</li>
+</ul>
+<p>在一个单核处理器系统中，指令乱序和并发执行对于程序员来说是透明的，因为处理器会处理这些数据依赖关系。但是，在多核处理器系统中，多个处理器内核同时访问共享数据或内存时，与处理器相关的乱序和预测执行等优化手段就可能会对程序造成意想不到的麻烦。因此，了解内存属性和内存屏障就显得非常重要。</p>
+<h2 id="内存属性-2"><a class="markdownIt-Anchor" href="#内存属性-2"></a> 内存属性</h2>
+<h3 id="普通内存"><a class="markdownIt-Anchor" href="#普通内存"></a> 普通内存</h3>
+<p>普通内存是弱一致性的（weakly ordered），没有额外的约束，可以提供最高的内存访问性能。通常代码段、数据段以及其他数据都会放在普通内存中。普通内存可以让处理器做很多的优化，如分支预测、数据预取、高速缓存行预取和填充、乱序加载等硬件优化。</p>
+<h3 id="设备内存"><a class="markdownIt-Anchor" href="#设备内存"></a> 设备内存</h3>
+<p>处理器访问设备内存会有很多限制，如不能进行预测访问等。设备内存是严格按照指令顺序来执行的。ARMv8 架构定义了多种设备内存的属性：</p>
+<ul>
+<li>Device-nGnRnE</li>
+<li>Device-nGnRE</li>
+<li>Device-nGRE</li>
+<li>Device-GRE</li>
+</ul>
+<p>Device 后的字母是有特殊含义的。</p>
+<ul>
+<li>
+<p>G 和 nG：分别表示聚合（Gathering）与不聚合（non Gathering）。聚合表示在同一个内存属性的区域中允许把多次访问内存的操作合并成一次总线传输：</p>
+<ul>
+<li>若一个内存地址标记为“nG”，则会严格按照访问内存的次数和大小来访问内存，不会做合并优化</li>
+<li>若一个内存地址标记为“G”，则会做总线合并访问，如合并两个相邻的字节访问为一次多字节访问。若程序访问同一个内存地址两次，那么处理器只会访问内存一次，但是在第二次访问内存指令后返回相同的值。若这个内存区域标记为“nG”，那么处理器则会访问内存两次</li>
+</ul>
+</li>
+<li>
+<p>R 和 nR：分别表示指令重排（Re-ordering）与不重排（non Re-ordering）。</p>
+</li>
+<li>
+<p>E 和 nE：分别表示提前写应答（Early Write Acknowledgement）与不提前写应答 Early Write Acknowledgement）往外部设备写数据时，处理器先把数据写入写终 （write huffer）中，若使能了提前写应答，则数据到达写缓冲区时会发送写应答： 有使能提前写应答，则数据到达外设时才发送写应答。<br>
+Linux 内核中定义了如下几个内存属性。</p>
+</li>
+</ul>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> MT_NORMAL		    0</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT_NORMAL_TAGGED	1</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT_NORMAL_NC		2</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT_DEVICE_nGnRnE	3</span></span><br><span class="line"><span class="meta">#<span class="keyword">define</span> MT_DEVICE_nGnRE		4</span></span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>MT_DEVICE_nGnRnE：设备内存属性，不支持聚合操作，不支持指令重排，不支提前写应答</li>
+<li>MT_DEVICE_nGnRE：设备内存属性，不支持聚合操作，不支持指令重排，支持提写应答</li>
+<li>MT_DEVICE_GRE：设备内存属性，支持聚合操作，支持指令重排，支持提前写应</li>
+<li>MT_NORMAL_NC：普通内存属性，关闭高速缓存，其中 NC 是 Non-Cacheable 意思</li>
+<li>MT_NORMAL：普通内存属性</li>
+<li>MT_NORMAL_WT：普通内存属性，高速缓存的回写策略为直写（write through）策内存属性并没有存放在页表项中，而是存放在 MAIR_ELn （Memory Attribute IndirectRegister Eln）中。页表项中使用一个 3 位的索引值来查找 MAIR_ELn</li>
+</ul>
+<p>MAIR_ELn 分成 8 段，每一段都可以用于描述不同的内存属性。</p>
+<h2 id="高速缓存共享属性"><a class="markdownIt-Anchor" href="#高速缓存共享属性"></a> 高速缓存共享属性</h2>
+<p>普通内存可以设置高速缓存为可缓存的和不可缓存的。进一步地，我们可以设置高速缓为内部共享和外部共享的高速缓存。一个处理器系统中，除了处理器之外，还有其他的可以访问内存的硬件单元，这些硬件单元通常具有访问内存总线（bus master）的能力，如 DMA 设备、GPU 等，这些硬件单元可以称为处理器之外的观察点。在一个多核系统中，DMA 设备和 GPU 通过系统总线连接到 DDR 内存，而处理器也通过系统总线连接到 DDR 内存，它们都能同时通过系统总线访问到内存。</p>
+<ul>
+<li>如果一个内存区域被标记为“不可共享的”表示它只能被一个处理器访问，其他处理器不能访问这个内存区域。</li>
+<li>如果一个内存区域被标记为“内部共享的”，表示它可以被多个处理器访问和共享，但是系统中其他的访问内存的硬件单元就不能访问了，如 DMA 设备、GPU 等。</li>
+<li>如果一个内存区域被标记为“外部共享的”，表示系统中很多访问内存的单元（如 DMA 设备、GPU 等）都可以和处理器一样访问这个内存区域。</li>
+</ul>
+<h1 id="内存屏障"><a class="markdownIt-Anchor" href="#内存屏障"></a> 内存屏障</h1>
+<h2 id="内存屏障指令"><a class="markdownIt-Anchor" href="#内存屏障指令"></a> 内存屏障指令</h2>
+<p>ARMv8 指令集提供了 3 条内存屏障指令。</p>
+<ul>
+<li>数据存储屏障（Data Memory Barrier，DMB）指令：仅当所有在它前面的存储器访问操作都执行完毕后，才提交（commit）在它后面的访问指令。DMB 指令保证的是 DMB 指令之前的所有内存访问指令和 DMB 指令之后的所有内存访问指令的顺序。</li>
+<li>数据同步屏障（Data synchronization Barrier，DSB）指令：比 DMB 指令要严格一些，仅当所有在它前面的访问指令都执行完毕后，才会执行在它后面的指令，即任何指令都要等待 DSB 指令前面的访问指令完成。位于此指令前的所有缓存，如分支预测和 TLB 维护操作需全部完成。</li>
+<li>指令同步屏障（Instruction synchronization Barrier，ISB）指令：比 DMB 指令和 DSB 指令严格，刷新流水线（flush pipeline）和预取缓冲区后，才会从高速缓存或者内存中预取 ISB 指令之后的指令。ISB 指令通常用来保证上下文切换的效果，如 ASID 更改、TLB 维护操作和 C15 寄存器的修改等。</li>
+</ul>
+<p>DMB 指令和 DSB 指令还可以带参数，来指定内存屏障指令的顺序以及共享属性等信息。 内存屏障指令参数如下所示。</p>
+<ul>
+<li>
+<p>全系统共享：</p>
+<ul>
+<li>SY：内存读写指令</li>
+<li>ST：内存写指令</li>
+<li>LD：内存读指令</li>
+</ul>
+</li>
+<li>
+<p>内部共享：</p>
+<ul>
+<li>ISH：内存读写指令</li>
+<li>ISHST：内存写指令</li>
+<li>ISHLD：内存读指令</li>
+</ul>
+</li>
+<li>
+<p>不共享：</p>
+<ul>
+<li>NSH：内存读写指令</li>
+<li>NSHST：内存写指令</li>
+<li>NSHLD：内存读指令</li>
+</ul>
+</li>
+<li>
+<p>外部共享：</p>
+<ul>
+<li>OSH：内存读写指令</li>
+<li>OSHST：内存写指令</li>
+<li>OSHLD：内存读指令</li>
+</ul>
+</li>
+</ul>
+<h2 id="加载-获取屏障原语与存储-释放屏障原语"><a class="markdownIt-Anchor" href="#加载-获取屏障原语与存储-释放屏障原语"></a> 加载-获取屏障原语与存储-释放屏障原语</h2>
+<p>ARMv8 指令集还支持隐含内存屏障原语的加载和存储指令，这些内存屏障原语影响了加和存储指令的执行顺序，它们对执行顺序的影响是单方向的。</p>
+<ul>
+<li>获取（acquire）屏障原语：该屏障原语之后的读写操作不能重排到该屏障原语前面，通常该屏障原语和加载指令结合</li>
+<li>释放（release）屏障原语：该屏障原语之前的读写操作不能重排到该屏障原语后面通常该屏障原语和存储指令结合</li>
+<li>加载-获取（load-acquire）屏障原语：含有获取屏障原语的读操作，相当于单方向向后的屏障指令。所有加载-获取内存屏障指令后面的内存访问指令只能在加载-获取内存屏障指令执行后才能开始执行，并且被其他 CPU 观察到。普通的读和写操作可以向后越过该屏障指令，但是之后的读和写操作不能向前越过该屏障指令</li>
+<li>存储-释放（store-release）屏障原语：含有释放屏障原语的写操作，相当于单方向前的屏障指令。只有所有存储-释放屏障原语之前的指令完成了，才能执行存储-释屏障原语之后的指令，这样其他 CPU 可以观察到存储-释放屏障原语之前的指令已执行完。普通的读和写可以向前越过存储-释放屏障指令，但是之前的读和写操作不能向后越过存储-释放屏障指令</li>
+</ul>
+<p>加载-获取和存储-释放屏障指令相当于是单方向的半条 DMB 指令，而 DMB 指令相当于是全方向的栅障。任何读写操作都不能跨越该栅障。它们组合使用可以增强代码灵活性并提高执行效率。</p>
+<p>如图所示，加载-获取屏障指令和存储-释放屏障指令组成了一个临界区，这相当于一个栅栏。在加载-获取屏障指令之前的内存访问指令（如读指令 1 和写指令 1）可以挪到加载-获取屏障指令后面执行，但是不能向前越过存储-释放屏障指令。而存储-释放屏障指令后面的内存访问指令（如读指令 2 和写指令 2）不能向前穿越过加载-获取屏障指令。在临界区中的内存不能越过临界区，如读指令 2 必须在加载-获取屏障指令后开始执行；如读指令 2 和写指令 2 必须在存储-释放屏障指令之前完成，即保证其他 CPU 在存储-释放屏障指令执行完成时能观察到读指令 1 和写指令 1、读指令 2 和写指令 2 已经完成。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/mem_barrier.png" alt=""></p>
+<p>ARM64 指令集中提供了如下指令。</p>
+<ul>
+<li>LDAR 和 STLR 指令：用于加载和存储</li>
+<li>CAS 指令：用于比较和交换</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly9hcm12OC1yZWYuY29kaW5nYmVsaWVmLmNvbS96aC9jaGFwdGVyX2Q0L2Q0M18zX21lbW9yeV9hdHRyaWJ1dGVfZmllbGRzX2luX3RoZV92bXNhdjgtNjRfdHJhbnNsYXRpb25fdGFibGVfZm9ybWF0c19kZXNjcmlwdG9ycy5odG1s">https://armv8-ref.codingbelief.com/zh/chapter_d4/d43_3_memory_attribute_fields_in_the_vmsav8-64_translation_table_formats_descriptors.html<i class="fa fa-external-link-alt"></i></span><br>
+《奔跑吧 Linux 内核》</p>
+<p>[[LinuxMemoryKSM]]<br>
+[[LinuxMemoryslab]]<br>
+[[LinuxMemoryDebug]]<br>
+[[LinuxMemoryCache]]<br>
+[[LinuxMemoryBasic]]<br>
+[[LinuxMemorymigrate]]<br>
+[[LinuxMemoryPageMngr]]<br>
+[[LinuxMemoryARM64linux]]<br>
+[[LinuxMemoryPageRecycle]]<br>
+[[LinuxMemoryProcessSpace]]<br>
+[[LinuxMemoryPageAllocate]]<br>
+[[Blog/LinuxKernel/LinuxMemoryOptimization|LinuxMemoryOptimization]]</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
+              <a href="/tags/Memory/" rel="tag"><i class="fa fa-tag"></i> Memory</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/LinuxKernel/LinuxMemoryCache/" rel="prev" title="Linux 内存管理（一）Cache">
+                  <i class="fa fa-angle-left"></i> Linux 内存管理（一）Cache
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/LinuxKernel/LinuxMemoryBasic/" rel="next" title="Linux 内存管理（三）物理地址管理">
+                  Linux 内存管理（三）物理地址管理 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxKernel/LinuxMemoryARM64linux/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

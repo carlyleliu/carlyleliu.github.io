@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。 核心层：承上">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 驱动之 Input 子系统">
+<meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxDriverInput/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="概述 按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：   驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。 核心层：承上">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/input.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Input_Struct.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxTS1.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxTS2.png">
+<meta property="article:published_time" content="2020-09-30T04:00:55.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.012Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Driver">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/input.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/LinuxDriver/LinuxDriverInput/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxDriver/LinuxDriverInput/","path":"LinuxDriver/LinuxDriverInput/","title":"Linux 驱动之 Input 子系统"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 驱动之 Input 子系统 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#input_dev-%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text"> input_dev 注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input_handler-%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text"> input_handler 的注册流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#input_handle-%E7%9A%84%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="nav-text"> input_handle 的注册流程</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%B8%AA%E5%AE%8C%E6%95%B4%E7%9A%84%E4%BA%8B%E4%BB%B6%E4%B8%8A%E6%8A%A5%E6%B5%81%E7%A8%8B"><span class="nav-text"> 一个完整的事件上报流程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BA%94%E7%94%A8%E6%89%93%E5%BC%80%E5%B9%B6%E8%AF%BB%E8%AE%BE%E5%A4%87"><span class="nav-text"> 应用打开并读设备</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BA%8B%E4%BB%B6%E4%BA%A7%E7%94%9F%E4%B8%8A%E6%8A%A5%E6%95%B0%E6%8D%AE"><span class="nav-text"> 事件产生上报数据</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#input-tools"><span class="nav-text"> Input Tools</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#getevent-%E5%91%BD%E4%BB%A4"><span class="nav-text"> getevent 命令</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#tslib-%E8%B0%83%E8%AF%95%E5%B7%A5%E5%85%B7"><span class="nav-text"> tslib 调试工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE-tslib"><span class="nav-text"> 配置 tslib</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6"><span class="nav-text"> 插件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#ts_calibrate-%E8%A7%A6%E6%91%B8%E5%B1%8F%E6%A0%A1%E5%87%86%E5%B7%A5%E5%85%B7"><span class="nav-text"> ts_calibrate 触摸屏校准工具</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text"> 总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxDriver/LinuxDriverInput/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 驱动之 Input 子系统 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 驱动之 Input 子系统
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/Driver/" itemprop="url" rel="index"><span itemprop="name">Driver</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/LinuxDriver/LinuxDriverInput/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/LinuxDriver/LinuxDriverInput/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2.6k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>9 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
+<p>按键输入、键盘、鼠标、触摸屏等等这些都属于输入设备，按键和键盘就是代表按键信息，鼠标和触摸屏代表坐标信息，因此在应用层的处理就不同。为此 input 子系统分为 input 驱动层、 input 核心层、 input 事件处理层，最终给用户空间提供可访问的设备节点，input 子系统框架如图 所示：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/input.png" alt=""></p>
+<ul>
+<li>驱动层：输入设备的具体驱动程序，比如按键驱动程序，向内核层报告输入内容。</li>
+<li>核心层：承上启下，为驱动层提供输入设备注册和操作接口。通知事件层对输入事件进行处理。</li>
+<li>事件层：主要和用户空间进行交互。</li>
+</ul>
+<span id="more"></span>
+<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
+<p>Input 子系统实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1NWY2ZTVlMGIzNGQwOTEyMzViN2U1">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Input_Struct.png" alt=""></p>
+<ul>
+<li>
+<p>input_dev:<br>
+input_dev 结构体用于描述一个 input 设备，例如按键、鼠标、键盘等，我们编写设备驱动主要就是构造这个结构体。该结构体包含设备类型，消息类型，事件 code 等信息。该数据结构在内核里会挂载到一个全局链表 input_dev_list，所有注册的 input 设备都会挂载到该链表中</p>
+</li>
+<li>
+<p>input_handler:<br>
+input_handler 用于表示一个 input 事件，用于上报 input 事件，系统中所有注册的 input_handler 也会挂载到一个全局链表 input_handler_list 中。input_handler 可以类比设备驱动模型中 driver 方法，用于驱动 device，这里 input_handler 用于处理 input_dev 设备产生的事件。input_dev 和 input_handler 之间也是通过一种匹配规则来进行匹配建立联系，当 input_dev 注册的时候会遍历 input_handler_list 链表，通过 id_table 或 input_handler 的 match 方法进行匹配，匹配成功后两者之间会建立联系。同样对于 input_handler 的注册也是一样，当一个 input_handler 注册时会遍历 input_dev_list 链表，当两个结构体满足匹配关系时则建立联系</p>
+</li>
+<li>
+<p>input_handle:<br>
+在上面的介绍中当 input_handler 和 input_dev 匹配成功后会建立联系，这个联系就是通过该结构体来建立的。当 input_dev 和 input_handler 匹配成功后会创建一个 evdev 结构体，evdev 结构体下有一个 input_handle 结构体，input_handle 结构体会指向匹配成功的 input_dev 和 input_handler，而且将自己挂载到 input_dev 和 input_handler 结构体中</p>
+</li>
+<li>
+<p>evdev_client:<br>
+evdev_client 结构体表示一个 input 客户，也就是 app 用户会使用 input_dev，那么这个 app 用户就用 evdev_client 结构体来描述，可以看到，该结构体挂载在 evdev 结构体下，且是以链表的形式组织，也就说明一个 input 设备可以被多个 client 打开使用</p>
+</li>
+<li>
+<p>evdev:<br>
+通过对 input_handler 和 evdev_client 的介绍其实也就已经将 evdev 介绍完了，evdev_client 使用设备，那么需要知道使用的是哪个设备 input_dev 以及如何驱动这个设备 input_handler，这都是通过 input_handler 结构体完成的。evdev 是将 input 设备，input 设备的驱动方法和用户 client 联系起来的一个结构体</p>
+</li>
+</ul>
+<p>通过对 input 结构体的介绍，其实我们就已经大致了解了驱动的整体框架。其实跟设备模型中 device 和 device_driver 之间的关系很像，device 和 driver 之间有一个匹配规则，当匹配成功后，两者之间建立联系，完成驱动设备的功能。但是为什么这里不直接使用设备驱动模型呢，不理解。</p>
+<h1 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h1>
+<p>input 驱动的实现无非就是 input_dev、input_handler 的注册等流程，下面一个个看下具体相关流程吧：</p>
+<h2 id="input_dev-注册流程"><a class="markdownIt-Anchor" href="#input_dev-注册流程"></a> input_dev 注册流程</h2>
+<p>input_register_device 函数用于注册一个 input_dev 设备：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">input_register_device</span><span class="params">(<span class="keyword">struct</span> input_dev *dev)</span></span><br></pre></td></tr></tbody></table></figure>
+<p>该函数主要完成以下工作：</p>
+<pre><code>1、为 input_dev 创建 struct device 类型的变量，并设置其所属的 class 为 input_class，并调用 device_add 完成 device 类型变量的注册，至此完成 strcut device 类型变量注册至 input_class 中，且完成了 input_dev 对应的 sysfs 属性文件的创建。 
+2、将该 input_device 注册至 input_dev_list。
+3、遍历 input_handler_list 链表，针对 input_handler_list 上每一个 input_handler，均与注册的 input_device 进行匹配检测，若匹配检测成功，则调用  input_handler-&gt;connect 接口，进行 input_handler 与 input_device 的绑定（通过调用 input_register_handle 实现，也可以理解为在 input_handler、input_device 上 完成 input_handler、input_device 的事件消息的订阅操作）。因 input_handler 和 input_device 可实现多对多的绑定，因此，会遍历 input_handler_list 链表上所有已注册的 input_handler，而不是检测到一个 input_handler 的匹配即返回。
+</code></pre>
+<h2 id="input_handler-的注册流程"><a class="markdownIt-Anchor" href="#input_handler-的注册流程"></a> input_handler 的注册流程</h2>
+<p>input_handler 的注册函数是 input_register_handler：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">input_register_handler</span><span class="params">(<span class="keyword">struct</span> input_handler *handler)</span></span><br></pre></td></tr></tbody></table></figure>
+<p>该函数主要完成以下工作：</p>
+<pre><code>1、将该 input_device 注册至 input_handler_list      
+2、遍历 input_dev_list 链表，针对 input_dev_list 上每一个 input_dev，均与注册的 input_device 进行匹配检测，若匹配检测成功，则调用 input_handler-&gt;connect 接口，进行 input_handler 与 input_device 的绑定（通过调用 input_register_handle 实现，也可以理解为在 input_handler、input_device 上完成 input_handler、input_device 的事件消息的订阅操作）。因 input_handler 和 input_device 可实现多对多的绑定，因此，会遍历 input_dev_list 链表上所有已注册的 input_dev，而不是检测到一个 input_dev 的匹配即返回
+</code></pre>
+<h2 id="input_handle-的注册流程"><a class="markdownIt-Anchor" href="#input_handle-的注册流程"></a> input_handle 的注册流程</h2>
+<p>input_handle 的注册函数是 input_register_handle：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">input_register_handle</span><span class="params">(<span class="keyword">struct</span> input_handle *handle)</span></span><br></pre></td></tr></tbody></table></figure>
+<p>该函数主要完成以下工作：</p>
+<pre><code>1、 完成 input_handle 与 input_handler 的关联
+2、完成 input_handle 与 input_dev 的关联
+</code></pre>
+<h1 id="一个完整的事件上报流程"><a class="markdownIt-Anchor" href="#一个完整的事件上报流程"></a> 一个完整的事件上报流程</h1>
+<h2 id="应用打开并读设备"><a class="markdownIt-Anchor" href="#应用打开并读设备"></a> 应用打开并读设备</h2>
+<p>当应用打开一个 input 设备时会通过 vfs 调用到驱动程序的 file_operations, 对于 input 设备就是 evdev.c 下的：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">evdev_fops</span> =</span> {</span><br><span class="line">	.owner		= THIS_MODULE,</span><br><span class="line">	.read		= evdev_read,</span><br><span class="line">	.write		= evdev_write,</span><br><span class="line">	.poll		= evdev_poll,</span><br><span class="line">	.open		= evdev_open,</span><br><span class="line">	.release	= evdev_release,</span><br><span class="line">	.unlocked_ioctl	= evdev_ioctl,</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> CONFIG_COMPAT</span></span><br><span class="line">	.compat_ioctl	= evdev_ioctl_compat,</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	.fasync		= evdev_fasync,</span><br><span class="line">	.llseek		= no_llseek,</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>这个就是 input_dev 注册的时候会向系统注册的字符设备，该字符设备的注册时机是什么时候呢，先来看下 input_handle 的初始化。</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">input_handler</span> <span class="title">evdev_handler</span> =</span> {</span><br><span class="line">	.event		= evdev_event,</span><br><span class="line">	.events		= evdev_events,</span><br><span class="line">	.connect	= evdev_connect,</span><br><span class="line">	.disconnect	= evdev_disconnect,</span><br><span class="line">	.legacy_minors	= <span class="literal">true</span>,</span><br><span class="line">	.minor		= EVDEV_MINOR_BASE,</span><br><span class="line">	.name		= <span class="string">"evdev"</span>,</span><br><span class="line">	.id_table	= evdev_ids,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">int</span> __init <span class="title function_">evdev_init</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	<span class="keyword">return</span> input_register_handler(&amp;evdev_handler);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">static</span> <span class="type">void</span> __exit <span class="title function_">evdev_exit</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">{</span><br><span class="line">	input_unregister_handler(&amp;evdev_handler);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>evdev_handler 里面的成员 connect 的指针指向 evdev_connect，当 input_dev 和 input_handler 匹配成功后就会调用 connect，函数，而 evdev_connect 里面会调用</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">cdev_init(&amp;evdev-&gt;cdev, &amp;evdev_fops);</span><br><span class="line"></span><br><span class="line">cdev_device_add(&amp;evdev-&gt;cdev, &amp;evdev-&gt;dev);</span><br><span class="line">...</span><br></pre></td></tr></tbody></table></figure>
+<p>evdev_fops 就是上面那个 file_operations。然后应用调用 open 就会调用驱动的 evdev_open 函数，应用调用 read 就会调用驱动的 evdev_read 函数，下面说明下 open 和 read 函数主要的工作：<br>
+evdev_open 的工作：</p>
+<pre><code>1、 创建并分配一个 evdev_client 结构体   
+2、 将 evdev_client 放入 evdev 的链表中   
+</code></pre>
+<p>evdev_read 的工作：</p>
+<pre><code>如果没有数据等待休眠，调用 wait_event_interruptible 函数，将当前工作挂载在 evdev_client 的 wait 等待队列中
+</code></pre>
+<h2 id="事件产生上报数据"><a class="markdownIt-Anchor" href="#事件产生上报数据"></a> 事件产生上报数据</h2>
+<p>一般采用中断方式处理外部事件，当按键或其他输入事件发生时，产生中断，执行中断服务程序，中断服务程序一般主要就是干两件事，读取数据和上报数据，对于读取数据没什么好说的，下面看下上报数据流程：上报数据通过 input core 层提供的 input_event 函数完成，函数如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">input_event</span><span class="params">(<span class="keyword">struct</span> input_dev *dev,</span></span><br><span class="line"><span class="params">		 <span class="type">unsigned</span> <span class="type">int</span> type, <span class="type">unsigned</span> <span class="type">int</span> code, <span class="type">int</span> value)</span></span><br><span class="line">{</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span> flags;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (is_event_supported(type, dev-&gt;evbit, EV_MAX)) {</span><br><span class="line"></span><br><span class="line">		spin_lock_irqsave(&amp;dev-&gt;event_lock, flags);</span><br><span class="line">		input_handle_event(dev, type, code, value);</span><br><span class="line">		spin_unlock_irqrestore(&amp;dev-&gt;event_lock, flags);</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>函数调用流程如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">input_event()</span><br><span class="line">    --&gt;input_handle_event()</span><br><span class="line">        --&gt;input_pass_values()</span><br><span class="line">            --&gt;input_to_handler()</span><br></pre></td></tr></tbody></table></figure>
+<p>input_to_handler 函数如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">unsigned</span> <span class="type">int</span> <span class="title function_">input_to_handler</span><span class="params">(<span class="keyword">struct</span> input_handle *handle,</span></span><br><span class="line"><span class="params">			<span class="keyword">struct</span> input_value *vals, <span class="type">unsigned</span> <span class="type">int</span> count)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">input_handler</span> *<span class="title">handler</span> =</span> handle-&gt;handler;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">input_value</span> *<span class="title">end</span> =</span> vals;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">input_value</span> *<span class="title">v</span>;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 1、 使用 filter 过滤事件 */</span></span><br><span class="line">	<span class="keyword">if</span> (handler-&gt;filter) {</span><br><span class="line">		<span class="keyword">for</span> (v = vals; v != vals + count; v++) {</span><br><span class="line">			<span class="keyword">if</span> (handler-&gt;filter(handle, v-&gt;type, v-&gt;code, v-&gt;value))</span><br><span class="line">				<span class="keyword">continue</span>;</span><br><span class="line">			<span class="keyword">if</span> (end != v)</span><br><span class="line">				*end = *v;</span><br><span class="line">			end++;</span><br><span class="line">		}</span><br><span class="line">		count = end - vals;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!count)</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/* 2、调用 handler 的 events 处理多个事件或者调用 event 一个一个处理事件 */</span></span><br><span class="line">	<span class="keyword">if</span> (handler-&gt;events)</span><br><span class="line">		handler-&gt;events(handle, vals, count);</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (handler-&gt;event)</span><br><span class="line">		<span class="keyword">for</span> (v = vals; v != vals + count; v++)</span><br><span class="line">			handler-&gt;event(handle, v-&gt;type, v-&gt;code, v-&gt;value);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> count;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>以 evdev 为例，在上面的 evdev_handler 中提供了 events 函数 evdev_handler，该函数调用流程如下：</p>
+<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">evdev_events()</span><br><span class="line">    --&gt;evdev_pass_values()</span><br><span class="line">        --&gt;__pass_event()</span><br><span class="line">        --&gt;wake_up_interruptible_poll(&amp;client-&gt;wait,</span><br><span class="line">			EPOLLIN | EPOLLOUT | EPOLLRDNORM | EPOLLWRNORM);</span><br></pre></td></tr></tbody></table></figure>
+<p>__pass_event 函数将读取的事件传递给 client 结构体，wake_up_interruptible_poll 将应用程序唤醒（前面提到读取数据的时候如果没有数据就休眠）。</p>
+<h1 id="input-tools"><a class="markdownIt-Anchor" href="#input-tools"></a> Input Tools</h1>
+<h2 id="getevent-命令"><a class="markdownIt-Anchor" href="#getevent-命令"></a> getevent 命令</h2>
+<p>getevent 指令用于获取 input 输入事件，比如获取按键上报信息、获取触摸屏上报信息等。<br>
+getevent -h：查看 getevent 帮助信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">root@rk3288:/ <span class="comment"># getevent -h</span></span><br><span class="line">getevent -h</span><br><span class="line">Usage: getevent [-t] [-n] [-s switchmask] [-S] [-v [mask]] [-d] [-p] [-i] [-l] [-q] [-c count] [-r] [device]</span><br><span class="line">    -t: show time stamps</span><br><span class="line">    -n: don<span class="string">'t print newlines</span></span><br><span class="line"><span class="string">    -s: print switch states for given bits</span></span><br><span class="line"><span class="string">    -S: print all switch states</span></span><br><span class="line"><span class="string">    -v: verbosity mask (errs=1, dev=2, name=4, info=8, vers=16, pos. events=32, props=64)</span></span><br><span class="line"><span class="string">    -d: show HID descriptor, if available</span></span><br><span class="line"><span class="string">    -p: show possible events (errs, dev, name, pos. events)</span></span><br><span class="line"><span class="string">    -i: show all device info and possible events</span></span><br><span class="line"><span class="string">    -l: label event types and names in plain text</span></span><br><span class="line"><span class="string">    -q: quiet (clear verbosity mask)</span></span><br><span class="line"><span class="string">    -c: print given number of events then exit</span></span><br><span class="line"><span class="string">    -r: print rate events are received</span></span><br></pre></td></tr></tbody></table></figure>
+<ul>
+<li>-t：显示时间戳</li>
+<li>-n：不换行打印</li>
+<li>-s：显示指定位的开关状态</li>
+<li>-v：根据 mask 值显示相关信息，执行后会一直显示上报数据</li>
+<li>-d：如果设备可用，显示设备隐藏的描述信息</li>
+<li>-p：显示设备支持的事件类型和编码方式</li>
+<li>-i：显示设备的所有信息和支持的事件，比 -p 显示更多信息</li>
+<li>-l：以文本形式输出事件类型和名称，比 -t 更清楚直观</li>
+<li>-c：打印固定数量的事件并退出</li>
+<li>-r：显示事件上报速率</li>
+</ul>
+<p>参数可以组合使用，一次性查看需要的触摸屏信息：</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">root@rk3288:/ <span class="comment"># getevent -tlr /dev/input/event3</span></span><br><span class="line">getevent -tlr /dev/input/event3</span><br><span class="line">[    2514.550104] EV_ABS       ABS_MT_TRACKING_ID   0000001c</span><br><span class="line">[    2514.550104] EV_ABS       ABS_MT_POSITION_X    00002dac</span><br><span class="line">[    2514.550104] EV_ABS       ABS_MT_POSITION_Y    000018ca</span><br><span class="line">[    2514.550104] EV_KEY       BTN_TOUCH            DOWN</span><br><span class="line">[    2514.550104] EV_ABS       ABS_X                00002dac</span><br><span class="line">[    2514.550104] EV_ABS       ABS_Y                000018ca</span><br><span class="line">[    2514.550104] EV_SYN       SYN_REPORT           00000000             rate 0</span><br><span class="line">[    2514.638845] EV_ABS       ABS_MT_TRACKING_ID   ffffffff</span><br><span class="line">[    2514.638845] EV_KEY       BTN_TOUCH            UP</span><br><span class="line">[    2514.638845] EV_SYN       SYN_REPORT           00000000             rate 11</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="tslib-调试工具"><a class="markdownIt-Anchor" href="#tslib-调试工具"></a> tslib 调试工具</h2>
+<h3 id="配置-tslib"><a class="markdownIt-Anchor" href="#配置-tslib"></a> 配置 tslib</h3>
+<p>配置文件/etc/ts.conf。触摸模块从上到下加载。每一行指定一个模块及其参数，模块按顺序处理。在顶部使用一个 module_raw，访问您的设备，然后是过滤器模块的任意组合。</p>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Uncomment if you wish to use the one-wire linux input layer S70/A70...</span></span><br><span class="line"><span class="comment"># module_raw one_wire_ts_input</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you wish to use the linux input layer event interface</span></span><br><span class="line">module_raw input</span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a Sharp Zaurus SL-5500/SL-5000d</span></span><br><span class="line"><span class="comment"># module_raw collie</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a Sharp Zaurus SL-C700/C750/C760/C860</span></span><br><span class="line"><span class="comment"># module_raw corgi</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a device with a UCB1200/1300/1400 TS interface</span></span><br><span class="line"><span class="comment"># module_raw ucb1x00</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using an HP iPaq h3600 or similar</span></span><br><span class="line"><span class="comment"># module_raw h3600</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using a Hitachi Webpad</span></span><br><span class="line"><span class="comment"># module_raw mk712</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Uncomment if you're using an IBM Arctic II</span></span><br><span class="line"><span class="comment"># module_raw arctic2</span></span><br><span class="line"></span><br><span class="line">module pthres pmin=1</span><br><span class="line">module variance delta=30</span><br><span class="line">module dejitter delta=100</span><br><span class="line">module linea</span><br></pre></td></tr></tbody></table></figure>
+<h3 id="插件"><a class="markdownIt-Anchor" href="#插件"></a> 插件</h3>
+<ul>
+<li>pthres 压力阈值过滤器</li>
+<li>variance 方差过滤器。尽最大努力滤除来自触摸屏 ADC 的随机噪声</li>
+<li>dejitter 消除 X 和 Y 坐标上的抖动</li>
+<li>debounce 简单的去抖动机制，在触摸手势停止后的指定时间内丢弃输入事件</li>
+<li>skip nhead 按下后跳过样品，ntail 释放前跳过样品</li>
+<li>lowpass 简单的低通指数平均滤波模块</li>
+<li>linear 线性缩放 - 校准 - 模块，主要用于将触摸屏坐标转换为屏幕坐标</li>
+<li>invert 围绕给定值在 X /Y 方向反转值</li>
+<li>median 中值滤波器减少样本坐标值中的噪声。它能够过滤信号中不需要的单个大跳跃</li>
+<li>iir 无限脉冲响应滤波器</li>
+<li>tslib 从触摸屏驱动采样到的设备坐标进行处理再提供给应用端的过程大体如下</li>
+</ul>
+<p>raw device --&gt; variance --&gt; dejitter --&gt; linear --&gt; application</p>
+<h3 id="ts_calibrate-触摸屏校准工具"><a class="markdownIt-Anchor" href="#ts_calibrate-触摸屏校准工具"></a> ts_calibrate 触摸屏校准工具</h3>
+<p>校准由 linear 插件完成，它使用自己的配置文件 /etc/pointercal。不要手动编辑此文件。它是由 ts_calibrate 程序创建的 ：</p>
+<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxTS1.png" alt=""></p>
+<p>测试过滤后的输入行为。</p>
+<p>您可以使用以下命令快速测试由配置的过滤器产生的触摸行为 ts_test_mt：<br>
+ts_test_mt：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Note/LinuxTS2.png" alt=""></p>
+<h1 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h1>
+<ul>
+<li>应用 open 一个 input 设备，通过 vfs 调用到驱动字符设备的 open 函数，该函数创建构造一个 evdev_client 结构体并将该结构体放入打开的 input 设备的 evdev 结构体链表中</li>
+<li>应用 read 读取一个 input 设备，通过 vfs 调用到驱动的字符设备 read 函数，如果没有数据就休眠</li>
+<li>事件发生产生中断，在中断函数里读取数据并上报事件，上报事件流程是通过 input_dev 结构体找到驱动该结构体的 input_handler 结构体，然后调用 input_handler 结构体的 events 函数，在 events 函数里，主要干两件事，一是将外部事件传递给 evdev_client 结构体，二是将应用程序唤醒</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
+<p><span class="exturl" data-url="aHR0cHM6Ly9sZDI0Ni5jb20vYXJ0aWNsZS8xNTk4MDkzMjM3MjM1">https://ld246.com/article/1598093237235<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vZGVuZy10YW8vcC82MDk0MDQ5Lmh0bWw=">https://www.cnblogs.com/deng-tao/p/6094049.html<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDY0NDkxMDQ/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/106449104?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
+《韦东山老师相关课程和文档》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/LinuxDriver/LinuxDriverRegmap/" rel="prev" title="Linux 驱动之 Regmap 子系统">
+                  <i class="fa fa-angle-left"></i> Linux 驱动之 Regmap 子系统
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/LinuxDriver/LinuxDriverCCF/" rel="next" title="Linux 驱动之 CCF 子系统">
+                  Linux 驱动之 CCF 子系统 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxDriver/LinuxDriverInput/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
+  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="IIC 协议  写操作 流程如下：  主芯片要发出一个 start 信号 然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读&#x2F;写，0 表示写，1 表示读） 从设备回应（用来确定这个设备是否存在），然后就可以传输数据 主设备发送一个字节数据给从设备，并等待回应 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据 数据发送完之后，主芯片就会发送一个停止">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux 驱动之 IIC 子系统">
+<meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxDriverIIC/index.html">
+<meta property="og:site_name" content="Matrix">
+<meta property="og:description" content="IIC 协议  写操作 流程如下：  主芯片要发出一个 start 信号 然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读&#x2F;写，0 表示写，1 表示读） 从设备回应（用来确定这个设备是否存在），然后就可以传输数据 主设备发送一个字节数据给从设备，并等待回应 每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据 数据发送完之后，主芯片就会发送一个停止">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/007_i2c_write.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/008_i2c_read.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/009_i2c_signal.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/010_i2c_signal_internal.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/011_true_value_table.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/001_i2c_hardware_block.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_Struct.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterAdapt.png">
+<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterDriver.png">
+<meta property="article:published_time" content="2020-08-29T08:27:44.000Z">
+<meta property="article:modified_time" content="2025-09-30T16:37:09.012Z">
+<meta property="article:author" content="CarlyleLiu">
+<meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Driver">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/007_i2c_write.png">
+
+
+<link rel="canonical" href="https://carlyleliu.github.io/LinuxDriver/LinuxDriverIIC/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxDriver/LinuxDriverIIC/","path":"LinuxDriver/LinuxDriverIIC/","title":"Linux 驱动之 IIC 子系统"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Linux 驱动之 IIC 子系统 | Matrix</title>
+  
+
+
+
+
+
+
+
+<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Matrix</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#iic-%E5%8D%8F%E8%AE%AE"><span class="nav-text"> IIC 协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%86%99%E6%93%8D%E4%BD%9C"><span class="nav-text"> 写操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%BB%E6%93%8D%E4%BD%9C"><span class="nav-text"> 读操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#iic-%E4%BF%A1%E5%8F%B7"><span class="nav-text"> IIC 信号</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 硬件实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A1%AC%E4%BB%B6%E6%8B%93%E6%89%91"><span class="nav-text"> 硬件拓扑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#smbus-%E5%8D%8F%E8%AE%AE"><span class="nav-text"> SMBus 协议</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90"><span class="nav-text"> 流程分析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#i2c-tools"><span class="nav-text"> I2C tools</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E5%B7%A5%E5%85%B7-i2c_tools"><span class="nav-text"> 选择工具 i2c_tools</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%B3%95"><span class="nav-text"> 用法</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献：</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
+  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">214</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">29</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">43</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
+      </span>
+      <span class="links-of-author-item">
+        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
+  </div>
+
+        </div>
+      </div>
+    </div>
+
+    
+        <div class="pjax">
+        </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxDriver/LinuxDriverIIC/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Linux 驱动之 IIC 子系统 | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Linux 驱动之 IIC 子系统
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Linux/Driver/" itemprop="url" rel="index"><span itemprop="name">Driver</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/LinuxDriver/LinuxDriverIIC/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/LinuxDriver/LinuxDriverIIC/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>1.6k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>6 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><h1 id="iic-协议"><a class="markdownIt-Anchor" href="#iic-协议"></a> IIC 协议</h1>
+<h2 id="写操作"><a class="markdownIt-Anchor" href="#写操作"></a> 写操作</h2>
+<p>流程如下：</p>
+<ul>
+<li>主芯片要发出一个 start 信号</li>
+<li>然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读/写，0 表示写，1 表示读）</li>
+<li>从设备回应（用来确定这个设备是否存在），然后就可以传输数据</li>
+<li>主设备发送一个字节数据给从设备，并等待回应</li>
+<li>每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据</li>
+<li>数据发送完之后，主芯片就会发送一个停止信号</li>
+</ul>
+<p>下图：白色背景表示"主→从"，灰色背景表示"从→主"<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/007_i2c_write.png" alt=""></p>
+<span id="more"></span>
+<h2 id="读操作"><a class="markdownIt-Anchor" href="#读操作"></a> 读操作</h2>
+<p>流程如下：</p>
+<ul>
+<li>主芯片要发出一个 start 信号</li>
+<li>然后发出一个设备地址（用来确定是往哪一个芯片写数据），方向（读/写，0 表示写，1 表示读）</li>
+<li>从设备回应（用来确定这个设备是否存在），然后就可以传输数据</li>
+<li>从设备发送一个字节数据给主设备，并等待回应</li>
+<li>每传输一字节数据，接收方要有一个回应信号（确定数据是否接受完成），然后再传输下一个数据</li>
+<li>数据发送完之后，主芯片就会发送一个停止信号</li>
+</ul>
+<p>下图：白色背景表示"主→从"，灰色背景表示"从→主"<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/008_i2c_read.png" alt=""></p>
+<h2 id="iic-信号"><a class="markdownIt-Anchor" href="#iic-信号"></a> IIC 信号</h2>
+<p>IIC 协议中数据传输的单位是字节，也就是 8 位。但是要用到 9 个时钟：前面 8 个时钟用来传输 8 数据，第 9 个时钟用来传输回应信号。传输时，先传输最高位 (MSB)。</p>
+<ul>
+<li>开始信号（S）：SCL 为高电平时，SDA 从高电平向低电平跳变，开始传送数据</li>
+<li>结束信号（P）：SCL 为高电平时，SDA 由低电平向高电平跳变，结束传送数据</li>
+<li>响应信号 (ACK)：接收器在接收到 8 位数据后，在第 9 个时钟周期，拉低 SDA</li>
+<li>SDA 上传输的数据必须在 SCL 为高电平期间保持稳定，SDA 上的数据只能在 SCL 为低电平期间变化</li>
+</ul>
+<p>IIC 协议信号如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/009_i2c_signal.png" alt=""></p>
+<h2 id="硬件实现"><a class="markdownIt-Anchor" href="#硬件实现"></a> 硬件实现</h2>
+<p>scl 和 sda 管脚都采用开漏输出的驱动方式，需要外接上拉电阻来输出高电平。<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/010_i2c_signal_internal.png" alt=""></p>
+<p>真值表如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/011_true_value_table.png" alt=""></p>
+<p>从真值表和电路图我们可以知道：</p>
+<ul>
+<li>当某一个芯片不想影响 SDA 线时，那就不驱动这个三极管</li>
+<li>想让 SDA 输出高电平，双方都不驱动三极管 (SDA 通过上拉电阻变为高电平）</li>
+<li>想让 SDA 输出低电平，就驱动三极管</li>
+</ul>
+<h2 id="硬件拓扑"><a class="markdownIt-Anchor" href="#硬件拓扑"></a> 硬件拓扑</h2>
+<p>soc 中的 iic 控制器与挂载在 iic 总线上的设备的拓扑图如下：<br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/001_i2c_hardware_block.png" alt=""></p>
+<h2 id="smbus-协议"><a class="markdownIt-Anchor" href="#smbus-协议"></a> SMBus 协议</h2>
+<p>SMBus 是基于 IIC 协议的，SMBus 要求更严格，SMBus 是 IIC 协议的子集，做了相关限制，例如 VDD 的极限值不一样、地址回应 (Address Acknowledge)、时钟频率等都有相关限制，这里不做过多说明。</p>
+<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
+<p>首先通过一张图来展示这些数据结构之间的关系，如下图：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjOTQ2Mzc2ODkyMWZhMjUwMWMx">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_Struct.png" alt=""></p>
+<ul>
+<li>
+<p>bus_type:<br>
+iic 是一个总线设备，linux 启动阶段会创建一个 iic 总线 i2c_bus_type，该总线用于管理 i2c_client 设备和 i2c_driver 驱动。该结构跟 linux 驱动之设备模型里的总线相同，这里实现了它自己的 match 和 probe 函数</p>
+</li>
+<li>
+<p>i2c_adapter:<br>
+每个 soc 内部都有自己的多个 iic 控制器，i2c_adapter 结构体就是用于描述 iic 控制器的结构体（就是 iic controler），结构体里的 nr 用于表述该控制器是第几个控制器例如 iic-0，iic-1 等。这里面有一个最重要的结构就是 i2c_algorithm，该结构是具体 controler 实际 iic 传输的实现，由具体的平台实现自己的 i2c_algorithm</p>
+</li>
+<li>
+<p>i2c_client:<br>
+一个 iic 下会挂载一个或多个设备，每个设备的信息由 i2c_client 结构体描述，例如设备地址等信息。该结构体还有一个指针指向 i2c_adapter，表示该设备挂载在哪个 iic controler 下以便在 iic 通信的时候通过 i2c_adapter 提供的 i2c_algorithm 提供的接口完成实际的数据传输</p>
+</li>
+<li>
+<p>i2c_driver:<br>
+iic 下挂载的设备例如 tp、温湿度传感器等设备的驱动由该数据结构来描述，这个是我们实际编写驱动中最常用的，通过 iic 驱动具体的挂载在 iic 总线上的设备。i2c_driver 跟 i2c_client 匹配成功后，就调用 i2c_driver.probe 函数</p>
+</li>
+<li>
+<p>i2c_msg:<br>
+有了 iic 设备和 iic 驱动了，iic 是通信总线，那就是要用来传输消息的，还有一个描述具体消息的结构体就是 i2c_msg，该结构体描述了消息方向，传输地址，消息长度以及消息本身内容</p>
+</li>
+</ul>
+<p>可以看到我们的 iic 驱动也是使用之前描述的设备驱动模型，bus 下挂载链条结构一个挂载设备一个挂载驱动通过总线提供的 match 函数进行匹配实现 device 找到 device_driver 或则 device_driver 找到要驱动的 device，然后在 match 成功后通过总线的 probe 函数调用到驱动的 probe 函数，实际驱动开发人员只需要填充 i2c_driver 结构体并将其注册到总线就可以了。区别在于 iic 总线是一个具体实实在在的总线，soc 内部有 iic 控制器，通过 i2c_adapter 描述提供统一的接口，i2c_driver 通过 i2c_adapter 提供的 iic 传输函数来操作 i2c_client 设备，这就是 iic 总线驱动的整体框架了。</p>
+<h1 id="流程分析"><a class="markdownIt-Anchor" href="#流程分析"></a> 流程分析</h1>
+<p>i2c_register_adapter 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjYjY2Mzc2ODkyMWZhMjUwMWUz">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterAdapt.png" alt=""></p>
+<p>这里面有一个函数 i2c_detect 需要注意，该函数会遍历总线下的每一个 i2c_driver 并调用 i2c_driver 的 detect 函数，具体的 i2c_driver 的 detect 函数由具体的驱动实现。</p>
+<p>i2c_register_driver 函数流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTRjZDM2Mzc2ODkyMWZhMjUwMjA0">原图<i class="fa fa-external-link-alt"></i></span><br>
+<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/IIC_RegisterDriver.png" alt=""></p>
+<p>i2c_driver 同 adapt 的注册有一些相同的流程，其中 detect 函数就是其中之一，注册 i2c_driver 的时候也会遍历 bus 下的 i2c_driver 并调用相应的 detect 函数。</p>
+<h1 id="i2c-tools"><a class="markdownIt-Anchor" href="#i2c-tools"></a> I2C tools</h1>
+<h2 id="选择工具-i2c_tools"><a class="markdownIt-Anchor" href="#选择工具-i2c_tools"></a> 选择工具 i2c_tools</h2>
+<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Utilities--&gt;</span><br><span class="line">		i2c-tools--&gt;</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="用法"><a class="markdownIt-Anchor" href="#用法"></a> 用法</h2>
+<ul>
+<li>
+<p>i2cdetect:</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cdetect [-y] [-a] [-q|-r] I2CBUS [FIRST LAST]</span><br><span class="line">       i2cdetect -F I2CBUS</span><br><span class="line">       i2cdetect -l</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  If provided, FIRST and LAST <span class="built_in">limit</span> the probing range.</span><br></pre></td></tr></tbody></table></figure>
+</li>
+<li>
+<p>i2cdump:</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cdump [-f] [-y] [-r first-last] I2CBUS ADDRESS [MODE [BANK [BANKREG]]]</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  ADDRESS is an <span class="built_in">integer</span> (0x03 - 0x77)</span><br><span class="line">  MODE is one of:</span><br><span class="line">    b (byte, default)</span><br><span class="line">    w (word)</span><br><span class="line">    W (word on even register addresses)</span><br><span class="line">    s (SMBus block)</span><br><span class="line">    i (I2C block)</span><br><span class="line">    c (consecutive byte)</span><br><span class="line">    Append p <span class="keyword">for</span> SMBus PEC</span><br></pre></td></tr></tbody></table></figure>
+</li>
+<li>
+<p>i2cget：</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cget [-f] [-y] I2CBUS CHIP-ADDRESS [DATA-ADDRESS [MODE]]</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  ADDRESS is an <span class="built_in">integer</span> (0x03 - 0x77)</span><br><span class="line">  MODE is one of:</span><br><span class="line">    b (<span class="built_in">read</span> byte data, default)</span><br><span class="line">    w (<span class="built_in">read</span> word data)</span><br><span class="line">    c (write byte/read byte)</span><br><span class="line">    Append p <span class="keyword">for</span> SMBus PEC</span><br></pre></td></tr></tbody></table></figure>
+</li>
+<li>
+<p>i2cset：</p>
+  <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Usage: i2cset [-f] [-y] [-m MASK] [-r] I2CBUS CHIP-ADDRESS DATA-ADDRESS [VALUE] ... [MODE]</span><br><span class="line">  I2CBUS is an <span class="built_in">integer</span> or an I2C bus name</span><br><span class="line">  ADDRESS is an <span class="built_in">integer</span> (0x03 - 0x77)</span><br><span class="line">  MODE is one of:</span><br><span class="line">    c (byte, no value)</span><br><span class="line">    b (byte data, default)</span><br><span class="line">    w (word data)</span><br><span class="line">    i (I2C block data)</span><br><span class="line">    s (SMBus block data)</span><br><span class="line">    Append p <span class="keyword">for</span> SMBus PEC</span><br></pre></td></tr></tbody></table></figure>
+</li>
+</ul>
+<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献：</h1>
+<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvc29ydC9jb21t">http://www.wowotech.net/sort/comm<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY25ibG9ncy5jb20vbGtubGZ5L3AvMzI2NTEwOC5odG1s">https://www.cnblogs.com/lknlfy/p/3265108.html<i class="fa fa-external-link-alt"></i></span><br>
+<span class="exturl" data-url="aHR0cHM6Ly93d3cuY3h5YmIuY29tL2FydGljbGUvcm9ja3JvY2t3dS83NDM1ODE3">https://www.cxybb.com/article/rockrockwu/7435817<i class="fa fa-external-link-alt"></i></span><br>
+《Linux 设备驱动开发》</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+          <span class="social-link">
+            <span class="icon">
+              <i class="fab fa-weixin"></i>
+            </span>
+
+            <span class="label">WeChat</span>
+          </span>
+
+          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
+      </div>
+
+      <div class="social-item">
+          <a target="_blank" class="social-link" href="/atom.xml">
+            <span class="icon">
+              <i class="fa fa-rss"></i>
+            </span>
+
+            <span class="label">RSS</span>
+          </a>
+      </div>
+  </div>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
+              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/LinuxDriver/LinuxDriverDeviceTree/" rel="prev" title="Linux 驱动之设备树">
+                  <i class="fa fa-angle-left"></i> Linux 驱动之设备树
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/LinuxDriver/LinuxDriverPWM/" rel="next" title="Linux 驱动之 PWM">
+                  Linux 驱动之 PWM <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments" id="waline"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2018 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">512k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">31:01</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
+<script src="/js/third-party/math/mathjax.js"></script>
+
+
+<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxDriver/LinuxDriverIIC/"}</script>
+<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
+<script>
+document.addEventListener('page:loaded', () => {
+  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
+    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
+  ).then(() => 
+    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
+  );
+});
+</script>
+
+</body>
+</html>
