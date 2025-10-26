@@ -1,325 +1,167 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
-  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
-
-<link rel="stylesheet" href="/css/main.css">
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="概述 CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：  如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Linux 驱动之 CCF 子系统 | Matrix</title><meta name="author" content="CarlyleLiu"><meta name="copyright" content="CarlyleLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="概述CCF 主要用于系统 clock 的管理等操作。clk 的种类说明： 如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对 clk">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 驱动之 CCF 子系统">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxDriverCCF/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="概述 CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：  如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对">
+<meta property="og:description" content="概述CCF 主要用于系统 clock 的管理等操作。clk 的种类说明： 如上图所示，时钟源大概可分为如下几种：  提供基础时钟源的晶振（可分为有源晶振、无源晶振两种） 用于倍频的锁相环 用于分频的 divider 用于多路时钟源选择的 mux 用于时钟使能的与门电路等  而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对 clk">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CLK_Core_List.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_register.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_init.png">
+<meta property="og:image" content="https://unsplash.it/1600/900?random&890">
 <meta property="article:published_time" content="2020-10-05T08:39:19.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.390Z">
 <meta property="article:author" content="CarlyleLiu">
-<meta property="article:tag" content="Driver">
 <meta property="article:tag" content="Linux">
+<meta property="article:tag" content="Driver">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png">
+<meta name="twitter:image" content="https://unsplash.it/1600/900?random&890"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://carlyleliu.github.io/LinuxDriver/LinuxDriverCCF/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":false,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Linux 驱动之 CCF 子系统',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-09-27 12:36:15'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
 
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
 
-<link rel="canonical" href="https://carlyleliu.github.io/LinuxDriver/LinuxDriverCCF/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxDriver/LinuxDriverCCF/","path":"LinuxDriver/LinuxDriverCCF/","title":"Linux 驱动之 CCF 子系统"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Linux 驱动之 CCF 子系统 | Matrix</title>
-  
-
-
-
-
-
-
-
-<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-<!-- hexo injector head_end start -->
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><!-- hexo injector head_end start -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end -->
+<link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-footer-beautify@1.0.0/lib/runtime.min.css" media="print" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.2.0">
 <style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
 <link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切换导航栏" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">Matrix</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="搜索" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="搜索..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          文章目录
-        </li>
-        <li class="sidebar-nav-overview">
-          站点概览
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#apiconsumer"><span class="nav-text"> API（consumer）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E8%8E%B7%E5%8F%96%E6%9C%89%E5%85%B3%E7%9A%84-api"><span class="nav-text"> clock 获取有关的 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E6%8E%A7%E5%88%B6%E6%9C%89%E5%85%B3%E7%9A%84-api"><span class="nav-text"> clock 控制有关的 API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E5%AE%83%E6%8E%A5%E5%8F%A3"><span class="nav-text"> 其它接口</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%9A%E7%94%A8-api-%E7%9A%84%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E"><span class="nav-text"> 通用 API 的使用说明</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84provider"><span class="nav-text"> 数据结构（provider）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#clock-%E5%88%86%E7%B1%BB%E5%8F%8A-register"><span class="nav-text"> clock 分类及 register</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8A%E9%9D%A2%E8%BF%99%E4%BA%9B%E6%B3%A8%E5%86%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="nav-text"> 上面这些注册接口的实现逻辑</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E9%98%B6%E6%AE%B5%E5%AF%B9%E8%AE%BE%E5%A4%87%E6%A0%91%E7%9A%84%E5%A4%84%E7%90%86"><span class="nav-text"> 系统启动阶段对设备树的处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
-  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">194</span>
-          <span class="site-state-item-name">日志</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-categories">
-          <a href="/categories/">
-        <span class="site-state-item-count">28</span>
-        <span class="site-state-item-name">分类</span></a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">42</span>
-        <span class="site-state-item-name">标签</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
-      </span>
-  </div>
-  <div class="cc-license animated" itemprop="license">
-    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-        <div class="pjax">
-        </div>
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxDriver/LinuxDriverCCF/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="Linux 驱动之 CCF 子系统 | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          Linux 驱动之 CCF 子系统
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Linux/Driver/" itemprop="url" rel="index"><span itemprop="name">Driver</span></a>
-        </span>
-    </span>
-
-  
-    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
-      <span class="post-meta-item-icon">
-        <i class="far fa-eye"></i>
-      </span>
-      <span class="post-meta-item-text">阅读次数：</span>
-      <span id="busuanzi_value_page_pv"></span>
-    </span>
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/LinuxDriver/LinuxDriverCCF/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/LinuxDriver/LinuxDriverCCF/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>2.6k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>9 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
-<p>CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png" alt=""></p>
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://unsplash.it/1600/900?random&amp;890')"><nav id="nav"><span id="blog-info"><a href="/" title="Matrix"><span class="site-name">Matrix</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Linux 驱动之 CCF 子系统</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2020-10-05T08:39:19.000Z" title="发表于 2020-10-05 16:39:19">2020-10-05</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-09-27T04:36:15.390Z" title="更新于 2025-09-27 12:36:15">2025-09-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/">Technology Blog</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Linux/">Linux</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Linux/Driver/">Driver</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Linux 驱动之 CCF 子系统"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>CCF 主要用于系统 clock 的管理等操作。clk 的种类说明：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_type.png" alt=""></p>
 <p>如上图所示，时钟源大概可分为如下几种：</p>
 <ul>
 <li>提供基础时钟源的晶振（可分为有源晶振、无源晶振两种）</li>
@@ -331,17 +173,14 @@
 <p>而在 CCF 子系统的抽象中，这五种均抽象为 clk，但是针对这 5 种类型的时钟也提供了单独的时钟注册函数（也就是对 clk_register 函数的封装，并针对不同的时钟类型定义了不同的结构体）。</p>
 <p>在 CCF 子系统中，针对硬件时钟的操作接口，也抽象了对应的结构体 struct clk_ops，包含时钟的使能接口、时钟频率的修改接口等等。而针对上述所说的不同种类的时钟源，其并不需要实现所有 struct clk_ops 中定义的接口。针对“时钟使能的与门电路”而言，仅需要实现 enabel、disable、is_enable 接口即可；针对多路时钟源选择的 mux 而言，则需要实现父时钟源的设置及获取的接口 set_parent、get_parent 等；对于倍频、分频而言，则需要实现时钟频率相关的接口 set_rate、recalc_rate 等。</p>
 <span id="more"></span>
-<h1 id="apiconsumer"><a class="markdownIt-Anchor" href="#apiconsumer"></a> API（consumer）</h1>
-<h2 id="clock-获取有关的-api"><a class="markdownIt-Anchor" href="#clock-获取有关的-api"></a> clock 获取有关的 API</h2>
-<ul>
+<h1 id="API（consumer）"><a href="#API（consumer）" class="headerlink" title="API（consumer）"></a>API（consumer）</h1><h2 id="clock-获取有关的-API"><a href="#clock-获取有关的-API" class="headerlink" title="clock 获取有关的 API"></a>clock 获取有关的 API</h2><ul>
 <li>以 device 指针或者 id 字符串（可以看作 name）为参数，查找 clock。devm_clk_get 使用了 device resource management，可以自动释放</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_get</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *id)</span>;</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">devm_clk_get</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *id)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <pre><code>dev 和 id 的任意一个可以为空。如果 id 为空，则必须有 device tree 的支持才能获得 device 对应的 clk；
 根据具体的平台实现，id 可以是一个简单的名称，也可以 是一个预先定义的、唯一的标识（一般在平台提供的头文件中定义，如 mach/clk.h）；
 不可以在中断上下文调用
-</code></pre>
-<ul>
+</code></pre><ul>
 <li>get 的反向操作，一般和对应的 get API 成对调用</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> <span class="title function_">clk_put</span><span class="params">(<span class="keyword">struct</span> clk *clk)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">devm_clk_put</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="keyword">struct</span> clk *clk)</span>;</span><br></pre></td></tr></tbody></table></figure>
@@ -353,8 +192,7 @@
 <li>device tree 相关的接口，直接从相应的 DTS node 中，以 index、name 等为索引，获取 clk</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">of_clk_get</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="type">int</span> index)</span>;</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">of_clk_get_by_name</span><span class="params">(<span class="keyword">struct</span> device_node *np, <span class="type">const</span> <span class="type">char</span> *name)</span>;</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">of_clk_get_from_provider</span><span class="params">(<span class="keyword">struct</span> of_phandle_args *clkspec)</span>;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="clock-控制有关的-api"><a class="markdownIt-Anchor" href="#clock-控制有关的-api"></a> clock 控制有关的 API</h2>
-<ul>
+<h2 id="clock-控制有关的-API"><a href="#clock-控制有关的-API" class="headerlink" title="clock 控制有关的 API"></a>clock 控制有关的 API</h2><ul>
 <li>启动/停止 clock。不会睡眠</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">clk_enable</span><span class="params">(<span class="keyword">struct</span> clk *clk)</span>;</span><br><span class="line"><span class="type">void</span> <span class="title function_">clk_disable</span><span class="params">(<span class="keyword">struct</span> clk *clk)</span>;</span><br></pre></td></tr></tbody></table></figure>
@@ -382,101 +220,66 @@
 <p>这两套 API 的本质，是把 clock 的启动/停止分为 atomic 和 non-atomic 两个阶段，以方便实现和调用。因此上面所说的“不会睡眠/可能会睡眠”，有两个角度的含义：一是告诉底层的 clock driver，请把可能引起睡眠的操作，放到 prepare/unprepare 中实现，一定不能放到 enable/disable 中；二是提醒上层使用 clock 的 driver，调用 prepare/unprepare 接口时可能会睡眠哦，千万不能在 atomic 上下文（例如中断处理中）调用哦，而调用 enable/disable 接口则可放心。</p>
 <p>另外，clock 的开关为什么需要睡眠呢？这里举个例子，例如 enable PLL clk，在启动 PLL 后，需要等待它稳定。而 PLL 的稳定时间是很长的，这段时间要把 CPU 交出（进程睡眠），不然就会浪费 CPU。</p>
 <p>最后，为什么会有合在一起的 clk_prepare_enable/clk_disable_unprepare 接口呢？如果调用者能确保是在 non-atomic 上下文中调用，就可以顺序调用 prepare/enable、disable/unprepared，为了简单，framework 就帮忙封装了这两个接口。</p>
-<h2 id="其它接口"><a class="markdownIt-Anchor" href="#其它接口"></a> 其它接口</h2>
-<ul>
-<li>注册/注销 clock rate 改变的通知。例如某个 driver 关心某个 clock，期望这个 clock 的 rate 改变时，通知到自己，就可以注册一个 notify</li>
-</ul>
-<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_register</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_unregister</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="通用-api-的使用说明"><a class="markdownIt-Anchor" href="#通用-api-的使用说明"></a> 通用 API 的使用说明</h2>
-<ul>
-<li>首先，在 DTS（device tree source）中，指定 device 需要使用的 clock，如下：</li>
-</ul>
-<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/* DTS */</span><br><span class="line">device {</span><br><span class="line">    clocks = &lt;&amp;osc 1&gt;, &lt;&amp;ref 0&gt;;</span><br><span class="line">    clock-names = "baud", "register";</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
-<pre><code>该 DTS 的含义是：
-
-device 需要使用两个 clock，“baud”和“regitser”，由 clock-names 关键字指定；
-
-baud 取自“osc”的输出 1，register 取自“ref”的输出 0，由 clocks 关键字指定。
-</code></pre>
-<ul>
-<li>
-<p>系统启动后，device tree 会解析 clock 有关的关键字，并将解析后的信息放在 platform_device 相关的字段中</p>
+<h2 id="其它接口"><a href="#其它接口" class="headerlink" title="其它接口"></a>其它接口</h2><ul>
+<li>注册/注销 clock rate 改变的通知。例如某个 driver 关心某个 clock，期望这个 clock 的 rate 改变时，通知到自己，就可以注册一个 notify<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_register</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br><span class="line"><span class="type">int</span> <span class="title function_">clk_notifier_unregister</span><span class="params">(<span class="keyword">struct</span> clk *clk, <span class="keyword">struct</span> notifier_block *nb)</span>;</span><br></pre></td></tr></tbody></table></figure>
 </li>
-<li>
-<p>具体的 driver 可以在 probe 时，以 clock 的名称（不提供也行）为参数，调用 clk get 接口，获取 clock 的句柄，然后利用该句柄，可直接进行 enable、set rate 等操作，如下：</p>
+</ul>
+<h2 id="通用-API-的使用说明"><a href="#通用-API-的使用说明" class="headerlink" title="通用 API 的使用说明"></a>通用 API 的使用说明</h2><ul>
+<li><p>首先，在 DTS（device tree source）中，指定 device 需要使用的 clock，如下：</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">/* DTS */</span><br><span class="line">device {</span><br><span class="line">    clocks = &lt;&amp;osc 1&gt;, &lt;&amp;ref 0&gt;;</span><br><span class="line">    clock-names = "baud", "register";</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<p>  该 DTS 的含义是：</p>
+<p>  device 需要使用两个 clock，“baud”和“regitser”，由 clock-names 关键字指定；</p>
+<p>  baud 取自“osc”的输出 1，register 取自“ref”的输出 0，由 clocks 关键字指定。</p>
+</li>
+<li><p>系统启动后，device tree 会解析 clock 有关的关键字，并将解析后的信息放在 platform_device 相关的字段中</p>
+</li>
+<li><p>具体的 driver 可以在 probe 时，以 clock 的名称（不提供也行）为参数，调用 clk get 接口，获取 clock 的句柄，然后利用该句柄，可直接进行 enable、set rate 等操作，如下：</p>
 </li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* driver */</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">xxx_probe</span><span class="params">(<span class="keyword">struct</span> platform_device *pdev)</span></span><br><span class="line">{</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">clk</span> *<span class="title">baud_clk</span>;</span></span><br><span class="line">    <span class="type">int</span> ret; </span><br><span class="line"></span><br><span class="line">    baud_clk = devm_clk_get(&amp;pdev-&gt;dev, “baud”);</span><br><span class="line">    <span class="keyword">if</span> (IS_ERR(clk)) {</span><br><span class="line">            …</span><br><span class="line">    } </span><br><span class="line"></span><br><span class="line">    ret = clk_prepare_enable(baud_clk);</span><br><span class="line">    <span class="keyword">if</span> (ret) {</span><br><span class="line">            …</span><br><span class="line">    } </span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
-<h1 id="数据结构provider"><a class="markdownIt-Anchor" href="#数据结构provider"></a> 数据结构（provider）</h1>
-<p>CCF 实现的数据结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDEyYzgwNzkxMjk1NzEwYjY2NzQ4">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png" alt=""></p>
+<h1 id="数据结构（provider）"><a href="#数据结构（provider）" class="headerlink" title="数据结构（provider）"></a>数据结构（provider）</h1><p>CCF 实现的数据结构如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/615d12c80791295710b66748">原图</a><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CCF_Struct.png" alt=""></p>
 <ul>
-<li>
-<p>clk_hw：<br>
-为硬件时钟源的逻辑抽象可以理解为 clk  provider</p>
+<li><p>clk_hw：<br>  为硬件时钟源的逻辑抽象可以理解为 clk  provider</p>
 </li>
-<li>
-<p>clk_core：<br>
-可以理解为 clk provider 的 driver，包含了 clk provider 的访问方法、时钟频率设定、支持的时钟频率、父时钟源的个数以及父时钟源的名称等内容</p>
+<li><p>clk_core：<br>  可以理解为 clk provider 的 driver，包含了 clk provider 的访问方法、时钟频率设定、支持的时钟频率、父时钟源的个数以及父时钟源的名称等内容</p>
 </li>
-<li>
-<p>clk：<br>
-可以理解 clk  consumer，包含了指向 clk provider 的指针、使用者的设备名称、使用者所定义的时钟别名（con_id）</p>
+<li><p>clk：<br>  可以理解 clk  consumer，包含了指向 clk provider 的指针、使用者的设备名称、使用者所定义的时钟别名（con_id）</p>
 </li>
-<li>
-<p>clk_ops：<br>
-主要是 clk provider 的操作接口，包含 prepare 与 unprepare 操作接口（这两个接口执行时允许 sleep，主要是用的互斥锁）、enable 与 disable 接口（这两个接口执行时不允许 sleep，里面使用了自旋锁），也包含了速率设置接口、重新计算速率接口、parent 设置与获取接口等等，通过这些接口可实现时钟频率的修改、父时钟源的选择、时钟的使能与否等功能</p>
+<li><p>clk_ops：<br>  主要是 clk provider 的操作接口，包含 prepare 与 unprepare 操作接口（这两个接口执行时允许 sleep，主要是用的互斥锁）、enable 与 disable 接口（这两个接口执行时不允许 sleep，里面使用了自旋锁），也包含了速率设置接口、重新计算速率接口、parent 设置与获取接口等等，通过这些接口可实现时钟频率的修改、父时钟源的选择、时钟的使能与否等功能</p>
 </li>
-<li>
-<p>clk_init_data：<br>
-描述该 clock 的静态数据，clock provider 负责把系统中每个 clock 的静态数据准备好，然后交给 clock framework 的核心逻辑，剩下的事情，clock provider 就不用操心了。这个过程，就是 clock driver 的编写过程</p>
+<li><p>clk_init_data：<br>  描述该 clock 的静态数据，clock provider 负责把系统中每个 clock 的静态数据准备好，然后交给 clock framework 的核心逻辑，剩下的事情，clock provider 就不用操心了。这个过程，就是 clock driver 的编写过程</p>
 </li>
 </ul>
-<p>ccf 的驱动框架也是与设备驱动模型类似的结构，clk_core 用于抽象设备树驱动的方法类似于 device_driver 而 clk 则更像是一个 device，在 soc 内部有很多控制器，这些控制器都挂载在时钟树下面，这些控制器就是 consumer，他们会用到 clk 数据结构用于使能失能时钟，以及设置时钟频率等操作。而 clk_core 结构体则抽象了时钟树中的每一个节点组织成树状结构来描述整个时钟树。下面看下 clk_core 在内核中的组织关系结构图，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDI0NjYxZTA4NTMzYTAzMDJmZWRh">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CLK_Core_List.png" alt=""></p>
-<h1 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h1>
-<h2 id="clock-分类及-register"><a class="markdownIt-Anchor" href="#clock-分类及-register"></a> clock 分类及 register</h2>
-<p>根据 clock 的特点，clock framework 将 clock 分为 fixed rate、gate、devider、mux、fixed factor、composite 六类，每一类 clock 都有相似的功能、相似的控制方式，因而可以使用相同的逻辑 s，统一处理，这充分体现了面向对象的思想。</p>
+<p>ccf 的驱动框架也是与设备驱动模型类似的结构，clk_core 用于抽象设备树驱动的方法类似于 device_driver 而 clk 则更像是一个 device，在 soc 内部有很多控制器，这些控制器都挂载在时钟树下面，这些控制器就是 consumer，他们会用到 clk 数据结构用于使能失能时钟，以及设置时钟频率等操作。而 clk_core 结构体则抽象了时钟树中的每一个节点组织成树状结构来描述整个时钟树。下面看下 clk_core 在内核中的组织关系结构图，如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/615d24661e08533a0302feda">原图</a><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/CLK_Core_List.png" alt=""></p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><h2 id="clock-分类及-register"><a href="#clock-分类及-register" class="headerlink" title="clock 分类及 register"></a>clock 分类及 register</h2><p>根据 clock 的特点，clock framework 将 clock 分为 fixed rate、gate、devider、mux、fixed factor、composite 六类，每一类 clock 都有相似的功能、相似的控制方式，因而可以使用相同的逻辑 s，统一处理，这充分体现了面向对象的思想。</p>
 <ul>
-<li>fixed rate cloc：<br>
-这一类 clock 具有固定的频率，不能开关、不能调整频率、不能选择 parent、不需要提供任何的 clk_ops 回调函数，是最简单的一类 clock。<br>
-可以直接通过 DTS 配置的方式支持，clock framework core 能直接从 DTS 中解出 clock 信息，并自动注册到 kernel，不需要任何 driver 支持。<br>
-clock framework 使用 struct clk_fixed_rate 结构抽象这一类 clock，另外提供了一个接口，可以直接注册 fixed rate clock，如下：</li>
+<li>fixed rate cloc：<br>  这一类 clock 具有固定的频率，不能开关、不能调整频率、不能选择 parent、不需要提供任何的 clk_ops 回调函数，是最简单的一类 clock。<br>  可以直接通过 DTS 配置的方式支持，clock framework core 能直接从 DTS 中解出 clock 信息，并自动注册到 kernel，不需要任何 driver 支持。<br>  clock framework 使用 struct clk_fixed_rate 结构抽象这一类 clock，另外提供了一个接口，可以直接注册 fixed rate clock，如下：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">clk_fixed_rate</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span>		<span class="title">clk_hw</span> <span class="title">hw</span>;</span></span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>	fixed_rate;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>	fixed_accuracy;</span><br><span class="line">	<span class="type">unsigned</span> <span class="type">long</span>	flags;</span><br><span class="line">};</span><br><span class="line">...</span><br><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_fixed_rate</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> *parent_name, <span class="type">unsigned</span> <span class="type">long</span> flags,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> fixed_rate)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>gate clock<br>
-这一类 clock 只可开关（会提供。enable/.disable 回调），可使用下面接口注册：</li>
+<li>gate clock<br>  这一类 clock 只可开关（会提供。enable/.disable 回调），可使用下面接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_gate</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> *parent_name, <span class="type">unsigned</span> <span class="type">long</span> flags,</span></span><br><span class="line"><span class="params">		<span class="type">void</span> __iomem *reg, u8 bit_idx,</span></span><br><span class="line"><span class="params">		u8 clk_gate_flags, <span class="type">spinlock_t</span> *lock)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>divider clock<br>
-这一类 clock 可以设置分频值（因而会提供。recalc_rate/.set_rate/.round_rate 回调），可通过下面两个接口注册：</li>
+<li>divider clock<br>  这一类 clock 可以设置分频值（因而会提供。recalc_rate/.set_rate/.round_rate 回调），可通过下面两个接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> clk_register_divider(dev, name, parent_name, flags, reg, shift, width, \</span></span><br><span class="line"><span class="meta">			     clk_divider_flags, lock)			       \</span></span><br><span class="line"><span class="meta">	clk_register_divider_table((dev), (name), (parent_name), (flags),      \</span></span><br><span class="line"><span class="meta">				   (reg), (shift), (width),		       \</span></span><br><span class="line"><span class="meta">				   (clk_divider_flags), NULL, (lock))</span></span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>mux clock<br>
-这一类 clock 可以选择多个 parent，因为会实现。get_parent/.set_parent/.recalc_rate 回调，可通过下面两个接口注册：</li>
+<li>mux clock<br>  这一类 clock 可以选择多个 parent，因为会实现。get_parent/.set_parent/.recalc_rate 回调，可通过下面两个接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> clk_register_mux(dev, name, parent_names, num_parents, flags, reg,    \</span></span><br><span class="line"><span class="meta">			 shift, width, clk_mux_flags, lock)		      \</span></span><br><span class="line"><span class="meta">	clk_register_mux_table((dev), (name), (parent_names), (num_parents),  \</span></span><br><span class="line"><span class="meta">			       (flags), (reg), (shift), BIT((width)) - 1,     \</span></span><br><span class="line"><span class="meta">			       (clk_mux_flags), NULL, (lock))</span></span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>fixed factor clock<br>
-这一类 clock 具有固定的 factor（即 multiplier 和 divider），clock 的频率是由 parent clock 的频率，乘以 mul，除以 div，多用于一些具有固定分频系数的 clock。由于 parent clock 的频率可以改变，因而 fix factor clock 也可该改变频率，因此也会提供。recalc_rate/.set_rate/.round_rate 等回调。</li>
+<li>fixed factor clock<br>  这一类 clock 具有固定的 factor（即 multiplier 和 divider），clock 的频率是由 parent clock 的频率，乘以 mul，除以 div，多用于一些具有固定分频系数的 clock。由于 parent clock 的频率可以改变，因而 fix factor clock 也可该改变频率，因此也会提供。recalc_rate/.set_rate/.round_rate 等回调。</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_fixed_factor</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> *parent_name, <span class="type">unsigned</span> <span class="type">long</span> flags,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">int</span> mult, <span class="type">unsigned</span> <span class="type">int</span> div)</span>;</span><br></pre></td></tr></tbody></table></figure>
 <ul>
-<li>composite clock<br>
-顾名思义，就是 mux、divider、gate 等 clock 的组合，可通过下面接口注册：</li>
+<li>composite clock<br>  顾名思义，就是 mux、divider、gate 等 clock 的组合，可通过下面接口注册：</li>
 </ul>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> clk *<span class="title function_">clk_register_composite</span><span class="params">(<span class="keyword">struct</span> device *dev, <span class="type">const</span> <span class="type">char</span> *name,</span></span><br><span class="line"><span class="params">		<span class="type">const</span> <span class="type">char</span> * <span class="type">const</span> *parent_names, <span class="type">int</span> num_parents,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *mux_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *mux_ops,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *rate_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *rate_ops,</span></span><br><span class="line"><span class="params">		<span class="keyword">struct</span> clk_hw *gate_hw, <span class="type">const</span> <span class="keyword">struct</span> clk_ops *gate_ops,</span></span><br><span class="line"><span class="params">		<span class="type">unsigned</span> <span class="type">long</span> flags)</span>;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="上面这些注册接口的实现逻辑"><a class="markdownIt-Anchor" href="#上面这些注册接口的实现逻辑"></a> 上面这些注册接口的实现逻辑</h2>
-<p>clk 注册流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDNiNWE1NjUzYmI2NzkxZTRhZWZh">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_register.png" alt=""></p>
+<h2 id="上面这些注册接口的实现逻辑"><a href="#上面这些注册接口的实现逻辑" class="headerlink" title="上面这些注册接口的实现逻辑"></a>上面这些注册接口的实现逻辑</h2><p>clk 注册流程如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/615d3b5a5653bb6791e4aefa">原图</a><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_register.png" alt=""></p>
 <p>驱动针对不同类型的 clock 节点提供了几种不同的注册函数，驱动开发人员一般不需要自己编写对应的驱动而是尽可能调用系统提供的接口，而对于系统而言也是尽可能的复用函数，这些注册函数都是通过调用 clk_hw_register 函数来实现自己的功能。</p>
 <p>这里有一个 map 映射没有涉及，ccf 子系统提供了 clk provider 的 map，这种 map 机制可以理解为定义了 clk consumer 与 clk_provider 的映射关系，即该 clk provider 可以给哪些 clk consumer 提供时钟（如针对非设备树模式，则定义了 clk consumer 的设备名称、clk consumer 的时钟使用名称）。</p>
-<h2 id="系统启动阶段对设备树的处理"><a class="markdownIt-Anchor" href="#系统启动阶段对设备树的处理"></a> 系统启动阶段对设备树的处理</h2>
-<p>clk 初始化流程如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE1ZDQwYmZlNDAxZmQ2YmUwN2YyZGRl">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_init.png" alt=""></p>
+<h2 id="系统启动阶段对设备树的处理"><a href="#系统启动阶段对设备树的处理" class="headerlink" title="系统启动阶段对设备树的处理"></a>系统启动阶段对设备树的处理</h2><p>clk 初始化流程如下：<a target="_blank" rel="noopener" href="https://www.processon.com/view/link/615d40bfe401fd6be07f2dde">原图</a><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/clk_init.png" alt=""></p>
 <p>上面介绍了 clk 的注册流程，在上图中展示了系统启动过程中，解析设备树按照默认配置来设置系统时钟树的流程，下面给出详细说明：</p>
 <ul>
 <li>通常在 Clock 驱动中会有一个 CLK_OF_DECLARE 宏，该宏用于声明一个 struct of_device_id 数据结构，并且最终在链接的时候会将数据结构链接在一个叫做__of_clk_table 的段中，这个段的定义位于 vmlinux.lds.h 文件中。</li>
@@ -484,188 +287,64 @@ clock framework 使用 struct clk_fixed_rate 结构抽象这一类 clock，另�
 <li>最终调用__of_clk_table 中匹配上的 struct of_device_id 中的函数，也就是 Clock 驱动的入口函数了，此时顺着这个入口函数，可以完成一系列的操作，比如 clk_ops 中的函数实现，注册进 CCF 框架等。</li>
 <li>当驱动完成注册之后，Consumer Driver 的 Device Node 和 Clock Provider 建立了联系，Consumer Driver 便可通过 CCF 接口来操作时钟了。</li>
 </ul>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2Nsa19vdmVydmlldy5odG1s">http://www.wowotech.net/pm_subsystem/clk_overview.html<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2Nsb2NrX3Byb3ZpZGVyLmh0bWw=">http://www.wowotech.net/pm_subsystem/clock_provider.html<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcG1fc3Vic3lzdGVtL2Nsb2NrX2ZyYW1ld29ya19jb3JlLmh0bWw=">http://www.wowotech.net/pm_subsystem/clock_framework_core.html<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDc3MjkxNTY/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107729156?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cucXRlci5vcmcvcG9ydGFsLnBocD9tb2Q9dmlldyZhaWQ9Nzc3NA==">https://www.qter.org/portal.php?mod=view&amp;aid=7774<i class="fa fa-external-link-alt"></i></span></p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="followme">
-  <span>欢迎关注我的其它发布渠道</span>
-
-  <div class="social-list">
-
-      <div class="social-item">
-          <span class="social-link">
-            <span class="icon">
-              <i class="fab fa-weixin"></i>
-            </span>
-
-            <span class="label">WeChat</span>
-          </span>
-
-          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
-      </div>
-
-      <div class="social-item">
-          <a target="_blank" class="social-link" href="/atom.xml">
-            <span class="icon">
-              <i class="fa fa-rss"></i>
-            </span>
-
-            <span class="label">RSS</span>
-          </a>
-      </div>
-  </div>
-</div>
-
-          <div class="post-tags">
-              <a href="/tags/Driver/" rel="tag"><i class="fa fa-tag"></i> Driver</a>
-              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/LinuxDriver/LinuxDriverInput/" rel="prev" title="Linux 驱动之 Input 子系统">
-                  <i class="fa fa-angle-left"></i> Linux 驱动之 Input 子系统
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/LinuxDriver/LinuxDriverRTC/" rel="next" title="Linux 驱动之 RTC">
-                  Linux 驱动之 RTC <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    <div class="comments" id="waline"></div>
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 2018 – 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
-  </div>
-<div class="wordcount">
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-chart-line"></i>
-    </span>
-      <span>站点总字数：</span>
-    <span title="站点总字数">492k</span>
-  </span>
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-coffee"></i>
-    </span>
-      <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">29:47</span>
-  </span>
-</div>
-<div class="busuanzi-count">
-    <span class="post-meta-item" id="busuanzi_container_site_uv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-user"></i>
-      </span>
-      <span class="site-uv" title="总访客量">
-        <span id="busuanzi_value_site_uv"></span>
-      </span>
-    </span>
-    <span class="post-meta-item" id="busuanzi_container_site_pv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-eye"></i>
-      </span>
-      <span class="site-pv" title="总访问量">
-        <span id="busuanzi_value_site_pv"></span>
-      </span>
-    </span>
-</div>
-
-    </div>
-  </footer>
-
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="http://www.wowotech.net/pm_subsystem/clk_overview.html">http://www.wowotech.net/pm_subsystem/clk_overview.html</a><br><a target="_blank" rel="noopener" href="http://www.wowotech.net/pm_subsystem/clock_provider.html">http://www.wowotech.net/pm_subsystem/clock_provider.html</a><br><a target="_blank" rel="noopener" href="http://www.wowotech.net/pm_subsystem/clock_framework_core.html">http://www.wowotech.net/pm_subsystem/clock_framework_core.html</a><br><a target="_blank" rel="noopener" href="https://blog.csdn.net/lickylin/article/details/107729156?spm=1001.2014.3001.5501">https://blog.csdn.net/lickylin/article/details/107729156?spm=1001.2014.3001.5501</a><br><a target="_blank" rel="noopener" href="https://www.qter.org/portal.php?mod=view&amp;aid=7774">https://www.qter.org/portal.php?mod=view&amp;aid=7774</a></p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Linux/">Linux</a><a class="post-meta__tags" href="/tags/Driver/">Driver</a></div><div class="post_share"><div class="social-share" data-image="https://unsplash.it/1600/900?random&amp;890" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/LinuxDriver/LinuxDriverRTC/" title="Linux 驱动之 RTC"><img class="cover" src="https://unsplash.it/1600/900?random&amp;899" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Linux 驱动之 RTC</div></div></a></div><div class="next-post pull-right"><a href="/LinuxDriver/LinuxDriverInput/" title="Linux 驱动之 Input 子系统"><img class="cover" src="https://unsplash.it/1600/900?random&amp;5142" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Linux 驱动之 Input 子系统</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/LinuxDriver/LinuxDriverBaseDeviceIO/" title="Linux 驱动之基础（一）Device-I&#x2F;O"><img class="cover" src="https://unsplash.it/1600/900?random&1641" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-04-22</div><div class="title">Linux 驱动之基础（一）Device-I&#x2F;O</div></div></a></div><div><a href="/LinuxDriver/LinuxDriverBaseDMA-API/" title="Linux 驱动之基础（二）DMA-API"><img class="cover" src="https://unsplash.it/1600/900?random&3638" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2024-05-02</div><div class="title">Linux 驱动之基础（二）DMA-API</div></div></a></div><div><a href="/LinuxDriver/LinuxDriverDeviceModule/" title="Linux 驱动之设备驱动模型"><img class="cover" src="https://unsplash.it/1600/900?random&7938" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-08-07</div><div class="title">Linux 驱动之设备驱动模型</div></div></a></div><div><a href="/LinuxDriver/LinuxDriverDeviceTree/" title="Linux 驱动之设备树"><img class="cover" src="https://unsplash.it/1600/900?random&9232" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-08-25</div><div class="title">Linux 驱动之设备树</div></div></a></div><div><a href="/LinuxDriver/LinuxDriverFileSystem/" title="Linux 驱动之文件系统"><img class="cover" src="https://unsplash.it/1600/900?random&7897" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-08-08</div><div class="title">Linux 驱动之文件系统</div></div></a></div><div><a href="/LinuxDriver/LinuxDriverGPIO/" title="Linux 驱动之 GPIO 子系统"><img class="cover" src="https://unsplash.it/1600/900?random&4238" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2020-09-05</div><div class="title">Linux 驱动之 GPIO 子系统</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CarlyleLiu</div><div class="author-info__description">CarlyleLiu’s Blog</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/carlyleliu"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/carlyleliu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:yyliushuai@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-envelope" style="color: #24292e;"></i></a><a class="social-icon" href="https://twitter.com/yyliushuai" target="_blank" title="Twitter"><i class="fab fa-twitter" style="color: #24292e;"></i></a><a class="social-icon" href="https://youtube.com/carlyleliu" target="_blank" title="YouTube"><i class="fab fa-youtube" style="color: #24292e;"></i></a><a class="social-icon" href="https://instagram.com/blurredliu" target="_blank" title="Instagram"><i class="fab fa-instagram" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">next主题站 https://carlyleliu.github.io/next</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A6%82%E8%BF%B0"><span class="toc-number">1.</span> <span class="toc-text">概述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#API%EF%BC%88consumer%EF%BC%89"><span class="toc-number">2.</span> <span class="toc-text">API（consumer）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#clock-%E8%8E%B7%E5%8F%96%E6%9C%89%E5%85%B3%E7%9A%84-API"><span class="toc-number">2.1.</span> <span class="toc-text">clock 获取有关的 API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#clock-%E6%8E%A7%E5%88%B6%E6%9C%89%E5%85%B3%E7%9A%84-API"><span class="toc-number">2.2.</span> <span class="toc-text">clock 控制有关的 API</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E5%AE%83%E6%8E%A5%E5%8F%A3"><span class="toc-number">2.3.</span> <span class="toc-text">其它接口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9A%E7%94%A8-API-%E7%9A%84%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E"><span class="toc-number">2.4.</span> <span class="toc-text">通用 API 的使用说明</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%EF%BC%88provider%EF%BC%89"><span class="toc-number">3.</span> <span class="toc-text">数据结构（provider）</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0"><span class="toc-number">4.</span> <span class="toc-text">实现</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#clock-%E5%88%86%E7%B1%BB%E5%8F%8A-register"><span class="toc-number">4.1.</span> <span class="toc-text">clock 分类及 register</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8A%E9%9D%A2%E8%BF%99%E4%BA%9B%E6%B3%A8%E5%86%8C%E6%8E%A5%E5%8F%A3%E7%9A%84%E5%AE%9E%E7%8E%B0%E9%80%BB%E8%BE%91"><span class="toc-number">4.2.</span> <span class="toc-text">上面这些注册接口的实现逻辑</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B3%BB%E7%BB%9F%E5%90%AF%E5%8A%A8%E9%98%B6%E6%AE%B5%E5%AF%B9%E8%AE%BE%E5%A4%87%E6%A0%91%E7%9A%84%E5%A4%84%E7%90%86"><span class="toc-number">4.3.</span> <span class="toc-text">系统启动阶段对设备树的处理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="toc-number">5.</span> <span class="toc-text">参考文献</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2025 By CarlyleLiu</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, '']
+      }
+    }
+  }
   
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.13.0"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
 
-  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
 
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-  <script src="/js/third-party/pace.js"></script>
-
-
-  
-  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
-<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxDriver/LinuxDriverCCF/"}</script>
-<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
-<script>
-document.addEventListener('page:loaded', () => {
-  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
-    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
-  ).then(() => 
-    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
-  );
-});
-</script>
-
-</body>
-</html>
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><!-- hexo injector body_end end --></body></html>

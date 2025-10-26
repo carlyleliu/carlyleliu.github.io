@@ -1,323 +1,169 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
-  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
-
-<link rel="stylesheet" href="/css/main.css">
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="原图">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>C++11（二）右值引用与 POD | Matrix</title><meta name="author" content="CarlyleLiu"><meta name="copyright" content="CarlyleLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="C++11（二）右值引用与 POD">
 <meta property="og:url" content="https://carlyleliu.github.io/Program/CPP11Part2/index.html">
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/CPP11GeneralPurposeAndSpecialPurposeAtTheEnd.png">
+<meta property="og:image" content="https://unsplash.it/1600/900?random&1057">
 <meta property="article:published_time" content="2022-01-26T13:43:09.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.377Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Programming">
 <meta property="article:tag" content="C++">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/CPP11GeneralPurposeAndSpecialPurposeAtTheEnd.png">
+<meta name="twitter:image" content="https://unsplash.it/1600/900?random&1057"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://carlyleliu.github.io/Program/CPP11Part2/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":false,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'C++11（二）右值引用与 POD',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-09-27 12:36:15'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
 
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
 
-<link rel="canonical" href="https://carlyleliu.github.io/Program/CPP11Part2/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/Program/CPP11Part2/","path":"Program/CPP11Part2/","title":"C++11（二）右值引用与 POD"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>C++11（二）右值引用与 POD | Matrix</title>
-  
-
-
-
-
-
-
-
-<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-<!-- hexo injector head_end start -->
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><!-- hexo injector head_end start -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end -->
+<link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-footer-beautify@1.0.0/lib/runtime.min.css" media="print" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.2.0">
 <style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
 <link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切换导航栏" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">Matrix</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="搜索" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="搜索..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          文章目录
-        </li>
-        <li class="sidebar-nav-overview">
-          站点概览
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%A7%E6%89%BF%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="nav-text"> 继承构造函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A7%94%E6%B4%BE%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="nav-text"> 委派构造函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89%E5%92%8C%E5%AE%8C%E7%BE%8E%E8%BD%AC%E5%8F%91"><span class="nav-text"> 右值引用：移动语义和完美转发</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#c11-%E7%9A%84%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-text"> C++11 的左值和右值的概念</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%B7%A6%E5%80%BC%E5%BC%95%E7%94%A8%E5%92%8C%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8"><span class="nav-text"> 左值引用和右值引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8"><span class="nav-text"> 为什么需要右值引用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#stdmove"><span class="nav-text"> std::move</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8-%E7%A7%BB%E5%8A%A8%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E7%A7%BB%E5%8A%A8%E5%A4%8D%E5%88%B6%E8%BF%90%E7%AE%97%E7%AC%A6%E4%BB%A5%E5%8F%8A-stdmove"><span class="nav-text"> 右值引用 (&amp;&amp;)，移动构造函数，移动复制运算符以及 std::move</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#stdmove-%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-text"> std::move 使用场景</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-text"> 移动构造函数的原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#stdmove-%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-text"> std::move 的原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#stdmove-%E7%9A%84%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-text"> std::move 的使用场景</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text"> 总结</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#stdforward"><span class="nav-text"> std::forward</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#forward-%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="nav-text"> forward 的作用</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#forward-%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="nav-text"> forward 实现原理</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#pod"><span class="nav-text"> POD</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#trivial"><span class="nav-text"> trivial</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#standard-layout"><span class="nav-text"> standard layout</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#pod-2"><span class="nav-text"> POD</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E5%AE%9A%E4%B9%89%E5%AD%97%E9%9D%A2%E9%87%8F"><span class="nav-text"> 用户定义字面量</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#c%E4%B8%AD%E7%9A%84%E5%AD%97%E9%9D%A2%E9%87%8F"><span class="nav-text"> C++中的字面量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%A8%E6%88%B7%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AD%97%E9%9D%A2%E9%87%8F"><span class="nav-text"> 用户自定义字面量</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AD%97%E9%9D%A2%E9%87%8F%E7%9A%84%E9%99%90%E5%88%B6"><span class="nav-text"> 自定义字面量的限制</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
-  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">194</span>
-          <span class="site-state-item-name">日志</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-categories">
-          <a href="/categories/">
-        <span class="site-state-item-count">28</span>
-        <span class="site-state-item-name">分类</span></a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">42</span>
-        <span class="site-state-item-name">标签</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
-      </span>
-  </div>
-  <div class="cc-license animated" itemprop="license">
-    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-        <div class="pjax">
-        </div>
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Program/CPP11Part2/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="C++11（二）右值引用与 POD | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          C++11（二）右值引用与 POD
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/C-C/" itemprop="url" rel="index"><span itemprop="name">C/C++</span></a>
-        </span>
-    </span>
-
-  
-    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
-      <span class="post-meta-item-icon">
-        <i class="far fa-eye"></i>
-      </span>
-      <span class="post-meta-item-text">阅读次数：</span>
-      <span id="busuanzi_value_page_pv"></span>
-    </span>
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/Program/CPP11Part2/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/Program/CPP11Part2/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>3.5k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>13 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/CPP11GeneralPurposeAndSpecialPurposeAtTheEnd.png" alt=""><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMyZTBlYTdkOWMwODA3NmQxMDkzMGE=">原图<i class="fa fa-external-link-alt"></i></span></p>
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://unsplash.it/1600/900?random&amp;1057')"><nav id="nav"><span id="blog-info"><a href="/" title="Matrix"><span class="site-name">Matrix</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">C++11（二）右值引用与 POD</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2022-01-26T13:43:09.000Z" title="发表于 2022-01-26 21:43:09">2022-01-26</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-09-27T04:36:15.377Z" title="更新于 2025-09-27 12:36:15">2025-09-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/">Technology Blog</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Programming/">Programming</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Programming/C-C/">C/C++</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="C++11（二）右值引用与 POD"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Language/CPP11GeneralPurposeAndSpecialPurposeAtTheEnd.png" alt=""><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/6232e0ea7d9c08076d10930a">原图</a></p>
 <span id="more"></span>
-<h1 id="继承构造函数"><a class="markdownIt-Anchor" href="#继承构造函数"></a> 继承构造函数</h1>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span></span><br><span class="line">{</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">int</span> i){};</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">double</span> d, <span class="type">int</span> i) {};</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">float</span> f, <span class="type">int</span> i, <span class="type">const</span> <span class="type">char</span>* c){};</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">B</span> : A</span><br><span class="line">{</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">int</span> i): <span class="built_in">A</span>(i){};</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">double</span> d, <span class="type">int</span> i): <span class="built_in">A</span>(d, i){};</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">float</span> f, <span class="type">int</span> i, <span class="type">const</span> <span class="type">char</span>*c): <span class="built_in">A</span>(f, i, c)(){};</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Extrainterface</span><span class="params">()</span></span>{};</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
+<h1 id="继承构造函数"><a href="#继承构造函数" class="headerlink" title="继承构造函数"></a>继承构造函数</h1><figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span></span><br><span class="line">{</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">int</span> i){};</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">double</span> d, <span class="type">int</span> i) {};</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">float</span> f, <span class="type">int</span> i, <span class="type">const</span> <span class="type">char</span>* c){};</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">B</span> : A</span><br><span class="line">{</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">int</span> i): <span class="built_in">A</span>(i){};</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">double</span> d, <span class="type">int</span> i): <span class="built_in">A</span>(d, i){};</span><br><span class="line">    <span class="built_in">B</span>(<span class="type">float</span> f, <span class="type">int</span> i, <span class="type">const</span> <span class="type">char</span>*c): <span class="built_in">A</span>(f, i, c)(){};</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Extrainterface</span><span class="params">()</span></span>{};</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>继承于 A 的派生类 B 实际上只是添加了一个接口 Extralnterface，那么如果我们在构造 B 的时候想要拥有 A 这样多的构造方法的话，就必须一“透传”各个接口。这无疑是相当不方便的。事实上，在 C++中已经有了一个好用的规则，子类可以通过使用 using 声明来声明继承基类的构造函数。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span></span><br><span class="line">{</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">int</span> i){};</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">double</span> d, <span class="type">int</span> i) {};</span><br><span class="line">    <span class="built_in">A</span>(<span class="type">float</span> f, <span class="type">int</span> i, <span class="type">const</span> <span class="type">char</span>* c){};</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">};</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">B</span> : A</span><br><span class="line">{</span><br><span class="line">    <span class="keyword">using</span> A::A;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">    <span class="function"><span class="keyword">virtual</span> <span class="type">void</span> <span class="title">Extrainterface</span><span class="params">()</span></span>{};</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>而有的时候，我们还会遇到继承构造函数“冲突”的情况。这通常发生在派生类拥有多个基类的时候。多个基类中的部分构造函数可能导致派生类中的继承构造函数的函数名、参数（有的时候，我们也称其为函数签名）都相同，那么继承类中的冲突的继承构造函数将导致不合法的派生类代码。</p>
@@ -325,32 +171,25 @@
 <p>A 和 B 的构造函数会导致 C 中重复定义相同类型的继承构造函数。这种情况下，可以通过显式定义继承类的冲突的构造函数，阻止隐式生成相应的继承构造函数来解决冲突。比如：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">C</span>: A, B {</span><br><span class="line">    <span class="keyword">using</span> A::A;</span><br><span class="line">    <span class="keyword">using</span> B::B;</span><br><span class="line">    <span class="built_in">C</span>(<span class="type">int</span>){};</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>其中的构造函数 C(int) 就很好地解决了继承构造函数的冲突问题。</p>
-<h1 id="委派构造函数"><a class="markdownIt-Anchor" href="#委派构造函数"></a> 委派构造函数</h1>
-<p>与继承构造函数类似的，委派构造函数也是 C<ins>11 中对 C</ins>的构造函数的一项改进其目的也是为了减少程序员书写构造函数的时间。通过委派其他构造函数，多构造函数的类编写将更加容易。</p>
+<h1 id="委派构造函数"><a href="#委派构造函数" class="headerlink" title="委派构造函数"></a>委派构造函数</h1><p>与继承构造函数类似的，委派构造函数也是 C++11 中对 C++的构造函数的一项改进其目的也是为了减少程序员书写构造函数的时间。通过委派其他构造函数，多构造函数的类编写将更加容易。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Info</span> {</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Info</span>(): <span class="built_in">type</span>(<span class="number">1</span>), <span class="built_in">name</span>(a){<span class="built_in">Initrest</span>()};</span><br><span class="line">    <span class="built_in">Info</span>(<span class="type">int</span> i): <span class="built_in">type</span>(i), <span class="built_in">name</span>(a){<span class="built_in">Initrest</span>()};</span><br><span class="line">    <span class="built_in">Info</span>(<span class="type">char</span> e): <span class="built_in">type</span>(<span class="number">1</span>), <span class="built_in">name</span>(e){<span class="built_in">Initrest</span>()};</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    <span class="type">void</span> Initrest（）{<span class="comment">/*其他初始化*/</span> }</span><br><span class="line">    <span class="type">int</span> type;</span><br><span class="line">    <span class="type">char</span> name;</span><br><span class="line">    <span class="comment">//...</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>在上述代码中，我们声明了一个 Info 的自定义类型。该类型拥有 2 个成员变量以及 3 个构造函数。这里的 3 个构造函数都声明了初始化列表来初始化成员 type 和 name，并且都调用了相同的函数 Initrest。可以看到，除了初始化列表有的不同，而其他的部分，3 个构造函数基本上是相似的，因此其代码存在着很多重复。</p>
-<p>在 C<ins>11 中，我们可以使用委派构造函数来达到期望的效果。更具体的，C</ins>11 中的委派构造函数是在构造函数的初始化列表位置进行构造的、委派的。我们可以看看</p>
+<p>在 C++11 中，我们可以使用委派构造函数来达到期望的效果。更具体的，C++11 中的委派构造函数是在构造函数的初始化列表位置进行构造的、委派的。我们可以看看</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Info</span> {</span><br><span class="line">  <span class="keyword">public</span>:</span><br><span class="line">    <span class="built_in">Info</span>(){<span class="built_in">Initrest</span>();};</span><br><span class="line">    <span class="built_in">Info</span>(<span class="type">int</span> i): <span class="built_in">Info</span>(){type =i;};</span><br><span class="line">    <span class="built_in">Info</span>(<span class="type">char</span> e): <span class="built_in">Info</span>(){name = e;};</span><br><span class="line">  <span class="keyword">private</span>:</span><br><span class="line">    <span class="function"><span class="type">void</span> <span class="title">Initrest</span><span class="params">()</span></span>{<span class="comment">/*其他初始化*/</span>};</span><br><span class="line">    <span class="type">int</span> type{<span class="number">1</span>};</span><br><span class="line">    <span class="type">char</span> name{<span class="string">'a'</span>};</span><br><span class="line">    <span class="comment">//...</span></span><br></pre></td></tr></tbody></table></figure>
 <p>可以看到，在上述代码中，我们在 Info（int）和 Info（char）的初始化列表的位置，调用了“基准版本”的构造函数 Info。这里我们为了区分被调用者和调用者，称在初始化列表中调用“基准版本”的构造函数为委派构造函数（ delegating constructor），而被调用的基准版本”则为目标构造函数（ target constructor）。在 C++11 中，所谓委派构造，就是指委派函数将构造的任务委派给了目标构造函数来完成这样一种类构造的方式。</p>
-<h1 id="右值引用移动语义和完美转发"><a class="markdownIt-Anchor" href="#右值引用移动语义和完美转发"></a> 右值引用：移动语义和完美转发</h1>
-<h2 id="c11-的左值和右值的概念"><a class="markdownIt-Anchor" href="#c11-的左值和右值的概念"></a> C++11 的左值和右值的概念</h2>
-<p>在 c++中，一个值要么是右值，要么是左值，左值是指表达式结束后依然存在的持久化对象，右值是指表达式结束时就不再存在的临时对象。所有的具名变量或者对象都是左值，而右值不具名。</p>
+<h1 id="右值引用：移动语义和完美转发"><a href="#右值引用：移动语义和完美转发" class="headerlink" title="右值引用：移动语义和完美转发"></a>右值引用：移动语义和完美转发</h1><h2 id="C-11-的左值和右值的概念"><a href="#C-11-的左值和右值的概念" class="headerlink" title="C++11 的左值和右值的概念"></a>C++11 的左值和右值的概念</h2><p>在 c++中，一个值要么是右值，要么是左值，左值是指表达式结束后依然存在的持久化对象，右值是指表达式结束时就不再存在的临时对象。所有的具名变量或者对象都是左值，而右值不具名。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> lvalue = <span class="number">1</span>; <span class="comment">// lvalue 为左值， 1 为右值</span></span><br></pre></td></tr></tbody></table></figure>
-<h2 id="左值引用和右值引用"><a class="markdownIt-Anchor" href="#左值引用和右值引用"></a> 左值引用和右值引用</h2>
-<ul>
+<h2 id="左值引用和右值引用"><a href="#左值引用和右值引用" class="headerlink" title="左值引用和右值引用"></a>左值引用和右值引用</h2><ul>
 <li>左值引用：引用一个对象</li>
 <li>右值引用：就是必须绑定到右值的引用，C++11 中右值引用可以实现“移动语义”，通过 &amp;&amp; 获得右值引用。右值引用，可以延长右值的生命期，比如：</li>
 </ul>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span>&amp;&amp; i = <span class="number">123</span>;</span><br><span class="line"><span class="type">int</span>&amp;&amp; j = std::<span class="built_in">move</span>(i);</span><br><span class="line"><span class="type">int</span>&amp;&amp; k = i;        <span class="comment">//编译不过，这里 i 是一个左值，右值引用只能引用右值</span></span><br></pre></td></tr></tbody></table></figure>
 <p>可以通过下面的代码，更深入的体会左值引用和右值引用的区别：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> i;</span><br><span class="line"><span class="type">int</span>&amp;&amp; j = i++; <span class="comment">// 右值 i 先赋值，然后做+1 运算，运算结果存在栈中</span></span><br><span class="line"><span class="type">int</span>&amp;&amp; k = ++i; <span class="comment">// 左值 先做+1 运算，+1 的结果赋值到 i 变量中，i 是一个左值</span></span><br><span class="line"><span class="type">int</span>&amp; m = i++;</span><br><span class="line"><span class="type">int</span>&amp; l = ++i;</span><br><span class="line"></span><br><span class="line">move.cpp: In function ‘<span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span>’:</span></span><br><span class="line"><span class="function">move.cpp:<span class="number">72</span>:<span class="number">14</span>: error: cannot bind ‘int’ lvalue to ‘int&amp;&amp;’</span></span><br><span class="line"><span class="function">  int&amp;&amp; k =</span> ++i;</span><br><span class="line">              ^</span><br><span class="line">move.cpp:<span class="number">73</span>:<span class="number">15</span>: error: invalid initialization of non-<span class="type">const</span> reference of type ‘<span class="type">int</span>&amp;’ from an rvalue of type ‘<span class="type">int</span>’</span><br><span class="line">     <span class="type">int</span>&amp; m = i++;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="为什么需要右值引用"><a class="markdownIt-Anchor" href="#为什么需要右值引用"></a> 为什么需要右值引用</h2>
-<p>C++引入右值引用之后，可以通过右值引用，充分使用临时变量，或者即将不使用的变量即右值的资源，减少不必要的拷贝，提高效率。如下代码，均会产生临时变量：</p>
+<h2 id="为什么需要右值引用"><a href="#为什么需要右值引用" class="headerlink" title="为什么需要右值引用"></a>为什么需要右值引用</h2><p>C++引入右值引用之后，可以通过右值引用，充分使用临时变量，或者即将不使用的变量即右值的资源，减少不必要的拷贝，提高效率。如下代码，均会产生临时变量：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">RValue</span> {</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function">RValue <span class="title">get</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">RValue</span>();</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">put</span><span class="params">(RValue)</span></span>{}</span><br></pre></td></tr></tbody></table></figure>
 <p>为了充分利用右值的资源，减少不必要的拷贝，C++11 引入了右值引用 (&amp;&amp;)，移动构造函数，移动复制运算符以及 std::move。</p>
-<h2 id="stdmove"><a class="markdownIt-Anchor" href="#stdmove"></a> std::move</h2>
-<h3 id="右值引用-移动构造函数移动复制运算符以及-stdmove"><a class="markdownIt-Anchor" href="#右值引用-移动构造函数移动复制运算符以及-stdmove"></a> 右值引用 (&amp;&amp;)，移动构造函数，移动复制运算符以及 std::move</h3>
-<figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">RValue</span> {</span><br><span class="line">	<span class="built_in">RValue</span>():<span class="built_in">sources</span>(<span class="string">"hello!!!"</span>){}</span><br><span class="line">	<span class="built_in">RValue</span>(RValue&amp;&amp; a) {</span><br><span class="line">		sources = std::<span class="built_in">move</span>(a.sources);</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp;&amp; RValue"</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="built_in">RValue</span>(<span class="type">const</span> RValue&amp; a) {</span><br><span class="line">		sources = a.sources;</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp; RValue"</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="type">void</span> <span class="keyword">operator</span>=(<span class="type">const</span> RValue&amp;&amp; a) {</span><br><span class="line">		sources = std::<span class="built_in">move</span>(a.sources);</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp;&amp; =="</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="type">void</span> <span class="keyword">operator</span>=(<span class="type">const</span> RValue&amp; a) {</span><br><span class="line">		sources = a.sources;</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp; =="</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	string sources;;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function">RValue <span class="title">get</span><span class="params">()</span> </span>{</span><br><span class="line">    RValue a;</span><br><span class="line">	<span class="keyword">return</span> a;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">put</span><span class="params">(RValue)</span></span>{}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>{</span><br><span class="line">	RValue a = <span class="built_in">get</span>();</span><br><span class="line">    cout&lt;&lt;<span class="string">"---------------"</span>&lt;&lt;endl;</span><br><span class="line">	<span class="built_in">put</span>(<span class="built_in">RValue</span>());</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="std-move"><a href="#std-move" class="headerlink" title="std::move"></a>std::move</h2><h3 id="右值引用-amp-amp-，移动构造函数，移动复制运算符以及-std-move"><a href="#右值引用-amp-amp-，移动构造函数，移动复制运算符以及-std-move" class="headerlink" title="右值引用 (&amp;&amp;)，移动构造函数，移动复制运算符以及 std::move"></a>右值引用 (&amp;&amp;)，移动构造函数，移动复制运算符以及 std::move</h3><figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;memory&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;vector&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;string&gt;</span></span></span><br><span class="line"><span class="keyword">using</span> <span class="keyword">namespace</span> std;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">RValue</span> {</span><br><span class="line">	<span class="built_in">RValue</span>():<span class="built_in">sources</span>(<span class="string">"hello!!!"</span>){}</span><br><span class="line">	<span class="built_in">RValue</span>(RValue&amp;&amp; a) {</span><br><span class="line">		sources = std::<span class="built_in">move</span>(a.sources);</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp;&amp; RValue"</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="built_in">RValue</span>(<span class="type">const</span> RValue&amp; a) {</span><br><span class="line">		sources = a.sources;</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp; RValue"</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="type">void</span> <span class="keyword">operator</span>=(<span class="type">const</span> RValue&amp;&amp; a) {</span><br><span class="line">		sources = std::<span class="built_in">move</span>(a.sources);</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp;&amp; =="</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	<span class="type">void</span> <span class="keyword">operator</span>=(<span class="type">const</span> RValue&amp; a) {</span><br><span class="line">		sources = a.sources;</span><br><span class="line">		cout&lt;&lt;<span class="string">"&amp; =="</span>&lt;&lt;endl;</span><br><span class="line">	}</span><br><span class="line"></span><br><span class="line">	string sources;;</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="function">RValue <span class="title">get</span><span class="params">()</span> </span>{</span><br><span class="line">    RValue a;</span><br><span class="line">	<span class="keyword">return</span> a;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">put</span><span class="params">(RValue)</span></span>{}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>{</span><br><span class="line">	RValue a = <span class="built_in">get</span>();</span><br><span class="line">    cout&lt;&lt;<span class="string">"---------------"</span>&lt;&lt;endl;</span><br><span class="line">	<span class="built_in">put</span>(<span class="built_in">RValue</span>());</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>不过，当运行的时候却发现没有任何输出</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">g++ move.cpp -std=c++11 -o move</span><br><span class="line">./move</span><br><span class="line">---------------</span><br></pre></td></tr></tbody></table></figure>
 <p>这是因为，编译器做了优化，编译的时候加上-fno-elide-constructors，去掉优化</p>
@@ -361,36 +200,27 @@
 <p>只是简单的修改了一下，std::move(a)，在编译器做了优化的情况下，用了 std::move，反而多做了一次拷贝。</p>
 <p>其实，RValue 如果在没有定义移动构造函数，重复上面的操作，生成临时变量的次数还是一样的，只不过，调用的时拷贝构造函数了而已。</p>
 <p>通过 get 函数可以知道，乱用 std::move 在编译器开启构造函数优化的场景下反而增加了不必要的拷贝。那么，std::move 应该在什么场景下使用？</p>
-<h3 id="stdmove-使用场景"><a class="markdownIt-Anchor" href="#stdmove-使用场景"></a> std::move 使用场景</h3>
-<h4 id="移动构造函数的原理"><a class="markdownIt-Anchor" href="#移动构造函数的原理"></a> 移动构造函数的原理</h4>
-<p>通过移动构造，b 指向 a 的资源，a 不再拥有资源，这里的资源，可以是动态申请的内存，网络链接，打开的文件，也可以是本例中的 string。这时候访问 a 的行为时未定义的，比如，如果资源是动态内存，a 被移动之后，再次访问 a 的资源，根据移动构造函数的定义，可能是空指针，如果是资源上文的 string，移动之后，a 的资源为空字符串（string 被移动之后，为空字符串）。<br>
-可以通过下面代码验证，修改 main 函数：</p>
+<h3 id="std-move-使用场景"><a href="#std-move-使用场景" class="headerlink" title="std::move 使用场景"></a>std::move 使用场景</h3><h4 id="移动构造函数的原理"><a href="#移动构造函数的原理" class="headerlink" title="移动构造函数的原理"></a>移动构造函数的原理</h4><p>通过移动构造，b 指向 a 的资源，a 不再拥有资源，这里的资源，可以是动态申请的内存，网络链接，打开的文件，也可以是本例中的 string。这时候访问 a 的行为时未定义的，比如，如果资源是动态内存，a 被移动之后，再次访问 a 的资源，根据移动构造函数的定义，可能是空指针，如果是资源上文的 string，移动之后，a 的资源为空字符串（string 被移动之后，为空字符串）。<br>可以通过下面代码验证，修改 main 函数：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">()</span> </span>{</span><br><span class="line">	RValue a, b;</span><br><span class="line">	RValue a1 = std::<span class="built_in">move</span>(a);</span><br><span class="line">	cout&lt;&lt;<span class="string">"a.sources:"</span>&lt;&lt;a.sources&lt;&lt;endl;</span><br><span class="line">	cout&lt;&lt;<span class="string">"a1.sources:"</span>&lt;&lt;a1.sources&lt;&lt;endl;</span><br><span class="line">	<span class="function">RValue <span class="title">b1</span><span class="params">(b)</span></span>;</span><br><span class="line">	cout&lt;&lt;<span class="string">"b.sources:"</span>&lt;&lt;b.sources&lt;&lt;endl;</span><br><span class="line">	cout&lt;&lt;<span class="string">"b1.sources:"</span>&lt;&lt;a1.sources&lt;&lt;endl;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">g++ move.cpp -std=c++<span class="number">11</span> -o move</span><br><span class="line"> ./move</span><br><span class="line">&amp;&amp; RValue</span><br><span class="line">a.sources:</span><br><span class="line">a1.sources:hello!!!</span><br><span class="line">&amp; RValue</span><br><span class="line">b.sources:hello!!!</span><br><span class="line">b1.sources:hello!!!</span><br></pre></td></tr></tbody></table></figure>
 <p>通过移动构造函数之后，a 的资源为空，b 指向了 a 的资源。通过拷贝构造函数，b 复制了 a 的资源。</p>
-<h4 id="stdmove-的原理"><a class="markdownIt-Anchor" href="#stdmove-的原理"></a> std::move 的原理</h4>
-<p>std::move 的定义：</p>
+<h4 id="std-move-的原理"><a href="#std-move-的原理" class="headerlink" title="std::move 的原理"></a>std::move 的原理</h4><p>std::move 的定义：</p>
 <figure class="highlight cpp"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt;</span><br><span class="line">  <span class="keyword">constexpr</span> <span class="keyword">typename</span> std::remove_reference&lt;_Tp&gt;::<span class="function">type&amp;&amp;</span></span><br><span class="line"><span class="function">  <span class="title">move</span><span class="params">(_Tp&amp;&amp; <span class="type">__t</span>)</span> <span class="keyword">noexcept</span></span></span><br><span class="line"><span class="function">  </span>{ <span class="keyword">return</span> <span class="keyword">static_cast</span>&lt;<span class="keyword">typename</span> std::remove_reference&lt;_Tp&gt;::type&amp;&amp;&gt;(<span class="type">__t</span>); }</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
 <p>这里，T&amp;&amp;是通用引用，需要注意和右值引用（比如 int&amp;&amp;）区分。通过 move 定义可以看出，move 并没有”移动“什么内容，只是将传入的值转换为右值，此外没有其他动作。std::move+移动构造函数或者移动赋值运算符，才能充分起到减少不必要拷贝的意义。</p>
-<h4 id="stdmove-的使用场景"><a class="markdownIt-Anchor" href="#stdmove-的使用场景"></a> std::move 的使用场景</h4>
-<p>在之前的项目中看到有的同事到处使用 std::move，好像觉得使用了 std::move 就能移动资源，提升性能一样，在我看来，std::move 主要使用在以下场景：</p>
+<h4 id="std-move-的使用场景"><a href="#std-move-的使用场景" class="headerlink" title="std::move 的使用场景"></a>std::move 的使用场景</h4><p>在之前的项目中看到有的同事到处使用 std::move，好像觉得使用了 std::move 就能移动资源，提升性能一样，在我看来，std::move 主要使用在以下场景：</p>
 <ul>
-<li>
-<p>使用前提：</p>
+<li><p>使用前提：   </p>
 <ul>
-<li>
-<ol>
+<li><ol>
 <li>定义的类使用了资源并定义了移动构造函数和移动赋值运算符</li>
 </ol>
 </li>
-<li>
-<ol start="2">
+<li><ol>
 <li>该变量即将不再使用</li>
 </ol>
 </li>
 </ul>
 </li>
-<li>
-<p>使用场景</p>
+<li><p>使用场景</p>
 </li>
 </ul>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">RValue a, b;</span><br><span class="line"></span><br><span class="line"><span class="comment">//对 a,b 做一系列操作之后，不再使用 a,b，但需要保存到智能指针或者容器之中</span></span><br><span class="line"><span class="function">unique_ptr&lt;RValue&gt; <span class="title">up</span><span class="params">(<span class="keyword">new</span> RValue(std::move(a)))</span></span>;</span><br><span class="line">vector&lt;RValue*&gt; vr;</span><br><span class="line">vr.<span class="built_in">push_back</span>(<span class="keyword">new</span> <span class="built_in">RValue</span>(std::<span class="built_in">move</span>(b)));</span><br><span class="line"></span><br><span class="line"><span class="comment">//临时容器中保存的大量的元素需要复制到目标容器之中</span></span><br><span class="line">vector&lt;RValue&gt; vrs_temp;</span><br><span class="line">vrs_temp.<span class="built_in">push_back</span>(<span class="built_in">RValue</span>());</span><br><span class="line"><span class="function">vector&lt;RValue&gt; <span class="title">vrs</span><span class="params">(std::move(vrs_temp))</span></span>;</span><br><span class="line"></span><br><span class="line">RValue c;</span><br><span class="line"><span class="built_in">put</span>(std::<span class="built_in">move</span>(c));</span><br></pre></td></tr></tbody></table></figure>
@@ -400,12 +230,9 @@
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">void put(const RValue&amp; c){</span><br><span class="line">	cout&lt;&lt;<span class="string">"----------"</span>&lt;&lt;<span class="string">endl;</span></span><br><span class="line"><span class="string">	unique_ptr&lt;RValue&gt; up(new RValue(std::move(c)));</span></span><br><span class="line"><span class="string">	cout&lt;&lt;"----------"&lt;&lt;endl</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">RValue c;</span><br><span class="line">put(std::move(c));</span><br><span class="line"></span><br><span class="line">g++ move.cpp -std=c++11 -o move</span><br><span class="line"> ./move</span><br><span class="line">----------</span><br><span class="line">&amp; RValue</span><br><span class="line">----------</span><br></pre></td></tr></tbody></table></figure>
 <p>不使用左值常量引用：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">void put(RValue c){</span><br><span class="line">	cout&lt;&lt;<span class="string">"----------"</span>&lt;&lt;<span class="string">endl;</span></span><br><span class="line"><span class="string">	unique_ptr&lt;RValue&gt; up(new RValue(std::move(c)));</span></span><br><span class="line"><span class="string">	cout&lt;&lt;"----------"&lt;&lt;endl</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line">RValue c;</span><br><span class="line">put(std::move(c));</span><br><span class="line"></span><br><span class="line">g++ move.cpp -std=c++11 -o move</span><br><span class="line"> ./move</span><br><span class="line">&amp;&amp; RValue</span><br><span class="line">----------</span><br><span class="line">&amp;&amp; RValue</span><br><span class="line">----------</span><br></pre></td></tr></tbody></table></figure>
-<p>这是因为，根据通用引用的定义，std::move© 过程中，模板参数被推倒为 const RValue&amp;，因此，调用拷贝构造函数。</p>
-<h4 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h4>
-<p>通过简绍右值和右值引用以及 std::move 和移动构造函数，总结右值引用，移动构造函数和移动赋值运算符和 std::move 的用法和注意事项。</p>
-<h2 id="stdforward"><a class="markdownIt-Anchor" href="#stdforward"></a> std::forward</h2>
-<h3 id="forward-的作用"><a class="markdownIt-Anchor" href="#forward-的作用"></a> forward 的作用</h3>
-<p>std::forward 被称为完美转发，它的作用是保持原来的值属性不变。啥意思呢？通俗的讲就是，如果原来的值是左值，经 std::forward 处理后该值还是左值；如果原来的值是右值，经 std::forward 处理后它还是右值。</p>
+<p>这是因为，根据通用引用的定义，std::move(c) 过程中，模板参数被推倒为 const RValue&amp;，因此，调用拷贝构造函数。</p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>通过简绍右值和右值引用以及 std::move 和移动构造函数，总结右值引用，移动构造函数和移动赋值运算符和 std::move 的用法和注意事项。</p>
+<h2 id="std-forward"><a href="#std-forward" class="headerlink" title="std::forward"></a>std::forward</h2><h3 id="forward-的作用"><a href="#forward-的作用" class="headerlink" title="forward 的作用"></a>forward 的作用</h3><p>std::forward 被称为完美转发，它的作用是保持原来的值属性不变。啥意思呢？通俗的讲就是，如果原来的值是左值，经 std::forward 处理后该值还是左值；如果原来的值是右值，经 std::forward 处理后它还是右值。</p>
 <p>看看下面的例子，你应该就清楚上面这句话的含义了：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">print</span><span class="params">(T &amp; t)</span></span>{</span><br><span class="line">    std::cout &lt;&lt; <span class="string">"左值"</span> &lt;&lt; std::endl;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">print</span><span class="params">(T &amp;&amp; t)</span></span>{</span><br><span class="line">    std::cout &lt;&lt; <span class="string">"右值"</span> &lt;&lt; std::endl;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">testForward</span><span class="params">(T &amp;&amp; v)</span></span>{</span><br><span class="line">    <span class="built_in">print</span>(v);</span><br><span class="line">    <span class="built_in">print</span>(std::forward&lt;T&gt;(v));</span><br><span class="line">    <span class="built_in">print</span>(std::<span class="built_in">move</span>(v));</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> * argv[])</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="built_in">testForward</span>(<span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    std::cout &lt;&lt; <span class="string">"======================"</span> &lt;&lt; std::endl;</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> x = <span class="number">1</span>;</span><br><span class="line">    <span class="built_in">testFoward</span>(x);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">//clang++ -std=c++11 -g -o forward test_forward.cpp</span></span><br></pre></td></tr></tbody></table></figure>
 <p>上面代码执行结果如下：</p>
@@ -413,26 +240,21 @@
 <p>从上面第一组的结果我们可以看到，传入的 1 虽然是右值，但经过函数传参之后它变成了左值（在内存中分配了空间）；而第二行由于使用了 std::forward 函数，所以不会改变它的右值属性，因此会调用参数为右值引用的 print 模板函数；第三行，因为 std::move 会将传入的参数强制转成右值，所以结果一定是右值。</p>
 <p>再来看看第二组结果。因为 x 变量是左值，所以第一行一定是左值；第二行使用 forward 处理，它依然会让其保持左值，所以第二也是左值；最后一行使用 move 函数，因此一定是右值。</p>
 <p>通过上面的例子我想你应该已经清楚 forward 的作用是什么了吧？</p>
-<h3 id="forward-实现原理"><a class="markdownIt-Anchor" href="#forward-实现原理"></a> forward 实现原理</h3>
-<p>要分析 forward 实现原理，我们首先来看一下 forward 代码实现。由于我们之前已经有了分析 std::move 的基础，所以再来看 forward 代码应该不会太困难。</p>
+<h3 id="forward-实现原理"><a href="#forward-实现原理" class="headerlink" title="forward 实现原理"></a>forward 实现原理</h3><p>要分析 forward 实现原理，我们首先来看一下 forward 代码实现。由于我们之前已经有了分析 std::move 的基础，所以再来看 forward 代码应该不会太困难。</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function">T&amp;&amp; <span class="title">forward</span><span class="params">(<span class="keyword">typename</span> std::remove_reference&lt;T&gt;::type&amp; param)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">static_cast</span>&lt;T&amp;&amp;&gt;(param);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="keyword">template</span> &lt;<span class="keyword">typename</span> T&gt;</span><br><span class="line"><span class="function">T&amp;&amp; <span class="title">forward</span><span class="params">(<span class="keyword">typename</span> std::remove_reference&lt;T&gt;::type&amp;&amp; param)</span></span></span><br><span class="line"><span class="function"></span>{</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">static_cast</span>&lt;T&amp;&amp;&gt;(param);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>forward 实现了两个模板函数，一个接收左值，另一个接收右值。</p>
-<h1 id="pod"><a class="markdownIt-Anchor" href="#pod"></a> POD</h1>
-<p>POD 是英文中 Plain Old Data 的缩写。POD 在 C<ins>中是非常重要的一个概念，通常用于说明一个类型的属性，尤其是用户自定义类型的属性。具体地，C</ins>11 将 POD 划分为两个基本概念的合集，即：平凡的（trivial）和标准布局的（standard layout）。</p>
-<h2 id="trivial"><a class="markdownIt-Anchor" href="#trivial"></a> trivial</h2>
-<p>我们先来看一下平凡的定义。通常情况下，一个平凡的类或结构体应该符合以下定义：</p>
+<h1 id="POD"><a href="#POD" class="headerlink" title="POD"></a>POD</h1><p>POD 是英文中 Plain Old Data 的缩写。POD 在 C++中是非常重要的一个概念，通常用于说明一个类型的属性，尤其是用户自定义类型的属性。具体地，C++11 将 POD 划分为两个基本概念的合集，即：平凡的（trivial）和标准布局的（standard layout）。</p>
+<h2 id="trivial"><a href="#trivial" class="headerlink" title="trivial"></a>trivial</h2><p>我们先来看一下平凡的定义。通常情况下，一个平凡的类或结构体应该符合以下定义：</p>
 <ul>
 <li>拥有平凡的默认构造函数（trivial constructor）和析构函数（trivial destructor）。平凡的默认构造函数就是说构造函数“什么都不干”。使用=default 关键字来显式地声明缺省版本的构造函数，使得类型恢复“平凡化”。</li>
 <li>拥有平凡的拷贝构造函数（trivial copy constructor）和移动构造函数（trivialmove constructor）。平凡的拷贝构造函数基本上等同于使用 memcpy 进行类型的构造。同平凡的默认构造函数一样，不声明拷贝构造函数的。话，编译器会帮程序员自动地生成。同样地，可以显式地使用=default 声明默认拷贝构造函数。</li>
 <li>拥有平凡的拷贝赋值运算符（trivial assignment operator）和移动赋值运算符（trivial move operator）。这基本上与平凡的拷贝构造函数和平凡的移动构造运算符类似。</li>
 <li>不能包含虚函数以及虚基类</li>
 </ul>
-<h2 id="standard-layout"><a class="markdownIt-Anchor" href="#standard-layout"></a> standard layout</h2>
-<p>标准布局的类或结构体应该符合以下定义：</p>
+<h2 id="standard-layout"><a href="#standard-layout" class="headerlink" title="standard layout"></a>standard layout</h2><p>标准布局的类或结构体应该符合以下定义：</p>
 <ul>
 <li>所有非静态成员有相同的访问权限（public, private, protected）</li>
-<li>在类或者结构体继承时，满足以下两种情况之一：
-<ul>
+<li>在类或者结构体继承时，满足以下两种情况之一：<ul>
 <li>派生类中有非静态成员，且只有一个仅包含静态成员的基类</li>
 <li>基类有非静态成员，而派生类没有非静态成员</li>
 </ul>
@@ -441,18 +263,15 @@
 <li>没有虚函数和虚基类</li>
 <li>所有非静态数据成员均符合标准布局类型，其基类也符合标准布局。这是一个递归的定义，没有什么好特别解释的</li>
 </ul>
-<h2 id="pod-2"><a class="markdownIt-Anchor" href="#pod-2"></a> POD</h2>
-<p>对于 POD 而言，在 C++11 中的定义就是平凡的和标准布局的两个方面。同样地，要判定某一类型是否是 POD，标准库中的&lt;type_traits&gt;头文件也为程序员提供了如下模板类：</p>
+<h2 id="POD-1"><a href="#POD-1" class="headerlink" title="POD"></a>POD</h2><p>对于 POD 而言，在 C++11 中的定义就是平凡的和标准布局的两个方面。同样地，要判定某一类型是否是 POD，标准库中的<type_traits>头文件也为程序员提供了如下模板类：</type_traits></p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/// is_pod</span></span><br><span class="line"><span class="comment">// Could use is_standard_layout &amp;&amp; is_trivial instead of the builtin.</span></span><br><span class="line"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> _Tp&gt;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">is_pod</span></span><br><span class="line">: <span class="keyword">public</span> integral_constant&lt;<span class="type">bool</span>, __is_pod(_Tp)&gt;</span><br><span class="line">  { };</span><br></pre></td></tr></tbody></table></figure>
 <p>使用 POD 我们看得到的大概有如下 3 点：</p>
 <ul>
 <li>字节赋值，代码中我们可以安全地使用 memset 和 memcpy 对 POD 类型进行初始化和拷贝等操作。</li>
-<li>提供对 C 内存布局兼容。C<ins>程序可以与 C 函数进行相互操作，因为 POD 类型的数据在 C 与 C</ins>间的操作总是安全的。</li>
+<li>提供对 C 内存布局兼容。C++程序可以与 C 函数进行相互操作，因为 POD 类型的数据在 C 与 C++间的操作总是安全的。</li>
 <li>保证了静态初始化的安全有效。静态初始化在很多时候能够提高程序的性能，而 POD 类型的对象初始化往往更加简单（比如放入目标文件的。bss 段，在初始化中直接被赋 0）。</li>
 </ul>
-<h1 id="用户定义字面量"><a class="markdownIt-Anchor" href="#用户定义字面量"></a> 用户定义字面量</h1>
-<h2 id="c中的字面量"><a class="markdownIt-Anchor" href="#c中的字面量"></a> C++中的字面量</h2>
-<p>C++ 自带 4 种字面量：</p>
+<h1 id="用户定义字面量"><a href="#用户定义字面量" class="headerlink" title="用户定义字面量"></a>用户定义字面量</h1><h2 id="C-中的字面量"><a href="#C-中的字面量" class="headerlink" title="C++中的字面量"></a>C++中的字面量</h2><p>C++ 自带 4 种字面量：</p>
 <ul>
 <li>整形 123</li>
 <li>浮点型 12.3</li>
@@ -468,15 +287,13 @@
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">double</span> height = <span class="number">3.4</span>;</span><br></pre></td></tr></tbody></table></figure>
 <p>那么，痛点来了，此处的 height 的单位是什么呢？米？厘米？又或是英尺？在面对此类问题时，如果我们能编写如下代码，事情就会简单许多：</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">height = <span class="number">3</span>cm;</span><br><span class="line"></span><br><span class="line"><span class="comment">// ratio = (3 * 10) / 2</span></span><br><span class="line">ratio = <span class="number">3</span>cm / <span class="number">2</span>mm;</span><br></pre></td></tr></tbody></table></figure>
-<h2 id="用户自定义字面量"><a class="markdownIt-Anchor" href="#用户自定义字面量"></a> 用户自定义字面量</h2>
-<p>C++11 允许用户自定义字面量后缀</p>
+<h2 id="用户自定义字面量"><a href="#用户自定义字面量" class="headerlink" title="用户自定义字面量"></a>用户自定义字面量</h2><p>C++11 允许用户自定义字面量后缀</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">long</span> <span class="type">double</span></span><br><span class="line"><span class="keyword">operator</span><span class="string">""</span> _cm(<span class="type">long</span> <span class="type">double</span> x) {</span><br><span class="line">  <span class="keyword">return</span> x * <span class="number">10</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">long</span> <span class="type">double</span></span><br><span class="line"><span class="keyword">operator</span><span class="string">""</span> _m(<span class="type">long</span> <span class="type">double</span> x) {</span><br><span class="line">  <span class="keyword">return</span> x * <span class="number">1000</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">long</span> <span class="type">double</span></span><br><span class="line"><span class="keyword">operator</span><span class="string">""</span> _mm(<span class="type">long</span> <span class="type">double</span> x) {</span><br><span class="line">  <span class="keyword">return</span> x;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// height = 30.0</span></span><br><span class="line"><span class="keyword">auto</span> height = <span class="number">3.0</span>_cm;</span><br><span class="line"></span><br><span class="line"><span class="comment">// length = 1230.0</span></span><br><span class="line"><span class="keyword">auto</span> length = <span class="number">1.23</span>_m;</span><br></pre></td></tr></tbody></table></figure>
 <p>如果使用这种写法，_cm, _m, _mm 等函数将在运行时被调用，如果希望在编译时就调用字面量后缀函数，则需要把函数定义为 constexpr，例如</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">constexpr</span> <span class="type">long</span> <span class="type">double</span></span><br><span class="line"><span class="keyword">operator</span><span class="string">""</span> _cm(<span class="type">long</span> <span class="type">double</span> x) {</span><br><span class="line">  <span class="keyword">return</span> x * <span class="number">10</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>更进一步，我们甚至可以</p>
 <figure class="highlight c++"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 注意，如果这里要定义函数为 constexpr</span></span><br><span class="line"><span class="comment">// 编译时需要使用 c++14 标准 (-std=c++14)</span></span><br><span class="line"><span class="type">int</span> <span class="keyword">operator</span><span class="string">""</span> _bin(</span><br><span class="line">  <span class="type">const</span> <span class="type">char</span>* s,</span><br><span class="line">  <span class="type">size_t</span> l</span><br><span class="line">) {</span><br><span class="line">  <span class="type">int</span> ret = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; l; i++){</span><br><span class="line">    ret = (ret &lt;&lt; <span class="number">1</span>) | (s[i] - <span class="string">'0'</span>);</span><br><span class="line">  }</span><br><span class="line">  <span class="keyword">return</span> ret;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="type">int</span> num = <span class="string">"110"</span>_bin; <span class="comment">// num = 6</span></span><br></pre></td></tr></tbody></table></figure>
-<h2 id="自定义字面量的限制"><a class="markdownIt-Anchor" href="#自定义字面量的限制"></a> 自定义字面量的限制</h2>
-<p>C++11 只允许字面量后缀函数的参数为以下类型，即整数，浮点以及字符串：</p>
+<h2 id="自定义字面量的限制"><a href="#自定义字面量的限制" class="headerlink" title="自定义字面量的限制"></a>自定义字面量的限制</h2><p>C++11 只允许字面量后缀函数的参数为以下类型，即整数，浮点以及字符串：</p>
 <ul>
 <li>unsigned long long</li>
 <li>long double</li>
@@ -487,187 +304,64 @@
 <li>char32_t const*, std::size_t</li>
 </ul>
 <p>返回值则无类型限制</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC85NDU4ODIwNA==">https://zhuanlan.zhihu.com/p/94588204<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cuamlhbnNodS5jb20vcC85N2ZkZDg1Mjk3NGY=">https://www.jianshu.com/p/97fdd852974f<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly96aHVhbmxhbi56aGlodS5jb20vcC8xMTEzNjk2OTM=">https://zhuanlan.zhihu.com/p/111369693<i class="fa fa-external-link-alt"></i></span><br>
-《深入理解 C<ins>11：C</ins>11 新特性解析与应用》</p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="followme">
-  <span>欢迎关注我的其它发布渠道</span>
-
-  <div class="social-list">
-
-      <div class="social-item">
-          <span class="social-link">
-            <span class="icon">
-              <i class="fab fa-weixin"></i>
-            </span>
-
-            <span class="label">WeChat</span>
-          </span>
-
-          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
-      </div>
-
-      <div class="social-item">
-          <a target="_blank" class="social-link" href="/atom.xml">
-            <span class="icon">
-              <i class="fa fa-rss"></i>
-            </span>
-
-            <span class="label">RSS</span>
-          </a>
-      </div>
-  </div>
-</div>
-
-          <div class="post-tags">
-              <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
-              <a href="/tags/C/" rel="tag"><i class="fa fa-tag"></i> C++</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/Program/CPP11Part1/" rel="prev" title="C++11（一）assert 与 noexcept">
-                  <i class="fa fa-angle-left"></i> C++11（一）assert 与 noexcept
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/Program/CPP11Part3/" rel="next" title="C++11（三）auto、decltype 与 for">
-                  C++11（三）auto、decltype 与 for <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    <div class="comments" id="waline"></div>
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 2018 – 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
-  </div>
-<div class="wordcount">
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-chart-line"></i>
-    </span>
-      <span>站点总字数：</span>
-    <span title="站点总字数">492k</span>
-  </span>
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-coffee"></i>
-    </span>
-      <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">29:47</span>
-  </span>
-</div>
-<div class="busuanzi-count">
-    <span class="post-meta-item" id="busuanzi_container_site_uv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-user"></i>
-      </span>
-      <span class="site-uv" title="总访客量">
-        <span id="busuanzi_value_site_uv"></span>
-      </span>
-    </span>
-    <span class="post-meta-item" id="busuanzi_container_site_pv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-eye"></i>
-      </span>
-      <span class="site-pv" title="总访问量">
-        <span id="busuanzi_value_site_pv"></span>
-      </span>
-    </span>
-</div>
-
-    </div>
-  </footer>
-
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/94588204">https://zhuanlan.zhihu.com/p/94588204</a><br><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/97fdd852974f">https://www.jianshu.com/p/97fdd852974f</a><br><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/111369693">https://zhuanlan.zhihu.com/p/111369693</a><br>《深入理解 C++11：C++11 新特性解析与应用》   </p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Programming/">Programming</a><a class="post-meta__tags" href="/tags/C/">C++</a></div><div class="post_share"><div class="social-share" data-image="https://unsplash.it/1600/900?random&amp;1057" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/Program/CPP11Part3/" title="C++11（三）auto、decltype 与 for"><img class="cover" src="https://unsplash.it/1600/900?random&amp;6073" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">C++11（三）auto、decltype 与 for</div></div></a></div><div class="next-post pull-right"><a href="/Program/CPP11Part1/" title="C++11（一）assert 与 noexcept"><img class="cover" src="https://unsplash.it/1600/900?random&amp;5989" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">C++11（一）assert 与 noexcept</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/Program/C++DesignPatternsPart1/" title="C++设计模式（一）基于 Policy 的 class 设计"><img class="cover" src="https://unsplash.it/1600/900?random&5462" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-02-11</div><div class="title">C++设计模式（一）基于 Policy 的 class 设计</div></div></a></div><div><a href="/Program/CPP11Part1/" title="C++11（一）assert 与 noexcept"><img class="cover" src="https://unsplash.it/1600/900?random&5989" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-01-25</div><div class="title">C++11（一）assert 与 noexcept</div></div></a></div><div><a href="/Program/CPP11Part3/" title="C++11（三）auto、decltype 与 for"><img class="cover" src="https://unsplash.it/1600/900?random&6073" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-01-26</div><div class="title">C++11（三）auto、decltype 与 for</div></div></a></div><div><a href="/Program/CPP11Part4/" title="C++11（四）智能指针"><img class="cover" src="https://unsplash.it/1600/900?random&1637" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-01-27</div><div class="title">C++11（四）智能指针</div></div></a></div><div><a href="/Program/CPP11Part6/" title="C++11（六）nullptr 与 Lambda"><img class="cover" src="https://unsplash.it/1600/900?random&6569" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-01-27</div><div class="title">C++11（六）nullptr 与 Lambda</div></div></a></div><div><a href="/Program/CPPEffectivePart1/" title="C++（二） Effective C++（上）"><img class="cover" src="https://unsplash.it/1600/900?random&7244" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-12-29</div><div class="title">C++（二） Effective C++（上）</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CarlyleLiu</div><div class="author-info__description">CarlyleLiu’s Blog</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/carlyleliu"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/carlyleliu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:yyliushuai@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-envelope" style="color: #24292e;"></i></a><a class="social-icon" href="https://twitter.com/yyliushuai" target="_blank" title="Twitter"><i class="fab fa-twitter" style="color: #24292e;"></i></a><a class="social-icon" href="https://youtube.com/carlyleliu" target="_blank" title="YouTube"><i class="fab fa-youtube" style="color: #24292e;"></i></a><a class="social-icon" href="https://instagram.com/blurredliu" target="_blank" title="Instagram"><i class="fab fa-instagram" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">next主题站 https://carlyleliu.github.io/next</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E6%89%BF%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">1.</span> <span class="toc-text">继承构造函数</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A7%94%E6%B4%BE%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0"><span class="toc-number">2.</span> <span class="toc-text">委派构造函数</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8%EF%BC%9A%E7%A7%BB%E5%8A%A8%E8%AF%AD%E4%B9%89%E5%92%8C%E5%AE%8C%E7%BE%8E%E8%BD%AC%E5%8F%91"><span class="toc-number">3.</span> <span class="toc-text">右值引用：移动语义和完美转发</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#C-11-%E7%9A%84%E5%B7%A6%E5%80%BC%E5%92%8C%E5%8F%B3%E5%80%BC%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="toc-number">3.1.</span> <span class="toc-text">C++11 的左值和右值的概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B7%A6%E5%80%BC%E5%BC%95%E7%94%A8%E5%92%8C%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8"><span class="toc-number">3.2.</span> <span class="toc-text">左值引用和右值引用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8"><span class="toc-number">3.3.</span> <span class="toc-text">为什么需要右值引用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#std-move"><span class="toc-number">3.4.</span> <span class="toc-text">std::move</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%B3%E5%80%BC%E5%BC%95%E7%94%A8-amp-amp-%EF%BC%8C%E7%A7%BB%E5%8A%A8%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%EF%BC%8C%E7%A7%BB%E5%8A%A8%E5%A4%8D%E5%88%B6%E8%BF%90%E7%AE%97%E7%AC%A6%E4%BB%A5%E5%8F%8A-std-move"><span class="toc-number">3.4.1.</span> <span class="toc-text">右值引用 (&amp;&amp;)，移动构造函数，移动复制运算符以及 std::move</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#std-move-%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">3.4.2.</span> <span class="toc-text">std::move 使用场景</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%A7%BB%E5%8A%A8%E6%9E%84%E9%80%A0%E5%87%BD%E6%95%B0%E7%9A%84%E5%8E%9F%E7%90%86"><span class="toc-number">3.4.2.1.</span> <span class="toc-text">移动构造函数的原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#std-move-%E7%9A%84%E5%8E%9F%E7%90%86"><span class="toc-number">3.4.2.2.</span> <span class="toc-text">std::move 的原理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#std-move-%E7%9A%84%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">3.4.2.3.</span> <span class="toc-text">std::move 的使用场景</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">3.4.2.4.</span> <span class="toc-text">总结</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#std-forward"><span class="toc-number">3.5.</span> <span class="toc-text">std::forward</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#forward-%E7%9A%84%E4%BD%9C%E7%94%A8"><span class="toc-number">3.5.1.</span> <span class="toc-text">forward 的作用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#forward-%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86"><span class="toc-number">3.5.2.</span> <span class="toc-text">forward 实现原理</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#POD"><span class="toc-number">4.</span> <span class="toc-text">POD</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#trivial"><span class="toc-number">4.1.</span> <span class="toc-text">trivial</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#standard-layout"><span class="toc-number">4.2.</span> <span class="toc-text">standard layout</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#POD-1"><span class="toc-number">4.3.</span> <span class="toc-text">POD</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E5%AE%9A%E4%B9%89%E5%AD%97%E9%9D%A2%E9%87%8F"><span class="toc-number">5.</span> <span class="toc-text">用户定义字面量</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#C-%E4%B8%AD%E7%9A%84%E5%AD%97%E9%9D%A2%E9%87%8F"><span class="toc-number">5.1.</span> <span class="toc-text">C++中的字面量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AD%97%E9%9D%A2%E9%87%8F"><span class="toc-number">5.2.</span> <span class="toc-text">用户自定义字面量</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E5%AD%97%E9%9D%A2%E9%87%8F%E7%9A%84%E9%99%90%E5%88%B6"><span class="toc-number">5.3.</span> <span class="toc-text">自定义字面量的限制</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="toc-number">6.</span> <span class="toc-text">参考文献</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2025 By CarlyleLiu</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, '']
+      }
+    }
+  }
   
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.13.0"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
 
-  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
 
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-  <script src="/js/third-party/pace.js"></script>
-
-
-  
-  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
-<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/Program/CPP11Part2/"}</script>
-<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
-<script>
-document.addEventListener('page:loaded', () => {
-  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
-    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
-  ).then(() => 
-    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
-  );
-});
-</script>
-
-</body>
-</html>
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><!-- hexo injector body_end end --></body></html>

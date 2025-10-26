@@ -1,39 +1,11 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
-  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
-
-<link rel="stylesheet" href="/css/main.css">
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="原图">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Linux 进程管理（番外篇）调度算法的演变 | Matrix</title><meta name="author" content="CarlyleLiu"><meta name="copyright" content="CarlyleLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 进程管理（番外篇）调度算法的演变">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxKernel/LinuxTaskExt/index.html">
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskSchAlgoHistory.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/O1_sched.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/O1_runqueue.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MLFQ.png">
+<meta property="og:image" content="https://unsplash.it/1600/900?random&9172">
 <meta property="article:published_time" content="2021-11-08T01:49:26.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.350Z">
 <meta property="article:author" content="CarlyleLiu">
@@ -41,358 +13,203 @@
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Task">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskSchAlgoHistory.png">
+<meta name="twitter:image" content="https://unsplash.it/1600/900?random&9172"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxTaskExt/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":false,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Linux 进程管理（番外篇）调度算法的演变',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-09-27 12:36:15'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
 
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
 
-<link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxTaskExt/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxKernel/LinuxTaskExt/","path":"LinuxKernel/LinuxTaskExt/","title":"Linux 进程管理（番外篇）调度算法的演变"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Linux 进程管理（番外篇）调度算法的演变 | Matrix</title>
-  
-
-
-
-
-
-
-
-<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-<!-- hexo injector head_end start -->
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><!-- hexo injector head_end start -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end -->
+<link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-footer-beautify@1.0.0/lib/runtime.min.css" media="print" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.2.0">
 <style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
 <link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切换导航栏" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">Matrix</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="搜索" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="搜索..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          文章目录
-        </li>
-        <li class="sidebar-nav-overview">
-          站点概览
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#on%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text"> O（n）调度器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E7%BB%84%E7%BB%87-task"><span class="nav-text"> 如何组织 task</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E4%BC%98%E5%85%88%E7%BA%A7"><span class="nav-text"> 动态优先级</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BB%E8%B0%83%E5%BA%A6%E5%99%A8%E7%AE%97%E6%B3%95"><span class="nav-text"> 主调度器算法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E7%89%87%E5%A4%84%E7%90%86"><span class="nav-text"> 时间片处理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#o1%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text"> O（1）调度器</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#why-o1%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="nav-text"> Why O（1）调度器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#o1%E8%B0%83%E5%BA%A6%E5%99%A8%E7%9A%84%E8%BD%AF%E4%BB%B6%E5%8A%9F%E8%83%BD%E5%88%92%E5%88%86"><span class="nav-text"> O（1）调度器的软件功能划分</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#o1%E8%B0%83%E5%BA%A6%E5%99%A8%E7%9A%84-runqueue-%E7%BB%93%E6%9E%84"><span class="nav-text"> O（1）调度器的 runqueue 结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A0%B8%E5%BF%83%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="nav-text"> 核心调度算法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%95%AA%E5%A4%96%E4%B9%8B%E7%95%AA%E5%A4%96-%E5%A4%9A%E7%BA%A7%E5%8F%8D%E9%A6%88%E9%98%9F%E5%88%97%E7%AE%97%E6%B3%95"><span class="nav-text"> 番外之番外-多级反馈队列算法</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
-  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">194</span>
-          <span class="site-state-item-name">日志</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-categories">
-          <a href="/categories/">
-        <span class="site-state-item-count">28</span>
-        <span class="site-state-item-name">分类</span></a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">42</span>
-        <span class="site-state-item-name">标签</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
-      </span>
-  </div>
-  <div class="cc-license animated" itemprop="license">
-    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-        <div class="pjax">
-        </div>
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxKernel/LinuxTaskExt/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="Linux 进程管理（番外篇）调度算法的演变 | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          Linux 进程管理（番外篇）调度算法的演变
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Linux/Kernel/" itemprop="url" rel="index"><span itemprop="name">Kernel</span></a>
-        </span>
-    </span>
-
-  
-    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
-      <span class="post-meta-item-icon">
-        <i class="far fa-eye"></i>
-      </span>
-      <span class="post-meta-item-text">阅读次数：</span>
-      <span id="busuanzi_value_page_pv"></span>
-    </span>
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/LinuxKernel/LinuxTaskExt/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/LinuxKernel/LinuxTaskExt/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>4k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>14 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskSchAlgoHistory.png" alt=""><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM2MDJmYTYzNzY4OTA3MTA1OWI5Mjk=">原图<i class="fa fa-external-link-alt"></i></span></p>
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://unsplash.it/1600/900?random&amp;9172')"><nav id="nav"><span id="blog-info"><a href="/" title="Matrix"><span class="site-name">Matrix</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Linux 进程管理（番外篇）调度算法的演变</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-11-08T01:49:26.000Z" title="发表于 2021-11-08 09:49:26">2021-11-08</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-09-27T04:36:15.350Z" title="更新于 2025-09-27 12:36:15">2025-09-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/">Technology Blog</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Linux/">Linux</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Linux/Kernel/">Kernel</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Linux 进程管理（番外篇）调度算法的演变"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/TaskSchAlgoHistory.png" alt=""><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/623602fa637689071059b929">原图</a></p>
 <span id="more"></span>
-<h1 id="on调度器"><a class="markdownIt-Anchor" href="#on调度器"></a> O（n）调度器</h1>
-<h2 id="如何组织-task"><a class="markdownIt-Anchor" href="#如何组织-task"></a> 如何组织 task</h2>
-<p>调度器模块定义了一个 runqueue_head 的链表头变量，无论进程是普通进程还是实时进程，只要进程状态变成可运行状态的时候，它会被挂入这个全局 runqueue 链表中。由于整个系统中的所有 CPU 共享一个 runqueue，为了解决同步问题，调度器模块定义了一个自旋锁来保护对这个全局 runqueue 的并发访问。</p>
+<h1 id="O（n）调度器"><a href="#O（n）调度器" class="headerlink" title="O（n）调度器"></a>O（n）调度器</h1><h2 id="如何组织-task"><a href="#如何组织-task" class="headerlink" title="如何组织 task"></a>如何组织 task</h2><p>调度器模块定义了一个 runqueue_head 的链表头变量，无论进程是普通进程还是实时进程，只要进程状态变成可运行状态的时候，它会被挂入这个全局 runqueue 链表中。由于整个系统中的所有 CPU 共享一个 runqueue，为了解决同步问题，调度器模块定义了一个自旋锁来保护对这个全局 runqueue 的并发访问。</p>
 <p>除了这个 runqueue 队列，系统还有一个囊括所有 task（不管其进程状态为何）的链表，链表头定义为 init_task，在一个调度周期结束后，重新为 task 赋初始时间片值的时候会用到该链表。</p>
-<h2 id="动态优先级"><a class="markdownIt-Anchor" href="#动态优先级"></a> 动态优先级</h2>
-<p>对于普通进程，计算动态优先级的策略如下：</p>
+<h2 id="动态优先级"><a href="#动态优先级" class="headerlink" title="动态优先级"></a>动态优先级</h2><p>对于普通进程，计算动态优先级的策略如下：</p>
 <ul>
 <li>如果该进程的时间片已经耗尽，那么动态优先级是 0，这也意味着在本次调度周期中该进程已经再也没有机会获取 CPU 资源了。</li>
 <li>如果该进程的时间片还有剩余，那么其动态优先级等于该进程剩余的时间片和静态优先级之和。之所以用（20-nice value）表示静态优先级，主要是为了让静态优先级变成单调上升。之所以要考虑剩余时间片是为了奖励睡眠的进程，因为睡眠的进程剩余的时间片较多，因此动态优先级也就会高一些，更容易被调度器调度执行。</li>
 </ul>
 <p>在计算普通进程的动态优先级的时候，除了考虑进程剩余时间片信息和静态优先级，调度器也会酌情考虑 cache 和 TLB 的性能问题。例如 A 和 B 进程优先级相同，剩余的时间片都是 3 个 tick，但是 A 进程上一次就是运行在本 CPU 上，如果选择 A，可能会有更好的 cache 和 TLB 的命中率，从而提高性能。在这种情况下，调度器会提升 A 进程的动态优先级。此外，如果备选进程和当前进程共享同一个地址空间，那么在计算调度指数的时候也会做小小的倾斜。</p>
-<h2 id="主调度器算法"><a class="markdownIt-Anchor" href="#主调度器算法"></a> 主调度器算法</h2>
-<p>主调度器（schedule 函数）核心代码如下：</p>
+<h2 id="主调度器算法"><a href="#主调度器算法" class="headerlink" title="主调度器算法"></a>主调度器算法</h2><p>主调度器（schedule 函数）核心代码如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">list_for_each(tmp, &amp;runqueue_head) {</span><br><span class="line">    p = list_entry(tmp, <span class="keyword">struct</span> task_struct, run_list);</span><br><span class="line">    <span class="type">int</span> weight = goodness(p, this_cpu, prev-&gt;active_mm);</span><br><span class="line">    <span class="keyword">if</span> (weight &gt; c)</span><br><span class="line">        c = weight, next = p;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>list_for_each 用来遍历 runqueue_head 链表上的所有的进程，临时变量 p 就是本次需要检查的进程描述符。如何判断哪一个进程是最适合调度执行的进程呢？我们需要计算进程的动态优先级（对应上面程序中的变量 weight），它是通过 goodness 函数实现的。动态优先级最大的那个进程就是当前最适合调度到 CPU 执行的进程。一旦选中，调度器会启动进程切换，运行该进程以替换之前的那个进程。</p>
-<h2 id="时间片处理"><a class="markdownIt-Anchor" href="#时间片处理"></a> 时间片处理</h2>
-<p>普通进程的时间片处理思路是这样：</p>
+<h2 id="时间片处理"><a href="#时间片处理" class="headerlink" title="时间片处理"></a>时间片处理</h2><p>普通进程的时间片处理思路是这样：</p>
 <ul>
 <li>每个进程根据其静态优先级可以固定分配一个缺省的时间片，静态优先级越大，分配的时间片就越大。</li>
 <li>一旦 Runqueue 中的进程被调度执行，那么其时间片就会在 tick 到来的时候递减，如果进程时间片耗尽，那么该进程将失去分配 CPU 资源的资格。</li>
 <li>Runqueue 中的进程的时间片全部被用完之后，我们称一个调度周期结束，这时候需要为 runqueue 中的进程重新设定其缺省时间片，这样，一个新的调度周期又开始了。</li>
 </ul>
-<h1 id="o1调度器"><a class="markdownIt-Anchor" href="#o1调度器"></a> O（1）调度器</h1>
-<h2 id="why-o1调度器"><a class="markdownIt-Anchor" href="#why-o1调度器"></a> Why O（1）调度器</h2>
-<p>让我们一起来控诉 O（n）调度器的“七宗罪”，同时这也是 Ingo Molnar 发起 O（1）调度器项目背后的原因。</p>
+<h1 id="O（1）调度器"><a href="#O（1）调度器" class="headerlink" title="O（1）调度器"></a>O（1）调度器</h1><h2 id="Why-O（1）调度器"><a href="#Why-O（1）调度器" class="headerlink" title="Why O（1）调度器"></a>Why O（1）调度器</h2><p>让我们一起来控诉 O（n）调度器的“七宗罪”，同时这也是 Ingo Molnar 发起 O（1）调度器项目背后的原因。</p>
 <ul>
-<li>
-<p>算法复杂度问题：<br>
-让人最不爽的就是对 runqueue 队列的遍历，随着系统中 runnable 状态的进程数目增多，那么调度器 select next 的运算量也随之呈线性的增长，这也是我们为什么叫它 O（n）调度器的原因。此外，调度周期结束后，调度器会为所有进程的时间片进行“充值“的动作，为每一个进程计算其时间片的过程太耗费时间。</p>
+<li><p>算法复杂度问题：<br>  让人最不爽的就是对 runqueue 队列的遍历，随着系统中 runnable 状态的进程数目增多，那么调度器 select next 的运算量也随之呈线性的增长，这也是我们为什么叫它 O（n）调度器的原因。此外，调度周期结束后，调度器会为所有进程的时间片进行“充值“的动作，为每一个进程计算其时间片的过程太耗费时间。</p>
 </li>
-<li>
-<p>SMP 扩展性问题，2.4 内核的 O（n）调度器有非常差的 SMP 扩展性。</p>
+<li><p>SMP 扩展性问题，2.4 内核的 O（n）调度器有非常差的 SMP 扩展性。</p>
 </li>
-<li>
-<p>CPU 空转问题：<br>
-每当 runqueue 链表中的所有进程耗尽了其时间片，这时候就需要启动对系统中所有进程时间片重新计算的过程。这个计算过程异常丑陋，需要遍历系统中的所有进程，为进程描述符的 counter 成员赋一个新值。而这个操作足以把该 CPU 上的 L1 cache 全部干掉，这时候 L1 cache 的命中率急剧下降在只剩最后一个线程的时候多个 cpu 中就会有 cpu 处于 idle 状态，出现 cpu 空转问题</p>
+<li><p>CPU 空转问题：<br>  每当 runqueue 链表中的所有进程耗尽了其时间片，这时候就需要启动对系统中所有进程时间片重新计算的过程。这个计算过程异常丑陋，需要遍历系统中的所有进程，为进程描述符的 counter 成员赋一个新值。而这个操作足以把该 CPU 上的 L1 cache 全部干掉，这时候 L1 cache 的命中率急剧下降在只剩最后一个线程的时候多个 cpu 中就会有 cpu 处于 idle 状态，出现 cpu 空转问题</p>
 </li>
-<li>
-<p>task bouncing issue：<br>
-一般而言，一个进程最好是从一而终，运行在一个 cpu 上，在 O（n）调度器下很多人都反映有进程在 CPU 之间跳来跳去的现象导致 cache 命中率下降</p>
+<li><p>task bouncing issue：<br>  一般而言，一个进程最好是从一而终，运行在一个 cpu 上，在 O（n）调度器下很多人都反映有进程在 CPU 之间跳来跳去的现象导致 cache 命中率下降</p>
 </li>
-<li>
-<p>RT 进程调度性能问题：<br>
-实时进程和普通进程挂在一个链表中。当调度实时进程的时候，我们需要遍历整个 runqueue 列表，扫描并计算所有进程的调度指数，从而选择出心仪的那个实时进程</p>
-<p>当然，上面的这些还不是关键，最重要的是整个 linux 内核不是抢占式内核，在整个内核态都不能被抢占。除了内核抢占性之外，优先级翻转问题也需要引起调度器的重视，否则即便一个 rt 进程变成 runnable 状态了，但是也只能眼睁睁的看着比它优先级低的进程运行，直到该 rt 进程等待的资源被释放。</p>
+<li><p>RT 进程调度性能问题：<br>  实时进程和普通进程挂在一个链表中。当调度实时进程的时候，我们需要遍历整个 runqueue 列表，扫描并计算所有进程的调度指数，从而选择出心仪的那个实时进程</p>
+<p>  当然，上面的这些还不是关键，最重要的是整个 linux 内核不是抢占式内核，在整个内核态都不能被抢占。除了内核抢占性之外，优先级翻转问题也需要引起调度器的重视，否则即便一个 rt 进程变成 runnable 状态了，但是也只能眼睁睁的看着比它优先级低的进程运行，直到该 rt 进程等待的资源被释放。</p>
 </li>
-<li>
-<p>交互式普通进程的调度延迟问题：<br>
-O（n）并不区分交互式进程和批处理进程，它只是奖励经常睡眠的那些进程</p>
+<li><p>交互式普通进程的调度延迟问题：<br>  O（n）并不区分交互式进程和批处理进程，它只是奖励经常睡眠的那些进程</p>
 </li>
-<li>
-<p>时间片粒度问题：<br>
-随着 runnable 进程增大，调度周期也变大。当一个进程耗尽其时间片之后，只能等待下一个调度周期到来。因此随着调度周期变大，系统响应也会变的较差</p>
+<li><p>时间片粒度问题：<br> 随着 runnable 进程增大，调度周期也变大。当一个进程耗尽其时间片之后，只能等待下一个调度周期到来。因此随着调度周期变大，系统响应也会变的较差</p>
 </li>
 </ul>
 <p>虽然 O（n）调度器存在不少的 issue，但是社区的人还是基本认可这套算法的，O（1）基于 O（n）调度器进行改进。鉴于 O（1）调度器和 O（n）调度器没有本质区别，因此我们只是描述它们之间不同的地方。</p>
-<h2 id="o1调度器的软件功能划分"><a class="markdownIt-Anchor" href="#o1调度器的软件功能划分"></a> O（1）调度器的软件功能划分</h2>
-<p>下图是一个 O（1）调度器的软件框架：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/O1_sched.png" alt=""></p>
+<h2 id="O（1）调度器的软件功能划分"><a href="#O（1）调度器的软件功能划分" class="headerlink" title="O（1）调度器的软件功能划分"></a>O（1）调度器的软件功能划分</h2><p>下图是一个 O（1）调度器的软件框架：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/O1_sched.png" alt=""></p>
 <p>O（n）调度器中只有一个全局的 runqueue，严重影响了扩展性，因此在 O（1）调度器中引入了 per-CPU runqueue 的概念。系统中所有的可运行状态的进程首先经过负载均衡模块挂入各个 CPU 的 runqueue，然后由主调度器和 tick 调度器驱动该 CPU 上的调度行为。</p>
 <p>由于引入了 per-CPU runqueue，O（1）调度器删除了全局 runqueue 的 spin lock，而是把这个 spin lock 放入到 per-CPU runqueue 数据结构中（rq-&gt;lock），通过把一个大锁细分成小锁，可以大大降低调度延迟，提升系统响应时间。这种方法在内核中经常使用，是一个比较通用的性能优化方法。</p>
 <p>通过上面的软件结构划分可以解决 O（n）调度的 SMP 扩展性问题和 CPU 空转问题。此外，好的复杂均衡算法也可以解决 O（n）调度器的 task bouncing 问题。</p>
-<h2 id="o1调度器的-runqueue-结构"><a class="markdownIt-Anchor" href="#o1调度器的-runqueue-结构"></a> O（1）调度器的 runqueue 结构</h2>
-<p>O（1）调度器的基本优化思路就是把原来 runqueue 上的单链表变成多个链表，即每一个优先级的进程被挂入不同链表中。相关的软件结构可以参考下面的图片：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/O1_runqueue.png" alt=""></p>
+<h2 id="O（1）调度器的-runqueue-结构"><a href="#O（1）调度器的-runqueue-结构" class="headerlink" title="O（1）调度器的 runqueue 结构"></a>O（1）调度器的 runqueue 结构</h2><p>O（1）调度器的基本优化思路就是把原来 runqueue 上的单链表变成多个链表，即每一个优先级的进程被挂入不同链表中。相关的软件结构可以参考下面的图片：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/O1_runqueue.png" alt=""></p>
 <p>在调度器中，runqueue 是一个很重要的数据结构，它最重要的作用是管理那些处于可运行状态的进程。O（1）调度器引入了优先级队列的概念来管理 task，具体由 struct prio_array 抽象：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">prio_array</span> {</span></span><br><span class="line">    <span class="type">unsigned</span> <span class="type">int</span> nr_active;</span><br><span class="line">    <span class="type">unsigned</span> <span class="type">long</span> bitmap[BITMAP_SIZE];</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">list_head</span> <span class="title">queue</span>[<span class="title">MAX_PRIO</span>];</span></span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
-<p>由于支持 140 个优先级，因此 queue 成员中有 140 个分别表示各个优先级的链表头，不同优先级的进程挂入不同的链表中。bitmap 是表示各个优先级进程链表是空还是非空。<br>
-nr_active 表示这个队列中有多少个 task。在这些队列中，100～139 是普通进程的优先级，其他的是实时进程的优先级。因此，在 O（1）调度器中，RT 进程和普通进程被区分开了，普通进程根本不会影响 RT 进程的调度。<br>
-Runqueue 中有两个优先级队列（struct prio_array）分别用来管理 active（即时间片还有剩余）和 expired（时间片耗尽）的进程。Runqueue 中有两个优先级队列的指针，分别指向这两个优先级队列。随着系统的运行，active 队列的 task 一个个的耗尽其时间片，挂入到 expired 队列。当 active 队列的 task 为空的时候，切换 active 和 expired 队列，开始一轮新的调度过程。</p>
+<p>由于支持 140 个优先级，因此 queue 成员中有 140 个分别表示各个优先级的链表头，不同优先级的进程挂入不同的链表中。bitmap 是表示各个优先级进程链表是空还是非空。<br>nr_active 表示这个队列中有多少个 task。在这些队列中，100～139 是普通进程的优先级，其他的是实时进程的优先级。因此，在 O（1）调度器中，RT 进程和普通进程被区分开了，普通进程根本不会影响 RT 进程的调度。<br>Runqueue 中有两个优先级队列（struct prio_array）分别用来管理 active（即时间片还有剩余）和 expired（时间片耗尽）的进程。Runqueue 中有两个优先级队列的指针，分别指向这两个优先级队列。随着系统的运行，active 队列的 task 一个个的耗尽其时间片，挂入到 expired 队列。当 active 队列的 task 为空的时候，切换 active 和 expired 队列，开始一轮新的调度过程。</p>
 <p>虽然在 O（1）调度器中 task 组织的形式发生了变化，但是其核心思想仍然和 O（n）调度器一致的。</p>
-<h2 id="核心调度算法"><a class="markdownIt-Anchor" href="#核心调度算法"></a> 核心调度算法</h2>
-<p>主调度器（就是 schedule 函数）的主要功能是从该 CPU 的 runqueue 找到一个最合适的进程调度执行。其基本的思路就是从 active 优先级队列中寻找，代码如下：</p>
+<h2 id="核心调度算法"><a href="#核心调度算法" class="headerlink" title="核心调度算法"></a>核心调度算法</h2><p>主调度器（就是 schedule 函数）的主要功能是从该 CPU 的 runqueue 找到一个最合适的进程调度执行。其基本的思路就是从 active 优先级队列中寻找，代码如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">idx = sched_find_first_bit(<span class="built_in">array</span>-&gt;bitmap);</span><br><span class="line"><span class="built_in">queue</span> = <span class="built_in">array</span>-&gt;<span class="built_in">queue</span> + idx;</span><br><span class="line">next = list_entry(<span class="built_in">queue</span>-&gt;next, <span class="type">task_t</span>, run_list);</span><br></pre></td></tr></tbody></table></figure>
 <p>首先在当前 active 优先级队列的 bitmap 寻找第一个非空的进程链表，然后从该链表中找到的第一个节点就是最适合下一个调度执行的进程。由于没有遍历整个链表的操作，因此这个调度器的算法复杂度是一个常量，从而解决了 O（n）算法复杂度的 issue。</p>
 <p>如果当前 active 优先级队列中“空无一人”（nr_active 等于 0），那么这时候就需要切换 active 和 expired 优先级队列了：</p>
@@ -403,9 +220,7 @@ Runqueue 中有两个优先级队列（struct prio_array）分别用来管理 ac
 <li>O（1）调度器使用非常复杂的算法来判断进程的用户交互指数以及进程是否是交互式进程，它总是比仅仅考虑睡眠时间的 O（n）调度器性能要好。</li>
 <li>Linux 引入了抢占式内核的概念（CONFIG_PREEMPT），如果没有配置该选项，那么一切和 2.4 内核保持一致。</li>
 </ul>
-<h3 id="番外之番外-多级反馈队列算法"><a class="markdownIt-Anchor" href="#番外之番外-多级反馈队列算法"></a> 番外之番外-多级反馈队列算法</h3>
-<p>多级反馈队列算法的核心思想是把进程按照优先级分成多个队列，相同优先级的进程在同一个队列中。如图所示，系统中有 5 个优先级，每个优先级有一个队列，队列 5 的优先级最高，队列 1 的优先级最低。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MLFQ.png" alt=""></p>
+<h3 id="番外之番外-多级反馈队列算法"><a href="#番外之番外-多级反馈队列算法" class="headerlink" title="番外之番外-多级反馈队列算法"></a>番外之番外-多级反馈队列算法</h3><p>多级反馈队列算法的核心思想是把进程按照优先级分成多个队列，相同优先级的进程在同一个队列中。如图所示，系统中有 5 个优先级，每个优先级有一个队列，队列 5 的优先级最高，队列 1 的优先级最低。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/MLFQ.png" alt=""></p>
 <p>多级反馈队列算法有如下几条基本规则。</p>
 <ul>
 <li>规则 1：如果进程 A 的优先级大于进程 B 的优先级，那么调度器选择进程 A。</li>
@@ -432,185 +247,64 @@ Runqueue 中有两个优先级队列（struct prio_array）分别用来管理 ac
 <li>新的规则 4：当一个进程使用完时间片后，不管它是否在时间片的最末尾发生 I/O 请求从而放弃 CPU，都把它的优先级降一级。经过改进后的规则 4 可以有效地避免进程的欺骗行为。</li>
 </ul>
 <p>在介绍完多级反馈队列算法的核心实现后，在实际工程应用中还有很多问题需要思考和解决，其中一个最难的问题是参数如何确定和优化。比如，系统需要设计多少个优先级队列？时间片应该设置成多少？规则 5 中的时间间隔 S 又应该设置成多少，才能实现既不会让进程饥饿，也不会降低系统的交互性？这些问题很难回答。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cDovL3d3dy53b3dvdGVjaC5uZXQvcHJvY2Vzc19tYW5hZ2VtZW50L3NjaGVkdWxlci1oaXN0b3J5Lmh0bWw=">http://www.wowotech.net/process_management/scheduler-history.html<i class="fa fa-external-link-alt"></i></span></p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="followme">
-  <span>欢迎关注我的其它发布渠道</span>
-
-  <div class="social-list">
-
-      <div class="social-item">
-          <span class="social-link">
-            <span class="icon">
-              <i class="fab fa-weixin"></i>
-            </span>
-
-            <span class="label">WeChat</span>
-          </span>
-
-          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
-      </div>
-
-      <div class="social-item">
-          <a target="_blank" class="social-link" href="/atom.xml">
-            <span class="icon">
-              <i class="fa fa-rss"></i>
-            </span>
-
-            <span class="label">RSS</span>
-          </a>
-      </div>
-  </div>
-</div>
-
-          <div class="post-tags">
-              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
-              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
-              <a href="/tags/Task/" rel="tag"><i class="fa fa-tag"></i> Task</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/LinuxKernel/LinuxTaskSummery/" rel="prev" title="Linux 进程管理（六）总结">
-                  <i class="fa fa-angle-left"></i> Linux 进程管理（六）总结
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/LinuxKernel/LinuxMemoryCache/" rel="next" title="Linux 内存管理（一）Cache">
-                  Linux 内存管理（一）Cache <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    <div class="comments" id="waline"></div>
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 2018 – 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
-  </div>
-<div class="wordcount">
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-chart-line"></i>
-    </span>
-      <span>站点总字数：</span>
-    <span title="站点总字数">492k</span>
-  </span>
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-coffee"></i>
-    </span>
-      <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">29:47</span>
-  </span>
-</div>
-<div class="busuanzi-count">
-    <span class="post-meta-item" id="busuanzi_container_site_uv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-user"></i>
-      </span>
-      <span class="site-uv" title="总访客量">
-        <span id="busuanzi_value_site_uv"></span>
-      </span>
-    </span>
-    <span class="post-meta-item" id="busuanzi_container_site_pv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-eye"></i>
-      </span>
-      <span class="site-pv" title="总访问量">
-        <span id="busuanzi_value_site_pv"></span>
-      </span>
-    </span>
-</div>
-
-    </div>
-  </footer>
-
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="http://www.wowotech.net/process_management/scheduler-history.html">http://www.wowotech.net/process_management/scheduler-history.html</a></p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Linux/">Linux</a><a class="post-meta__tags" href="/tags/Kernel/">Kernel</a><a class="post-meta__tags" href="/tags/Task/">Task</a></div><div class="post_share"><div class="social-share" data-image="https://unsplash.it/1600/900?random&amp;9172" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/LinuxKernel/LinuxMemoryCache/" title="Linux 内存管理（一）Cache"><img class="cover" src="https://unsplash.it/1600/900?random&amp;5511" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">Linux 内存管理（一）Cache</div></div></a></div><div class="next-post pull-right"><a href="/LinuxKernel/LinuxTaskSummery/" title="Linux 进程管理（六）总结"><img class="cover" src="https://unsplash.it/1600/900?random&amp;9801" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Linux 进程管理（六）总结</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/LinuxKernel/LinuxTaskBasic/" title="Linux 进程管理（一）基本概念"><img class="cover" src="https://unsplash.it/1600/900?random&531" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-10-31</div><div class="title">Linux 进程管理（一）基本概念</div></div></a></div><div><a href="/LinuxKernel/LinuxTaskCFS/" title="Linux 进程管理（三）CFS 调度器"><img class="cover" src="https://unsplash.it/1600/900?random&2176" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-10-31</div><div class="title">Linux 进程管理（三）CFS 调度器</div></div></a></div><div><a href="/LinuxKernel/LinuxTaskCreate/" title="Linux 进程管理（二）进程的创建和终止"><img class="cover" src="https://unsplash.it/1600/900?random&3016" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-10-31</div><div class="title">Linux 进程管理（二）进程的创建和终止</div></div></a></div><div><a href="/LinuxKernel/LinuxTaskDebug/" title="Linux 进程管理（五）进程调度的调试"><img class="cover" src="https://unsplash.it/1600/900?random&5750" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-11-07</div><div class="title">Linux 进程管理（五）进程调度的调试</div></div></a></div><div><a href="/LinuxKernel/LinuxTaskSMP/" title="Linux 进程管理（四）多核调度"><img class="cover" src="https://unsplash.it/1600/900?random&6732" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-10-31</div><div class="title">Linux 进程管理（四）多核调度</div></div></a></div><div><a href="/LinuxKernel/LinuxTaskSummery/" title="Linux 进程管理（六）总结"><img class="cover" src="https://unsplash.it/1600/900?random&9801" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-11-07</div><div class="title">Linux 进程管理（六）总结</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CarlyleLiu</div><div class="author-info__description">CarlyleLiu’s Blog</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/carlyleliu"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/carlyleliu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:yyliushuai@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-envelope" style="color: #24292e;"></i></a><a class="social-icon" href="https://twitter.com/yyliushuai" target="_blank" title="Twitter"><i class="fab fa-twitter" style="color: #24292e;"></i></a><a class="social-icon" href="https://youtube.com/carlyleliu" target="_blank" title="YouTube"><i class="fab fa-youtube" style="color: #24292e;"></i></a><a class="social-icon" href="https://instagram.com/blurredliu" target="_blank" title="Instagram"><i class="fab fa-instagram" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">next主题站 https://carlyleliu.github.io/next</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#O%EF%BC%88n%EF%BC%89%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">1.</span> <span class="toc-text">O（n）调度器</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E7%BB%84%E7%BB%87-task"><span class="toc-number">1.1.</span> <span class="toc-text">如何组织 task</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E4%BC%98%E5%85%88%E7%BA%A7"><span class="toc-number">1.2.</span> <span class="toc-text">动态优先级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%BB%E8%B0%83%E5%BA%A6%E5%99%A8%E7%AE%97%E6%B3%95"><span class="toc-number">1.3.</span> <span class="toc-text">主调度器算法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%97%B6%E9%97%B4%E7%89%87%E5%A4%84%E7%90%86"><span class="toc-number">1.4.</span> <span class="toc-text">时间片处理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#O%EF%BC%881%EF%BC%89%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">2.</span> <span class="toc-text">O（1）调度器</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Why-O%EF%BC%881%EF%BC%89%E8%B0%83%E5%BA%A6%E5%99%A8"><span class="toc-number">2.1.</span> <span class="toc-text">Why O（1）调度器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#O%EF%BC%881%EF%BC%89%E8%B0%83%E5%BA%A6%E5%99%A8%E7%9A%84%E8%BD%AF%E4%BB%B6%E5%8A%9F%E8%83%BD%E5%88%92%E5%88%86"><span class="toc-number">2.2.</span> <span class="toc-text">O（1）调度器的软件功能划分</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#O%EF%BC%881%EF%BC%89%E8%B0%83%E5%BA%A6%E5%99%A8%E7%9A%84-runqueue-%E7%BB%93%E6%9E%84"><span class="toc-number">2.3.</span> <span class="toc-text">O（1）调度器的 runqueue 结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E8%B0%83%E5%BA%A6%E7%AE%97%E6%B3%95"><span class="toc-number">2.4.</span> <span class="toc-text">核心调度算法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%95%AA%E5%A4%96%E4%B9%8B%E7%95%AA%E5%A4%96-%E5%A4%9A%E7%BA%A7%E5%8F%8D%E9%A6%88%E9%98%9F%E5%88%97%E7%AE%97%E6%B3%95"><span class="toc-number">2.4.1.</span> <span class="toc-text">番外之番外-多级反馈队列算法</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="toc-number">3.</span> <span class="toc-text">参考文献</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2025 By CarlyleLiu</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, '']
+      }
+    }
+  }
   
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.13.0"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
 
-  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
 
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-  <script src="/js/third-party/pace.js"></script>
-
-
-  
-  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
-<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxKernel/LinuxTaskExt/"}</script>
-<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
-<script>
-document.addEventListener('page:loaded', () => {
-  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
-    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
-  ).then(() => 
-    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
-  );
-});
-</script>
-
-</body>
-</html>
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><!-- hexo injector body_end end --></body></html>

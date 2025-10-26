@@ -1,333 +1,173 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
-  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
-
-<link rel="stylesheet" href="/css/main.css">
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="原图">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>链接装载与库（四）可执行文件的装载与进程 | Matrix</title><meta name="author" content="CarlyleLiu"><meta name="copyright" content="CarlyleLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="原图">
 <meta property="og:type" content="article">
 <meta property="og:title" content="链接装载与库（四）可执行文件的装载与进程">
 <meta property="og:url" content="https://carlyleliu.github.io/Program/LinksAndLibrariesPart4/index.html">
 <meta property="og:site_name" content="Matrix">
 <meta property="og:description" content="原图">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/LoadingAndProcessingOfExecutableFiles.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load4.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load5.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load6.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load7.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load8.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load9.png">
+<meta property="og:image" content="https://unsplash.it/1600/900?random&6566">
 <meta property="article:published_time" content="2021-12-23T05:09:26.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.383Z">
 <meta property="article:author" content="CarlyleLiu">
 <meta property="article:tag" content="Programming">
 <meta property="article:tag" content="Links Libraries">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/LoadingAndProcessingOfExecutableFiles.png">
+<meta name="twitter:image" content="https://unsplash.it/1600/900?random&6566"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://carlyleliu.github.io/Program/LinksAndLibrariesPart4/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":false,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '链接装载与库（四）可执行文件的装载与进程',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-09-27 12:36:15'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
 
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
 
-<link rel="canonical" href="https://carlyleliu.github.io/Program/LinksAndLibrariesPart4/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/Program/LinksAndLibrariesPart4/","path":"Program/LinksAndLibrariesPart4/","title":"链接装载与库（四）可执行文件的装载与进程"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>链接装载与库（四）可执行文件的装载与进程 | Matrix</title>
-  
-
-
-
-
-
-
-
-<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-<!-- hexo injector head_end start -->
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><!-- hexo injector head_end start -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end -->
+<link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-footer-beautify@1.0.0/lib/runtime.min.css" media="print" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.2.0">
 <style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
 <link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切换导航栏" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">Matrix</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="搜索" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="搜索..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          文章目录
-        </li>
-        <li class="sidebar-nav-overview">
-          站点概览
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A3%85%E8%BD%BD%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="nav-text"> 装载的方式</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E6%98%A0%E5%B0%84"><span class="nav-text"> 页映射</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E7%9A%84%E8%A3%85%E8%BD%BD"><span class="nav-text"> 从操作系统角度看可执行文件的装载</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%BB%BA%E7%AB%8B"><span class="nav-text"> 进程的建立</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B5%E9%94%99%E8%AF%AF"><span class="nav-text"> 页错误</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E8%99%9A%E5%AD%98%E7%A9%BA%E9%97%B4%E5%88%86%E5%B8%83"><span class="nav-text"> 进程虚存空间分布</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#elf-%E6%96%87%E4%BB%B6%E9%93%BE%E6%8E%A5%E8%A7%86%E5%9B%BE%E5%92%8C%E6%89%A7%E8%A1%8C%E8%A7%86%E5%9B%BE"><span class="nav-text"> ELF 文件链接视图和执行视图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A0%86%E5%92%8C%E6%A0%88"><span class="nav-text"> 堆和栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%AE%B5%E5%9C%B0%E5%9D%80%E5%AF%B9%E9%BD%90"><span class="nav-text"> 段地址对齐</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#linux-%E5%86%85%E6%A0%B8%E8%A3%85%E8%BD%BD-elf-%E8%BF%87%E7%A8%8B%E7%AE%80%E4%BB%8B"><span class="nav-text"> Linux 内核装载 ELF 过程简介</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
-  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">194</span>
-          <span class="site-state-item-name">日志</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-categories">
-          <a href="/categories/">
-        <span class="site-state-item-count">28</span>
-        <span class="site-state-item-name">分类</span></a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">42</span>
-        <span class="site-state-item-name">标签</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
-      </span>
-  </div>
-  <div class="cc-license animated" itemprop="license">
-    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-        <div class="pjax">
-        </div>
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Program/LinksAndLibrariesPart4/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="链接装载与库（四）可执行文件的装载与进程 | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          链接装载与库（四）可执行文件的装载与进程
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/Principle/" itemprop="url" rel="index"><span itemprop="name">Principle</span></a>
-        </span>
-    </span>
-
-  
-    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
-      <span class="post-meta-item-icon">
-        <i class="far fa-eye"></i>
-      </span>
-      <span class="post-meta-item-text">阅读次数：</span>
-      <span id="busuanzi_value_page_pv"></span>
-    </span>
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/Program/LinksAndLibrariesPart4/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/Program/LinksAndLibrariesPart4/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>4.4k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>16 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/LoadingAndProcessingOfExecutableFiles.png" alt=""><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjMwYTZlNzA3OTEyOTA3YzI4NjNmZmM=">原图<i class="fa fa-external-link-alt"></i></span></p>
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://unsplash.it/1600/900?random&amp;6566')"><nav id="nav"><span id="blog-info"><a href="/" title="Matrix"><span class="site-name">Matrix</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">链接装载与库（四）可执行文件的装载与进程</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-12-23T05:09:26.000Z" title="发表于 2021-12-23 13:09:26">2021-12-23</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-09-27T04:36:15.383Z" title="更新于 2025-09-27 12:36:15">2025-09-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/">Technology Blog</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Programming/">Programming</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Programming/Principle/">Principle</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="链接装载与库（四）可执行文件的装载与进程"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/LoadingAndProcessingOfExecutableFiles.png" alt=""><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/6230a6e707912907c2863ffc">原图</a></p>
 <span id="more"></span>
-<h1 id="装载的方式"><a class="markdownIt-Anchor" href="#装载的方式"></a> 装载的方式</h1>
-<p>程序执行时所需要的指令和数据必须在内存中才能够正常运行，最简单的办法就是将程序运行所需要的指令和数据全都装入内存中，这就是最简单的静态装入的办法。后来研究发现，程序运行时是有局部性原理的，所以我们可以将程序最常用的部分驻留在内存中，而将一些不太常用的数据存放在磁盘里面，这就是动态装入的基本原理。</p>
+<h1 id="装载的方式"><a href="#装载的方式" class="headerlink" title="装载的方式"></a>装载的方式</h1><p>程序执行时所需要的指令和数据必须在内存中才能够正常运行，最简单的办法就是将程序运行所需要的指令和数据全都装入内存中，这就是最简单的静态装入的办法。后来研究发现，程序运行时是有局部性原理的，所以我们可以将程序最常用的部分驻留在内存中，而将一些不太常用的数据存放在磁盘里面，这就是动态装入的基本原理。</p>
 <p>覆盖装入（Overlay）和页映射（Paging）是两种很典型的动态装载方法，它们所采用的思想都差不多，原则上都是利用了程序的局部性原理。动态装入的思想是程序用到哪个模块，就将哪个模块装入内存，如果不用就暂时不装入，存放在磁盘中。</p>
-<h2 id="页映射"><a class="markdownIt-Anchor" href="#页映射"></a> 页映射</h2>
-<p>将内存和所有磁盘中的数据和指令按照“页（Page）”为单位划分成若干个页，以后所有的装载和操作的单位就是页。</p>
+<h2 id="页映射"><a href="#页映射" class="headerlink" title="页映射"></a>页映射</h2><p>将内存和所有磁盘中的数据和指令按照“页（Page）”为单位划分成若干个页，以后所有的装载和操作的单位就是页。</p>
 <p>为了演示页映射的基本机制，假设我们的 32 位机器有 16KB 的内存，每个页大小为 4096 字节，则共有 4 个页，如下表所示。</p>
+<div class="table-container">
 <table>
 <thead>
 <tr>
@@ -354,34 +194,26 @@
 </tr>
 </tbody>
 </table>
-<p>假设程序所有的指令和数据总和为 32KB，那么程序总共被分为 8 个页。我们将它们编号为 P0~P7。很明显，16KB 的内存无法同时将 32KB 的程序装入，那么我们将按照动态装入的原理来进行整个装入过程。如果程序刚开始执行时的入口地址在 P0，这时装载管理器发现程序的 P0 不在内存中，于是将内存 F0 分配给 P0，并且将 P0 的内容装入 F0；运行一段时间以后，程序需要用到 P5，于是装载管理器将 P5 装入 F1；就这样，当程序用到 P3 和 P6 的时候，它们分别被装入到了 F2 和 F3，它们的映射关系如图 6-4 所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load4.png" alt=""></p>
+</div>
+<p>假设程序所有的指令和数据总和为 32KB，那么程序总共被分为 8 个页。我们将它们编号为 P0~P7。很明显，16KB 的内存无法同时将 32KB 的程序装入，那么我们将按照动态装入的原理来进行整个装入过程。如果程序刚开始执行时的入口地址在 P0，这时装载管理器发现程序的 P0 不在内存中，于是将内存 F0 分配给 P0，并且将 P0 的内容装入 F0；运行一段时间以后，程序需要用到 P5，于是装载管理器将 P5 装入 F1；就这样，当程序用到 P3 和 P6 的时候，它们分别被装入到了 F2 和 F3，它们的映射关系如图 6-4 所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load4.png" alt=""></p>
 <p>很明显，如果这时候程序只需要 P0、P3、P5 和 P6 这 4 个页，那么程序就能一直运行下去。但是问题很明显，如果这时候程序需要访问 P4，那么装载管理器必须做出抉择，它必须放弃目前正在使用的 4 个内存页中的其中一个来装载 P4。至于选择哪个页，我们有很多种算法可以选择，比如可以选择 F0，因为它是第一个被分配掉的内存页（这个算法我们可以称之为 FIFO，先进先出算法）：假设装载管理器发现 F2 很少被访问到，那么我们可以选择 F2（这种算法可以称之为 LUR，最少使用算法）。</p>
-<h1 id="从操作系统角度看可执行文件的装载"><a class="markdownIt-Anchor" href="#从操作系统角度看可执行文件的装载"></a> 从操作系统角度看可执行文件的装载</h1>
-<h2 id="进程的建立"><a class="markdownIt-Anchor" href="#进程的建立"></a> 进程的建立</h2>
-<p>创建一个进程，然后装载相应的可执行文件并且执行。在有虚拟存储的情况下，上述过程最开始只需要做三件事情：</p>
+<h1 id="从操作系统角度看可执行文件的装载"><a href="#从操作系统角度看可执行文件的装载" class="headerlink" title="从操作系统角度看可执行文件的装载"></a>从操作系统角度看可执行文件的装载</h1><h2 id="进程的建立"><a href="#进程的建立" class="headerlink" title="进程的建立"></a>进程的建立</h2><p>创建一个进程，然后装载相应的可执行文件并且执行。在有虚拟存储的情况下，上述过程最开始只需要做三件事情：</p>
 <ul>
 <li>创建一个独立的虚拟地址空间，建立虚拟空间到物理空间的映射关系。创建虚拟地址空间实际上只是分配一个页目录（Page Directory）就可以了，甚至不设置页映射关系，这些映射关系等到后面程序发生页错误的时候再进行设置。</li>
 <li>读取可执行文件头，建立虚拟空间与可执行文件的映射关系，是传统意义上“装载”的过程。</li>
 <li>将 CPU 的指令寄存器设置成可执行文件的入口地址，启动运行。这一步看似简单，实际上在操作系统层面上比较复杂，它涉及内核堆栈和用户堆栈的切换、CPU 运行权限的切换。不过从进程的角度看这一步可以简单地认为操作系统执行了一条跳转指令，直接跳转到可执行文件的入口地址。还记得 ELF 文件头中保存有入口地址吗？没错，就是这个地址。</li>
 </ul>
-<p>让我们考虑最简单的情况，假设我们的 ELF 可执行文件只有一个代码段“.text“，它的虚拟地址为 0x08048000，它在文件中的大小为 0x000e1，对齐为 0x1000。一旦该可执行文件被装载，可执行文件与执行该可执行文件进程的虚拟空间的映射关系如图 6-5 所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load5.png" alt=""></p>
+<p>让我们考虑最简单的情况，假设我们的 ELF 可执行文件只有一个代码段“.text“，它的虚拟地址为 0x08048000，它在文件中的大小为 0x000e1，对齐为 0x1000。一旦该可执行文件被装载，可执行文件与执行该可执行文件进程的虚拟空间的映射关系如图 6-5 所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load5.png" alt=""></p>
 <p>很明显，这种映射关系只是保存在操作系统内部的一个数据结构。Linux 中将进程虚拟空间中的一个段叫做虚拟内存区域（VMA，Virtual Memory Area）。比如上例中，操作系统创建进程后，会在进程相应的数据结构中设置有一个。text 段的 VMA：它在虚拟空间中的地址为 0x08048000~0x08049000，它对应 ELF 文件中偏移为 0 的。text，它的属性为只读（一般代码段都是只读的）。</p>
-<h2 id="页错误"><a class="markdownIt-Anchor" href="#页错误"></a> 页错误</h2>
-<p>上面的步骤执行完以后，其实可执行文件的真正指令和数据都没有被装入到内存中。操作系统只是通过可执行文件头部的信息建立起可执行文件和进程虚存之间的映射关系而已。假设在上面的例子中，程序的入口地址为 0x08048000，即刚好是。text 段的起始地址。当 CPU 开始打算执行这个地址的指令时，发现页面 0x08048000~0x08049000 是个空页面，于是它就认为这是一个页错误（Page Fault）。CPU 将控制权交给操作系统，操作系统有专门的页错误处理例程来处理这种情况。这时候我们前面提到的装载过程的第二步建立的数据结构起到了很关键的作用，操作系统将查询这个数据结构，然后找到空页面所在的 VMA，计算出相应的页面在可执行文件中的偏移，然后在物理内存中分配一个物理页面，将进程中该虚拟页与分配的物理页之间建立映射关系，然后把控制权再还回给进程，进程从刚才页错误的位置重新开始执行。</p>
-<p>随着进程的执行，页错误也会不断地产生，操作系统也会为进程分配相应的物理页面来满足进程执行的需求，如图 6-6 所示。当然有可能进程所需要的内存会超过可用的内存数量，特别是在有多个进程同时执行的时候，这时候操作系统就需要精心组织和分配物理内存，甚至有时候应将分配给进程的物理内存暂时收回等，这就涉及了操作系统的虚拟存储管理。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load6.png" alt=""></p>
-<h1 id="进程虚存空间分布"><a class="markdownIt-Anchor" href="#进程虚存空间分布"></a> 进程虚存空间分布</h1>
-<h2 id="elf-文件链接视图和执行视图"><a class="markdownIt-Anchor" href="#elf-文件链接视图和执行视图"></a> ELF 文件链接视图和执行视图</h2>
-<p>当段的数量增多时，就会产生空间浪费的问题。当我们站在操作系统装载可执行文件的角度看问题时，可以发现它实际上并不关心可执行文件各个段所包含的实际内容，只关心一些跟装载相关的问题，最主要的是段的权限（可读、可写、可执行）。基本上是三种：</p>
+<h2 id="页错误"><a href="#页错误" class="headerlink" title="页错误"></a>页错误</h2><p>上面的步骤执行完以后，其实可执行文件的真正指令和数据都没有被装入到内存中。操作系统只是通过可执行文件头部的信息建立起可执行文件和进程虚存之间的映射关系而已。假设在上面的例子中，程序的入口地址为 0x08048000，即刚好是。text 段的起始地址。当 CPU 开始打算执行这个地址的指令时，发现页面 0x08048000~0x08049000 是个空页面，于是它就认为这是一个页错误（Page Fault）。CPU 将控制权交给操作系统，操作系统有专门的页错误处理例程来处理这种情况。这时候我们前面提到的装载过程的第二步建立的数据结构起到了很关键的作用，操作系统将查询这个数据结构，然后找到空页面所在的 VMA，计算出相应的页面在可执行文件中的偏移，然后在物理内存中分配一个物理页面，将进程中该虚拟页与分配的物理页之间建立映射关系，然后把控制权再还回给进程，进程从刚才页错误的位置重新开始执行。</p>
+<p>随着进程的执行，页错误也会不断地产生，操作系统也会为进程分配相应的物理页面来满足进程执行的需求，如图 6-6 所示。当然有可能进程所需要的内存会超过可用的内存数量，特别是在有多个进程同时执行的时候，这时候操作系统就需要精心组织和分配物理内存，甚至有时候应将分配给进程的物理内存暂时收回等，这就涉及了操作系统的虚拟存储管理。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load6.png" alt=""></p>
+<h1 id="进程虚存空间分布"><a href="#进程虚存空间分布" class="headerlink" title="进程虚存空间分布"></a>进程虚存空间分布</h1><h2 id="ELF-文件链接视图和执行视图"><a href="#ELF-文件链接视图和执行视图" class="headerlink" title="ELF 文件链接视图和执行视图"></a>ELF 文件链接视图和执行视图</h2><p>当段的数量增多时，就会产生空间浪费的问题。当我们站在操作系统装载可执行文件的角度看问题时，可以发现它实际上并不关心可执行文件各个段所包含的实际内容，只关心一些跟装载相关的问题，最主要的是段的权限（可读、可写、可执行）。基本上是三种：</p>
 <ul>
 <li>以代码段为代表的权限为可读可执行的段。</li>
 <li>以数据段和 BSS 段为代表的权限为可读可写的段。</li>
 <li>以只读数据段为代表的权限为只读的段。</li>
 </ul>
-<p>那么我们可以找到一个很简单的方案就是：对于相同权限的段，把它们合并到一起当作一个段进行映射。比如有两个段分别叫“.text”和“.init”，它们包含的分别是程序的可执行代码和初始化代码，并且它们的权限相同，都是可读并且可执行的。假设。text 为 4097 字节，.init 为 512 字节，这两个段分别映射的话就要占用三个页面，但是，如果将它们合并成一起映射的话只须占用两个页面，如图 6-7 所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load7.png" alt=""></p>
+<p>那么我们可以找到一个很简单的方案就是：对于相同权限的段，把它们合并到一起当作一个段进行映射。比如有两个段分别叫“.text”和“.init”，它们包含的分别是程序的可执行代码和初始化代码，并且它们的权限相同，都是可读并且可执行的。假设。text 为 4097 字节，.init 为 512 字节，这两个段分别映射的话就要占用三个页面，但是，如果将它们合并成一起映射的话只须占用两个页面，如图 6-7 所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load7.png" alt=""></p>
 <p>ELF 可执行文件引入了一个概念叫做“Segment”，一个“Segment”包含一个或多个属性类似的“Section”。正如我们上面的例子中看到的，如果将“.text”段和“.init”段合并在一起看作是一个“Segment’”，那么装载的时候就可以将它们看作一个整体一起映射，也就是说映射以后在进程虚存空间中只有一个相对应的 VMA，而不是两个，这样做的好处是可以很明显地减少页面内部碎片，从而节省了内存空间。</p>
 <blockquote>
 <p>从链接的角度看，ELF 文件是按“Section”存储的，事实也的确如此；从装载的角度看，ELF 文件又可以按照“Segment”划分。</p>
@@ -396,15 +228,13 @@
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">vooxle@liushuai:~$ readelf -l SectionMapping.elf</span><br><span class="line"></span><br><span class="line">Elf file <span class="built_in">type</span> is EXEC (Executable file)</span><br><span class="line">Entry point 0x401bc0</span><br><span class="line">There are 10 program headers, starting at offset 64</span><br><span class="line"></span><br><span class="line">Program Headers:</span><br><span class="line">  Type           Offset             VirtAddr           PhysAddr</span><br><span class="line">                 FileSiz            MemSiz              Flags  Align</span><br><span class="line">  LOAD           0x0000000000000000 0x0000000000400000 0x0000000000400000</span><br><span class="line">                 0x0000000000000518 0x0000000000000518  R      0x1000</span><br><span class="line">  LOAD           0x0000000000001000 0x0000000000401000 0x0000000000401000</span><br><span class="line">                 0x00000000000937ed 0x00000000000937ed  R E    0x1000</span><br><span class="line">  LOAD           0x0000000000095000 0x0000000000495000 0x0000000000495000</span><br><span class="line">                 0x0000000000026655 0x0000000000026655  R      0x1000</span><br><span class="line">  LOAD           0x00000000000bc0c0 0x00000000004bd0c0 0x00000000004bd0c0</span><br><span class="line">                 0x0000000000005170 0x00000000000068c0  RW     0x1000</span><br><span class="line">  NOTE           0x0000000000000270 0x0000000000400270 0x0000000000400270</span><br><span class="line">                 0x0000000000000020 0x0000000000000020  R      0x8</span><br><span class="line">  NOTE           0x0000000000000290 0x0000000000400290 0x0000000000400290</span><br><span class="line">                 0x0000000000000044 0x0000000000000044  R      0x4</span><br><span class="line">  TLS            0x00000000000bc0c0 0x00000000004bd0c0 0x00000000004bd0c0</span><br><span class="line">                 0x0000000000000020 0x0000000000000060  R      0x8</span><br><span class="line">  GNU_PROPERTY   0x0000000000000270 0x0000000000400270 0x0000000000400270</span><br><span class="line">                 0x0000000000000020 0x0000000000000020  R      0x8</span><br><span class="line">  GNU_STACK      0x0000000000000000 0x0000000000000000 0x0000000000000000</span><br><span class="line">                 0x0000000000000000 0x0000000000000000  RW     0x10</span><br><span class="line">  GNU_RELRO      0x00000000000bc0c0 0x00000000004bd0c0 0x00000000004bd0c0</span><br><span class="line">                 0x0000000000002f40 0x0000000000002f40  R      0x1</span><br><span class="line"></span><br><span class="line"> Section to Segment mapping:</span><br><span class="line">  Segment Sections...</span><br><span class="line">   00     .note.gnu.property .note.gnu.build-id .note.ABI-tag .rela.plt</span><br><span class="line">   01     .init .plt .text __libc_freeres_fn .fini</span><br><span class="line">   02     .rodata .stapsdt.base .eh_frame .gcc_except_table</span><br><span class="line">   03     .tdata .init_array .fini_array .data.rel.ro .got .got.plt .data __libc_subfreeres __libc_IO_vtables __libc_atexit .bss __libc_freeres_ptrs</span><br><span class="line">   04     .note.gnu.property</span><br><span class="line">   05     .note.gnu.build-id .note.ABI-tag</span><br><span class="line">   06     .tdata .tbss</span><br><span class="line">   07     .note.gnu.property</span><br><span class="line">   08</span><br><span class="line">   09     .tdata .init_array .fini_array .data.rel.ro .got</span><br></pre></td></tr></tbody></table></figure>
 <p>我们可以看到，这个可执行文件中共有 10 个 Segment。从装载的角度看，我们目前只关心两个“LOAD”类型的 Segment，因为只有它是需要被映射的，其他的诸如“NOTE”、“TLS”、“GNU_STACK”都是在装载时起辅助作用的，我们在这里不详细展开。可以用图 6-8 来表示“SectionMapping.elf”可执行文件的段与进程虚拟空间的映射关系。</p>
 <p>“SectionMapping.elf”被重新划分成了三个部分，有一些段被归入可读可执行的，它们被统一映射到一个 VMA0；另外一部分段是可读可写的，它们被映射到了 VMA1；还有一部分段在程序装载时没有被映射的，它们是一些包含调试信息和字符串表等段，这些段在程序执行时没有用，所以不需要被映射。很明显，所有相同属性的“Section”被归类到一个“Segment”，并且映射到同一个 VMA。</p>
-<p>所以总的来说，“Segment”和“Section”是从不同的角度来划分同一个 ELF 文件。这个在 ELF 中被称为不同的视图（View），从“Section”的角度来看 ELF 文件就是链接视图（Linking View），从“Segment”的角度来看就是执行视图（Execution View）。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load8.png" alt=""></p>
-<h2 id="堆和栈"><a class="markdownIt-Anchor" href="#堆和栈"></a> 堆和栈</h2>
-<p>在操作系统里面，VMA 除了被用来映射可执行文件中的各个“Segment’”以外，它还可以有其他的作用，操作系统通过使用 VMA 来对进程的地址空间进行管理。我们知道进程在执行的时候它还需要用到栈（Stack）、堆（Heap）等空间，事实上它们在进程的虚拟空间中的表现也是以 VMA 的形式存在的，很多情况下，一个进程中的栈和堆分别都有一个对应的 VMA。在 Linux 下，我们可以通过查看“/proc”来查看进程的虚拟空间分布：</p>
+<p>所以总的来说，“Segment”和“Section”是从不同的角度来划分同一个 ELF 文件。这个在 ELF 中被称为不同的视图（View），从“Section”的角度来看 ELF 文件就是链接视图（Linking View），从“Segment”的角度来看就是执行视图（Execution View）。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load8.png" alt=""></p>
+<h2 id="堆和栈"><a href="#堆和栈" class="headerlink" title="堆和栈"></a>堆和栈</h2><p>在操作系统里面，VMA 除了被用来映射可执行文件中的各个“Segment’”以外，它还可以有其他的作用，操作系统通过使用 VMA 来对进程的地址空间进行管理。我们知道进程在执行的时候它还需要用到栈（Stack）、堆（Heap）等空间，事实上它们在进程的虚拟空间中的表现也是以 VMA 的形式存在的，很多情况下，一个进程中的栈和堆分别都有一个对应的 VMA。在 Linux 下，我们可以通过查看“/proc”来查看进程的虚拟空间分布：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ ./SectionMapping.elf &amp;</span><br><span class="line">[1]21963</span><br><span class="line">$ <span class="built_in">cat</span> /proc/21963/maps</span><br><span class="line">08048000-080b9000   r-xp    00000000    08:01   2801887 ./SectionMapping.elf</span><br><span class="line">080b9000-080bb000   rwxp    00070000    08:01   2801887 ./SectionMapping.elf</span><br><span class="line">080bb000-080de000   rwxp    080bb000    00:00   0       [heap]</span><br><span class="line">bf7ec000-bf802000   rw-p    bf7ec0000   00:00   0       [stack]</span><br><span class="line">ffffe000-fffff000   r-xp0   000000000:0 00:00   0       [vdso]</span><br></pre></td></tr></tbody></table></figure>
 <p>上面的输出结果中：</p>
 <ul>
 <li>第一列是 VMA 的地址范围。</li>
-<li>第二列是 VMA 的权限，“r”表示可读，“w”表示可写，“x”表示可执行，“p”表示私有（COW，Copy on Write），“s"表示共享。</li>
+<li>第二列是 VMA 的权限，“r”表示可读，“w”表示可写，“x”表示可执行，“p”表示私有（COW，Copy on Write），“s”表示共享。</li>
 <li>第三列是偏移，表示 VMA 对应的 Segment 在映像文件中的偏移。</li>
 <li>第四列表示映像文件所在设备的主设备号和次设备号。</li>
 <li>第五列表示映像文件的节点号。</li>
@@ -421,13 +251,9 @@
 <li>堆 VMA，权限可读写、可执行：无映像文件，匿名，可向上扩展。</li>
 <li>栈 VMA，权限可读写、不可执行；无映像文件，匿名，可向下扩展。</li>
 </ul>
-<p>当我们在讨论进程虚拟空间的“Segment”的时候，基本上就是指上面的几种 VMA。现在再让我们来看一个常见进程的虚拟空间是怎么样的，如图 6-9 所示。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load9.png" alt=""></p>
-<h2 id="段地址对齐"><a class="markdownIt-Anchor" href="#段地址对齐"></a> 段地址对齐</h2>
-<p>如果有很多段的大小很小，按照 page 对齐映射会造成空间的浪费，为了解决这种问题，有些 UNIX 系统采用了一个很取巧的办法，就是让那些各个段接壤部分共享一个物理页面，然后将该物理页面分别映射多次。</p>
-<h1 id="linux-内核装载-elf-过程简介"><a class="markdownIt-Anchor" href="#linux-内核装载-elf-过程简介"></a> Linux 内核装载 ELF 过程简介</h1>
-<p>当我们在 Linux 系统的 bash 下输入一个命令执行某个 ELF 程序时，Linux 系统是怎样装载这个 ELF 文件并且执行它的呢？<br>
-首先在用户层面，bash 进程会调用 fork() 系统调用创建一个新的进程，然后新的进程调用 execve() 系统调用执行指定的 ELF 文件，原先的 bash 进程继续返回等待刚才启动的新进程结束，然后继续等待用户输入命令。</p>
+<p>当我们在讨论进程虚拟空间的“Segment”的时候，基本上就是指上面的几种 VMA。现在再让我们来看一个常见进程的虚拟空间是怎么样的，如图 6-9 所示。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Program/Principle/load9.png" alt=""></p>
+<h2 id="段地址对齐"><a href="#段地址对齐" class="headerlink" title="段地址对齐"></a>段地址对齐</h2><p>如果有很多段的大小很小，按照 page 对齐映射会造成空间的浪费，为了解决这种问题，有些 UNIX 系统采用了一个很取巧的办法，就是让那些各个段接壤部分共享一个物理页面，然后将该物理页面分别映射多次。</p>
+<h1 id="Linux-内核装载-ELF-过程简介"><a href="#Linux-内核装载-ELF-过程简介" class="headerlink" title="Linux 内核装载 ELF 过程简介"></a>Linux 内核装载 ELF 过程简介</h1><p>当我们在 Linux 系统的 bash 下输入一个命令执行某个 ELF 程序时，Linux 系统是怎样装载这个 ELF 文件并且执行它的呢？<br>首先在用户层面，bash 进程会调用 fork() 系统调用创建一个新的进程，然后新的进程调用 execve() 系统调用执行指定的 ELF 文件，原先的 bash 进程继续返回等待刚才启动的新进程结束，然后继续等待用户输入命令。</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span></span><br><span class="line">{</span><br><span class="line">    <span class="type">char</span> buf[<span class="number">1024</span>]={<span class="number">0</span>};</span><br><span class="line">    <span class="type">pid_t</span> pid;</span><br><span class="line">    <span class="keyword">while</span>(<span class="number">1</span>)</span><br><span class="line">    {</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">"minibashs"</span>);</span><br><span class="line">        <span class="built_in">scanf</span>(<span class="string">"s"</span>,buf);</span><br><span class="line">        pid <span class="title function_">fork</span><span class="params">()</span>;</span><br><span class="line">        <span class="keyword">if</span>(pid =<span class="number">0</span>) {</span><br><span class="line">            <span class="keyword">if</span>(execlp(buf,<span class="number">0</span>) &lt; <span class="number">0</span>) {</span><br><span class="line">                <span class="built_in">printf</span>(<span class="string">"exec error\n"</span>);</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span> <span class="keyword">if</span>(pid &gt;<span class="number">0</span>) {</span><br><span class="line">            <span class="type">int</span> status;</span><br><span class="line">            waitpid(pid,&amp;status,<span class="number">0</span>);</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">else</span></span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">"fork error &amp;d\n"</span>,pid);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>在进入 execve() 系统调用之后，Linux 内核就开始进行真正的装载工作。在内核中，execve() 系统调用相应的入口是 sys_execve()，进行一些参数的检查复制之后，调用 do_execve()。do_execve() 会首先查找被执行的文件，如果找到文件，则读取文件的前 128 个字节。(Linux 支持的可执行文件不止 ELF 一种，还有 a.out、Java 程序和以“#！”开始的脚本程序）。</p>
 <p>当 do_execve() 读取了这 128 个字节的文件头部之后，然后调用 search_binary_handle() 去搜索和匹配合适的可执行文件装载处理过程。Linux 中所有被支持的可执行文件格式都有相应的装载处理过程，search_binary_handle() 会通过判断文件头部的魔数确定文件的格式，并且调用相应的装载处理过程。比如 ELF 可执行文件的装载处理过程叫做 load_elf_binary()；a.out 可执行文件的装载处理过程叫做 load_aout_binary()；而装载可执行脚本程序的处理过程叫做 load_script()。这里我们只关心 ELF 可执行文件的装载，load_elf_binary()，这个函数的代码比较长，它的主要步骤是：</p>
@@ -439,184 +265,64 @@
 <li>将系统调用的返回地址修改成 ELF 可执行文件的入口点，这个入口点取决于程序的链接方式，对于静态链接的 ELF 可执行文件，这个程序入口就是 ELF 文件的文件头中 e_entry 所指的地址；对于动态链接的 ELF 可执行文件，程序入口点是动态链接器。</li>
 </ul>
 <p>当 load_elf_binary() 执行完毕，返回至 do_execve() 再返回至 sys_execve() 时，上面的第 5 步中已经把系统调用的返回地址改成了被装载的 ELF 程序的入口地址了。所以当 sys_execve() 系统调用从内核态返回到用户态时，EIP 寄存器直接跳转到了 ELF 程序的入口地址，于是新的程序开始执行，ELF 可执行文件装载完成。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p>《程序员的自我修养》</p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="followme">
-  <span>欢迎关注我的其它发布渠道</span>
-
-  <div class="social-list">
-
-      <div class="social-item">
-          <span class="social-link">
-            <span class="icon">
-              <i class="fab fa-weixin"></i>
-            </span>
-
-            <span class="label">WeChat</span>
-          </span>
-
-          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
-      </div>
-
-      <div class="social-item">
-          <a target="_blank" class="social-link" href="/atom.xml">
-            <span class="icon">
-              <i class="fa fa-rss"></i>
-            </span>
-
-            <span class="label">RSS</span>
-          </a>
-      </div>
-  </div>
-</div>
-
-          <div class="post-tags">
-              <a href="/tags/Programming/" rel="tag"><i class="fa fa-tag"></i> Programming</a>
-              <a href="/tags/Links-Libraries/" rel="tag"><i class="fa fa-tag"></i> Links Libraries</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/Program/LinksAndLibrariesPart3/" rel="prev" title="链接装载与库（三）静态链接">
-                  <i class="fa fa-angle-left"></i> 链接装载与库（三）静态链接
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/Program/LinksAndLibrariesPart5/" rel="next" title="链接装载与库（五）动态链接">
-                  链接装载与库（五）动态链接 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    <div class="comments" id="waline"></div>
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 2018 – 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
-  </div>
-<div class="wordcount">
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-chart-line"></i>
-    </span>
-      <span>站点总字数：</span>
-    <span title="站点总字数">492k</span>
-  </span>
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-coffee"></i>
-    </span>
-      <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">29:47</span>
-  </span>
-</div>
-<div class="busuanzi-count">
-    <span class="post-meta-item" id="busuanzi_container_site_uv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-user"></i>
-      </span>
-      <span class="site-uv" title="总访客量">
-        <span id="busuanzi_value_site_uv"></span>
-      </span>
-    </span>
-    <span class="post-meta-item" id="busuanzi_container_site_pv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-eye"></i>
-      </span>
-      <span class="site-pv" title="总访问量">
-        <span id="busuanzi_value_site_pv"></span>
-      </span>
-    </span>
-</div>
-
-    </div>
-  </footer>
-
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p>《程序员的自我修养》</p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Programming/">Programming</a><a class="post-meta__tags" href="/tags/Links-Libraries/">Links Libraries</a></div><div class="post_share"><div class="social-share" data-image="https://unsplash.it/1600/900?random&amp;6566" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/Program/LinksAndLibrariesPart5/" title="链接装载与库（五）动态链接"><img class="cover" src="https://unsplash.it/1600/900?random&amp;6782" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">链接装载与库（五）动态链接</div></div></a></div><div class="next-post pull-right"><a href="/Program/LinksAndLibrariesPart3/" title="链接装载与库（三）静态链接"><img class="cover" src="https://unsplash.it/1600/900?random&amp;8673" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">链接装载与库（三）静态链接</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/Program/LinksAndLibrariesPart2/" title="链接装载与库（二）目标文件"><img class="cover" src="https://unsplash.it/1600/900?random&7011" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-12-20</div><div class="title">链接装载与库（二）目标文件</div></div></a></div><div><a href="/Program/LinksAndLibrariesPart3/" title="链接装载与库（三）静态链接"><img class="cover" src="https://unsplash.it/1600/900?random&8673" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-12-21</div><div class="title">链接装载与库（三）静态链接</div></div></a></div><div><a href="/Program/LinksAndLibrariesPart1/" title="链接装载与库（一）编译和链接"><img class="cover" src="https://unsplash.it/1600/900?random&7861" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-12-19</div><div class="title">链接装载与库（一）编译和链接</div></div></a></div><div><a href="/Program/LinksAndLibrariesPart5/" title="链接装载与库（五）动态链接"><img class="cover" src="https://unsplash.it/1600/900?random&6782" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-12-24</div><div class="title">链接装载与库（五）动态链接</div></div></a></div><div><a href="/Debug/ApplicationDebug/" title="应用崩溃调试分析"><img class="cover" src="https://unsplash.it/1600/900?random&6742" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-03-26</div><div class="title">应用崩溃调试分析</div></div></a></div><div><a href="/Debug/CCMemLeakAsync/" title="C&#x2F;C++内存泄露分析过程"><img class="cover" src="https://unsplash.it/1600/900?random&2911" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2022-03-21</div><div class="title">C&#x2F;C++内存泄露分析过程</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CarlyleLiu</div><div class="author-info__description">CarlyleLiu’s Blog</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/carlyleliu"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/carlyleliu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:yyliushuai@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-envelope" style="color: #24292e;"></i></a><a class="social-icon" href="https://twitter.com/yyliushuai" target="_blank" title="Twitter"><i class="fab fa-twitter" style="color: #24292e;"></i></a><a class="social-icon" href="https://youtube.com/carlyleliu" target="_blank" title="YouTube"><i class="fab fa-youtube" style="color: #24292e;"></i></a><a class="social-icon" href="https://instagram.com/blurredliu" target="_blank" title="Instagram"><i class="fab fa-instagram" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">next主题站 https://carlyleliu.github.io/next</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%A3%85%E8%BD%BD%E7%9A%84%E6%96%B9%E5%BC%8F"><span class="toc-number">1.</span> <span class="toc-text">装载的方式</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A1%B5%E6%98%A0%E5%B0%84"><span class="toc-number">1.1.</span> <span class="toc-text">页映射</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BB%8E%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E8%A7%92%E5%BA%A6%E7%9C%8B%E5%8F%AF%E6%89%A7%E8%A1%8C%E6%96%87%E4%BB%B6%E7%9A%84%E8%A3%85%E8%BD%BD"><span class="toc-number">2.</span> <span class="toc-text">从操作系统角度看可执行文件的装载</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%BB%BA%E7%AB%8B"><span class="toc-number">2.1.</span> <span class="toc-text">进程的建立</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A1%B5%E9%94%99%E8%AF%AF"><span class="toc-number">2.2.</span> <span class="toc-text">页错误</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%BF%9B%E7%A8%8B%E8%99%9A%E5%AD%98%E7%A9%BA%E9%97%B4%E5%88%86%E5%B8%83"><span class="toc-number">3.</span> <span class="toc-text">进程虚存空间分布</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#ELF-%E6%96%87%E4%BB%B6%E9%93%BE%E6%8E%A5%E8%A7%86%E5%9B%BE%E5%92%8C%E6%89%A7%E8%A1%8C%E8%A7%86%E5%9B%BE"><span class="toc-number">3.1.</span> <span class="toc-text">ELF 文件链接视图和执行视图</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A0%86%E5%92%8C%E6%A0%88"><span class="toc-number">3.2.</span> <span class="toc-text">堆和栈</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%AE%B5%E5%9C%B0%E5%9D%80%E5%AF%B9%E9%BD%90"><span class="toc-number">3.3.</span> <span class="toc-text">段地址对齐</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux-%E5%86%85%E6%A0%B8%E8%A3%85%E8%BD%BD-ELF-%E8%BF%87%E7%A8%8B%E7%AE%80%E4%BB%8B"><span class="toc-number">4.</span> <span class="toc-text">Linux 内核装载 ELF 过程简介</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="toc-number">5.</span> <span class="toc-text">参考文献</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2025 By CarlyleLiu</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, '']
+      }
+    }
+  }
   
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.13.0"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
 
-  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
 
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-  <script src="/js/third-party/pace.js"></script>
-
-
-  
-  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
-<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/Program/LinksAndLibrariesPart4/"}</script>
-<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
-<script>
-document.addEventListener('page:loaded', () => {
-  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
-    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
-  ).then(() => 
-    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
-  );
-});
-</script>
-
-</body>
-</html>
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><!-- hexo injector body_end end --></body></html>

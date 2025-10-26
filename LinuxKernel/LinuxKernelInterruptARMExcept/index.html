@@ -1,38 +1,11 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.2.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-  <meta name="google-site-verification" content="5txRYykRNG5Z1NrO_ZCLF1GZWnbFmCOLdJHGBVFuCIg">
-  <meta name="baidu-site-verification" content="code-XfgDErPTZS">
-
-<link rel="stylesheet" href="/css/main.css">
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Reddit+Mono:300,300italic,400,400italic,700,700italic%7CNoto+Sans:300,300italic,400,400italic,700,700italic%7COpen+Sans:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha256-XOqroi11tY4EFQMR9ZYwZWKj5ZXiftSx36RRuC3anlA=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/black/pace-theme-minimal.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
-
-    <meta name="description" content="原图  异常级别  通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Linux 中断子系统（二）ARM64 的异常处理过程 | Matrix</title><meta name="author" content="CarlyleLiu"><meta name="copyright" content="CarlyleLiu"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="原图 异常级别 通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世界，">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 中断子系统（二）ARM64 的异常处理过程">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxKernel/LinuxKernelInterruptARMExcept/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="原图  异常级别  通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全">
+<meta property="og:description" content="原图 异常级别 通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。 虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。 ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世界，">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png">
-<meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/armv8_vector.png">
+<meta property="og:image" content="https://unsplash.it/1600/900?random&6864">
 <meta property="article:published_time" content="2021-09-14T08:03:15.000Z">
 <meta property="article:modified_time" content="2025-09-27T04:36:15.360Z">
 <meta property="article:author" content="CarlyleLiu">
@@ -40,306 +13,171 @@
 <meta property="article:tag" content="Kernel">
 <meta property="article:tag" content="Interrupt">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png">
+<meta name="twitter:image" content="https://unsplash.it/1600/900?random&6864"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxKernelInterruptARMExcept/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=4.13.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"找不到您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":false,"highlightHeightLimit":300},
+  copy: {
+    success: '复制成功',
+    error: '复制错误',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '天',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.11.1/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Linux 中断子系统（二）ARM64 的异常处理过程',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2025-09-27 12:36:15'
+}</script><script>(win=>{
+      win.saveToLocal = {
+        set: (key, value, ttl) => {
+          if (ttl === 0) return
+          const now = Date.now()
+          const expiry = now + ttl * 86400000
+          const item = {
+            value,
+            expiry
+          }
+          localStorage.setItem(key, JSON.stringify(item))
+        },
+      
+        get: key => {
+          const itemStr = localStorage.getItem(key)
+      
+          if (!itemStr) {
+            return undefined
+          }
+          const item = JSON.parse(itemStr)
+          const now = Date.now()
+      
+          if (now > item.expiry) {
+            localStorage.removeItem(key)
+            return undefined
+          }
+          return item.value
+        }
+      }
+    
+      win.getScript = (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        script.onerror = reject
+        script.onload = script.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          script.onload = script.onreadystatechange = null
+          resolve()
+        }
 
+        Object.keys(attr).forEach(key => {
+          script.setAttribute(key, attr[key])
+        })
 
-<link rel="canonical" href="https://carlyleliu.github.io/LinuxKernel/LinuxKernelInterruptARMExcept/">
-
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://carlyleliu.github.io/LinuxKernel/LinuxKernelInterruptARMExcept/","path":"LinuxKernel/LinuxKernelInterruptARMExcept/","title":"Linux 中断子系统（二）ARM64 的异常处理过程"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Linux 中断子系统（二）ARM64 的异常处理过程 | Matrix</title>
-  
-
-
-
-
-
-
-
-<link rel="dns-prefetch" href="https://waline.carlyleliu.vip">
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-<!-- hexo injector head_end start -->
+        document.head.appendChild(script)
+      })
+    
+      win.getCSS = (url, id = false) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onerror = reject
+        link.onload = link.onreadystatechange = function() {
+          const loadState = this.readyState
+          if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+          link.onload = link.onreadystatechange = null
+          resolve()
+        }
+        document.head.appendChild(link)
+      })
+    
+      win.activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+        if (t === 'dark') activateDarkMode()
+        else if (t === 'light') activateLightMode()
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+      const detectApple = () => {
+        if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+          document.documentElement.classList.add('apple')
+        }
+      }
+      detectApple()
+    })(window)</script><!-- hexo injector head_end start -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.12.0/dist/katex.min.css">
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/hexo-math@4.0.0/dist/style.css">
-<!-- hexo injector head_end end -->
+<link rel="stylesheet" href="https://unpkg.zhimg.com/hexo-butterfly-footer-beautify@1.0.0/lib/runtime.min.css" media="print" onload="this.media='all'"><!-- hexo injector head_end end --><meta name="generator" content="Hexo 7.2.0">
 <style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
 <link rel="alternate" href="/atom.xml" title="Matrix" type="application/atom+xml">
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切换导航栏" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">Matrix</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">CarlyleLiu‘s Blog</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="搜索" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-alist"><span class="exturl" data-url="aHR0cHM6Ly9hbGlzdC5jYXJseWxlbGl1LnZpcC8="><i class="fa-solid fa-cloud fa-fw"></i>网盘</span></li><li class="menu-item menu-item-books"><span class="exturl" data-url="aHR0cHM6Ly9jYWxpYnJlLmNhcmx5bGVsaXUudmlwLw=="><i class="fa-solid fa-book fa-fw"></i>书库</span></li><li class="menu-item menu-item-talk"><span class="exturl" data-url="aHR0cHM6Ly9tZW1vcy5jYXJseWxlbGl1LnZpcC9leHBsb3JlLw=="><i class="fas fa-comments fa-fw"></i>随笔</span></li><li class="menu-item menu-item-album"><span class="exturl" data-url="aHR0cHM6Ly9pbW1pY2guY2FybHlsZWxpdS52aXAvc2hhcmUvSmtSenVqZERfdWVJRnJRNHpvYnpfUW1EVndRZkdGS3ZyVTh0ZlJIYWN1ZG9ZMjV0Z2tFdDd6aS1Wck5oYUEzZUdpNC8="><i class="fa-solid fa-image fa-fw"></i>相册</span></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="搜索..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
-        
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          文章目录
-        </li>
-        <li class="sidebar-nav-overview">
-          站点概览
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%BA%A7%E5%88%AB"><span class="nav-text"> 异常级别</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%B1%BB%E5%9E%8B"><span class="nav-text"> 异常类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%AD%E6%96%AD"><span class="nav-text"> 中断</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%AD%E6%AD%A2"><span class="nav-text"> 中止</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E4%BD%8D"><span class="nav-text"> 复位</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AF%E4%BB%B6%E4%BA%A7%E7%94%9F%E7%9A%84%E5%BC%82%E5%B8%B8"><span class="nav-text"> 软件产生的异常</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%90%8C%E6%AD%A5%E5%BC%82%E5%B8%B8%E5%92%8C%E5%BC%82%E6%AD%A5%E5%BC%82%E5%B8%B8"><span class="nav-text"> 同步异常和异步异常</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E7%9A%84%E5%8F%91%E7%94%9F%E5%92%8C%E9%80%80%E5%87%BA"><span class="nav-text"> 异常的发生和退出</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8"><span class="nav-text"> 异常向量表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8%E5%9C%A8-linux-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0%E6%89%A9%E5%B1%95"><span class="nav-text"> 异常向量表在 Linux 中的实现（扩展）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B1%87%E7%BC%96%E5%AE%8F%E5%AE%9A%E4%B9%89"><span class="nav-text"> 汇编宏定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81"><span class="nav-text"> 源码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-  <p class="site-author-name" itemprop="name">CarlyleLiu</p>
-  <div class="site-description" itemprop="description">CarlyleLiu’s Blog</div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">194</span>
-          <span class="site-state-item-name">日志</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-categories">
-          <a href="/categories/">
-        <span class="site-state-item-count">28</span>
-        <span class="site-state-item-name">分类</span></a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">42</span>
-        <span class="site-state-item-name">标签</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;carlyleliu"><i class="fab fa-github fa-fw"></i>GitHub</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="bWFpbHRvOnl5bGl1c2h1YWlAZ21haWwuY29t" title="E-Mail → mailto:yyliushuai@gmail.com"><i class="fa fa-envelope fa-fw"></i>E-Mail</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly90d2l0dGVyLmNvbS95eWxpdXNodWFp" title="Twitter → https:&#x2F;&#x2F;twitter.com&#x2F;yyliushuai"><i class="fab fa-twitter fa-fw"></i>Twitter</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly95b3V0dWJlLmNvbS9jYXJseWxlbGl1" title="YouTube → https:&#x2F;&#x2F;youtube.com&#x2F;carlyleliu"><i class="fab fa-youtube fa-fw"></i>YouTube</span>
-      </span>
-      <span class="links-of-author-item">
-        <span class="exturl" data-url="aHR0cHM6Ly9pbnN0YWdyYW0uY29tL2JsdXJyZWRsaXU=" title="Instagram → https:&#x2F;&#x2F;instagram.com&#x2F;blurredliu"><i class="fab fa-instagram fa-fw"></i>Instagram</span>
-      </span>
-  </div>
-  <div class="cc-license animated" itemprop="license">
-    <span class="exturl cc-opacity" data-url="aHR0cHM6Ly9jcmVhdGl2ZWNvbW1vbnMub3JnL2xpY2Vuc2VzL2J5LW5jLXNhLzQuMC96aC1DTg=="><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></span>
-  </div>
-
-        </div>
-      </div>
-    </div>
-
-    
-        <div class="pjax">
-        </div>
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
-  
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/LinuxKernel/LinuxKernelInterruptARMExcept/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="Linux 中断子系统（二）ARM64 的异常处理过程 | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          Linux 中断子系统（二）ARM64 的异常处理过程
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Linux/Kernel/" itemprop="url" rel="index"><span itemprop="name">Kernel</span></a>
-        </span>
-    </span>
-
-  
-    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
-      <span class="post-meta-item-icon">
-        <i class="far fa-eye"></i>
-      </span>
-      <span class="post-meta-item-text">阅读次数：</span>
-      <span id="busuanzi_value_page_pv"></span>
-    </span>
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/LinuxKernel/LinuxKernelInterruptARMExcept/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/LinuxKernel/LinuxKernelInterruptARMExcept/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>2.6k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>9 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png" alt=""><br>
-<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS9lbWJlZC82MjM1Nzk2NjA3OTEyOTA2ZjUwN2QxMDg=">原图<i class="fa fa-external-link-alt"></i></span></p>
-<h1 id="异常级别"><a class="markdownIt-Anchor" href="#异常级别"></a> 异常级别</h1>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png" alt=""></p>
+</head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="sidebar-site-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><hr class="custom-hr"/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('https://unsplash.it/1600/900?random&amp;6864')"><nav id="nav"><span id="blog-info"><a href="/" title="Matrix"><span class="site-name">Matrix</span></a></span><div id="menus"><div id="search-button"><a class="site-page social-icon search" href="javascript:void(0);"><i class="fas fa-search fa-fw"></i><span> 搜索</span></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page" href="javascript:void(0);"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Linux 中断子系统（二）ARM64 的异常处理过程</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2021-09-14T08:03:15.000Z" title="发表于 2021-09-14 16:03:15">2021-09-14</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-09-27T04:36:15.360Z" title="更新于 2025-09-27 12:36:15">2025-09-27</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/">Technology Blog</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Linux/">Linux</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Technology-Blog/Linux/Kernel/">Kernel</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Linux 中断子系统（二）ARM64 的异常处理过程"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">阅读量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/IRQExceptProcess.png" alt=""><br><a target="_blank" rel="noopener" href="https://www.processon.com/embed/6235796607912906f507d108">原图</a></p>
+<h1 id="异常级别"><a href="#异常级别" class="headerlink" title="异常级别"></a>异常级别</h1><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/ARM64_ELEVEL.png" alt=""></p>
 <p>通常 ARM64 的进程执行在 EL0 级别，内核执行在 EL1 级别。</p>
 <p>虚拟机是现在流行的虚拟化技术，在计算机上创建一个虚拟机，虚拟机里可以运行一个操作系统。常用的开源虚拟机管理软件是 QEMU，QEMU 支持基于内核的虚拟机 KVM，KVM 的特点是直接在处理器上执行客户机的操作系统，所以虚拟机的执行速度很快。</p>
 <p>ARM64 架构的安全扩展定义了两种安全状态，正常世界和安全世界，两个世界只能通过异常级别 3 的安全监视器切换。</p>
 <span id="more"></span>
-<h1 id="异常类型"><a class="markdownIt-Anchor" href="#异常类型"></a> 异常类型</h1>
-<h2 id="中断"><a class="markdownIt-Anchor" href="#中断"></a> 中断</h2>
-<p>在 ARM 处理器中，FIQ（Fast Interruptre Quest）的优先级要高于 IRQ（Interrupt ReQuest）。在芯片内部，分别由 IRQ 和 FIQ 两根中断线连接到中断控制器再连接到处理器内部，发送中断信号给处理器。</p>
-<h3 id="中止"><a class="markdownIt-Anchor" href="#中止"></a> 中止</h3>
-<p>中止（abort）主要有指令中止（instruction abort）和数据中止（data abort）两种，通常是因为访问外部存储单元时发生了错误，处理器内部的 MMU（Memory Management Unit）能捕获这些错误并且报告给处理器。指令中止是指当处理器尝试执行某条指令时发生了错误，而数据中止是指使用加载或存储指令读写外部存储单元时发生了错误。</p>
-<h2 id="复位"><a class="markdownIt-Anchor" href="#复位"></a> 复位</h2>
-<p>复位（reset）操作是优先级最高的一种异常处理，复位操作包括上电复位和手动复位两种。</p>
-<h2 id="软件产生的异常"><a class="markdownIt-Anchor" href="#软件产生的异常"></a> 软件产生的异常</h2>
-<p>ARMv8 加构提供了 3 种软件产生的异常。发生这些异常通常是因为软件想尝试进入高的异常等级。</p>
+<h1 id="异常类型"><a href="#异常类型" class="headerlink" title="异常类型"></a>异常类型</h1><h2 id="中断"><a href="#中断" class="headerlink" title="中断"></a>中断</h2><p>在 ARM 处理器中，FIQ（Fast Interruptre Quest）的优先级要高于 IRQ（Interrupt ReQuest）。在芯片内部，分别由 IRQ 和 FIQ 两根中断线连接到中断控制器再连接到处理器内部，发送中断信号给处理器。</p>
+<h3 id="中止"><a href="#中止" class="headerlink" title="中止"></a>中止</h3><p>中止（abort）主要有指令中止（instruction abort）和数据中止（data abort）两种，通常是因为访问外部存储单元时发生了错误，处理器内部的 MMU（Memory Management Unit）能捕获这些错误并且报告给处理器。指令中止是指当处理器尝试执行某条指令时发生了错误，而数据中止是指使用加载或存储指令读写外部存储单元时发生了错误。</p>
+<h2 id="复位"><a href="#复位" class="headerlink" title="复位"></a>复位</h2><p>复位（reset）操作是优先级最高的一种异常处理，复位操作包括上电复位和手动复位两种。</p>
+<h2 id="软件产生的异常"><a href="#软件产生的异常" class="headerlink" title="软件产生的异常"></a>软件产生的异常</h2><p>ARMv8 加构提供了 3 种软件产生的异常。发生这些异常通常是因为软件想尝试进入高的异常等级。</p>
 <ul>
 <li>SVC 指令：允许用户模式下的程序请求操作系统服务</li>
 <li>HVC 指令：允许客户机（guestOS）请求主机服务</li>
 <li>SMC 指令：允许普通世界（normal world）中的程序请求安全监控服务</li>
 </ul>
-<h1 id="同步异常和异步异常"><a class="markdownIt-Anchor" href="#同步异常和异步异常"></a> 同步异常和异步异常</h1>
-<p>ARMv8 架构把异常分成同步异常和异步异常两种。同步异常是指处理器需要等待异常处理的结果，然后再继续执行后面的指令，比如数据中止发生时我们知道发生数据异常的地址，因而可以在异常处理函数中修复这个地址。常见的同步异常如下。</p>
+<h1 id="同步异常和异步异常"><a href="#同步异常和异步异常" class="headerlink" title="同步异常和异步异常"></a>同步异常和异步异常</h1><p>ARMv8 架构把异常分成同步异常和异步异常两种。同步异常是指处理器需要等待异常处理的结果，然后再继续执行后面的指令，比如数据中止发生时我们知道发生数据异常的地址，因而可以在异常处理函数中修复这个地址。常见的同步异常如下。</p>
 <ul>
 <li>尝试访问异常等级不恰当的寄存器</li>
 <li>尝试执行没有定义（UNDEFINED）的指令</li>
@@ -353,8 +191,7 @@
 <li>物理中断分为系统错误、IRQ、FIQ。</li>
 <li>虚拟中断分为 vSError、 vIRQ、vFIQ。</li>
 </ul>
-<h1 id="异常的发生和退出"><a class="markdownIt-Anchor" href="#异常的发生和退出"></a> 异常的发生和退出</h1>
-<p>当异常发生时，CPU 会自动做如下一些事情。</p>
+<h1 id="异常的发生和退出"><a href="#异常的发生和退出" class="headerlink" title="异常的发生和退出"></a>异常的发生和退出</h1><p>当异常发生时，CPU 会自动做如下一些事情。</p>
 <ul>
 <li>将处理器状态寄存器 PSTATE 保存到对应目标异常等级的 SPSR_ELx 中</li>
 <li>将返回地址保存在对应目标异常等级的 ELRELx 中</li>
@@ -368,15 +205,10 @@
 <li>从 ELR_ELx 中恢复 PC 指针</li>
 <li>从 SPSR_ELx 恢复处理器的状态</li>
 </ul>
-<h1 id="异常向量表"><a class="markdownIt-Anchor" href="#异常向量表"></a> 异常向量表</h1>
-<p>ARMv7 架构的异常向量表比较简单，每个表项占用 4 字节，并且每个表项里存放了一条跳转指令。但是 ARMv8 架构的异常向量表发生了变化。每一个表项需要 128 字节，这样可以存放 32 条指令。注意，ARMv8 指令集支持 64 位指令集，但是每一条指令的位宽是 32 位宽而不是 64 位宽。</p>
-<p>在下表中，异常向量表存放的基地址可以通过 VBAR （Vector Base Address Register）来设置。VBAR 是异常向量表的基地址寄存器。见《ARM Architecture Reference Manual，ARMv8，for ARMv8-A architecture profile v8.4》的 D.1.10 节。<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/armv8_vector.png" alt=""></p>
+<h1 id="异常向量表"><a href="#异常向量表" class="headerlink" title="异常向量表"></a>异常向量表</h1><p>ARMv7 架构的异常向量表比较简单，每个表项占用 4 字节，并且每个表项里存放了一条跳转指令。但是 ARMv8 架构的异常向量表发生了变化。每一个表项需要 128 字节，这样可以存放 32 条指令。注意，ARMv8 指令集支持 64 位指令集，但是每一条指令的位宽是 32 位宽而不是 64 位宽。</p>
+<p>在下表中，异常向量表存放的基地址可以通过 VBAR （Vector Base Address Register）来设置。VBAR 是异常向量表的基地址寄存器。见《ARM Architecture Reference Manual，ARMv8，for ARMv8-A architecture profile v8.4》的 D.1.10 节。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Kernel/armv8_vector.png" alt=""></p>
 <hr>
-<h1 id="异常向量表在-linux-中的实现扩展"><a class="markdownIt-Anchor" href="#异常向量表在-linux-中的实现扩展"></a> 异常向量表在 Linux 中的实现（扩展）</h1>
-<h2 id="汇编宏定义"><a class="markdownIt-Anchor" href="#汇编宏定义"></a> 汇编宏定义</h2>
-<p>要理解下面这段代码需要先简单了解一下一些汇编语法，下面做简单介绍：<br>
-首先是。macro 命令 .macro 和 .endm 之间允许您定义生成汇编输出的宏。例如，如下这段宏定义：</p>
+<h1 id="异常向量表在-Linux-中的实现（扩展）"><a href="#异常向量表在-Linux-中的实现（扩展）" class="headerlink" title="异常向量表在 Linux 中的实现（扩展）"></a>异常向量表在 Linux 中的实现（扩展）</h1><h2 id="汇编宏定义"><a href="#汇编宏定义" class="headerlink" title="汇编宏定义"></a>汇编宏定义</h2><p>要理解下面这段代码需要先简单了解一下一些汇编语法，下面做简单介绍：<br>首先是。macro 命令 .macro 和 .endm 之间允许您定义生成汇编输出的宏。例如，如下这段宏定义：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.macro  sum from=0, to=5</span><br><span class="line">.long   \from</span><br><span class="line">.if     \to-\from</span><br><span class="line">sum     "(\from+1)",\to</span><br><span class="line">.endif</span><br><span class="line">.endm</span><br></pre></td></tr></tbody></table></figure>
 <p>根据该定义，“SUM 0,5”等效于以下程序集输入：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.long   0</span><br><span class="line">.long   1</span><br><span class="line">.long   2</span><br><span class="line">.long   3</span><br><span class="line">.long   4</span><br><span class="line">.long   5</span><br></pre></td></tr></tbody></table></figure>
@@ -384,17 +216,16 @@
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">.macro plus1 p, p1</span><br><span class="line">.macro plus1 p p1</span><br></pre></td></tr></tbody></table></figure>
 <p>任一语句都开始定义一个名为 plus1 的宏，它带有两个参数；在宏定义中，写“\p”或“\p1”来计算参数。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.macro reserve_str p1=0 p2</span><br></pre></td></tr></tbody></table></figure>
-<p>以两个参数开始一个名为 reserve_str 的宏的定义。 第一个参数有一个默认值，但第二个没有。 定义完成后，您可以将宏调用为 ‘reserve_str a,b’（‘\p1’ 计算为 a，‘\p2’ 计算为 b），或为 ‘reserve_str ,b’（使用 ‘\p1 ’ 计算为默认值，在本例中为 ‘0’，’\p2’ 计算为 b)。</p>
+<p>以两个参数开始一个名为 reserve_str 的宏的定义。 第一个参数有一个默认值，但第二个没有。 定义完成后，您可以将宏调用为 ‘reserve_str a,b’（’\p1’ 计算为 a，’\p2’ 计算为 b），或为 ‘reserve_str ,b’（使用 ‘\p1 ‘ 计算为默认值，在本例中为 ‘0’，’\p2’ 计算为 b)。</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.macro m p1:req, p2=0, p3:vararg</span><br></pre></td></tr></tbody></table></figure>
 <p>以至少三个参数开始一个名为 m 的宏的定义。 第一个参数必须始终指定一个值，但第二个参数不是，而是具有默认值。 第三个形式将被分配在调用时指定的所有剩余参数。</p>
 <p>调用宏时，可以按位置或关键字指定参数值。 例如，“sum 9,17”等价于“sum to=17, from=9”。</p>
-<p>请注意，由于每个 macargs 都可以是与目标架构允许的任何其他标识符完全相同的标识符，因此如果目标在某些字符出现在特殊位置时对其制作了特殊含义，则可能会偶尔出现问题。 例如，如果冒号 (😃 通常被允许作为符号名称的一部分，但架构特定代码在作为符号的最后一个字符（以表示标签）出现时将其特殊化，则宏参数替换 代码将无法知道这一点并将整个构造（包括冒号）视为标识符，并仅检查此标识符是否受参数替换。 例如这个宏定义：</p>
+<p>请注意，由于每个 macargs 都可以是与目标架构允许的任何其他标识符完全相同的标识符，因此如果目标在某些字符出现在特殊位置时对其制作了特殊含义，则可能会偶尔出现问题。 例如，如果冒号 (:) 通常被允许作为符号名称的一部分，但架构特定代码在作为符号的最后一个字符（以表示标签）出现时将其特殊化，则宏参数替换 代码将无法知道这一点并将整个构造（包括冒号）视为标识符，并仅检查此标识符是否受参数替换。 例如这个宏定义：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">	.macro label l</span><br><span class="line">\l:</span><br><span class="line">	.endm</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
 <p>可能无法按预期工作。 调用“label foo”可能不会创建一个名为“foo”的标签，而只是将文本“\l:”插入到汇编源代码中，可能会产生关于无法识别的标识符的错误。</p>
 <p>类似的问题可能会出现在操作码名称（以及标识符名称）中通常允许使用的句点字符 (‘.’) 中。 因此，例如构造一个宏以根据基本名称和长度说明符构建操作码，如下所示：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">.macro opcode base length</span><br><span class="line">       \base.\length</span><br><span class="line">.endm</span><br></pre></td></tr></tbody></table></figure>
-<p>并将其作为“opcode store l”调用不会创建“store.l”指令，而是在汇编器尝试解释文本“\base.\length”时产生某种错误。<br>
-有几种可能的方法可以解决这个问题：</p>
+<p>并将其作为“opcode store l”调用不会创建“store.l”指令，而是在汇编器尝试解释文本“\base.\length”时产生某种错误。<br>有几种可能的方法可以解决这个问题：</p>
 <ul>
 <li>Insert white space</li>
 </ul>
@@ -412,8 +243,7 @@
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">	.altmacro</span><br><span class="line">	.macro label l</span><br><span class="line">l&amp;:</span><br><span class="line">	.endm</span><br></pre></td></tr></tbody></table></figure>
 <p>正确识别伪操作的字符串参数的这个问题也适用于 .irp 和 .irpc 中使用的标识符。</p>
 <p>.endm 标记宏定义的结尾。</p>
-<h2 id="源码"><a class="markdownIt-Anchor" href="#源码"></a> 源码</h2>
-<p>下面看下 Linux 中 arm64 的异常向量表，在 arch/arm64/kernel/entry.S 文件中有：</p>
+<h2 id="源码"><a href="#源码" class="headerlink" title="源码"></a>源码</h2><p>下面看下 Linux 中 arm64 的异常向量表，在 arch/arm64/kernel/entry.S 文件中有：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Exception vectors.</span><br><span class="line"> */</span><br><span class="line">	.pushsection ".entry.text", "ax"</span><br><span class="line"></span><br><span class="line">	.align	11</span><br><span class="line">SYM_CODE_START(vectors)</span><br><span class="line">    # 使用 SP0 寄存器的当前的异常类型的异常向量表</span><br><span class="line">	kernel_ventry	1, t, 64, sync		// Synchronous EL1t</span><br><span class="line">	kernel_ventry	1, t, 64, irq		// IRQ EL1t</span><br><span class="line">	kernel_ventry	1, t, 64, fiq		// FIQ EL1h</span><br><span class="line">	kernel_ventry	1, t, 64, error		// Error EL1t</span><br><span class="line"></span><br><span class="line">    # 使用 SPx 寄存器的当前异常类型的异常向量表</span><br><span class="line">	kernel_ventry	1, h, 64, sync		// Synchronous EL1h</span><br><span class="line">	kernel_ventry	1, h, 64, irq		// IRQ EL1h</span><br><span class="line">	kernel_ventry	1, h, 64, fiq		// FIQ EL1h</span><br><span class="line">	kernel_ventry	1, h, 64, error		// Error EL1h</span><br><span class="line"></span><br><span class="line">    # AArch64 下低异常等级的异常向量表</span><br><span class="line">	kernel_ventry	0, t, 64, sync		// Synchronous 64-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 64, irq		// IRQ 64-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 64, fiq		// FIQ 64-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 64, error		// Error 64-bit EL0</span><br><span class="line"></span><br><span class="line">    # AArch32 下低异常等级的异常向量表</span><br><span class="line">	kernel_ventry	0, t, 32, sync		// Synchronous 32-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 32, irq		// IRQ 32-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 32, fiq		// FIQ 32-bit EL0</span><br><span class="line">	kernel_ventry	0, t, 32, error		// Error 32-bit EL0</span><br><span class="line">SYM_CODE_END(vectors)</span><br></pre></td></tr></tbody></table></figure>
 <p>上述异常向量表的定义和前面那张图是一致的，其中 kernel_ventry 是一个宏，他的实现如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">	.macro kernel_ventry, el:req, ht:req, regsize:req, label:req</span><br><span class="line">	.align 7</span><br><span class="line">#ifdef CONFIG_UNMAP_KERNEL_AT_EL0</span><br><span class="line">	.if	\el == 0</span><br><span class="line">alternative_if ARM64_UNMAP_KERNEL_AT_EL0</span><br><span class="line">	.if	\regsize == 64</span><br><span class="line">	mrs	x30, tpidrro_el0</span><br><span class="line">	msr	tpidrro_el0, xzr</span><br><span class="line">	.else</span><br><span class="line">	mov	x30, xzr</span><br><span class="line">	.endif</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">	.endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	sub	sp, sp, #PT_REGS_SIZE</span><br><span class="line">#ifdef CONFIG_VMAP_STACK</span><br><span class="line">	/*</span><br><span class="line">	 * Test whether the SP has overflowed, without corrupting a GPR.</span><br><span class="line">	 * Task and IRQ stacks are aligned so that SP &amp; (1 &lt;&lt; THREAD_SHIFT)</span><br><span class="line">	 * should always be zero.</span><br><span class="line">	 */</span><br><span class="line">	add	sp, sp, x0			// sp' = sp + x0</span><br><span class="line">	sub	x0, sp, x0			// x0' = sp' - x0 = (sp + x0) - x0 = sp</span><br><span class="line">	tbnz	x0, #THREAD_SHIFT, 0f</span><br><span class="line">	sub	x0, sp, x0			// x0'' = sp' - x0' = (sp + x0) - sp = x0</span><br><span class="line">	sub	sp, sp, x0			// sp'' = sp' - x0 = (sp + x0) - x0 = sp</span><br><span class="line">	b	el\el\ht\()_\regsize\()_\label</span><br><span class="line"></span><br><span class="line">0:</span><br><span class="line">	/*</span><br><span class="line">	 * Either we've just detected an overflow, or we've taken an exception</span><br><span class="line">	 * while on the overflow stack. Either way, we won't return to</span><br><span class="line">	 * userspace, and can clobber EL0 registers to free up GPRs.</span><br><span class="line">	 */</span><br><span class="line"></span><br><span class="line">	/* Stash the original SP (minus PT_REGS_SIZE) in tpidr_el0. */</span><br><span class="line">	msr	tpidr_el0, x0</span><br><span class="line"></span><br><span class="line">	/* Recover the original x0 value and stash it in tpidrro_el0 */</span><br><span class="line">	sub	x0, sp, x0</span><br><span class="line">	msr	tpidrro_el0, x0</span><br><span class="line"></span><br><span class="line">	/* Switch to the overflow stack */</span><br><span class="line">	adr_this_cpu sp, overflow_stack + OVERFLOW_STACK_SIZE, x0</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * Check whether we were already on the overflow stack. This may happen</span><br><span class="line">	 * after panic() re-enables interrupts.</span><br><span class="line">	 */</span><br><span class="line">	mrs	x0, tpidr_el0			// sp of interrupted context</span><br><span class="line">	sub	x0, sp, x0			// delta with top of overflow stack</span><br><span class="line">	tst	x0, #~(OVERFLOW_STACK_SIZE - 1)	// within range?</span><br><span class="line">	b.ne	__bad_stack			// no? -&gt; bad stack pointer</span><br><span class="line"></span><br><span class="line">	/* We were already on the overflow stack. Restore sp/x0 and carry on. */</span><br><span class="line">	sub	sp, sp, x0</span><br><span class="line">	mrs	x0, tpidrro_el0</span><br><span class="line">#endif</span><br><span class="line">	b	el\el\ht\()_\regsize\()_\label</span><br><span class="line">	.endm</span><br></pre></td></tr></tbody></table></figure>
@@ -423,7 +253,7 @@
 </ul>
 <p>表示把一条指令的地址对其到 2 的 7 次方，即 128 字节。</p>
 <ul>
-<li>sub	sp, sp, #PT_REGS_SIZE</li>
+<li>sub    sp, sp, #PT_REGS_SIZE</li>
 </ul>
 <p>sp 指针减去 PT_REGS_SIZE，PT_REGS_SIZE 的定义在 arch/arm64/kernel/asm_offset.c 文件中，如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DEFINE(PT_REGS_SIZE,		<span class="keyword">sizeof</span>(<span class="keyword">struct</span> pt_regs));</span><br></pre></td></tr></tbody></table></figure>
@@ -431,199 +261,74 @@
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">pt_regs</span> {</span></span><br><span class="line">	<span class="class"><span class="keyword">union</span> {</span></span><br><span class="line">		<span class="class"><span class="keyword">struct</span> <span class="title">user_pt_regs</span> <span class="title">user_regs</span>;</span></span><br><span class="line">		<span class="class"><span class="keyword">struct</span> {</span></span><br><span class="line">			u64 regs[<span class="number">31</span>];</span><br><span class="line">			u64 sp;</span><br><span class="line">			u64 pc;</span><br><span class="line">			u64 pstate;</span><br><span class="line">		};</span><br><span class="line">	};</span><br><span class="line">	u64 orig_x0;</span><br><span class="line"><span class="meta">#<span class="keyword">ifdef</span> __AARCH64EB__</span></span><br><span class="line">	u32 unused2;</span><br><span class="line">	s32 syscallno;</span><br><span class="line"><span class="meta">#<span class="keyword">else</span></span></span><br><span class="line">	s32 syscallno;</span><br><span class="line">	u32 unused2;</span><br><span class="line"><span class="meta">#<span class="keyword">endif</span></span></span><br><span class="line">	u64 sdei_ttbr1;</span><br><span class="line">	<span class="comment">/* Only valid when ARM64_HAS_IRQ_PRIO_MASKING is enabled. */</span></span><br><span class="line">	u64 pmr_save;</span><br><span class="line">	u64 stackframe[<span class="number">2</span>];</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* Only valid for some EL1 exceptions. */</span></span><br><span class="line">	u64 lockdep_hardirqs;</span><br><span class="line">	u64 exit_rcu;</span><br><span class="line">};</span><br></pre></td></tr></tbody></table></figure>
 <p>该结构定义了异常期间寄存器在堆栈上的存储方式。 请注意 sizeof(struct pt_regs) 必须是 16 的倍数（用于堆栈对齐）。</p>
 <ul>
-<li>b	el\el\ht()<em>\regsize()</em>\label</li>
+<li>b    el\el\ht()<em>\regsize()</em>\label</li>
 </ul>
-<p>以 kernel_ventry	1, t, 64, sync 为例将宏展开得到：el1t_64_sync, 下面我们去看看该标号的实现，如下：</p>
+<p>以 kernel_ventry    1, t, 64, sync 为例将宏展开得到：el1t_64_sync, 下面我们去看看该标号的实现，如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">	.macro entry_handler el:req, ht:req, regsize:req, label:req</span><br><span class="line">SYM_CODE_START_LOCAL(el\el\ht\()_\regsize\()_\label)</span><br><span class="line">	kernel_entry \el, \regsize</span><br><span class="line">	mov	x0, sp</span><br><span class="line">	bl	el\el\ht\()_\regsize\()_\label\()_handler</span><br><span class="line">	.if \el == 0</span><br><span class="line">	b	ret_to_user</span><br><span class="line">	.else</span><br><span class="line">	b	ret_to_kernel</span><br><span class="line">	.endif</span><br><span class="line">SYM_CODE_END(el\el\ht\()_\regsize\()_\label)</span><br><span class="line">	.endm</span><br><span class="line">/*</span><br><span class="line"> * Early exception handlers</span><br><span class="line"> */</span><br><span class="line">	entry_handler	1, t, 64, sync</span><br><span class="line">	entry_handler	1, t, 64, irq</span><br><span class="line">	entry_handler	1, t, 64, fiq</span><br><span class="line">	entry_handler	1, t, 64, error</span><br><span class="line"></span><br><span class="line">	entry_handler	1, h, 64, sync</span><br><span class="line">	entry_handler	1, h, 64, irq</span><br><span class="line">	entry_handler	1, h, 64, fiq</span><br><span class="line">	entry_handler	1, h, 64, error</span><br><span class="line"></span><br><span class="line">	entry_handler	0, t, 64, sync</span><br><span class="line">	entry_handler	0, t, 64, irq</span><br><span class="line">	entry_handler	0, t, 64, fiq</span><br><span class="line">	entry_handler	0, t, 64, error</span><br><span class="line"></span><br><span class="line">	entry_handler	0, t, 32, sync</span><br><span class="line">	entry_handler	0, t, 32, irq</span><br><span class="line">	entry_handler	0, t, 32, fiq</span><br><span class="line">	entry_handler	0, t, 32, error</span><br></pre></td></tr></tbody></table></figure>
-<p>将	entry_handler	1, t, 64, sync 宏展开，得到如下：</p>
+<p>将    entry_handler    1, t, 64, sync 宏展开，得到如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">el1t_64_sync:</span><br><span class="line">  	kernel_entry \el, \regsize</span><br><span class="line">	mov	x0, sp</span><br><span class="line">	bl	el\el\ht\()_\regsize\()_\label\()_handler</span><br><span class="line">	.if \el == 0</span><br><span class="line">	b	ret_to_user</span><br><span class="line">	.else</span><br><span class="line">	b	ret_to_kernel</span><br><span class="line">	.endif</span><br></pre></td></tr></tbody></table></figure>
 <p>kernel_entry 宏定义如下：</p>
 <figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br></pre></td><td class="code"><pre><span class="line">	.macro	kernel_entry, el, regsize = 64</span><br><span class="line">	.if	\regsize == 32</span><br><span class="line">	mov	w0, w0				// zero upper 32 bits of x0</span><br><span class="line">	.endif</span><br><span class="line">	stp	x0, x1, [sp, #16 * 0]</span><br><span class="line">	stp	x2, x3, [sp, #16 * 1]</span><br><span class="line">	stp	x4, x5, [sp, #16 * 2]</span><br><span class="line">	stp	x6, x7, [sp, #16 * 3]</span><br><span class="line">	stp	x8, x9, [sp, #16 * 4]</span><br><span class="line">	stp	x10, x11, [sp, #16 * 5]</span><br><span class="line">	stp	x12, x13, [sp, #16 * 6]</span><br><span class="line">	stp	x14, x15, [sp, #16 * 7]</span><br><span class="line">	stp	x16, x17, [sp, #16 * 8]</span><br><span class="line">	stp	x18, x19, [sp, #16 * 9]</span><br><span class="line">	stp	x20, x21, [sp, #16 * 10]</span><br><span class="line">	stp	x22, x23, [sp, #16 * 11]</span><br><span class="line">	stp	x24, x25, [sp, #16 * 12]</span><br><span class="line">	stp	x26, x27, [sp, #16 * 13]</span><br><span class="line">	stp	x28, x29, [sp, #16 * 14]</span><br><span class="line"></span><br><span class="line">	.if	\el == 0</span><br><span class="line">	clear_gp_regs</span><br><span class="line">	mrs	x21, sp_el0</span><br><span class="line">	ldr_this_cpu	tsk, __entry_task, x20</span><br><span class="line">	msr	sp_el0, tsk</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * Ensure MDSCR_EL1.SS is clear, since we can unmask debug exceptions</span><br><span class="line">	 * when scheduling.</span><br><span class="line">	 */</span><br><span class="line">	ldr	x19, [tsk, #TSK_TI_FLAGS]</span><br><span class="line">	disable_step_tsk x19, x20</span><br><span class="line"></span><br><span class="line">	/* Check for asynchronous tag check faults in user space */</span><br><span class="line">	check_mte_async_tcf x22, x23</span><br><span class="line">	apply_ssbd 1, x22, x23</span><br><span class="line"></span><br><span class="line">#ifdef CONFIG_ARM64_PTR_AUTH</span><br><span class="line">alternative_if ARM64_HAS_ADDRESS_AUTH</span><br><span class="line">	/*</span><br><span class="line">	 * Enable IA for in-kernel PAC if the task had it disabled. Although</span><br><span class="line">	 * this could be implemented with an unconditional MRS which would avoid</span><br><span class="line">	 * a load, this was measured to be slower on Cortex-A75 and Cortex-A76.</span><br><span class="line">	 *</span><br><span class="line">	 * Install the kernel IA key only if IA was enabled in the task. If IA</span><br><span class="line">	 * was disabled on kernel exit then we would have left the kernel IA</span><br><span class="line">	 * installed so there is no need to install it again.</span><br><span class="line">	 */</span><br><span class="line">	ldr	x0, [tsk, THREAD_SCTLR_USER]</span><br><span class="line">	tbz	x0, SCTLR_ELx_ENIA_SHIFT, 1f</span><br><span class="line">	__ptrauth_keys_install_kernel_nosync tsk, x20, x22, x23</span><br><span class="line">	b	2f</span><br><span class="line">1:</span><br><span class="line">	mrs	x0, sctlr_el1</span><br><span class="line">	orr	x0, x0, SCTLR_ELx_ENIA</span><br><span class="line">	msr	sctlr_el1, x0</span><br><span class="line">2:</span><br><span class="line">	isb</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	mte_set_kernel_gcr x22, x23</span><br><span class="line"></span><br><span class="line">	scs_load tsk</span><br><span class="line">	.else</span><br><span class="line">	add	x21, sp, #PT_REGS_SIZE</span><br><span class="line">	get_current_task tsk</span><br><span class="line">	.endif /* \el == 0 */</span><br><span class="line">	mrs	x22, elr_el1</span><br><span class="line">	mrs	x23, spsr_el1</span><br><span class="line">	stp	lr, x21, [sp, #S_LR]</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * For exceptions from EL0, create a final frame record.</span><br><span class="line">	 * For exceptions from EL1, create a synthetic frame record so the</span><br><span class="line">	 * interrupted code shows up in the backtrace.</span><br><span class="line">	 */</span><br><span class="line">	.if \el == 0</span><br><span class="line">	stp	xzr, xzr, [sp, #S_STACKFRAME]</span><br><span class="line">	.else</span><br><span class="line">	stp	x29, x22, [sp, #S_STACKFRAME]</span><br><span class="line">	.endif</span><br><span class="line">	add	x29, sp, #S_STACKFRAME</span><br><span class="line"></span><br><span class="line">#ifdef CONFIG_ARM64_SW_TTBR0_PAN</span><br><span class="line">alternative_if_not ARM64_HAS_PAN</span><br><span class="line">	bl	__swpan_entry_el\el</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	stp	x22, x23, [sp, #S_PC]</span><br><span class="line"></span><br><span class="line">	/* Not in a syscall by default (el0_svc overwrites for real syscall) */</span><br><span class="line">	.if	\el == 0</span><br><span class="line">	mov	w21, #NO_SYSCALL</span><br><span class="line">	str	w21, [sp, #S_SYSCALLNO]</span><br><span class="line">	.endif</span><br><span class="line"></span><br><span class="line">	/* Save pmr */</span><br><span class="line">alternative_if ARM64_HAS_IRQ_PRIO_MASKING</span><br><span class="line">	mrs_s	x20, SYS_ICC_PMR_EL1</span><br><span class="line">	str	x20, [sp, #S_PMR_SAVE]</span><br><span class="line">	mov	x20, #GIC_PRIO_IRQON | GIC_PRIO_PSR_I_SET</span><br><span class="line">	msr_s	SYS_ICC_PMR_EL1, x20</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line"></span><br><span class="line">	/* Re-enable tag checking (TCO set on exception entry) */</span><br><span class="line">#ifdef CONFIG_ARM64_MTE</span><br><span class="line">alternative_if ARM64_MTE</span><br><span class="line">	SET_PSTATE_TCO(0)</span><br><span class="line">alternative_else_nop_endif</span><br><span class="line">#endif</span><br><span class="line"></span><br><span class="line">	/*</span><br><span class="line">	 * Registers that may be useful after this macro is invoked:</span><br><span class="line">	 *</span><br><span class="line">	 * x20 - ICC_PMR_EL1</span><br><span class="line">	 * x21 - aborted SP</span><br><span class="line">	 * x22 - aborted PC</span><br><span class="line">	 * x23 - aborted PSTATE</span><br><span class="line">	*/</span><br><span class="line">	.endm</span><br></pre></td></tr></tbody></table></figure>
-<p>这里不做详细分析了，除了对一些寄存器做基础处理，保存基本和特殊寄存器值外最重要的就是 bl	el\el\ht()<em>\regsize()</em>\label()_handler，同样以上面第一个宏定义为例，展开为 el1t_64_sync_handler，这些函数的定义和实现在 linux/arch/arm64/include/asm/exception.h 和 linux/arch/arm64/kernel/entry-common.c 中。</p>
+<p>这里不做详细分析了，除了对一些寄存器做基础处理，保存基本和特殊寄存器值外最重要的就是 bl    el\el\ht()<em>\regsize()</em>\label()_handler，同样以上面第一个宏定义为例，展开为 el1t_64_sync_handler，这些函数的定义和实现在 linux/arch/arm64/include/asm/exception.h 和 linux/arch/arm64/kernel/entry-common.c 中。</p>
 <p>在上面的一系列函数中，其实就是一个中断向量表，及其里面的函数实现，当外部中断发生时，跳转到具体标处运行代码。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly9zb3VyY2V3YXJlLm9yZy9iaW51dGlscy9kb2NzL2FzL01hY3JvLmh0bWwjTWFjcm8=">https://sourceware.org/binutils/docs/as/Macro.html#Macro<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly9zb3VyY2V3YXJlLm9yZy9iaW51dGlscy9kb2NzL2FzLw==">https://sourceware.org/binutils/docs/as/<i class="fa fa-external-link-alt"></i></span><br>
-《奔跑吧 Linux 内核》<br>
-《Linux 内核深度解析》<br>
-《Linux 设备驱动开发》</p>
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="followme">
-  <span>欢迎关注我的其它发布渠道</span>
-
-  <div class="social-list">
-
-      <div class="social-item">
-          <span class="social-link">
-            <span class="icon">
-              <i class="fab fa-weixin"></i>
-            </span>
-
-            <span class="label">WeChat</span>
-          </span>
-
-          <img class="social-item-img" src="/picture/qrcode_for_gh_ef4ee2392948_258.jpg">
-      </div>
-
-      <div class="social-item">
-          <a target="_blank" class="social-link" href="/atom.xml">
-            <span class="icon">
-              <i class="fa fa-rss"></i>
-            </span>
-
-            <span class="label">RSS</span>
-          </a>
-      </div>
-  </div>
-</div>
-
-          <div class="post-tags">
-              <a href="/tags/Linux/" rel="tag"><i class="fa fa-tag"></i> Linux</a>
-              <a href="/tags/Kernel/" rel="tag"><i class="fa fa-tag"></i> Kernel</a>
-              <a href="/tags/Interrupt/" rel="tag"><i class="fa fa-tag"></i> Interrupt</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/LinuxKernel/LinuxKernelInterruptSummery/" rel="prev" title="Linux 中断子系统（一）综述">
-                  <i class="fa fa-angle-left"></i> Linux 中断子系统（一）综述
-                </a>
-            </div>
-            <div class="post-nav-item">
-                <a href="/Tools/WordpressUsage/" rel="next" title="WordPress搭建博客">
-                  WordPress搭建博客 <i class="fa fa-angle-right"></i>
-                </a>
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-    <div class="comments" id="waline"></div>
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 2018 – 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder">CarlyleLiu</span>
-  </div>
-<div class="wordcount">
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-chart-line"></i>
-    </span>
-      <span>站点总字数：</span>
-    <span title="站点总字数">492k</span>
-  </span>
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-coffee"></i>
-    </span>
-      <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">29:47</span>
-  </span>
-</div>
-<div class="busuanzi-count">
-    <span class="post-meta-item" id="busuanzi_container_site_uv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-user"></i>
-      </span>
-      <span class="site-uv" title="总访客量">
-        <span id="busuanzi_value_site_uv"></span>
-      </span>
-    </span>
-    <span class="post-meta-item" id="busuanzi_container_site_pv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-eye"></i>
-      </span>
-      <span class="site-pv" title="总访问量">
-        <span id="busuanzi_value_site_pv"></span>
-      </span>
-    </span>
-</div>
-
-    </div>
-  </footer>
-
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><a target="_blank" rel="noopener" href="https://sourceware.org/binutils/docs/as/Macro.html#Macro">https://sourceware.org/binutils/docs/as/Macro.html#Macro</a><br><a target="_blank" rel="noopener" href="https://sourceware.org/binutils/docs/as/">https://sourceware.org/binutils/docs/as/</a><br>《奔跑吧 Linux 内核》<br>《Linux 内核深度解析》<br>《Linux 设备驱动开发》  </p>
+</article><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Linux/">Linux</a><a class="post-meta__tags" href="/tags/Kernel/">Kernel</a><a class="post-meta__tags" href="/tags/Interrupt/">Interrupt</a></div><div class="post_share"><div class="social-share" data-image="https://unsplash.it/1600/900?random&amp;6864" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.3/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><div class="prev-post pull-left"><a href="/Tools/WordpressUsage/" title="WordPress搭建博客"><img class="cover" src="https://unsplash.it/1600/900?random&amp;8930" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="pagination-info"><div class="label">上一篇</div><div class="prev_info">WordPress搭建博客</div></div></a></div><div class="next-post pull-right"><a href="/LinuxKernel/LinuxKernelInterruptSummery/" title="Linux 中断子系统（一）综述"><img class="cover" src="https://unsplash.it/1600/900?random&amp;8886" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="pagination-info"><div class="label">下一篇</div><div class="next_info">Linux 中断子系统（一）综述</div></div></a></div></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><div><a href="/LinuxKernel/LinuxKernelInterruptFramework/" title="Linux 中断子系统（四）中断驱动实现"><img class="cover" src="https://unsplash.it/1600/900?random&2580" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-09-20</div><div class="title">Linux 中断子系统（四）中断驱动实现</div></div></a></div><div><a href="/LinuxKernel/LinuxKernelInterruptLinuxDealWith/" title="Linux 中断子系统（三）Linux 中断处理过程"><img class="cover" src="https://unsplash.it/1600/900?random&311" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-09-19</div><div class="title">Linux 中断子系统（三）Linux 中断处理过程</div></div></a></div><div><a href="/LinuxKernel/LinuxKernelInterruptSoftIRQ/" title="Linux 中断子系统（五）SoftIRQ"><img class="cover" src="https://unsplash.it/1600/900?random&7513" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-09-21</div><div class="title">Linux 中断子系统（五）SoftIRQ</div></div></a></div><div><a href="/LinuxKernel/LinuxKernelInterruptSummery/" title="Linux 中断子系统（一）综述"><img class="cover" src="https://unsplash.it/1600/900?random&8886" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-09-12</div><div class="title">Linux 中断子系统（一）综述</div></div></a></div><div><a href="/LinuxKernel/LinuxKernelInterruptTasklet/" title="Linux 中断子系统（六）Tasklet"><img class="cover" src="https://unsplash.it/1600/900?random&4475" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-09-21</div><div class="title">Linux 中断子系统（六）Tasklet</div></div></a></div><div><a href="/LinuxKernel/LinuxKernelInterruptWorkQueue/" title="Linux 中断子系统（七）WorkQueue"><img class="cover" src="https://unsplash.it/1600/900?random&5436" alt="cover"><div class="content is-center"><div class="date"><i class="far fa-calendar-alt fa-fw"></i> 2021-09-21</div><div class="title">Linux 中断子系统（七）WorkQueue</div></div></a></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info"><div class="is-center"><div class="avatar-img"><img src="https://i.loli.net/2021/02/24/5O1day2nriDzjSu.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info__name">CarlyleLiu</div><div class="author-info__description">CarlyleLiu’s Blog</div></div><div class="card-info-data site-data is-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">194</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">42</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">28</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/carlyleliu"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons is-center"><a class="social-icon" href="https://github.com/carlyleliu" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a><a class="social-icon" href="mailto:yyliushuai@gmail.com" target="_blank" title="E-Mail"><i class="fa fa-envelope" style="color: #24292e;"></i></a><a class="social-icon" href="https://twitter.com/yyliushuai" target="_blank" title="Twitter"><i class="fab fa-twitter" style="color: #24292e;"></i></a><a class="social-icon" href="https://youtube.com/carlyleliu" target="_blank" title="YouTube"><i class="fab fa-youtube" style="color: #24292e;"></i></a><a class="social-icon" href="https://instagram.com/blurredliu" target="_blank" title="Instagram"><i class="fab fa-instagram" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">next主题站 https://carlyleliu.github.io/next</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8%E7%BA%A7%E5%88%AB"><span class="toc-number">1.</span> <span class="toc-text">异常级别</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8%E7%B1%BB%E5%9E%8B"><span class="toc-number">2.</span> <span class="toc-text">异常类型</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%AD%E6%96%AD"><span class="toc-number">2.1.</span> <span class="toc-text">中断</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%AD%E6%AD%A2"><span class="toc-number">2.1.1.</span> <span class="toc-text">中止</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%8D%E4%BD%8D"><span class="toc-number">2.2.</span> <span class="toc-text">复位</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BD%AF%E4%BB%B6%E4%BA%A7%E7%94%9F%E7%9A%84%E5%BC%82%E5%B8%B8"><span class="toc-number">2.3.</span> <span class="toc-text">软件产生的异常</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%90%8C%E6%AD%A5%E5%BC%82%E5%B8%B8%E5%92%8C%E5%BC%82%E6%AD%A5%E5%BC%82%E5%B8%B8"><span class="toc-number">3.</span> <span class="toc-text">同步异常和异步异常</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8%E7%9A%84%E5%8F%91%E7%94%9F%E5%92%8C%E9%80%80%E5%87%BA"><span class="toc-number">4.</span> <span class="toc-text">异常的发生和退出</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8"><span class="toc-number">5.</span> <span class="toc-text">异常向量表</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8%E5%90%91%E9%87%8F%E8%A1%A8%E5%9C%A8-Linux-%E4%B8%AD%E7%9A%84%E5%AE%9E%E7%8E%B0%EF%BC%88%E6%89%A9%E5%B1%95%EF%BC%89"><span class="toc-number">6.</span> <span class="toc-text">异常向量表在 Linux 中的实现（扩展）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B1%87%E7%BC%96%E5%AE%8F%E5%AE%9A%E4%B9%89"><span class="toc-number">6.1.</span> <span class="toc-text">汇编宏定义</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81"><span class="toc-number">6.2.</span> <span class="toc-text">源码</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="toc-number">7.</span> <span class="toc-text">参考文献</span></a></li></ol></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2018 - 2025 By CarlyleLiu</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="浅色和深色模式转换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=4.13.0"></script><script src="/js/main.js?v=4.13.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.33/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"><script>if (!window.MathJax) {
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      tags: 'ams'
+    },
+    chtml: {
+      scale: 1.1
+    },
+    options: {
+      renderActions: {
+        findScript: [10, doc => {
+          for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+            const display = !!node.type.match(/; *mode=display/)
+            const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+            const text = document.createTextNode('')
+            node.parentNode.replaceChild(text, node)
+            math.start = {node: text, delim: '', n: 0}
+            math.end = {node: text, delim: '', n: 0}
+            doc.math.push(math)
+          }
+        }, '']
+      }
+    }
+  }
   
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+  const script = document.createElement('script')
+  script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.min.js'
+  script.id = 'MathJax-script'
+  script.async = true
+  document.head.appendChild(script)
+} else {
+  MathJax.startup.document.state(0)
+  MathJax.texReset()
+  MathJax.typesetPromise()
+}</script></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="is-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据库加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=4.13.0"></script></div></div><!-- hexo injector body_end start --><script data-pjax>
+  function butterfly_footer_beautify_injector_config(){
+    var parent_div_git = document.getElementById('footer-wrap');
+    var item_html = '<p id="ghbdages"><a class="github-badge" target="_blank" href="https://hexo.io/" style="margin-inline:5px" data-title="博客框架为Hexo" title=""><img src="https://img.shields.io/badge/Frame-Hexo-blue?style=flat&amp;logo=hexo" alt=""/></a><a class="github-badge" target="_blank" href="https://butterfly.js.org/" style="margin-inline:5px" data-title="主题版本Butterfly" title=""><img src="https://img.shields.io/badge/Theme-Butterfly-6513df?style=flat&amp;logo=bitdefender" alt=""/></a><a class="github-badge" target="_blank" href="https://github.com/" style="margin-inline:5px" data-title="本站项目由Github托管" title=""><img src="https://img.shields.io/badge/Source-Github-d021d6?style=flat&amp;logo=GitHub" alt=""/></a><a class="github-badge" target="_blank" href="http://creativecommons.org/licenses/by-nc-sa/4.0/" style="margin-inline:5px" data-title="本站采用知识共享署名-非商业性使用-相同方式共享4.0国际许可协议进行许可" title=""><img src="https://img.shields.io/badge/Copyright-BY--NC--SA%204.0-d42328?style=flat&amp;logo=Claris" alt=""/></a></p>';
+    console.log('已挂载butterfly_footer_beautify')
+    parent_div_git.insertAdjacentHTML("beforeend",item_html)
+    }
+  var elist = 'null'.split(',');
+  var cpage = location.pathname;
+  var epage = 'all';
+  var flag = 0;
 
-  <span class="exturl github-corner" data-url="aHR0cHM6Ly9naXRodWIuY29tL2Nhcmx5bGVsaXU=" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></span>
+  for (var i=0;i<elist.length;i++){
+    if (cpage.includes(elist[i])){
+      flag++;
+    }
+  }
 
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/next-theme-pjax/0.6.0/pjax.min.js" integrity="sha256-vxLn1tSKWD4dqbMRyv940UYw4sXgMtYcK6reefzZrao=" crossorigin="anonymous"></script>
-<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/schemes/muse.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script><script src="/js/pjax.js"></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
-<script src="/js/third-party/search/local-search.js"></script>
-
-
-
-
-
-  <script src="/js/third-party/pace.js"></script>
-
-
-  
-  <script data-pjax async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-
-
-
-  
-
-  <script class="next-config" data-name="enableMath" type="application/json">true</script><script class="next-config" data-name="mathjax" type="application/json">{"enable":true,"tags":"none","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js","integrity":"sha256-MASABpB4tYktI2Oitl4t+78w/lyA+D7b/s9GEP0JOGI="}}</script>
-<script src="/js/third-party/math/mathjax.js"></script>
-
-
-<script class="next-config" data-name="waline" type="application/json">{"lang":"zh-cn","enable":true,"serverURL":"https://waline.carlyleliu.vip","cssUrl":"https://unpkg.com/@waline/client@v2/dist/waline.css","commentCount":true,"pageview":false,"placeholder":"(发表评论)","avatar":"mm","meta":["nick","mail","link"],"pageSize":10,"visitor":true,"comment_count":true,"requiredFields":["nick"],"libUrl":"//unpkg.com/@waline/client@v2/dist/waline.js","el":"#waline","comment":true,"path":"/LinuxKernel/LinuxKernelInterruptARMExcept/"}</script>
-<link rel="stylesheet" href="https://unpkg.com/@waline/client@v2/dist/waline.css">
-<script>
-document.addEventListener('page:loaded', () => {
-  NexT.utils.loadComments(CONFIG.waline.el).then(() =>
-    NexT.utils.getScript(CONFIG.waline.libUrl, { condition: window.Waline })
-  ).then(() => 
-    Waline.init(Object.assign({}, CONFIG.waline,{ el: document.querySelector(CONFIG.waline.el) }))
-  );
-});
-</script>
-
-</body>
-</html>
+  if ((epage ==='all')&&(flag == 0)){
+    butterfly_footer_beautify_injector_config();
+  }
+  else if (epage === cpage){
+    butterfly_footer_beautify_injector_config();
+  }
+  </script><!-- hexo injector body_end end --></body></html>
