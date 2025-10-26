@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="概述 内核版本 3.1 中引入了 Regmap API，用于统一内核开发人员访问 SPI&#x2F;IIC 设备的方式，无论是 SPI 设备还是 IIC 设备，只需要初始化，配置 Regmap 就可以通过 Regmap 读写设备。Regmap 子系统主要提供如下两种功能：  第一是为 IIC&#x2F;SPI&#x2F;MMIO 等提供统一的访问接口，linux 中大量的 iic 和 spi 设备就可以通过统一的接口进行访问">
+    <meta name="description" content="概述内核版本 3.1 中引入了 Regmap API，用于统一内核开发人员访问 SPI&#x2F;IIC 设备的方式，无论是 SPI 设备还是 IIC 设备，只需要初始化，配置 Regmap 就可以通过 Regmap 读写设备。Regmap 子系统主要提供如下两种功能：  第一是为 IIC&#x2F;SPI&#x2F;MMIO 等提供统一的访问接口，linux 中大量的 iic 和 spi 设备就可以通过统一的接口进行访问尤其">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 驱动之 Regmap 子系统">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxDriverRegmap/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="概述 内核版本 3.1 中引入了 Regmap API，用于统一内核开发人员访问 SPI&#x2F;IIC 设备的方式，无论是 SPI 设备还是 IIC 设备，只需要初始化，配置 Regmap 就可以通过 Regmap 读写设备。Regmap 子系统主要提供如下两种功能：  第一是为 IIC&#x2F;SPI&#x2F;MMIO 等提供统一的访问接口，linux 中大量的 iic 和 spi 设备就可以通过统一的接口进行访问">
+<meta property="og:description" content="概述内核版本 3.1 中引入了 Regmap API，用于统一内核开发人员访问 SPI&#x2F;IIC 设备的方式，无论是 SPI 设备还是 IIC 设备，只需要初始化，配置 Regmap 就可以通过 Regmap 读写设备。Regmap 子系统主要提供如下两种功能：  第一是为 IIC&#x2F;SPI&#x2F;MMIO 等提供统一的访问接口，linux 中大量的 iic 和 spi 设备就可以通过统一的接口进行访问尤其">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regmap.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regmap_Struct.png">
@@ -155,7 +155,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text"> 概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text"> 数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text"> 实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#regmap_bus-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-text"> regmap_bus 的实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regmap-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-text"> regmap 的实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#regmap-bus-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-text">regmap_bus 的实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#regmap-%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-text">regmap 的实现</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -168,18 +168,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">187</span>
+          <span class="site-state-item-count">194</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-count">28</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-count">42</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -314,64 +314,39 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a class="markdownIt-Anchor" href="#概述"></a> 概述</h1>
-<p>内核版本 3.1 中引入了 Regmap API，用于统一内核开发人员访问 SPI/IIC 设备的方式，无论是 SPI 设备还是 IIC 设备，只需要初始化，配置 Regmap 就可以通过 Regmap 读写设备。Regmap 子系统主要提供如下两种功能：</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>内核版本 3.1 中引入了 Regmap API，用于统一内核开发人员访问 SPI/IIC 设备的方式，无论是 SPI 设备还是 IIC 设备，只需要初始化，配置 Regmap 就可以通过 Regmap 读写设备。Regmap 子系统主要提供如下两种功能：</p>
 <ul>
 <li>第一是为 IIC/SPI/MMIO 等提供统一的访问接口，linux 中大量的 iic 和 spi 设备就可以通过统一的接口进行访问尤其对于那些同时支持 iic 和 spi 接口的设备。</li>
 <li>第二是提供缓存访问机制用于加速设备访问设备，对于支持缓存的设备这将大大加快设备的当问速度。</li>
 </ul>
-<p>下面看一下 Regmapz 子系统在驱动中的位置，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTVhMzg1NjUzYmI2NDkzMGMxYzAz">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regmap.png" alt=""></p>
+<p>下面看一下 Regmapz 子系统在驱动中的位置，如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTVhMzg1NjUzYmI2NDkzMGMxYzAz">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regmap.png" alt=""></p>
 <span id="more"></span>
-<h1 id="数据结构"><a class="markdownIt-Anchor" href="#数据结构"></a> 数据结构</h1>
-<p>regmap 子系统的实现比较简单，数据结构也是很简单的，整体结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5YjUwZTNlNzQwNmUyMDI0Njhi">原图<i class="fa fa-external-link-alt"></i></span><br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regmap_Struct.png" alt=""></p>
+<h1 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h1><p>regmap 子系统的实现比较简单，数据结构也是很简单的，整体结构如下：<span class="exturl" data-url="aHR0cHM6Ly93d3cucHJvY2Vzc29uLmNvbS92aWV3L2xpbmsvNjE2YTU5YjUwZTNlNzQwNmUyMDI0Njhi">原图<i class="fa fa-external-link-alt"></i></span><br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/Driver/Regmap_Struct.png" alt=""></p>
 <ul>
-<li>
-<p>regmap_bus:<br>
-regmap_bus 数据结构用于对具体的 bus 进行封装，例如对 IIC 或 SPI 总线进行封装，这些 bus 下可以挂载很多设备，他们都从属于一个总线那么就有很多共性操作，对这个结构的封装就用 regmap_bus 结构。该结构主要提供同步读写、异步读写、格式化数据等操作接口</p>
+<li><p>regmap_bus:<br>  regmap_bus 数据结构用于对具体的 bus 进行封装，例如对 IIC 或 SPI 总线进行封装，这些 bus 下可以挂载很多设备，他们都从属于一个总线那么就有很多共性操作，对这个结构的封装就用 regmap_bus 结构。该结构主要提供同步读写、异步读写、格式化数据等操作接口</p>
 </li>
-<li>
-<p>regmap:<br>
-在上面的结构中讲到 regmap_bus 用于封装具体的 bus，这些 bus 下会挂载各种不同的设备，这些设备的操作有很多不一样的，针对每一个设备进行封装就使用 regmap 结构体。该结构主要提供的功能有：缓存区和缓存操作、异步读写链表和队列操作、读写权限管理（哪些地址的寄存器是可读的、哪些地址范围是可写的以及哪些地址范围是可读写的）、读写页的支持及访问操作以及对寄存器和值的格式化操作等</p>
+<li><p>regmap:<br>  在上面的结构中讲到 regmap_bus 用于封装具体的 bus，这些 bus 下会挂载各种不同的设备，这些设备的操作有很多不一样的，针对每一个设备进行封装就使用 regmap 结构体。该结构主要提供的功能有：缓存区和缓存操作、异步读写链表和队列操作、读写权限管理（哪些地址的寄存器是可读的、哪些地址范围是可写的以及哪些地址范围是可读写的）、读写页的支持及访问操作以及对寄存器和值的格式化操作等</p>
 </li>
-<li>
-<p>regmap_config:<br>
-regmap_config 结构是最接近用户的，因此上图中也对该结构做了最详细的注释，该结构主要用于用户通过该结构来初始化 regmap 结构体</p>
+<li><p>regmap_config:<br>  regmap_config 结构是最接近用户的，因此上图中也对该结构做了最详细的注释，该结构主要用于用户通过该结构来初始化 regmap 结构体</p>
 </li>
-<li>
-<p>regmap_range_cfg:<br>
-regmap_range_cfg 数据结构用于描述页范围和页选择</p>
+<li><p>regmap_range_cfg:<br>  regmap_range_cfg 数据结构用于描述页范围和页选择</p>
 </li>
-<li>
-<p>regmap_format:<br>
-regmap_format 数据结构就是上面提到的用户格式化数据的结构，对于某些寄存器是 12bit 或其他非常规位数的寄存器进行格式化数据的结构</p>
+<li><p>regmap_format:<br>  regmap_format 数据结构就是上面提到的用户格式化数据的结构，对于某些寄存器是 12bit 或其他非常规位数的寄存器进行格式化数据的结构</p>
 </li>
-<li>
-<p>regmap_access_table:<br>
-regmap_access_table 数据结构用于描述对寄存器访问权限的控制，yes_ranges 是可访问地址范围而 no_range 是不可访问地址访问</p>
+<li><p>regmap_access_table:<br>  regmap_access_table 数据结构用于描述对寄存器访问权限的控制，yes_ranges 是可访问地址范围而 no_range 是不可访问地址访问</p>
 </li>
-<li>
-<p>regcache_ops:<br>
-regcache_ops 结构提供缓存操作相关接口描述</p>
+<li><p>regcache_ops:<br>  regcache_ops 结构提供缓存操作相关接口描述</p>
 </li>
 </ul>
-<h1 id="实现"><a class="markdownIt-Anchor" href="#实现"></a> 实现</h1>
-<h2 id="regmap_bus-的实现"><a class="markdownIt-Anchor" href="#regmap_bus-的实现"></a> regmap_bus 的实现</h2>
-<p>这里以 spi 总线的 regmap_bus 为例，iic 等其他总线是相同的逻辑，regmap_spi 的实现如下：</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><h2 id="regmap-bus-的实现"><a href="#regmap-bus-的实现" class="headerlink" title="regmap_bus 的实现"></a>regmap_bus 的实现</h2><p>这里以 spi 总线的 regmap_bus 为例，iic 等其他总线是相同的逻辑，regmap_spi 的实现如下：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">regmap_bus</span> <span class="title">regmap_spi</span> =</span> {</span><br><span class="line">	.write = regmap_spi_write,</span><br><span class="line">	.gather_write = regmap_spi_gather_write,</span><br><span class="line">	.async_write = regmap_spi_async_write,</span><br><span class="line">	.async_alloc = regmap_spi_async_alloc,</span><br><span class="line">	.read = regmap_spi_read,</span><br><span class="line">	.read_flag_mask = <span class="number">0x80</span>,</span><br><span class="line">	.reg_format_endian_default = REGMAP_ENDIAN_BIG,</span><br><span class="line">	.val_format_endian_default = REGMAP_ENDIAN_BIG,</span><br><span class="line">};</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">regmap</span> *__<span class="title">regmap_init_spi</span>(<span class="keyword">struct</span> <span class="title">spi_device</span> *<span class="title">spi</span>,</span></span><br><span class="line"><span class="class">				 <span class="title">const</span> <span class="keyword">struct</span> <span class="title">regmap_config</span> *<span class="title">config</span>,</span></span><br><span class="line"><span class="class">				 <span class="keyword">struct</span> <span class="title">lock_class_key</span> *<span class="title">lock_key</span>,</span></span><br><span class="line"><span class="class">				 <span class="title">const</span> <span class="title">char</span> *<span class="title">lock_name</span>)</span></span><br><span class="line"><span class="class">{</span></span><br><span class="line">	<span class="keyword">return</span> __regmap_init(&amp;spi-&gt;dev, &amp;regmap_spi, &amp;spi-&gt;dev, config,</span><br><span class="line">			     lock_key, lock_name);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>可以看到其实实现很简单就是构造一个 regmap_bus 数据结构 regmap_spi，并提供 spi 的相关操作，这里以 write 为例看下里面的实现，其他类似：</p>
 <figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">static</span> <span class="type">int</span> <span class="title function_">regmap_spi_write</span><span class="params">(<span class="type">void</span> *context, <span class="type">const</span> <span class="type">void</span> *data, <span class="type">size_t</span> count)</span></span><br><span class="line">{</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">dev</span> =</span> context;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">spi_device</span> *<span class="title">spi</span> =</span> to_spi_device(dev);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> spi_write(spi, data, count);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
 <p>其实就是标准的 spi 接口的调用，这也证明了 regmap 其实就是对一些底层 bus 进行进一步封装并对外提供统一的接口，同时还提供页操作缓存等非常好用的接口。</p>
-<h2 id="regmap-的实现"><a class="markdownIt-Anchor" href="#regmap-的实现"></a> regmap 的实现</h2>
-<p>在上面介绍的__regmap_init_spi 函数就会返回一个 regmap 结构体也就是 regmap 结构体的创建过程</p>
-<figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">__devm_regmap_init</span><br><span class="line">    __regmap_init</span><br></pre></td></tr></tbody></table></figure>
-<p>__regmap_init 函数的流程比较繁琐这里就不贴代码了，大致的流程是初始化需要两个重要的数据结构 regmap_bus 和 regmap_config。每一个 regmap 都需要一个 regmap_bus 数据结构，regmap 的初始化就是设置其结构体的成员，而设置的依据就是根据 regmap_config 结构体的内容来设置。</p>
+<h2 id="regmap-的实现"><a href="#regmap-的实现" class="headerlink" title="regmap 的实现"></a>regmap 的实现</h2><p>在上面介绍的<strong>regmap_init_spi 函数就会返回一个 regmap 结构体也就是 regmap 结构体的创建过程<br></strong></p><figure class="highlight c"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">__devm_regmap_init</span><br><span class="line">    __regmap_init</span><br></pre></td></tr></tbody></table></figure><strong>
+</strong>regmap_init 函数的流程比较繁琐这里就不贴代码了，大致的流程是初始化需要两个重要的数据结构 regmap_bus 和 regmap_config。每一个 regmap 都需要一个 regmap_bus 数据结构，regmap 的初始化就是设置其结构体的成员，而设置的依据就是根据 regmap_config 结构体的内容来设置。<p></p>
 <p>其实到这里 regmap 的主体结构和实现就大概清楚了，至于其具体的实现细节像页的访问操作，缓存的操作权限的管理感兴趣的可以去 driver/base/regmap/目录下去看源码，我也没去详细了解具体的实现过程，只是梳理了一下 regmap 的大致实现过程。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDc1OTUzNzM/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107595373?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDc1OTUzNDA/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107595340?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>
-《Linux 设备驱动开发》</p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDc1OTUzNzM/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107595373?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L2xpY2t5bGluL2FydGljbGUvZGV0YWlscy8xMDc1OTUzNDA/c3BtPTEwMDEuMjAxNC4zMDAxLjU1MDE=">https://blog.csdn.net/lickylin/article/details/107595340?spm=1001.2014.3001.5501<i class="fa fa-external-link-alt"></i></span><br>《Linux 设备驱动开发》   </p>
 
     </div>
 
@@ -458,14 +433,14 @@ regcache_ops 结构提供缓存操作相关接口描述</p>
       <i class="fa fa-chart-line"></i>
     </span>
       <span>站点总字数：</span>
-    <span title="站点总字数">469k</span>
+    <span title="站点总字数">492k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">28:24</span>
+    <span title="站点阅读时长">29:47</span>
   </span>
 </div>
 <div class="busuanzi-count">

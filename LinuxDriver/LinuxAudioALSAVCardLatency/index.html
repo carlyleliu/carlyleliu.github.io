@@ -23,12 +23,12 @@
 
 <script class="next-config" data-name="main" type="application/json">{"hostname":"carlyleliu.github.io","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.20.0","exturl":true,"sidebar":{"position":"right","width_expanded":320,"width_dual_column":240,"display":"hide","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":"mac"},"fold":{"enable":true,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js"></script>
 
-    <meta name="description" content="测试方法   两块板子之间通过 I2S 通信，其中一块板子配置为 Slave 另一块板子为 Master   Master 板端执行 arecord | aplay 或者 gstream 命令   12arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE | aplay -Dhw:2,0 -c 8 -r 44100 -f S32_LEgst-launch-1.0 al">
+    <meta name="description" content="测试方法 两块板子之间通过 I2S 通信，其中一块板子配置为 Slave 另一块板子为 Master Master 板端执行 arecord | aplay 或者 gstream 命令   12arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE | aplay -Dhw:2,0 -c 8 -r 44100 -f S32_LEgst-launch-1.0 alsasrc">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Linux 驱动之 ALSA（九）虚拟声卡 Latency">
 <meta property="og:url" content="https://carlyleliu.github.io/LinuxDriver/LinuxAudioALSAVCardLatency/index.html">
 <meta property="og:site_name" content="Matrix">
-<meta property="og:description" content="测试方法   两块板子之间通过 I2S 通信，其中一块板子配置为 Slave 另一块板子为 Master   Master 板端执行 arecord | aplay 或者 gstream 命令   12arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE | aplay -Dhw:2,0 -c 8 -r 44100 -f S32_LEgst-launch-1.0 al">
+<meta property="og:description" content="测试方法 两块板子之间通过 I2S 通信，其中一块板子配置为 Slave 另一块板子为 Master Master 板端执行 arecord | aplay 或者 gstream 命令   12arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE | aplay -Dhw:2,0 -c 8 -r 44100 -f S32_LEgst-launch-1.0 alsasrc">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/alsa_latency.png">
 <meta property="og:image" content="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/vsoundCardUSBLatency.png">
@@ -158,7 +158,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%96%B9%E6%B3%95"><span class="nav-text"> 测试方法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#datastream"><span class="nav-text"> DataStream</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A2%9E%E5%A4%A7-buffer-size-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E5%A2%9E%E5%A4%A7-latency"><span class="nav-text"> 增大 Buffer Size 为什么会增大 latency？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text"> 参考文献</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95%E6%96%B9%E6%B3%95"><span class="nav-text">测试方法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#DataStream"><span class="nav-text">DataStream</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A2%9E%E5%A4%A7-Buffer-Size-%E4%B8%BA%E4%BB%80%E4%B9%88%E4%BC%9A%E5%A2%9E%E5%A4%A7-latency%EF%BC%9F"><span class="nav-text">增大 Buffer Size 为什么会增大 latency？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%8C%AE"><span class="nav-text">参考文献</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -171,18 +171,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">187</span>
+          <span class="site-state-item-count">194</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-count">28</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-count">42</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -313,30 +313,20 @@
     
     
     
-    <div class="post-body" itemprop="articleBody"><h1 id="测试方法"><a class="markdownIt-Anchor" href="#测试方法"></a> 测试方法</h1>
-<ul>
-<li>
-<p>两块板子之间通过 I2S 通信，其中一块板子配置为 Slave 另一块板子为 Master</p>
-</li>
-<li>
-<p>Master 板端执行 arecord | aplay 或者 gstream 命令</p>
+    <div class="post-body" itemprop="articleBody"><h1 id="测试方法"><a href="#测试方法" class="headerlink" title="测试方法"></a>测试方法</h1><ul>
+<li>两块板子之间通过 I2S 通信，其中一块板子配置为 Slave 另一块板子为 Master</li>
+<li><p>Master 板端执行 arecord | aplay 或者 gstream 命令</p>
   <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">arecord -Dhw:2,0 -r 44100 -c 8 -f S32_LE | aplay -Dhw:2,0 -c 8 -r 44100 -f S32_LE</span><br><span class="line">gst-launch-1.0 alsasrc device=device_input_split ! alsasink device=device_output <span class="built_in">sync</span>=<span class="literal">false</span></span><br></pre></td></tr></tbody></table></figure>
 </li>
-<li>
-<p>Slave 通过 aplay 播放一段 wav 文件</p>
+<li><p>Slave 通过 aplay 播放一段 wav 文件</p>
 </li>
-<li>
-<p>通过示波器抓取 Master 板的 I2S 输入和输出端的波形间隔来测量虚拟声卡的 Latency</p>
-</li>
+<li>通过示波器抓取 Master 板的 I2S 输入和输出端的波形间隔来测量虚拟声卡的 Latency</li>
 </ul>
 <span id="more"></span>
-<h1 id="datastream"><a class="markdownIt-Anchor" href="#datastream"></a> DataStream</h1>
-<p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/alsa_latency.png" alt=""></p>
+<h1 id="DataStream"><a href="#DataStream" class="headerlink" title="DataStream"></a>DataStream</h1><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Audio/alsa_latency.png" alt=""></p>
 <p>上图就是 arecord | aplay（没有使用插件） 整个虚拟声卡的数据流，其中延迟最大的部分就是红色框中的缓存。</p>
-<p>走 USB 通路的 latency：<br>
-<img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/vsoundCardUSBLatency.png" alt=""></p>
-<h1 id="增大-buffer-size-为什么会增大-latency"><a class="markdownIt-Anchor" href="#增大-buffer-size-为什么会增大-latency"></a> 增大 Buffer Size 为什么会增大 latency？</h1>
-<p>aplay 通过调用 snd_pcm_write 写数据给驱动，alsa lib 中 snd_pcm_write 有如下调用栈：</p>
+<p>走 USB 通路的 latency：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Linux/vsoundCardUSBLatency.png" alt=""></p>
+<h1 id="增大-Buffer-Size-为什么会增大-latency？"><a href="#增大-Buffer-Size-为什么会增大-latency？" class="headerlink" title="增大 Buffer Size 为什么会增大 latency？"></a>增大 Buffer Size 为什么会增大 latency？</h1><p>aplay 通过调用 snd_pcm_write 写数据给驱动，alsa lib 中 snd_pcm_write 有如下调用栈：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">_snd_pcm_writei(pcm, buffer, size)</span><br><span class="line">	--&gt;pcm-&gt;fast_ops-&gt;writei(pcm-&gt;fast_op_arg, buffer, size)</span><br><span class="line">		--&gt;snd_pcm_hw_writei</span><br><span class="line">			--&gt;ioctl(fd, SNDRV_PCM_IOCTL_WRITEI_FRAMES, &amp;xferi)</span><br></pre></td></tr></tbody></table></figure>
 <p>alsa lib 通过 ioctl 系统调用到内核，打印 snd_pcm_write 内核调用栈：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">   14.513126@2]  Call trace:</span><br><span class="line">[   14.513472@2]  [ffffffc0201cbb20+  96][&lt;ffffffe610095490&gt;] dump_backtrace+0x0/0x188</span><br><span class="line">[   14.514417@2]  [ffffffc0201cbb80+  32][&lt;ffffffe61009563c&gt;] show_stack+0x24/0x30</span><br><span class="line">[   14.515329@2]  [ffffffc0201cbba0+  64][&lt;ffffffe611010068&gt;] dump_stack+0xc8/0xf0</span><br><span class="line">[   14.516240@2]  [ffffffc0201cbbe0+ 208][&lt;ffffffe610cc4d14&gt;] __snd_pcm_lib_xfer+0x834/0x850</span><br><span class="line">[   14.517257@2]  [ffffffc0201cbcb0+  80][&lt;ffffffe610cb9a34&gt;] snd_pcm_ioctl_xferi_compat+0x14c/0x260</span><br><span class="line">[   14.518360@2]  [ffffffc0201cbd00+ 208][&lt;ffffffe610cbd66c&gt;] snd_pcm_ioctl_compat+0x10c/0xdb8</span><br><span class="line">[   14.519405@2]  [ffffffc0201cbdd0+ 144][&lt;ffffffe610323754&gt;] __arm64_compat_sys_ioctl+0x16c/0x1220</span><br><span class="line">[   14.520496@2]  [ffffffc0201cbe60+  64][&lt;ffffffe61009ee28&gt;] el0_svc_common.constprop.3+0x90/0x1b0</span><br><span class="line">[   14.521589@2]  [ffffffc0201cbea0+ 336][&lt;ffffffe61009f014&gt;] el0_svc_compat_handler+0x2c/0x38</span><br><span class="line">[   14.522630@2]  [ffffffc0201cbff0+   0][&lt;ffffffe610083d5c&gt;] el0_svc_compat+0x8/0x2c</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
@@ -347,9 +337,7 @@
 <p>如果是 playback 流，且状态为 parpare，当 runtime→dma_area 里的数据大于等于 runtime→start_threshold，状态才会切换到 running。通过打印 log 发现：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[   14.571395@0]  playback : buffer_size : 2048 dma size : 65536 start_threshold : 2048 stop_threshold : 2048</span><br><span class="line">[   14.572960@2]  capture : buffer_size : 2048 dma size : 65536 start_threshold : 1 stop_threshold : 2048</span><br></pre></td></tr></tbody></table></figure>
 <p>playback 的 runtime→start_threshold 跟 buffer_size 一样大，也就是 playback 会先缓存 buffer_size 个 frame 的数据然后再开始播放，这样会导致 latency 随着 buffer_size 的变大而变大了。</p>
-<h1 id="参考文献"><a class="markdownIt-Anchor" href="#参考文献"></a> 参考文献</h1>
-<p><span class="exturl" data-url="aHR0cHM6Ly93d3cuYWxzYS1wcm9qZWN0Lm9yZy9hbHNhLWRvYy9hbHNhLWxpYi9wY21fcGx1Z2lucy5odG1s">https://www.alsa-project.org/alsa-doc/alsa-lib/pcm_plugins.html<i class="fa fa-external-link-alt"></i></span><br>
-<span class="exturl" data-url="aHR0cHM6Ly9hbHNhLm9wZW5zcmMub3JnL0FMU0FfcGx1Z2lucw==">https://alsa.opensrc.org/ALSA_plugins<i class="fa fa-external-link-alt"></i></span></p>
+<h1 id="参考文献"><a href="#参考文献" class="headerlink" title="参考文献"></a>参考文献</h1><p><span class="exturl" data-url="aHR0cHM6Ly93d3cuYWxzYS1wcm9qZWN0Lm9yZy9hbHNhLWRvYy9hbHNhLWxpYi9wY21fcGx1Z2lucy5odG1s">https://www.alsa-project.org/alsa-doc/alsa-lib/pcm_plugins.html<i class="fa fa-external-link-alt"></i></span><br><span class="exturl" data-url="aHR0cHM6Ly9hbHNhLm9wZW5zcmMub3JnL0FMU0FfcGx1Z2lucw==">https://alsa.opensrc.org/ALSA_plugins<i class="fa fa-external-link-alt"></i></span>   </p>
 
     </div>
 
@@ -437,14 +425,14 @@
       <i class="fa fa-chart-line"></i>
     </span>
       <span>站点总字数：</span>
-    <span title="站点总字数">469k</span>
+    <span title="站点总字数">492k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">28:24</span>
+    <span title="站点阅读时长">29:47</span>
   </span>
 </div>
 <div class="busuanzi-count">

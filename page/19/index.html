@@ -161,18 +161,18 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">187</span>
+          <span class="site-state-item-count">194</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
           <a href="/categories/">
-        <span class="site-state-item-count">27</span>
+        <span class="site-state-item-count">28</span>
         <span class="site-state-item-name">分类</span></a>
       </div>
       <div class="site-state-item site-state-tags">
           <a href="/tags/">
-        <span class="site-state-item-count">41</span>
+        <span class="site-state-item-count">42</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
@@ -211,6 +211,829 @@
     </div>
 
     <div class="main-inner index posts-expand">
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Algorithm/imuCalibration/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/Algorithm/imuCalibration/" class="post-title-link" itemprop="url">IMU 误差模型及校准</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Image/" itemprop="url" rel="index"><span itemprop="name">Image</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Image/Stabilization/" itemprop="url" rel="index"><span itemprop="name">Stabilization</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Algorithm/imuCalibration/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Algorithm/imuCalibration/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>4.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>17 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="传感器误差模型"><a href="#传感器误差模型" class="headerlink" title="传感器误差模型"></a>传感器误差模型</h1><p>对于理想的 IMU 三轴加速度计两两正交，构成一个正交的三轴直角坐标系，加速度计每一轴单独测量该轴的加速度，而陀螺仪则测量该轴的角速度。在实际的真实 IMU 中由于制造工艺的误差，三个坐标轴不可能完全两两正交，加速度计与陀螺仪的坐标系也不会完全重合，并且单个传感器也不是完全精确的。在实际器件中将数字输出量转化为实际物理量的 scale 参数在不同轴上是不同的，但是设备生产商都会提供一个默认的 scale 参数用于转换所有轴的数据，而且数字量的输出还会受到零偏（传感器在静止情况下也会有微小量的输出）的影响，这些就是造成 IMU 传感器的系统误差。</p>
+<p>我们取实际器件的加速度计坐标系为 AF, 陀螺仪坐标系为 GF，根据 AF 和 GF 分别建立对应的正交坐标系 AOF 和 GOF，其建立约束为</p>
+<ul>
+<li>AOF 的 x 轴与 AF 的 x 轴重合。</li>
+<li>AOF 的 y 轴位于 AF 的 x 与 y 轴的平面中。</li>
+</ul>
+<p>对于 GOF 的建立约束与 AOF 的约束类比建立。最后再建立一个正交机体坐标系 BF，BF 通常与 AF 和 GF 之间有一个小角度的偏差。在非正交坐标系（AF 或 GF）中测量得到的物理量$s^S$可以转换到机体坐标系 BF 中得到$s^B$于是得到下式：</p>
+<script type="math/tex; mode=display">
+s^B = Ts^S, 
+T = \begin{bmatrix}
+1 & -\beta_{yz}  & \beta_{zy} \\ 
+\beta_{xz} & 1 & -\beta_{zx} \\ 
+-\beta_{xy} & \beta_{yx} & 1 
+\end{bmatrix}   \tag{1}</script><p>$s^B 和 s^S$ 表示加速度或角速度在机体坐标系 BF 和加速度坐标系 AF 或陀螺仪坐标系 GF 下测量表示量，$\beta_{ij}$ 表示加速度或陀螺仪的 i 轴绕机体坐标系 BF 的 j 轴的旋转角度。如图二所示：<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/imuErr.png" alt=""></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/Algorithm/imuCalibration/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Algorithm/imuAttitudeCalculation/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/Algorithm/imuAttitudeCalculation/" class="post-title-link" itemprop="url">IMU 姿态解算</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Image/" itemprop="url" rel="index"><span itemprop="name">Image</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/Image/Stabilization/" itemprop="url" rel="index"><span itemprop="name">Stabilization</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Algorithm/imuAttitudeCalculation/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Algorithm/imuAttitudeCalculation/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>25 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="IMU-通过加速度计解算姿态角"><a href="#IMU-通过加速度计解算姿态角" class="headerlink" title="IMU 通过加速度计解算姿态角"></a>IMU 通过加速度计解算姿态角</h1><p><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/Image/imuOrigin.png" alt=""></p>
+<p>通过三角函数可以将加速度计三个轴的角速度解算为姿态角，其中 $\alpha$ , $\beta$ 和 $\gamma$（ $\gamma$ 是 z 轴与重力加速度之间的夹角）与三个轴之间的关系如上图所示：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&\beta = arcsin(\frac{a_x}{g}) \\
+&\gamma  = arcsin(\frac{a_y}{g})
+\end{aligned}</script><p>其中重力加速度 $ g $ 的取值使用三轴角速度的矢量和即：</p>
+<script type="math/tex; mode=display">
+g = \sqrt{a_x^{2} + a_y^{2} + a_z^{2}}</script><p>将 g 的值带入上式可以得到：</p>
+<script type="math/tex; mode=display">
+\begin{aligned}
+&\beta = arctan(\frac{a_x}{\sqrt{a_y^{2} + a_z^{2}}}) \\
+&\gamma  = arctan(\frac{a_y}{\sqrt{a_x^{2} + a_z^{2}}})
+\end{aligned}</script><p>其中 α 为俯仰角 pitch，β 为滚转角 roll，其中航向角 yaw 是没有办法通过加速度计来计算的。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/Algorithm/imuAttitudeCalculation/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Program/rtosDesign/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/Program/rtosDesign/" class="post-title-link" itemprop="url">RTOS 的设计</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/RTOS/" itemprop="url" rel="index"><span itemprop="name">RTOS</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Program/rtosDesign/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Program/rtosDesign/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>3.5k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>13 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="何为实时性？"><a href="#何为实时性？" class="headerlink" title="何为实时性？"></a>何为实时性？</h1><p>RTOS 的实时性该怎么理解呢？快速？确定性？</p>
+<h2 id="从中断控制器视角看实时性"><a href="#从中断控制器视角看实时性" class="headerlink" title="从中断控制器视角看实时性"></a>从中断控制器视角看实时性</h2><p>我们知道一般都是 Cortex-M 跑 RTOS，Cortex-A 很少跑 RTOS，一般都是跑 Linux、Android 这些非实时系统。如果单纯从速度来看 A 核在高主频加持下一定会具有更快的速度才对呀，那 M 核的竞争力在哪里呢？实际上这就是 A 核和 M 核在设计上的两个不同方向的取舍。</p>
+<p>首先我们看 NVIC 中断控制器的设计：</p>
+<ul>
+<li>中断延迟波动很小：NVIC 支持中断嵌套，这样即使当前中断在处理中且非常耗时也没关系，因为可以通过高优先级的中断来响应更紧急的事件，这样中断延迟就不依赖与中断处理时间了，从设计上保证了延迟的确定性。</li>
+<li>中断延迟小：NVIC 在不同的中断会跳转到不同地址运行，且可以直接在硬中断上下文中执行中断程序，这样整个 pipeline 很短，且 NVIC 还支持<strong>尾链</strong>这个概念进一步降低延迟（当高优先级的 ISR 抢占低优先级 ISR 时，处理器会跳过上下文保存和恢复，直接处理第二个 ISR，没有任何额外的开销）。通常 NVIC 中断响应时间在十几到几十 ns 之间。</li>
+</ul>
+<p>NVIC 中断控制器在实时性上是满足要求的，快速和确定性都满足，但是他不适合处理大量中断，假如每秒要处理成千上万（这个中断数量对于 A 核来讲是很常见的 UAC、UVC，DSP 等一个模块每秒可能就有几千个中断）个中断，那么对 NVIC 来讲这是灾难性的，各种嵌套设计各种性能评估，除此之外对于多核系统 NVIC 也没有一套将中断分配给各个 CPU 核的机制，那么就无法充分利用多核的优势提高中断处理能力。而 A 核的 GIC 控制器就是为解决这些问题而设计的。</p>
+<p>Cortex-A 核的 GIC 中断控制器设计很复杂，但是不支持中断嵌套，由 Distributor、CPU interface、Redistributor、ITS 组成，Distributor 具有仲裁和分发的作用，会将中断发送给 Redistributor，Redistributor 将中断发送给 CPU interface。这样第一解决了多核问题，其次 GIC 没有中断嵌套，当中断发生后跳转到一个固定地址，然后判断中断源进行下一步跳转，在 Linux 中接下来就会分为中断上半部和下半部机制，上半部在硬中断上下文快速响应然后返回，以更快处理其他中断兼顾实时性。中断下半部为了不同的应用需求设计了 softirq、tasklet、workqueue、thread 等机制来实现大量的中断任务，兼顾高性能。GIC 中断控制器解决了 NVIC 的问题但是却丢了硬实时性。</p>
+<ul>
+<li>中断延迟比较大：中断处理的 PipeLine 比较长，中断响应延迟一般在 us 级别。</li>
+<li>中断延迟波动比较大：中断不支持嵌套那么就一定要等上一个中断返回才能得到处理，这个延迟就不可控了。</li>
+</ul>
+<p>从中断控制器视角看实时性是快速+确定的 latency。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/Program/rtosDesign/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Literature/Yesaining/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/Literature/Yesaining/" class="post-title-link" itemprop="url">叶赛宁</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Literature-Appreciation/" itemprop="url" rel="index"><span itemprop="name">Literature Appreciation</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Literature-Appreciation/Poetry/" itemprop="url" rel="index"><span itemprop="name">Poetry</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Literature/Yesaining/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Literature/Yesaining/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>229</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>1 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="😗不惋惜，不呼唤，我也不啼哭（叶赛宁）"><a href="#😗不惋惜，不呼唤，我也不啼哭（叶赛宁）" class="headerlink" title="😗不惋惜，不呼唤，我也不啼哭（叶赛宁）"></a>😗不惋惜，不呼唤，我也不啼哭（叶赛宁）</h1><p>不惋惜，不呼唤，我也不啼哭，</p>
+<p>一切将逝去……如苹果花丛的薄雾</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/Literature/Yesaining/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Program/ucosDesign/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/Program/ucosDesign/" class="post-title-link" itemprop="url">ucos 相关实现</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Technology-Blog/RTOS/" itemprop="url" rel="index"><span itemprop="name">RTOS</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Program/ucosDesign/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Program/ucosDesign/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2.4k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>9 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="ucos-优先级调度算法"><a href="#ucos-优先级调度算法" class="headerlink" title="ucos 优先级调度算法"></a>ucos 优先级调度算法</h1><h2 id="保证调度延迟的确定性"><a href="#保证调度延迟的确定性" class="headerlink" title="保证调度延迟的确定性"></a>保证调度延迟的确定性</h2><p>普通查表法会从头开始遍历数组，这样就绪态最高优先级的 task 会比就绪态优先级低的 task 先被查找到，造成不同优先级 task 在调度上花费时间不一致的情况，这违背了实时性的原则。<br><img src="https://lsky.carlyleliu.vip/carlyleliu/ImageHosting/TechnologyBlog/RTOS/RTOS_Sche_issue.png" alt=""></p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/Program/ucosDesign/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Literature/SongciOther/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/Literature/SongciOther/" class="post-title-link" itemprop="url">宋词-其他</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Literature-Appreciation/" itemprop="url" rel="index"><span itemprop="name">Literature Appreciation</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Literature-Appreciation/Poetry/" itemprop="url" rel="index"><span itemprop="name">Poetry</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Literature/SongciOther/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Literature/SongciOther/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>573</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>2 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="长相思·汴水流"><a href="#长相思·汴水流" class="headerlink" title="长相思·汴水流"></a>长相思·汴水流</h1><p>白居易</p>
+<p>汴水流，泗水流，流到瓜州古渡头。吴山点点愁。</p>
+<p>思悠悠，恨悠悠，恨到归时方始休。月明人倚楼。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/Literature/SongciOther/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
+    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Literature/Xinqiji/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="CarlyleLiu">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Matrix">
+      <meta itemprop="description" content="CarlyleLiu’s Blog">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="undefined | Matrix">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/Literature/Xinqiji/" class="post-title-link" itemprop="url">辛弃疾</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Literature-Appreciation/" itemprop="url" rel="index"><span itemprop="name">Literature Appreciation</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/Literature-Appreciation/Poetry/" itemprop="url" rel="index"><span itemprop="name">Poetry</span></a>
+        </span>
+    </span>
+
+  
+  
+  <span class="post-meta-item">
+    
+    <span class="post-meta-item-icon">
+      <i class="far fa-comment"></i>
+    </span>
+    <span class="post-meta-item-text">Waline：</span>
+  
+    <a title="waline" href="/Literature/Xinqiji/#waline" itemprop="discussionUrl">
+      <span class="post-comments-count waline-comment-count" data-path="/Literature/Xinqiji/" itemprop="commentCount"></span>
+    </a>
+  </span>
+  
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>314</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>1 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="西江月·遣兴"><a href="#西江月·遣兴" class="headerlink" title="西江月·遣兴"></a>西江月·遣兴</h1><p>醉里且贪欢笑，要愁那得工夫。</p>
+<p>近来始觉古人书。信著全无是处。</p>
+<p>昨夜松边醉倒，问松我醉何如。</p>
+<p>只疑松动要来扶。以手推松曰去。</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/Literature/Xinqiji/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
 
     
 
@@ -296,8 +1119,7 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <h1 id="临江仙"><a class="markdownIt-Anchor" href="#临江仙"></a> 临江仙</h1>
-<p>夜饮东坡醒复醉，归来仿佛三更。家童鼻息已雷鸣。敲门都不应，倚杖听江声。</p>
+          <h1 id="临江仙"><a href="#临江仙" class="headerlink" title="临江仙"></a>临江仙</h1><p>夜饮东坡醒复醉，归来仿佛三更。家童鼻息已雷鸣。敲门都不应，倚杖听江声。</p>
 <p>长恨此身非我有，何时忘却营营？夜阑风静縠纹平。小舟从此逝，江海寄余生。</p>
           <!--noindex-->
             <div class="post-button">
@@ -412,8 +1234,7 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <h1 id="启动流程"><a class="markdownIt-Anchor" href="#启动流程"></a> 启动流程</h1>
-<p>Linux 系统当前的启动流程如下：</p>
+          <h1 id="启动流程"><a href="#启动流程" class="headerlink" title="启动流程"></a>启动流程</h1><p>Linux 系统当前的启动流程如下：</p>
 <figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">brom --&gt; boot0 --&gt; (monitor/secure os) --&gt; uboot --&gt; rootfs --&gt; app</span><br></pre></td></tr></tbody></table></figure>
 <p>brom 固化在 IC 内部，芯片出厂后就无法更改。后续将从 boot0 开始分阶段介绍启动优化的方法。</p>
 <p>对于某些方案，会存在 monitor 或 secure os，这两者耗时很短，略过。</p>
@@ -526,8 +1347,7 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <h1 id="一剪梅红藕香残玉簟秋"><a class="markdownIt-Anchor" href="#一剪梅红藕香残玉簟秋"></a> 一剪梅·红藕香残玉簟秋</h1>
-<p>红藕香残玉簟秋。轻解罗裳，独上兰舟。云中谁寄锦书来，雁字回时，月满西楼。</p>
+          <h1 id="一剪梅·红藕香残玉簟秋"><a href="#一剪梅·红藕香残玉簟秋" class="headerlink" title="一剪梅·红藕香残玉簟秋"></a>一剪梅·红藕香残玉簟秋</h1><p>红藕香残玉簟秋。轻解罗裳，独上兰舟。云中谁寄锦书来，雁字回时，月满西楼。</p>
 <p>花自飘零水自流。一种相思，两处闲愁。此情无计可消除，才下眉头，却上心头。</p>
           <!--noindex-->
             <div class="post-button">
@@ -554,507 +1374,8 @@
 
 
 
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Literature/NorthIsland/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/Literature/NorthIsland/" class="post-title-link" itemprop="url">北岛的诗</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Literature-Appreciation/" itemprop="url" rel="index"><span itemprop="name">Literature Appreciation</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Literature-Appreciation/Poetry/" itemprop="url" rel="index"><span itemprop="name">Poetry</span></a>
-        </span>
-    </span>
-
-  
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/Literature/NorthIsland/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/Literature/NorthIsland/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>480</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>2 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="北岛的长诗白日梦的第四节"><a class="markdownIt-Anchor" href="#北岛的长诗白日梦的第四节"></a> 😭北岛的长诗《白日梦》的第四节</h1>
-<p>你没有如期归来</p>
-<p>而这正是离别的意义</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/Literature/NorthIsland/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Debug/LinuxSystemCropping/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/Debug/LinuxSystemCropping/" class="post-title-link" itemprop="url">Linux 系统裁剪</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/Performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a>
-        </span>
-    </span>
-
-  
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/Debug/LinuxSystemCropping/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/Debug/LinuxSystemCropping/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>1.2k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>4 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="系统裁剪简介"><a class="markdownIt-Anchor" href="#系统裁剪简介"></a> 系统裁剪简介</h1>
-<p>固件中通常包含 boot0、 uboot、 kernel、 rootfs 等镜像。基于经验，各个镜像尺寸的量级如下表所示：</p>
-<table>
-<thead>
-<tr>
-<th>Image</th>
-<th>size</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>boot0</td>
-<td>&lt; 100k</td>
-</tr>
-<tr>
-<td>uboot</td>
-<td>&lt; 1M</td>
-</tr>
-<tr>
-<td>kernel</td>
-<td>3-15M</td>
-</tr>
-<tr>
-<td>rootfs</td>
-<td>&gt; 4M</td>
-</tr>
-</tbody>
-</table>
-<p>可以看到 boot0、 uboot、 kernel、 rootfs 的尺寸是依次增大的。对于大尺寸的裁剪效果往往比小尺寸的裁剪效果明显，比如 rootfs 裁剪 1M 可能很容易，对于 uboot 来说，则非常困难。因此，后续主要介绍 kernel 以及 rootfs 的裁剪。</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/Debug/LinuxSystemCropping/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Debug/LinuxPerf/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/Debug/LinuxPerf/" class="post-title-link" itemprop="url">Linux 性能分析</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/Performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a>
-        </span>
-    </span>
-
-  
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/Debug/LinuxPerf/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/Debug/LinuxPerf/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>1.3k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>5 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="cpu-使用分析"><a class="markdownIt-Anchor" href="#cpu-使用分析"></a> cpu 使用分析</h1>
-<h2 id="top-命令"><a class="markdownIt-Anchor" href="#top-命令"></a> top 命令</h2>
-<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">procps-ng-top -H -p 899 -w 120</span><br></pre></td></tr></tbody></table></figure>
-<ul>
-<li>-H 是线程模式</li>
-<li>-p 指定进程 id</li>
-<li>-w 指定显示宽度（列数）</li>
-<li>-d 指定延时 ，屏幕更新间隔</li>
-</ul>
-<p>shift+p 按照 cpu 使用率对线程排序。如下是一个实例：</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/Debug/LinuxPerf/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
-    
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="">
-    <link itemprop="mainEntityOfPage" href="https://carlyleliu.github.io/Debug/LinuxMemoryOptimization/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="CarlyleLiu">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Matrix">
-      <meta itemprop="description" content="CarlyleLiu’s Blog">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="undefined | Matrix">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          <a href="/Debug/LinuxMemoryOptimization/" class="post-title-link" itemprop="url">Linux 内存优化</a>
-        </h2>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/" itemprop="url" rel="index"><span itemprop="name">Technology Blog</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/" itemprop="url" rel="index"><span itemprop="name">Programming</span></a>
-        </span>
-          ，
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/Technology-Blog/Programming/Performance/" itemprop="url" rel="index"><span itemprop="name">Performance</span></a>
-        </span>
-    </span>
-
-  
-  
-  <span class="post-meta-item">
-    
-    <span class="post-meta-item-icon">
-      <i class="far fa-comment"></i>
-    </span>
-    <span class="post-meta-item-text">Waline：</span>
-  
-    <a title="waline" href="/Debug/LinuxMemoryOptimization/#waline" itemprop="discussionUrl">
-      <span class="post-comments-count waline-comment-count" data-path="/Debug/LinuxMemoryOptimization/" itemprop="commentCount"></span>
-    </a>
-  </span>
-  
-  
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>3k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>11 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-          <h1 id="内存使用情况分析"><a class="markdownIt-Anchor" href="#内存使用情况分析"></a> 内存使用情况分析</h1>
-<h2 id="dram-大小"><a class="markdownIt-Anchor" href="#dram-大小"></a> DRAM 大小</h2>
-<p>硬件上 DDR 确定之后， DRAM 大小就已经确定。</p>
-<p>uboot 会根据 DRAM 驱动提供的接口获取 DRAM 的大小，然后修改 dts 中的 memory 节点，Linux 启动时解析 dts 获取 DRAM 的大小。<br>
-uboot 启动 log 中会打印 dram 的大小。比如 R329 方案 uboot 启动时会有如下 log：</p>
-<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[01.300]DRAM: 128 MiB</span><br></pre></td></tr></tbody></table></figure>
-<p>执行：</p>
-<figure class="highlight bash"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">root@TinaLinux:/<span class="comment"># hexdump -C /sys/firmware/devicetree/base/memory@40000000/reg</span></span><br><span class="line">00000000 00 00 00 00 40 00 00 00 00 00 00 00 08 00 00 00 |....@...........|</span><br><span class="line">00000010</span><br></pre></td></tr></tbody></table></figure>
-<p>也可以获取 dram 的起始地址与大小。如下面 R329 例子所示，其中 0x40000000 为起始地址， 0x08000000 为 dram 的 size.</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/Debug/LinuxMemoryOptimization/#more" rel="contents">
-                阅读全文 &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-        <div class="post-eof"></div>
-      
-    </footer>
-  </article>
-</div>
-
-
-
-
   <nav class="pagination">
-    <a class="extend prev" rel="prev" title="上一页" aria-label="上一页" href="/page/18/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/18/">18</a><span class="page-number current">19</span>
+    <a class="extend prev" rel="prev" title="上一页" aria-label="上一页" href="/page/18/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/18/">18</a><span class="page-number current">19</span><a class="page-number" href="/page/20/">20</a><a class="extend next" rel="next" title="下一页" aria-label="下一页" href="/page/20/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 </div>
@@ -1077,14 +1398,14 @@ uboot 启动 log 中会打印 dram 的大小。比如 R329 方案 uboot 启动�
       <i class="fa fa-chart-line"></i>
     </span>
       <span>站点总字数：</span>
-    <span title="站点总字数">469k</span>
+    <span title="站点总字数">492k</span>
   </span>
   <span class="post-meta-item">
     <span class="post-meta-item-icon">
       <i class="fa fa-coffee"></i>
     </span>
       <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">28:24</span>
+    <span title="站点阅读时长">29:47</span>
   </span>
 </div>
 <div class="busuanzi-count">
